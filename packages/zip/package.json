@@ -1,0 +1,14 @@
+{
+  "name": "@sosb/zip",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Bidirectional import/export with round-trip preservation.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --build"
+  }
+}

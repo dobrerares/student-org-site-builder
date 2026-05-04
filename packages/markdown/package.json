@@ -1,0 +1,14 @@
+{
+  "name": "@sosb/markdown",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Strict-whitelist sanitized markdown. Used by richText, faq, quote.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --build"
+  }
+}

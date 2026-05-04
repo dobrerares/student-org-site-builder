@@ -1,0 +1,14 @@
+{
+  "name": "@sosb/themes",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Five Preact theme component sets + token defaults.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --build"
+  }
+}

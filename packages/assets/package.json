@@ -1,0 +1,14 @@
+{
+  "name": "@sosb/assets",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Image processing pipeline with environment-specific implementations behind a unified interface.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --build"
+  }
+}

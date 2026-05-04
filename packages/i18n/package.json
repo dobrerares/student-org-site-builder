@@ -1,0 +1,14 @@
+{
+  "name": "@sosb/i18n",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Keyed message lookup with RO/EN, browser language detection, override persistence.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --build"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "@sosb/editor-state",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Live document model with undo/redo, block manipulation actions.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --build"
+  }
+}

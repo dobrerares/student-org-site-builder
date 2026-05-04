@@ -1,0 +1,13 @@
+node_modules
+dist
+build
+coverage
+playwright-report
+test-results
+.vite
+pnpm-lock.yaml
+
+# Pre-existing project documents are owned outside this scaffolding;
+# don't reformat them here.
+docs/PRD.md
+LICENSE
