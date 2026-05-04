@@ -2,7 +2,7 @@
 
 A free, open-source, no-backend site builder for student organizations.
 
-**Status:** v1 in design. See the [v1 PRD](../../issues/1) for the full specification.
+**Status:** v1 in design. See the [v1 PRD](docs/PRD.md) for the full specification.
 
 ## What this is
 
@@ -24,7 +24,7 @@ Output is a portable zip containing the org's data (`data.json`), assets, and a 
 
 ## Status
 
-This repository was created from an architectural grilling session that produced the v1 specification. Implementation has not started. Track v1 progress via the issues backlog, starting with the PRD.
+This repository was created from an architectural grilling session that produced the v1 specification. Implementation has not started. Track v1 progress via the [issues backlog](../../issues), with [`docs/PRD.md`](docs/PRD.md) as the source of truth.
 
 ## License
 
