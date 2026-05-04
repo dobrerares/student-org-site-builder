@@ -41,14 +41,13 @@
         {
           "id": "blk_home_hero",
           "type": "hero",
-          "version": 2,
+          "version": 1,
           "data": {
             "eyebrow": "Bun venit",
             "title": "HISTORIPOL",
             "subtitle": "Comunitatea studenților istorici de la Universitatea „Ovidius” Constanța",
             "backgroundImage": "assets/4a91d2.jpg",
-            "backgroundAlt": "Studenți la o conferință de istorie în aula universității",
-            "align": "left"
+            "backgroundAlt": "Studenți la o conferință de istorie în aula universității"
           }
         }
       ],
@@ -68,14 +67,13 @@
         {
           "id": "blk_home_hero_en",
           "type": "hero",
-          "version": 2,
+          "version": 1,
           "data": {
             "eyebrow": "Welcome",
             "title": "HISTORIPOL",
             "subtitle": "The community of history students at Ovidius University of Constanța",
             "backgroundImage": "assets/4a91d2.jpg",
-            "backgroundAlt": "Students at a history conference in the university hall",
-            "align": "left"
+            "backgroundAlt": "Students at a history conference in the university hall"
           }
         }
       ],
@@ -95,11 +93,10 @@
         {
           "id": "blk_about_hero",
           "type": "hero",
-          "version": 2,
+          "version": 1,
           "data": {
             "title": "Despre noi",
-            "subtitle": "O comunitate clădită în jurul disciplinei istorice",
-            "align": "left"
+            "subtitle": "O comunitate clădită în jurul disciplinei istorice"
           }
         }
       ]

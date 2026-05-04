@@ -1,8 +1,14 @@
 import { z } from "zod";
 import { HeroBlockSchema } from "./hero.js";
 
-export { HeroBlockSchema, HeroDataSchema, HERO_BLOCK_VERSION } from "./hero.js";
-export type { HeroBlock, HeroData } from "./hero.js";
+export {
+  HERO_ALIGN_DEFAULT,
+  HERO_ALIGN_VALUES,
+  HERO_BLOCK_VERSION,
+  HeroBlockSchema,
+  HeroDataSchema,
+} from "./hero.js";
+export type { HeroAlign, HeroBlock, HeroData } from "./hero.js";
 
 /**
  * The block envelope is `{ id, type, version, data }`. This generic envelope

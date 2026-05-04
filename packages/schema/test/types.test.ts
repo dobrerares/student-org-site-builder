@@ -25,7 +25,7 @@ describe("derived TypeScript types", () => {
     const block: HeroBlock = {
       id: "blk_a",
       type: "hero",
-      version: 1,
+      version: 2,
       data: {
         title: "Hello",
       },
