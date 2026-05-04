@@ -8,7 +8,10 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json",
     "build": "tsc --build"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
   }
 }
