@@ -8,7 +8,13 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json",
     "build": "tsc --build"
+  },
+  "dependencies": {
+    "@sosb/vfs": "workspace:*"
+  },
+  "devDependencies": {
+    "sharp": "^0.34.5"
   }
 }
