@@ -5,6 +5,7 @@ import { ContactCardBlockSchema } from "./contact-card.js";
 import { EmbedBlockSchema } from "./embed.js";
 import { CustomHtmlBlockSchema } from "./custom-html.js";
 import { ActivitiesListBlockSchema } from "./activities-list.js";
+import { TeamGridBlockSchema } from "./team-grid.js";
 
 export { HeroBlockSchema, HeroDataSchema, HERO_BLOCK_VERSION } from "./hero.js";
 export type { HeroBlock, HeroData } from "./hero.js";
@@ -65,6 +66,18 @@ export type {
   ActivityItem,
   ActivityLink,
 } from "./activities-list.js";
+export {
+  TeamGridBlockSchema,
+  TeamGridDataSchema,
+  TEAM_GRID_BLOCK_VERSION,
+} from "./team-grid.js";
+export type {
+  TeamGridBlock,
+  TeamGridData,
+  TeamGridPerson,
+  TeamGridPersonPhoto,
+  TeamGridSocialLink,
+} from "./team-grid.js";
 
 /**
  * The block envelope is `{ id, type, version, data }`. This generic envelope
@@ -95,6 +108,7 @@ export const KnownBlockSchemas = {
   embed: EmbedBlockSchema,
   customHTML: CustomHtmlBlockSchema,
   activitiesList: ActivitiesListBlockSchema,
+  teamGrid: TeamGridBlockSchema,
 } as const;
 
 export type KnownBlockType = keyof typeof KnownBlockSchemas;

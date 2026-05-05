@@ -301,6 +301,23 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
       // enforcement at write time.
       break;
     }
+    case "teamGrid": {
+      // Warning: every person photo carries an alt; an empty alt is a quality
+      // nudge (mirroring the hero's missing-alt rule). Schema accepts empty
+      // alt so a stale import does not hard-error; the editor should surface
+      // these for the user to fix.
+      block.data.people.forEach((person, idx) => {
+        if (person.photo && person.photo.alt.trim().length === 0) {
+          result.warnings.push({
+            severity: "warning",
+            path: ["data", "people", idx, "photo", "alt"],
+            code: "block.teamGrid.photo.alt.missing",
+            message: `Team member "${person.name}" has a photo but no alt text. Add alt text for screen-reader users.`,
+          });
+        }
+      });
+      break;
+    }
     default: {
       // Exhaustiveness assertion: every known block must have a case branch.
       const _exhaustive: never = block;

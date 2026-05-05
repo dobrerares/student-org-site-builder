@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "org": {
+    "name": "Stub Org",
+    "tagline": "A fixture for renderer tests"
+  },
+  "theme": {
+    "id": "stub",
+    "tokens": {
+      "colorPrimary": "#1f3a5f",
+      "colorAccent": "#c08a3e"
+    }
+  },
+  "defaultLanguage": "ro",
+  "languages": ["ro"],
+  "pages": [
+    {
+      "slug": "echipa",
+      "lang": "ro",
+      "navLabel": "Echipa",
+      "navOrder": 1,
+      "showInNav": true,
+      "seo": {
+        "title": "Stub site — team",
+        "description": "A teamGrid fixture (ungrouped)."
+      },
+      "blocks": [
+        {
+          "id": "blk_team_flat",
+          "type": "teamGrid",
+          "version": 1,
+          "data": {
+            "title": "Echipa",
+            "columns": 2,
+            "people": [
+              {
+                "name": "Ana Popescu",
+                "role": "Președinte"
+              },
+              {
+                "name": "Mihai Ionescu",
+                "role": "Vicepreședinte",
+                "photo": {
+                  "hash": "a1b2c3d4e5f60718",
+                  "path": "assets/a1b2c3d4e5f60718.jpg",
+                  "metadataPath": "assets/a1b2c3d4e5f60718.metadata.json",
+                  "mime": "image/jpeg",
+                  "width": 600,
+                  "height": 600,
+                  "alt": "Portret Mihai Ionescu"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

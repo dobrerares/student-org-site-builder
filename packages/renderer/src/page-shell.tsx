@@ -7,11 +7,13 @@ import type {
   CustomHtmlBlock,
   EmbedBlock,
   HeroBlock,
+  TeamGridBlock,
   ValueListBlock,
   ActivitiesListBlock,
 } from "@sosb/schema";
 import { isKnownBlockType } from "@sosb/schema";
 import { Hero } from "./blocks/hero.js";
+import { TeamGrid } from "./blocks/team-grid.js";
 import { ValueList } from "./blocks/value-list.js";
 import { ContactCard } from "./blocks/contact-card.js";
 import { Embed, pageHasLazyEmbed, EMBED_LOADER_MARKER } from "./blocks/embed.js";
@@ -73,6 +75,9 @@ function renderBlock(block: BlockEnvelope): preact.JSX.Element | null {
   }
   if (block.type === "activitiesList") {
     return <ActivitiesList block={block as unknown as ActivitiesListBlock} />;
+  }
+  if (block.type === "teamGrid") {
+    return <TeamGrid block={block as unknown as TeamGridBlock} />;
   }
   return null;
 }
