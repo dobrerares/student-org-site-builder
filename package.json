@@ -23,7 +23,10 @@
   "devDependencies": {
     "@eslint/js": "9.17.0",
     "@playwright/test": "1.49.1",
+    "@sosb/renderer": "workspace:*",
+    "@sosb/schema": "workspace:*",
     "@types/node": "20.17.10",
+    "esbuild": "0.24.0",
     "eslint": "9.17.0",
     "eslint-config-prettier": "9.1.0",
     "globals": "15.14.0",

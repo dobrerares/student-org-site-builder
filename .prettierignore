@@ -11,3 +11,7 @@ pnpm-lock.yaml
 # don't reformat them here.
 docs/PRD.md
 LICENSE
+
+# Renderer golden-file snapshots are byte-exact captures of the renderer's
+# own output; reformatting them would break the regression contract.
+packages/*/test/__golden__/**
