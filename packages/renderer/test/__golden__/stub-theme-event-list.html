@@ -1,0 +1,110 @@
+<!doctype html><html lang="ro"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Evenimentele asociației</title><meta name="description" content="Toate evenimentele HISTORIPOL."/><meta property="og:title" content="Evenimentele asociației"/><meta property="og:description" content="Toate evenimentele HISTORIPOL."/><meta property="og:type" content="website"/><style>:root {
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 2rem;
+  --space-xl: 4rem;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --font-headline: Georgia, serif;
+  --font-body: system-ui, sans-serif;
+  --color-primary: #1f3a5f;
+  --color-accent: #c08a3e;
+  --color-fg: #1a1a1a;
+  --color-bg: #ffffff;
+  --color-muted: #5c5c5c;
+  --color-primary: #1f3a5f;
+  --color-accent: #c08a3e;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-body);
+  line-height: 1.5;
+}
+main { display: block; }
+[data-block="hero"] {
+  padding: var(--space-xl) var(--space-md);
+}
+[data-block="hero"] .hero__eyebrow {
+  font-size: 0.875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  margin: 0 0 var(--space-sm) 0;
+}
+[data-block="hero"] h1 {
+  font-family: var(--font-headline);
+  margin: 0 0 var(--space-md) 0;
+  color: var(--color-primary);
+}
+[data-block="hero"] .hero__subtitle {
+  margin: 0 0 var(--space-md) 0;
+  color: var(--color-fg);
+}
+[data-block="hero"] .hero__media {
+  margin-top: var(--space-md);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+[data-block="hero"] .hero__media img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+[data-block="event-list"] {
+  padding: var(--space-lg) var(--space-md);
+}
+[data-block="event-list"] .event-list__title {
+  font-family: var(--font-headline);
+  margin: 0 0 var(--space-sm) 0;
+  color: var(--color-primary);
+}
+[data-block="event-list"] .event-list__intro {
+  margin: 0 0 var(--space-md) 0;
+  color: var(--color-fg);
+}
+[data-block="event-list"] .event-list__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-md);
+}
+[data-block="event-list"] .event-list__item article {
+  display: block;
+  padding: var(--space-md);
+  border-radius: var(--radius-sm);
+}
+[data-block="event-list"] .event-list__item-title {
+  font-family: var(--font-headline);
+  margin: 0 0 var(--space-xs) 0;
+  color: var(--color-primary);
+}
+[data-block="event-list"] .event-list__item-time {
+  display: block;
+  color: var(--color-muted);
+  margin: 0 0 var(--space-xs) 0;
+}
+[data-block="event-list"] .event-list__item-location,
+[data-block="event-list"] .event-list__item-description {
+  margin: 0 0 var(--space-xs) 0;
+  color: var(--color-fg);
+}
+[data-block="event-list"] .event-list__item-media img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+[data-block="event-list"] .event-list__item-link {
+  color: var(--color-accent);
+}
+[data-block="event-list"] [data-event-id].is-past {
+  opacity: 0.55;
+}</style></head><body><main><section data-block="event-list" data-block-id="blk_events" data-past-behavior="fade" aria-labelledby="blk_events__title"><h2 id="blk_events__title" class="event-list__title">Evenimente</h2><p class="event-list__intro">Activitățile din acest an universitar.</p><ol class="event-list__items"><li class="event-list__item"><article data-event-id="ev_2025_winter" data-starts-at="2025-12-10T18:00:00+02:00" data-ends-at="2025-12-10T20:00:00+02:00"><h3 class="event-list__item-title">Atelier de paleografie</h3><time class="event-list__item-time" datetime="2025-12-10T18:00:00+02:00">2025-12-10T18:00:00+02:00</time><p class="event-list__item-location">Sala 3.4</p><p class="event-list__item-description">Hands-on cu surse de arhivă.</p><div class="event-list__item-media"><img src="assets/atelier.jpg" alt loading="lazy"/></div></article></li><li class="event-list__item"><article data-event-id="ev_2026_spring" data-starts-at="2026-04-22T16:00:00+03:00"><h3 class="event-list__item-title">Conferința de istorie</h3><time class="event-list__item-time" datetime="2026-04-22T16:00:00+03:00">2026-04-22T16:00:00+03:00</time><p class="event-list__item-location">Aula universității</p><p class="event-list__item-description">Invitați din mediul academic.</p><a class="event-list__item-link" href="https://historipol.ro/conferinta">Detalii</a></article></li><li class="event-list__item"><article data-event-id="ev_2026_summer" data-starts-at="2026-08-05T10:00:00+03:00"><h3 class="event-list__item-title">Seminar de vară</h3><time class="event-list__item-time" datetime="2026-08-05T10:00:00+03:00">2026-08-05T10:00:00+03:00</time></article></li></ol></section></main><script data-sosb="event-list-past-fade">(function(){
+function r(){var n=Date.now();var bs=document.querySelectorAll('[data-block="event-list"]');for(var i=0;i<bs.length;i++){var b=bs[i];var m=b.getAttribute("data-past-behavior")||"fade";if(m==="show")continue;var es=b.querySelectorAll("[data-event-id]");for(var j=0;j<es.length;j++){var ev=es[j];var s=ev.getAttribute("data-ends-at")||ev.getAttribute("data-starts-at");if(!s)continue;var t=Date.parse(s);if(isNaN(t))continue;if(t>n)continue;if(m==="hide"){if(ev.parentNode)ev.parentNode.removeChild(ev);}else{ev.classList.add("is-past");}}}}
+if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",r);}else{r();}
+})();</script></body></html>

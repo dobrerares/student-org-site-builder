@@ -4,6 +4,7 @@ import { EMBED_BLOCK_VERSION } from "./blocks/embed.js";
 import { CTA_BANNER_BLOCK_VERSION } from "./blocks/cta-banner.js";
 import { PARTNER_LOGOS_BLOCK_VERSION } from "./blocks/partner-logos.js";
 import { IMAGE_GALLERY_BLOCK_VERSION } from "./blocks/image-gallery.js";
+import { EVENT_LIST_BLOCK_VERSION } from "./blocks/event-list.js";
 
 /**
  * One site-level migration. Bumps from `from` to `from + 1`. The function is
@@ -96,6 +97,7 @@ const KNOWN_BLOCK_VERSIONS: Record<string, number> = {
   ctaBanner: CTA_BANNER_BLOCK_VERSION,
   partnerLogos: PARTNER_LOGOS_BLOCK_VERSION,
   imageGallery: IMAGE_GALLERY_BLOCK_VERSION,
+  eventList: EVENT_LIST_BLOCK_VERSION,
 };
 
 /**
