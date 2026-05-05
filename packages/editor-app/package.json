@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@sosb/editor-state": "workspace:*",
+    "@sosb/i18n": "workspace:*",
     "@sosb/preview-bridge": "workspace:*",
     "@sosb/renderer": "workspace:*",
     "@sosb/schema": "workspace:*",

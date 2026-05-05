@@ -10,6 +10,7 @@ import type { Site } from "@sosb/schema";
 
 import type { FieldNode } from "./form-generator.js";
 import { getAtPath, setAtPath } from "./get-set-path.js";
+import { useTranslator } from "./i18n-context.js";
 
 export interface SpineFormProps {
   readonly fields: FieldNode[];
@@ -34,6 +35,7 @@ interface FieldRendererProps {
 }
 
 function FieldRenderer({ node, site, onPatch }: FieldRendererProps): JSX.Element {
+  const t = useTranslator();
   const dottedPath = node.path.join(".");
   const value = getAtPath(site, node.path);
 
@@ -57,7 +59,9 @@ function FieldRenderer({ node, site, onPatch }: FieldRendererProps): JSX.Element
         <fieldset data-field={dottedPath} data-kind="array">
           <legend>{node.name}</legend>
           <p data-testid="array-summary">
-            {Array.isArray(value) ? `${value.length} item(s)` : "(empty)"}
+            {Array.isArray(value)
+              ? t("form.array.itemCount", { count: value.length })
+              : t("form.array.empty")}
           </p>
         </fieldset>
       );
@@ -124,7 +128,7 @@ function FieldRenderer({ node, site, onPatch }: FieldRendererProps): JSX.Element
               onPatch(node.path, event.currentTarget.value);
             }}
           >
-            {node.optional ? <option value="">(unset)</option> : null}
+            {node.optional ? <option value="">{t("form.field.unset")}</option> : null}
             {node.options.map((option) => (
               <option key={option} value={option}>
                 {option}

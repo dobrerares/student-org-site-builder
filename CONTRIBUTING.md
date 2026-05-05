@@ -157,6 +157,61 @@ budgets, how to read the report, and how to debug a violation; see
 [ADR 0005](docs/adr/0005-lighthouse-budget-verification.md) for the
 implementation rationale.
 
+## Translations
+
+The editor's UI is bilingual: Romanian (default for `ro-*` browser locales)
+and English (default for everything else). Translations live in the
+[`@sosb/i18n`](packages/i18n) package.
+
+### Adding a new editor string
+
+1. **Add the key** to the `EditorMessageKey` union in
+   `packages/i18n/src/locales/keys.ts`. Keys are dot-namespaced by surface
+   (e.g. `topbar.import`, `wizard.step.basics.title`,
+   `welcome.action.template`).
+2. **Add the English message** to `packages/i18n/src/locales/en.ts`. Use
+   title case for short button labels and sentence case for descriptions.
+3. **Add the Romanian message** to `packages/i18n/src/locales/ro.ts`. Use
+   proper diacritics (`ă`, `â`, `î`, `ș`, `ț`) and prefer formal/standard
+   Romanian over slang.
+4. **Use the key in code** via `useTranslator()` (Preact) or directly
+   through `createTranslator(...)` for non-Preact contexts.
+
+The catalog-parity vitest test fails CI if either locale is missing a key
+that the other defines, so the build won't merge until both catalogs are
+in sync.
+
+### Placeholders and pluralisation
+
+`@sosb/i18n` supports `{name}` interpolation and a single-form ICU plural:
+
+```
+"items.count": "{count, plural, one {# item} other {# items}}"
+```
+
+The same placeholder set must appear in every locale's version of a key —
+this is also enforced by the catalog-parity test.
+
+### Romanian translations are AI-drafted
+
+The current Romanian catalog (`packages/i18n/src/locales/ro.ts`) was
+drafted by an AI agent. **A native Romanian speaker should review it
+before public release.** The file's header comment lists specific keys
+where multiple acceptable Romanian translations exist; the reviewer
+should pick the house-style one.
+
+### What to translate (and what not to)
+
+| Translate                                 | Don't translate                          |
+| ----------------------------------------- | ---------------------------------------- |
+| User-visible button labels                | Code identifiers, package names          |
+| Form field legends and placeholders       | Error codes (e.g. `E_SCHEMA_INVALID`)    |
+| Headings, instructions, help text         | URLs, file paths, programmatic constants |
+| Confirmation dialogs and success messages | Block-type ids in the schema             |
+
+Site-author content (the org's own page text) is owned by the editor's
+schema, not by `@sosb/i18n`.
+
 ## Filing issues
 
 Issues live on GitHub. See [`docs/agents/issue-tracker.md`](docs/agents/issue-tracker.md)
