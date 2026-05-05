@@ -160,4 +160,40 @@ main { display: block; }
   font-size: 0.875rem;
   color: var(--color-muted);
 }
+[data-block="embed"] {
+  margin: var(--space-lg) 0;
+  padding: 0;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-muted);
+}
+[data-block="embed"].embed--lazy {
+  width: 100%;
+  position: relative;
+}
+[data-block="embed"] iframe {
+  border: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+[data-block="embed"] .embed__placeholder {
+  width: 100%;
+  height: 100%;
+  background: var(--color-muted);
+}
+[data-block="embed"].embed--blockquote {
+  background: var(--color-bg);
+  border: 1px solid var(--color-muted);
+  padding: var(--space-md);
+}
+[data-block="embed"] .embed__title {
+  margin: 0 0 var(--space-sm) 0;
+  font-family: var(--font-headline);
+  color: var(--color-primary);
+}
+[data-block="embed"] .embed__link a {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
 `.trim();

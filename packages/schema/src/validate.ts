@@ -262,6 +262,12 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
       }
       break;
     }
+    case "embed": {
+      // Schema-level validation already enforces title presence and URL/provider
+      // match. A future quality nudge could warn on very short titles; not
+      // included today.
+      break;
+    }
     default: {
       // Exhaustiveness assertion: every known block must have a case branch.
       const _exhaustive: never = block;

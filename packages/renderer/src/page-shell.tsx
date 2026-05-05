@@ -4,6 +4,7 @@ import type {
   Site,
   BlockEnvelope,
   ContactCardBlock,
+  EmbedBlock,
   HeroBlock,
   ValueListBlock,
 } from "@sosb/schema";
@@ -11,6 +12,8 @@ import { isKnownBlockType } from "@sosb/schema";
 import { Hero } from "./blocks/hero.js";
 import { ValueList } from "./blocks/value-list.js";
 import { ContactCard } from "./blocks/contact-card.js";
+import { Embed, pageHasLazyEmbed, EMBED_LOADER_MARKER } from "./blocks/embed.js";
+import { EMBED_LAZY_LOAD_SCRIPT } from "./blocks/embed-lazy-loader.js";
 import { navPagesFor, pagePath } from "./routing.js";
 
 /**
@@ -58,6 +61,9 @@ function renderBlock(block: BlockEnvelope): preact.JSX.Element | null {
   if (block.type === "contactCard") {
     return <ContactCard block={block as unknown as ContactCardBlock} />;
   }
+  if (block.type === "embed") {
+    return <Embed block={block as unknown as EmbedBlock} />;
+  }
   return null;
 }
 
@@ -67,6 +73,7 @@ export function PageShell(props: { site: Site; page: Page; css: string }): preac
   const description = pageDescription(site, page);
   const navPages = navPagesFor(site, page);
   const activeHref = pagePath(site, page);
+  const hasLazyEmbed = pageHasLazyEmbed(page.blocks);
 
   return (
     <html lang={page.lang}>
@@ -121,6 +128,12 @@ export function PageShell(props: { site: Site; page: Page; css: string }): preac
             );
           })}
         </main>
+        {hasLazyEmbed && (
+          <script
+            {...{ [EMBED_LOADER_MARKER]: "" }}
+            dangerouslySetInnerHTML={{ __html: EMBED_LAZY_LOAD_SCRIPT }}
+          />
+        )}
       </body>
     </html>
   );
