@@ -1,12 +1,13 @@
 # @sosb/zip
 
-Bidirectional import / export with round-trip preservation.
+Bidirectional import / export with round-trip preservation, plus the
+user-facing `DEPLOY.md` generator.
 
 `exportToZip(siteData, vfs)` produces a `Blob` with the v1 PRD layout —
-`data.json` + `assets/` + (placeholder) `dist/` + (placeholder)
-`DEPLOY.md`. `importFromZip(blob)` reads the blob back into a
-validated `siteData` plus a `MemoryDriver` holding the asset bytes,
-running `@sosb/schema`'s `migrateSite` on the way in.
+`data.json` + `assets/` + (placeholder) `dist/` + `DEPLOY.md`.
+`importFromZip(blob)` reads the blob back into a validated `siteData`
+plus a `MemoryDriver` holding the asset bytes, running `@sosb/schema`'s
+`migrateSite` on the way in.
 
 ## Surface
 
@@ -14,15 +15,19 @@ running `@sosb/schema`'s `migrateSite` on the way in.
 import {
   exportToZip,
   importFromZip,
+  generateDeployMd,
   ZipImportError,
   type ZipImportErrorCode,
   type ImportResult,
+  type DeployLanguage,
+  type DeployMdInput,
 } from "@sosb/zip";
 ```
 
 ```ts
 function exportToZip(siteData: unknown, vfs: Vfs): Promise<Blob>;
 function importFromZip(blob: Blob): Promise<ImportResult>;
+function generateDeployMd(input: DeployMdInput): string;
 
 interface ImportResult {
   siteData: Site; // validated and migrated
@@ -37,6 +42,31 @@ byte-identical zip across calls. The same `Blob` can be fed back to
 `importFromZip → exportToZip` indefinitely without drift. This is the
 contract that lets users edit, export, re-import, and re-export
 without their data accreting compression or timestamp noise.
+
+## DEPLOY.md generator
+
+```ts
+import { generateDeployMd } from "@sosb/zip";
+
+const md = generateDeployMd({
+  language: "ro", // or "en"
+  org: { name: "Asociația Studențească HISTORIPOL" },
+  siteUrl: "https://historipol.ro", // optional
+  customDomain: "historipol.ro", // optional
+});
+// md is the full DEPLOY.md text, ready to write into the export zip
+// or render in the in-app guide modal.
+```
+
+`generateDeployMd` is the user-facing handoff generator: every exported
+zip ships a `DEPLOY.md` walking the user through Cloudflare Pages
+deployment in their editor language (RO / EN), and the in-app "Open
+guide" modal renders the same string this function produces.
+
+See [`docs/adr/0027-deploy-md-generator.md`](../../docs/adr/0027-deploy-md-generator.md)
+for the design decisions, [`docs/deploy/cloudflare-pages.md`](../../docs/deploy/cloudflare-pages.md)
+for the maintainer-facing reference, and the test golden files at
+`test/__golden__/` for representative output.
 
 ## Error handling
 
@@ -58,7 +88,8 @@ For `invalidShape`, the full `ValidationResult` is attached on
 
 See `docs/adr/0003-vfs-and-zip-import-export.md` for the zip-library
 choice (fflate), the layout, and the schema-migration policy on
-import.
+import. See `docs/adr/0027-deploy-md-generator.md` for the DEPLOY.md
+generator design.
 
 ## Out of scope (v1)
 
