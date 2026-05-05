@@ -1,0 +1,41 @@
+{
+  "name": "student-org-site-builder",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Free, open-source, no-backend site builder for student organizations.",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@10.33.3",
+  "engines": {
+    "node": ">=20.9.0",
+    "pnpm": ">=10.0.0"
+  },
+  "scripts": {
+    "typecheck": "pnpm -r --if-present run typecheck",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "build": "pnpm -r --if-present run build"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.17.0",
+    "@playwright/test": "1.49.1",
+    "@sosb/editor-app": "workspace:*",
+    "@sosb/renderer": "workspace:*",
+    "@sosb/schema": "workspace:*",
+    "@types/node": "20.17.10",
+    "esbuild": "0.24.0",
+    "eslint": "9.17.0",
+    "eslint-config-prettier": "9.1.0",
+    "globals": "15.14.0",
+    "preact": "^10.29.1",
+    "prettier": "3.4.2",
+    "typescript": "5.7.2",
+    "typescript-eslint": "8.18.2",
+    "vite": "6.0.5",
+    "vitest": "2.1.8"
+  }
+}

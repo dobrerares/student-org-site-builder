@@ -1,0 +1,17 @@
+node_modules
+dist
+build
+coverage
+playwright-report
+test-results
+.vite
+pnpm-lock.yaml
+
+# Pre-existing project documents are owned outside this scaffolding;
+# don't reformat them here.
+docs/PRD.md
+LICENSE
+
+# Renderer golden-file snapshots are byte-exact captures of the renderer's
+# own output; reformatting them would break the regression contract.
+packages/*/test/__golden__/**
