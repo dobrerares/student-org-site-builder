@@ -71,7 +71,18 @@ function themeCssFor(themeId: string): string {
 }
 
 export { STUB_THEME_ID } from "./themes/stub.js";
-export { homePageIndex, navPagesFor, pageDistPath, pagePath } from "./routing.js";
+export {
+  homePageIndex,
+  homePagePathForLanguage,
+  hreflangEntriesFor,
+  languageHomeIndex,
+  languageSwitcherEntriesFor,
+  nativeLanguageName,
+  navPagesFor,
+  pageDistPath,
+  pagePath,
+} from "./routing.js";
+export type { HreflangEntry, LanguageSwitcherEntry } from "./routing.js";
 export { EMBED_LAZY_LOAD_SCRIPT } from "./blocks/embed-lazy-loader.js";
 export { resolveEmbed } from "./blocks/embed.js";
 export {

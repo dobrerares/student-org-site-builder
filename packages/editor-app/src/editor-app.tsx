@@ -32,7 +32,7 @@ import { fieldsFromSchema } from "./form-generator.js";
 import { SpineForm, applyPatch } from "./spine-form.js";
 import { iframeSrcdoc } from "./iframe-srcdoc.js";
 import { PagesList } from "./pages-list.js";
-import { addPage, clonePage, deletePage, movePage } from "./pages-ops.js";
+import { addLanguageVersion, addPage, clonePage, deletePage, movePage } from "./pages-ops.js";
 import { createPreviewHost } from "@sosb/preview-bridge";
 import { createEditorState, type EditorState } from "@sosb/editor-state";
 
@@ -139,6 +139,14 @@ export function EditorApp(props: EditorAppProps): JSX.Element {
     else if (activePageIndex === target) setActivePageIndex(index);
   }
 
+  function handleAddLanguageVersion(index: number, targetLang: string): void {
+    state.update((draft) => {
+      Object.assign(draft, addLanguageVersion(draft, index, targetLang));
+    });
+    // Jump to the newly-added counterpart (always last in pages[]).
+    setActivePageIndex(snapshot.pages.length);
+  }
+
   const editorPane = (
     <section data-testid="editor-pane">
       <PagesList
@@ -149,6 +157,7 @@ export function EditorApp(props: EditorAppProps): JSX.Element {
         onClone={handleClonePage}
         onDelete={handleDeletePage}
         onMove={handleMovePage}
+        onAddLanguageVersion={handleAddLanguageVersion}
       />
       <SpineForm fields={fields} site={snapshot} onPatch={patch} />
     </section>
