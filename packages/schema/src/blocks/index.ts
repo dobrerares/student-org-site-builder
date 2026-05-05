@@ -12,6 +12,7 @@ import { RichTextBlockSchema } from "./rich-text.js";
 import { CtaBannerBlockSchema } from "./cta-banner.js";
 import { PartnerLogosBlockSchema } from "./partner-logos.js";
 import { ImageGalleryBlockSchema } from "./image-gallery.js";
+import { DocumentDownloadsBlockSchema } from "./document-downloads.js";
 
 export { HeroBlockSchema, HeroDataSchema, HERO_BLOCK_VERSION } from "./hero.js";
 export type { HeroBlock, HeroData } from "./hero.js";
@@ -139,6 +140,19 @@ export type {
   CtaButton,
   CtaButtonStyle,
 } from "./cta-banner.js";
+export {
+  DocumentAssetRefSchema,
+  DocumentDownloadFileSchema,
+  DocumentDownloadsBlockSchema,
+  DocumentDownloadsDataSchema,
+  DOCUMENT_DOWNLOADS_BLOCK_VERSION,
+} from "./document-downloads.js";
+export type {
+  DocumentAssetRef,
+  DocumentDownloadFile,
+  DocumentDownloadsBlock,
+  DocumentDownloadsData,
+} from "./document-downloads.js";
 
 /**
  * The block envelope is `{ id, type, version, data }`. This generic envelope
@@ -176,6 +190,7 @@ export const KnownBlockSchemas = {
   ctaBanner: CtaBannerBlockSchema,
   partnerLogos: PartnerLogosBlockSchema,
   imageGallery: ImageGalleryBlockSchema,
+  documentDownloads: DocumentDownloadsBlockSchema,
 } as const;
 
 export type KnownBlockType = keyof typeof KnownBlockSchemas;

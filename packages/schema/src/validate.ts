@@ -183,31 +183,40 @@ function runSiteRules(site: z.infer<typeof SiteSchema>, result: ValidationResult
     }
   });
 
-  // Warnings: each known block on each page is rule-checked too.
+  // Errors + warnings: each known block on each page is parsed against
+  // its specific schema (deeper than the envelope) and rule-checked.
+  // Deep-schema parse failures become `error` issues with paths rebased
+  // onto the site, so callers see schema violations regardless of where
+  // they nest. Quality nudges (warnings) come from `runBlockRules`.
   site.pages.forEach((page, pageIdx) => {
     page.blocks.forEach((block, blockIdx) => {
       if (isKnownBlockType(block.type)) {
         const knownSchema = KnownBlockSchemas[block.type] as unknown as z.ZodType;
         const known = knownSchema.safeParse(block);
-        if (known.success) {
-          const childResult = emptyResult();
-          runBlockRules(
-            known.data as z.infer<(typeof KnownBlockSchemas)[keyof typeof KnownBlockSchemas]>,
-            childResult,
-          );
-          for (const issue of [
-            ...childResult.errors,
-            ...childResult.warnings,
-            ...childResult.info,
-          ]) {
-            const rebased: ValidationIssue = {
-              ...issue,
-              path: ["pages", pageIdx, "blocks", blockIdx, ...issue.path],
-            };
-            if (issue.severity === "error") result.errors.push(rebased);
-            else if (issue.severity === "warning") result.warnings.push(rebased);
-            else result.info.push(rebased);
+        if (!known.success) {
+          for (const issue of known.error.issues) {
+            result.errors.push({
+              severity: "error",
+              path: ["pages", pageIdx, "blocks", blockIdx, ...pathFromZod(issue.path)],
+              code: `block.${block.type}.${issue.code}`,
+              message: issue.message,
+            });
           }
+          return;
+        }
+        const childResult = emptyResult();
+        runBlockRules(
+          known.data as z.infer<(typeof KnownBlockSchemas)[keyof typeof KnownBlockSchemas]>,
+          childResult,
+        );
+        for (const issue of [...childResult.errors, ...childResult.warnings, ...childResult.info]) {
+          const rebased: ValidationIssue = {
+            ...issue,
+            path: ["pages", pageIdx, "blocks", blockIdx, ...issue.path],
+          };
+          if (issue.severity === "error") result.errors.push(rebased);
+          else if (issue.severity === "warning") result.warnings.push(rebased);
+          else result.info.push(rebased);
         }
       }
     });
@@ -410,6 +419,14 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
       // `min(1)` rule. Block-level rules are reserved for quality nudges
       // that the schema cannot express; v1 leaves this branch as the
       // exhaustiveness anchor.
+      break;
+    }
+    case "documentDownloads": {
+      // No quality nudges in v1. The schema's `min(1)` on files and on
+      // every label is enforced at parse-time as errors; the upload
+      // pipeline (#21) enforces label / size / mime at upload time. If
+      // future user-research surfaces nudges (missing description on a
+      // doc, etc.) they land here.
       break;
     }
     default: {

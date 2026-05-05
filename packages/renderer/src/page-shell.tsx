@@ -6,6 +6,7 @@ import type {
   ContactCardBlock,
   CtaBannerBlock,
   CustomHtmlBlock,
+  DocumentDownloadsBlock,
   EmbedBlock,
   FaqBlock,
   HeroBlock,
@@ -33,6 +34,7 @@ import { ActivitiesList } from "./blocks/activities-list.js";
 import { PartnerLogos } from "./blocks/partner-logos.js";
 import { ImageGallery } from "./blocks/image-gallery.js";
 import { LIGHTBOX_SCRIPT } from "./lightbox-script.js";
+import { DocumentDownloads } from "./blocks/document-downloads.js";
 import { navPagesFor, pagePath } from "./routing.js";
 
 /**
@@ -119,6 +121,9 @@ function renderBlock(block: BlockEnvelope): preact.JSX.Element | null {
   }
   if (block.type === "imageGallery") {
     return <ImageGallery block={block as unknown as ImageGalleryBlock} />;
+  }
+  if (block.type === "documentDownloads") {
+    return <DocumentDownloads block={block as unknown as DocumentDownloadsBlock} />;
   }
   return null;
 }
