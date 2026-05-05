@@ -57,6 +57,80 @@ main { display: block; }
   max-width: 100%;
   height: auto;
 }
+[data-block="ctaBanner"] {
+  padding: var(--space-xl) var(--space-md);
+  background: var(--color-primary);
+  color: var(--color-bg);
+}
+[data-block="ctaBanner"] .ctaBanner__inner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  flex-wrap: wrap;
+}
+[data-block="ctaBanner"] .ctaBanner__copy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+[data-block="ctaBanner"] .ctaBanner__title {
+  font-family: var(--font-headline);
+  margin: 0 0 var(--space-sm) 0;
+  color: var(--color-bg);
+}
+[data-block="ctaBanner"] .ctaBanner__subtitle {
+  margin: 0;
+  color: var(--color-bg);
+}
+[data-block="ctaBanner"] .ctaBanner__actions {
+  flex: 0 0 auto;
+}
+[data-block="ctaBanner"] .ctaBanner__media {
+  flex: 1 1 100%;
+  margin-top: var(--space-md);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+[data-block="ctaBanner"] .ctaBanner__media img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+[data-block="ctaBanner"] .ctaBanner__button {
+  display: inline-block;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  font-family: var(--font-body);
+  font-weight: 600;
+}
+[data-block="ctaBanner"] .ctaBanner__button--primary {
+  background: var(--color-accent);
+  color: var(--color-fg);
+  border: 2px solid var(--color-accent);
+}
+[data-block="ctaBanner"] .ctaBanner__button--secondary {
+  background: transparent;
+  color: var(--color-bg);
+  border: 2px solid var(--color-bg);
+}
+[data-block="ctaBanner"].ctaBanner--solid {
+  background: var(--color-primary);
+}
+@media (max-width: 640px) {
+  [data-block="ctaBanner"] .ctaBanner__inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  [data-block="ctaBanner"] .ctaBanner__actions {
+    width: 100%;
+  }
+  [data-block="ctaBanner"] .ctaBanner__button {
+    display: block;
+    text-align: center;
+  }
+}
 [data-block="valueList"] {
   padding: var(--space-xl) var(--space-md);
 }

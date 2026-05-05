@@ -9,6 +9,7 @@ import { ActivitiesListBlockSchema } from "./activities-list.js";
 import { TeamGridBlockSchema } from "./team-grid.js";
 import { QuoteBlockSchema } from "./quote.js";
 import { RichTextBlockSchema } from "./rich-text.js";
+import { CtaBannerBlockSchema } from "./cta-banner.js";
 
 export { HeroBlockSchema, HeroDataSchema, HERO_BLOCK_VERSION } from "./hero.js";
 export type { HeroBlock, HeroData } from "./hero.js";
@@ -97,6 +98,22 @@ export {
 } from "./faq.js";
 export type { FaqBlock, FaqData, FaqItem } from "./faq.js";
 
+export {
+  CTA_BANNER_BLOCK_VERSION,
+  CtaBannerAssetRefSchema,
+  CtaBannerBlockSchema,
+  CtaBannerDataSchema,
+  CtaButtonSchema,
+  CtaButtonStyleSchema,
+} from "./cta-banner.js";
+export type {
+  CtaBannerAssetRef,
+  CtaBannerBlock,
+  CtaBannerData,
+  CtaButton,
+  CtaButtonStyle,
+} from "./cta-banner.js";
+
 /**
  * The block envelope is `{ id, type, version, data }`. This generic envelope
  * accepts any string `type` and any positive `version`, so unknown block
@@ -130,6 +147,7 @@ export const KnownBlockSchemas = {
   richText: RichTextBlockSchema,
   quote: QuoteBlockSchema,
   faq: FaqBlockSchema,
+  ctaBanner: CtaBannerBlockSchema,
 } as const;
 
 export type KnownBlockType = keyof typeof KnownBlockSchemas;

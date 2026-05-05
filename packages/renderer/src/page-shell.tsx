@@ -4,6 +4,7 @@ import type {
   Site,
   BlockEnvelope,
   ContactCardBlock,
+  CtaBannerBlock,
   CustomHtmlBlock,
   EmbedBlock,
   FaqBlock,
@@ -15,6 +16,7 @@ import type {
   ActivitiesListBlock,
 } from "@sosb/schema";
 import { isKnownBlockType } from "@sosb/schema";
+import { CtaBanner } from "./blocks/cta-banner.js";
 import { Faq } from "./blocks/faq.js";
 import { Hero } from "./blocks/hero.js";
 import { Quote } from "./blocks/quote.js";
@@ -93,6 +95,9 @@ function renderBlock(block: BlockEnvelope): preact.JSX.Element | null {
   }
   if (block.type === "faq") {
     return <Faq block={block as unknown as FaqBlock} />;
+  }
+  if (block.type === "ctaBanner") {
+    return <CtaBanner block={block as unknown as CtaBannerBlock} />;
   }
   return null;
 }
