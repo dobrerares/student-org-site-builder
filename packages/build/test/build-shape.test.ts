@@ -25,9 +25,17 @@ describe("build — output shape", () => {
     expect(dist.has("sitemap.xml")).toBe(true);
   });
 
-  test("contains exactly those three paths for a single-page site", () => {
+  test("contains exactly those four paths for a single-page site (incl. budget report)", () => {
+    // `_lighthouse-budget.json` is added by issue #41 / ADR 0005 — the per-page
+    // Lighthouse-budget verification artefact. The leading underscore signals
+    // "build metadata, not a hostable page".
     const dist = build(fixture);
-    expect([...dist.keys()].sort()).toEqual(["index.html", "robots.txt", "sitemap.xml"]);
+    expect([...dist.keys()].sort()).toEqual([
+      "_lighthouse-budget.json",
+      "index.html",
+      "robots.txt",
+      "sitemap.xml",
+    ]);
   });
 
   test("emits string contents at every path (text-only — assets land in #8)", () => {

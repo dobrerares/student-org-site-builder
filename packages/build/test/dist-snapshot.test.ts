@@ -40,6 +40,12 @@ describe("build — end-to-end snapshot", () => {
         "__golden__/with-site-url/sitemap.xml",
       );
     });
+
+    test("dist/_lighthouse-budget.json matches its golden file", async () => {
+      await expect(dist.get("_lighthouse-budget.json")!).toMatchFileSnapshot(
+        "__golden__/with-site-url/_lighthouse-budget.json",
+      );
+    });
   });
 
   describe("without siteUrl (renderer-only HTML, relative-loc sitemap, no robots Sitemap)", () => {
@@ -60,6 +66,12 @@ describe("build — end-to-end snapshot", () => {
     test("dist/sitemap.xml matches its golden file", async () => {
       await expect(dist.get("sitemap.xml")!).toMatchFileSnapshot(
         "__golden__/no-site-url/sitemap.xml",
+      );
+    });
+
+    test("dist/_lighthouse-budget.json matches its golden file", async () => {
+      await expect(dist.get("_lighthouse-budget.json")!).toMatchFileSnapshot(
+        "__golden__/no-site-url/_lighthouse-budget.json",
       );
     });
   });

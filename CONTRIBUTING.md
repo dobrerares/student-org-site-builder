@@ -135,15 +135,27 @@ All scripts run from the repo root.
 
 ## Continuous integration
 
-`.github/workflows/ci.yml` runs four jobs in parallel on every PR against
-`main`:
+`.github/workflows/ci.yml` runs five jobs on every PR against `main`:
 
 1. **Typecheck** — `pnpm typecheck`
 2. **Lint** — `pnpm lint` and `pnpm format:check`
 3. **Test** — `pnpm test`
 4. **Build** — `pnpm build`
+5. **Lighthouse** — runs after Build. Materialises a representative built
+   fixture and audits it; asserts 95+ on Performance, Accessibility, Best
+   Practices, and SEO.
 
-All four must pass before a PR is mergeable.
+All five must pass before a PR is mergeable.
+
+## Performance budgets
+
+Every `build()` call enforces per-page byte budgets (HTML, CSS gzipped, JS,
+hero image) and emits a `dist/_lighthouse-budget.json` audit report. CI
+upgrades budget warnings to hard errors via `errorOnBudget: true`. See
+[`docs/performance-budgets.md`](docs/performance-budgets.md) for the
+budgets, how to read the report, and how to debug a violation; see
+[ADR 0005](docs/adr/0005-lighthouse-budget-verification.md) for the
+implementation rationale.
 
 ## Filing issues
 

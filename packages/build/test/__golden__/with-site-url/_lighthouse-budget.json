@@ -1,0 +1,30 @@
+{
+  "status": "pass",
+  "pages": {
+    "index.html": {
+      "status": "pass",
+      "metrics": {
+        "html": {
+          "status": "pass",
+          "limitBytes": 51200,
+          "bytes": 2496
+        },
+        "css": {
+          "status": "pass",
+          "limitBytes": 15360,
+          "bytes": 541
+        },
+        "js": {
+          "status": "pass",
+          "limitBytes": 10240,
+          "bytes": 0
+        },
+        "hero": {
+          "status": "skipped",
+          "limitBytes": 204800,
+          "note": "hero image is hosted off-site (https://stub.example.org/assets/hero.jpg); cannot measure from dist"
+        }
+      }
+    }
+  }
+}
