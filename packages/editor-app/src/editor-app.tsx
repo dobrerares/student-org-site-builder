@@ -63,8 +63,7 @@ export function EditorApp(props: EditorAppProps): JSX.Element {
 
   // Track viewport for the layout switch. Default to 1200 in non-DOM
   // environments so SSR / tests render the two-pane layout by default.
-  const initialWidth =
-    typeof window === "undefined" ? 1200 : window.innerWidth;
+  const initialWidth = typeof window === "undefined" ? 1200 : window.innerWidth;
   const [viewportWidth, setViewportWidth] = useState<number>(initialWidth);
   useEffect(() => {
     const onResize = (): void => {
@@ -92,7 +91,7 @@ export function EditorApp(props: EditorAppProps): JSX.Element {
     host.postSiteData(snapshot, snapshot.theme.id);
   }, [snapshot]);
 
-  function patch(path: readonly string[], value: unknown): void {
+  function patch(path: readonly (string | number)[], value: unknown): void {
     state.update((draft) => {
       Object.assign(draft, applyPatch(draft, path, value));
     });

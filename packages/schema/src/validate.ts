@@ -99,11 +99,20 @@ export function validateBlock(data: unknown): ValidationResult {
 
   const block = envelope.data;
   if (isKnownBlockType(block.type)) {
-    const knownSchema = KnownBlockSchemas[block.type];
+    // Indexed-access into `KnownBlockSchemas` returns a union of schema
+    // types whose `safeParse` overloads conflict under
+    // `exactOptionalPropertyTypes`. Cast to the most general schema shape
+    // (any Zod schema) — the runtime behaviour is identical, and the
+    // resulting parsed value is funnelled back through `runBlockRules`'s
+    // own typed switch.
+    const knownSchema = KnownBlockSchemas[block.type] as unknown as z.ZodType;
     const knownParse = knownSchema.safeParse(data);
     result.errors.push(...zodIssuesToErrors(knownParse, `block.${block.type}`));
     if (knownParse.success) {
-      runBlockRules(knownParse.data, result);
+      runBlockRules(
+        knownParse.data as z.infer<(typeof KnownBlockSchemas)[keyof typeof KnownBlockSchemas]>,
+        result,
+      );
     }
   } else {
     // Unknown block type: envelope already passed, so the data round-trips.
@@ -151,11 +160,14 @@ function runSiteRules(site: z.infer<typeof SiteSchema>, result: ValidationResult
   site.pages.forEach((page, pageIdx) => {
     page.blocks.forEach((block, blockIdx) => {
       if (isKnownBlockType(block.type)) {
-        const knownSchema = KnownBlockSchemas[block.type];
+        const knownSchema = KnownBlockSchemas[block.type] as unknown as z.ZodType;
         const known = knownSchema.safeParse(block);
         if (known.success) {
           const childResult = emptyResult();
-          runBlockRules(known.data, childResult);
+          runBlockRules(
+            known.data as z.infer<(typeof KnownBlockSchemas)[keyof typeof KnownBlockSchemas]>,
+            childResult,
+          );
           for (const issue of [
             ...childResult.errors,
             ...childResult.warnings,
@@ -204,9 +216,23 @@ function runBlockRules(
       }
       break;
     }
+    case "valueList": {
+      // Quality nudge: a valueList with zero items renders as nothing useful.
+      // Schema-allowed (an empty array is a valid array); we surface it as a
+      // warning so the editor can prompt without blocking publish.
+      if (block.data.items.length === 0) {
+        result.warnings.push({
+          severity: "warning",
+          path: ["data", "items"],
+          code: "block.valueList.items.empty",
+          message: "valueList has no items. Add at least one value to make this block meaningful.",
+        });
+      }
+      break;
+    }
     default: {
       // Exhaustiveness assertion: every known block must have a case branch.
-      const _exhaustive: never = block.type;
+      const _exhaustive: never = block;
       void _exhaustive;
       break;
     }

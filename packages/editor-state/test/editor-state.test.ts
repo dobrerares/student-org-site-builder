@@ -3,12 +3,7 @@ import { MemoryDriver } from "@sosb/vfs";
 import type { Site } from "@sosb/schema";
 
 import minimal from "./fixtures/minimal-site.json" with { type: "json" };
-import {
-  AUTOSAVE_PATH,
-  createEditorState,
-  loadAutosave,
-  type EditorState,
-} from "../src/index.js";
+import { AUTOSAVE_PATH, createEditorState, loadAutosave, type EditorState } from "../src/index.js";
 
 const baseSite = minimal as unknown as Site;
 

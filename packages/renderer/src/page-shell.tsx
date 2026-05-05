@@ -1,7 +1,8 @@
 /** @jsxImportSource preact */
-import type { Page, Site, BlockEnvelope, HeroBlock } from "@sosb/schema";
+import type { Page, Site, BlockEnvelope, HeroBlock, ValueListBlock } from "@sosb/schema";
 import { isKnownBlockType } from "@sosb/schema";
 import { Hero } from "./blocks/hero.js";
+import { ValueList } from "./blocks/value-list.js";
 
 /**
  * The page shell.
@@ -38,10 +39,12 @@ function pageDescription(site: Site, page: Page): string | undefined {
 }
 
 function renderBlock(block: BlockEnvelope): preact.JSX.Element | null {
+  if (!isKnownBlockType(block.type)) return null;
   if (block.type === "hero") {
-    if (isKnownBlockType(block.type)) {
-      return <Hero block={block as unknown as HeroBlock} />;
-    }
+    return <Hero block={block as unknown as HeroBlock} />;
+  }
+  if (block.type === "valueList") {
+    return <ValueList block={block as unknown as ValueListBlock} />;
   }
   return null;
 }

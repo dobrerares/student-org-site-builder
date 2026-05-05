@@ -1,8 +1,26 @@
 import { z } from "zod";
 import { HeroBlockSchema } from "./hero.js";
+import { ValueListBlockSchema } from "./value-list.js";
 
 export { HeroBlockSchema, HeroDataSchema, HERO_BLOCK_VERSION } from "./hero.js";
 export type { HeroBlock, HeroData } from "./hero.js";
+export {
+  VALUE_LIST_BLOCK_VERSION,
+  VALUE_LIST_COLUMNS,
+  VALUE_LIST_ICON_NAMES,
+  VALUE_LIST_LAYOUTS,
+  ValueListBlockSchema,
+  ValueListDataSchema,
+  ValueListItemSchema,
+} from "./value-list.js";
+export type {
+  ValueListBlock,
+  ValueListColumns,
+  ValueListData,
+  ValueListIconName,
+  ValueListItem,
+  ValueListLayout,
+} from "./value-list.js";
 
 /**
  * The block envelope is `{ id, type, version, data }`. This generic envelope
@@ -28,6 +46,7 @@ export type BlockEnvelope = z.infer<typeof BlockEnvelopeSchema>;
  */
 export const KnownBlockSchemas = {
   hero: HeroBlockSchema,
+  valueList: ValueListBlockSchema,
 } as const;
 
 export type KnownBlockType = keyof typeof KnownBlockSchemas;
