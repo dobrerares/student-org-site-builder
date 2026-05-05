@@ -1,5 +1,6 @@
 import { SITE_SCHEMA_VERSION } from "./site.js";
 import { HERO_BLOCK_VERSION } from "./blocks/hero.js";
+import { EMBED_BLOCK_VERSION } from "./blocks/embed.js";
 
 /**
  * One site-level migration. Bumps from `from` to `from + 1`. The function is
@@ -88,6 +89,7 @@ export function migrateSite(data: unknown): SiteMigrationResult {
  */
 const KNOWN_BLOCK_VERSIONS: Record<string, number> = {
   hero: HERO_BLOCK_VERSION,
+  embed: EMBED_BLOCK_VERSION,
 };
 
 /**
