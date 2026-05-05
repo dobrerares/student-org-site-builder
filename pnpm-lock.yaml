@@ -121,6 +121,9 @@ importers:
       '@types/jsdom':
         specifier: ^21.1.7
         version: 21.1.7
+      axe-core:
+        specifier: ^4.11.4
+        version: 4.11.4
       jsdom:
         specifier: ^25.0.1
         version: 25.0.1

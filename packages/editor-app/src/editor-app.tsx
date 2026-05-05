@@ -8,6 +8,10 @@
  *   single visible pane.
  * - A top bar with `Import`, `Export`, `Reset` buttons (wired to the
  *   `onImport`, `onExport`, `onReset` callbacks).
+ * - A health footer (always visible) showing aggregate validation counts.
+ *   Clicking the footer toggles the Site Health panel.
+ * - A pre-export confirmation dialog shown when the user clicks Export
+ *   and the current snapshot has any errors or warnings.
  *
  * Editor responsibilities:
  *
@@ -18,6 +22,8 @@
  *   the preview-bridge. The iframe also receives a `srcdoc` rewrite for
  *   the structural baseline (so the preview is correct from frame 0, even
  *   before the iframe's hypothetical message listener boots).
+ * - Re-run `validate()` on every snapshot change so the panel + footer
+ *   stay current.
  *
  * NOTE: this component intentionally has no module-level effects. It only
  * looks at `window.innerWidth` inside its own effect, which keeps it
@@ -25,8 +31,8 @@
  */
 import type { JSX } from "preact";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import type { Site } from "@sosb/schema";
-import { SiteSchema } from "@sosb/schema";
+import type { Site, ValidationIssue, ValidationResult } from "@sosb/schema";
+import { SiteSchema, validate } from "@sosb/schema";
 
 import { fieldsFromSchema } from "./form-generator.js";
 import { SpineForm, applyPatch } from "./spine-form.js";
@@ -35,6 +41,10 @@ import { PagesList } from "./pages-list.js";
 import { addLanguageVersion, addPage, clonePage, deletePage, movePage } from "./pages-ops.js";
 import { createPreviewHost } from "@sosb/preview-bridge";
 import { createEditorState, type EditorState } from "@sosb/editor-state";
+import { SiteHealthPanel } from "./site-health.js";
+import { HealthFooter } from "./health-footer.js";
+import { ExportConfirmDialog } from "./export-confirm.js";
+import { navigateToIssue } from "./issue-navigate.js";
 
 const MOBILE_BREAKPOINT_PX = 768;
 
@@ -63,6 +73,11 @@ export function EditorApp(props: EditorAppProps): JSX.Element {
 
   const fields = useMemo(() => fieldsFromSchema(SiteSchema), []);
 
+  // Validation result is recomputed on every snapshot change. `validate()`
+  // is pure / cheap — running it inline keeps the panel and footer
+  // perfectly in sync without a separate event channel.
+  const validationResult = useMemo<ValidationResult>(() => validate(snapshot), [snapshot]);
+
   // Track viewport for the layout switch. Default to 1200 in non-DOM
   // environments so SSR / tests render the two-pane layout by default.
   const initialWidth = typeof window === "undefined" ? 1200 : window.innerWidth;
@@ -88,6 +103,10 @@ export function EditorApp(props: EditorAppProps): JSX.Element {
   // Clamp the active index whenever pages mutate.
   const safeActivePageIndex = Math.min(activePageIndex, Math.max(snapshot.pages.length - 1, 0));
 
+  // Site Health panel disclosure + export-confirm dialog state.
+  const [panelOpen, setPanelOpen] = useState<boolean>(false);
+  const [exportDialog, setExportDialog] = useState<ValidationResult | null>(null);
+
   // Iframe + preview-bridge wiring. The iframe ref is set when the iframe
   // mounts; on every snapshot change we (a) update the iframe's srcdoc
   // baseline and (b) post a `siteData` envelope through the bridge for any
@@ -99,6 +118,10 @@ export function EditorApp(props: EditorAppProps): JSX.Element {
     const host = createPreviewHost({ iframe });
     host.postSiteData(snapshot, snapshot.theme.id, safeActivePageIndex);
   }, [snapshot, safeActivePageIndex]);
+
+  // Root ref so issue-navigation queries land in the editor's own DOM
+  // tree (and not whatever the host page might have rendered).
+  const rootRef = useRef<HTMLDivElement | null>(null);
 
   function patch(path: readonly (string | number)[], value: unknown): void {
     state.update((draft) => {
@@ -147,6 +170,31 @@ export function EditorApp(props: EditorAppProps): JSX.Element {
     setActivePageIndex(snapshot.pages.length);
   }
 
+  function handleJump(issue: ValidationIssue): void {
+    const root = rootRef.current ?? document;
+    navigateToIssue(root, issue);
+  }
+
+  function handleExportClick(): void {
+    const result = validationResult;
+    if (result.errors.length === 0 && result.warnings.length === 0) {
+      // Clean: export immediately.
+      props.onExport?.(snapshot);
+      return;
+    }
+    // Open the confirmation dialog.
+    setExportDialog(result);
+  }
+
+  function handleExportConfirm(): void {
+    setExportDialog(null);
+    props.onExport?.(snapshot);
+  }
+
+  function handleExportCancel(): void {
+    setExportDialog(null);
+  }
+
   const editorPane = (
     <section data-testid="editor-pane">
       <PagesList
@@ -176,10 +224,10 @@ export function EditorApp(props: EditorAppProps): JSX.Element {
   );
 
   return (
-    <div data-testid="editor-app">
+    <div data-testid="editor-app" ref={rootRef}>
       <TopBar
         onImport={props.onImport}
-        onExport={() => props.onExport?.(snapshot)}
+        onExport={handleExportClick}
         onReset={props.onReset}
       />
       {isNarrow ? (
@@ -210,6 +258,24 @@ export function EditorApp(props: EditorAppProps): JSX.Element {
           {previewPane}
         </div>
       )}
+
+      {panelOpen ? (
+        <SiteHealthPanel result={validationResult} onJump={handleJump} />
+      ) : null}
+
+      <HealthFooter
+        result={validationResult}
+        onToggle={() => setPanelOpen((open) => !open)}
+        expanded={panelOpen}
+      />
+
+      {exportDialog !== null ? (
+        <ExportConfirmDialog
+          result={exportDialog}
+          onConfirm={handleExportConfirm}
+          onCancel={handleExportCancel}
+        />
+      ) : null}
     </div>
   );
 }
