@@ -3,6 +3,7 @@ import { HERO_BLOCK_VERSION } from "./blocks/hero.js";
 import { EMBED_BLOCK_VERSION } from "./blocks/embed.js";
 import { CTA_BANNER_BLOCK_VERSION } from "./blocks/cta-banner.js";
 import { PARTNER_LOGOS_BLOCK_VERSION } from "./blocks/partner-logos.js";
+import { IMAGE_GALLERY_BLOCK_VERSION } from "./blocks/image-gallery.js";
 
 /**
  * One site-level migration. Bumps from `from` to `from + 1`. The function is
@@ -94,6 +95,7 @@ const KNOWN_BLOCK_VERSIONS: Record<string, number> = {
   embed: EMBED_BLOCK_VERSION,
   ctaBanner: CTA_BANNER_BLOCK_VERSION,
   partnerLogos: PARTNER_LOGOS_BLOCK_VERSION,
+  imageGallery: IMAGE_GALLERY_BLOCK_VERSION,
 };
 
 /**
