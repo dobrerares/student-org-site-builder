@@ -12,6 +12,7 @@ import type {
   QuoteBlock,
   RichTextBlock,
   PartnerLogosBlock,
+  ImageGalleryBlock,
   TeamGridBlock,
   ValueListBlock,
   ActivitiesListBlock,
@@ -30,6 +31,8 @@ import { EMBED_LAZY_LOAD_SCRIPT } from "./blocks/embed-lazy-loader.js";
 import { CustomHtml } from "./blocks/custom-html.js";
 import { ActivitiesList } from "./blocks/activities-list.js";
 import { PartnerLogos } from "./blocks/partner-logos.js";
+import { ImageGallery } from "./blocks/image-gallery.js";
+import { LIGHTBOX_SCRIPT } from "./lightbox-script.js";
 import { navPagesFor, pagePath } from "./routing.js";
 
 /**
@@ -41,10 +44,20 @@ import { navPagesFor, pagePath } from "./routing.js";
  * `preact-render-to-string` emits the `<html>` element only — there is no
  * built-in way to model the doctype in JSX.
  *
+ * Lightbox wiring (issue #14): when at least one imageGallery on the page
+ * has `lightbox: true`, the shell appends a single page-global lightbox
+ * dialog scaffold and the inline vanilla-JS bootstrap. The script is
+ * shipped exactly once per page, regardless of how many galleries opt in.
+ *
  * SECURITY NOTE on dangerouslySetInnerHTML usage in this file:
  *  - The `<style>` block content is the renderer's own composed CSS string
  *    (token rule + theme CSS, both renderer-owned constants and validated
  *    schema values). It contains no user prose.
+ *  - The lightbox `<script>` content is the renderer-owned `LIGHTBOX_SCRIPT`
+ *    constant from `./lightbox-script.ts`. It is a pre-minified IIFE that
+ *    references DOM data attributes only — it never embeds user prose,
+ *    user-supplied URLs, or schema strings. The script is the same byte
+ *    payload on every render.
  *  - The unknown-block HTML comment is constructed from a block `type` that
  *    has been parsed against the BlockEnvelope schema (must be a non-empty
  *    string) and then comment-escaped via `escapeHtmlComment` to remove the
@@ -104,7 +117,27 @@ function renderBlock(block: BlockEnvelope): preact.JSX.Element | null {
   if (block.type === "partnerLogos") {
     return <PartnerLogos block={block as unknown as PartnerLogosBlock} />;
   }
+  if (block.type === "imageGallery") {
+    return <ImageGallery block={block as unknown as ImageGalleryBlock} />;
+  }
   return null;
+}
+
+/**
+ * Does the page contain at least one imageGallery whose lightbox is on?
+ *
+ * The lightbox dialog scaffold and the inline JS are page-global; we want
+ * them only when at least one block opted in. The check is intentionally
+ * tolerant — `block.data` is `looseObject`-typed, so we read `lightbox`
+ * via a typeof check.
+ */
+function pageNeedsLightbox(page: Page): boolean {
+  for (const block of page.blocks) {
+    if (block.type !== "imageGallery") continue;
+    const flag = (block.data as { lightbox?: unknown }).lightbox;
+    if (flag === true) return true;
+  }
+  return false;
 }
 
 export function PageShell(props: { site: Site; page: Page; css: string }): preact.JSX.Element {
@@ -114,6 +147,7 @@ export function PageShell(props: { site: Site; page: Page; css: string }): preac
   const navPages = navPagesFor(site, page);
   const activeHref = pagePath(site, page);
   const hasLazyEmbed = pageHasLazyEmbed(page.blocks);
+  const needsLightbox = pageNeedsLightbox(page);
 
   return (
     <html lang={page.lang}>
@@ -174,8 +208,74 @@ export function PageShell(props: { site: Site; page: Page; css: string }): preac
             dangerouslySetInnerHTML={{ __html: EMBED_LAZY_LOAD_SCRIPT }}
           />
         )}
+        {needsLightbox && <LightboxScaffold />}
+        {needsLightbox && (
+          <script
+            data-sosb-lightbox-script
+            dangerouslySetInnerHTML={{ __html: LIGHTBOX_SCRIPT }}
+          />
+        )}
       </body>
     </html>
+  );
+}
+
+/**
+ * Page-global lightbox dialog scaffold. One per page; the JS bootstrap
+ * routes events from each gallery's triggers into this single dialog.
+ *
+ * The dialog uses semantic ARIA (`role="dialog"`, `aria-modal="true"`,
+ * `aria-label="Image preview"`) so screen-readers announce it correctly,
+ * and starts in the closed state with a `hidden` attribute. The script
+ * toggles `hidden` and a `data-open` attribute the theme CSS can hook
+ * into for entry transitions if it wants.
+ */
+function LightboxScaffold(): preact.JSX.Element {
+  return (
+    <div
+      data-sosb-lightbox
+      role="dialog"
+      aria-modal="true"
+      aria-label="Image preview"
+      hidden
+      tabindex={-1}
+    >
+      <div class="sosb-lightbox__backdrop" />
+      <div class="sosb-lightbox__panel">
+        <button
+          type="button"
+          class="sosb-lightbox__btn sosb-lightbox__btn--prev"
+          data-sosb-lightbox-prev
+          aria-label="Previous image"
+        >
+          {"‹"}
+        </button>
+        <figure class="sosb-lightbox__figure">
+          <img data-sosb-lightbox-img src="" alt="" />
+          <figcaption
+            data-sosb-lightbox-caption
+            class="sosb-lightbox__caption"
+            hidden
+          />
+        </figure>
+        <button
+          type="button"
+          class="sosb-lightbox__btn sosb-lightbox__btn--next"
+          data-sosb-lightbox-next
+          aria-label="Next image"
+        >
+          {"›"}
+        </button>
+        <button
+          type="button"
+          class="sosb-lightbox__btn sosb-lightbox__btn--close"
+          data-sosb-lightbox-close
+          aria-label="Close image preview"
+        >
+          {"×"}
+        </button>
+      </div>
+    </div>
   );
 }
 

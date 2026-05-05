@@ -405,6 +405,13 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
       // (the alt-text source) and AssetRef alt fields.
       break;
     }
+    case "imageGallery": {
+      // Schema-level alt enforcement is already an `error` via the schema's
+      // `min(1)` rule. Block-level rules are reserved for quality nudges
+      // that the schema cannot express; v1 leaves this branch as the
+      // exhaustiveness anchor.
+      break;
+    }
     default: {
       // Exhaustiveness assertion: every known block must have a case branch.
       const _exhaustive: never = block;
