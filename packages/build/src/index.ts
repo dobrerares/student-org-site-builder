@@ -9,14 +9,14 @@
  * called from the in-browser editor (#7) and the Electron build path with no
  * adapter layer.
  *
- * v1 is single-page, single-language: only the home page renders to
- * `index.html`, the sitemap lists exactly one URL, and there are no
- * `hreflang` alternates. Multi-page routing and `hreflang` annotations land
- * in #23 + #24. See ADR 0004 for the design.
+ * Multi-page output (since #23): the home page lands at `index.html`. Every
+ * other page lands at `<slug>/index.html`. The sitemap lists every page. The
+ * home-page convention is shared with the renderer (`pageDistPath`,
+ * `pagePath`); see ADR 0007. `hreflang` annotations remain owned by #24.
  */
 
-import type { Site } from "@sosb/schema";
-import { renderSite } from "@sosb/renderer";
+import type { Page, Site } from "@sosb/schema";
+import { pageDistPath, pagePath, renderSite } from "@sosb/renderer";
 import {
   measureBudgets,
   formatBudgetViolations,
@@ -66,10 +66,10 @@ export interface BuildOptions {
 /**
  * The dist folder, modelled as a `Map<string, string>`.
  *
- * Keys are POSIX-style relative paths (`index.html`, `robots.txt`,
- * `sitemap.xml`). Values are UTF-8 text contents. Binary assets (images,
- * documents) are out of scope for v1's build pipeline — the asset pipeline
- * is #8 / #21 and will introduce `Uint8Array` values then.
+ * Keys are POSIX-style relative paths (`index.html`, `<slug>/index.html`,
+ * `robots.txt`, `sitemap.xml`). Values are UTF-8 text contents. Binary assets
+ * (images, documents) are out of scope for v1's build pipeline — the asset
+ * pipeline is #8 / #21 and will introduce `Uint8Array` values then.
  */
 export type DistFolder = Map<string, string>;
 
@@ -78,9 +78,9 @@ export type DistFolder = Map<string, string>;
  *
  * Determinism contract (per AC):
  *  - Identical `(site, options)` input produces identical output, byte-for-byte.
- *  - The HTML at `dist/index.html` equals `renderSite(site, themeId)` when no
- *    `siteUrl` is provided. With a `siteUrl`, head-injection adds canonical /
- *    og:url / og:image — every other byte is preserved.
+ *  - The HTML at every per-page entry equals `renderSite(site, themeId, opts)`
+ *    when no `siteUrl` is provided. With a `siteUrl`, head-injection adds
+ *    canonical / og:url / og:image — every other byte is preserved.
  *
  * @param site    Validated site data. Callers should run `@sosb/schema`'s
  *                `validate(site)` first; this function trusts the shape.
@@ -91,22 +91,28 @@ export function build(site: Site, options: BuildOptions = {}): DistFolder {
   const themeId = options.themeId ?? site.theme.id;
   const siteUrl = normaliseSiteUrl(options.siteUrl);
 
-  const renderedHtml = renderSite(site, themeId);
-  const homePage = site.pages[0];
-  if (homePage === undefined) {
+  if (site.pages.length === 0) {
     throw new Error("build: site has no pages");
   }
 
-  let html =
-    siteUrl === undefined ? renderedHtml : injectSeoMeta(renderedHtml, site, siteUrl);
-  if (options._testInjectExtraCss !== undefined && options._testInjectExtraCss.length > 0) {
-    html = injectExtraInlineCss(html, options._testInjectExtraCss);
-  }
-
   const dist: DistFolder = new Map();
-  dist.set("index.html", html);
+
+  // Insert pages in `pages[]` order so the Map iteration order is
+  // deterministic and the home page (when it is at index 0) is first.
+  site.pages.forEach((page, idx) => {
+    const renderedHtml = renderSite(site, themeId, { pageIndex: idx });
+    let html =
+      siteUrl === undefined
+        ? renderedHtml
+        : injectSeoMeta(renderedHtml, site, page, siteUrl);
+    if (options._testInjectExtraCss !== undefined && options._testInjectExtraCss.length > 0) {
+      html = injectExtraInlineCss(html, options._testInjectExtraCss);
+    }
+    dist.set(pageDistPath(site, page), html);
+  });
+
   dist.set("robots.txt", emitRobotsTxt(siteUrl));
-  dist.set("sitemap.xml", emitSitemapXml(siteUrl));
+  dist.set("sitemap.xml", emitSitemapXml(site, siteUrl));
 
   // Per-page Lighthouse-budget verification (issue #41 / ADR 0005).
   // Measure, then attach the report to the dist as a stable JSON artefact.
@@ -172,16 +178,14 @@ function absolutise(siteUrl: string, ref: string): string {
 }
 
 /**
- * Read the home page's first hero block's `backgroundImage`, if present.
+ * Read the page's first hero block's `backgroundImage`, if present.
  *
  * The block envelope is parsed loosely (`looseObject`) so `data` is typed as
  * `Record<string, unknown>` from the schema's perspective. We do a runtime
  * `typeof` check before trusting the value.
  */
-function homeHeroBackgroundImage(site: Site): string | undefined {
-  const homePage = site.pages[0];
-  if (homePage === undefined) return undefined;
-  const firstBlock = homePage.blocks[0];
+function pageHeroBackgroundImage(page: Page): string | undefined {
+  const firstBlock = page.blocks[0];
   if (firstBlock === undefined) return undefined;
   if (firstBlock.type !== "hero") return undefined;
   const data = firstBlock.data as { backgroundImage?: unknown };
@@ -199,13 +203,13 @@ function homeHeroBackgroundImage(site: Site): string | undefined {
  * unchanged and adds an additive overlay that the build pipeline owns.
  *
  * Emits in a deterministic order (canonical → og:url → og:image) so repeat
- * calls produce byte-identical output.
+ * calls produce byte-identical output. Each page's canonical points at its
+ * own `pagePath` so multi-page sites get correct per-page canonicals.
  */
-function injectSeoMeta(html: string, site: Site, siteUrl: string): string {
-  // v1 is single-page: the home page is at the site root.
-  const homePath = "/";
-  const canonical = `${siteUrl}${homePath}`;
-  const heroImage = homeHeroBackgroundImage(site);
+function injectSeoMeta(html: string, site: Site, page: Page, siteUrl: string): string {
+  const path = pagePath(site, page);
+  const canonical = `${siteUrl}${path}`;
+  const heroImage = pageHeroBackgroundImage(page);
   const ogImage = heroImage === undefined ? undefined : absolutise(siteUrl, heroImage);
 
   const tags: string[] = [];
@@ -260,25 +264,28 @@ function emitRobotsTxt(siteUrl: string | undefined): string {
 /**
  * Emit `sitemap.xml`.
  *
- * v1 is single-page, single-language: exactly one `<url>` entry for the home
- * page. Multi-page entries land in #23, `xhtml:link rel="alternate"` per
- * language lands in #24. We do NOT include `<lastmod>` because the schema
- * has no `updatedAt` field today and we want the output to stay
- * deterministic across rebuilds (PRD pins same-input-same-output).
+ * One `<url>` entry per page in `site.pages`, in declaration order so the
+ * output stays deterministic across rebuilds. We do NOT include `<lastmod>`
+ * because the schema has no `updatedAt` field today.
  *
- * When `siteUrl` is set, the entry uses an absolute URL (search engines
- * require this). Without a `siteUrl`, we emit a relative `<loc>/</loc>`
- * fallback — technically a partial sitemap, but a structurally-valid file
- * the user can preview before deciding where to host.
+ * When `siteUrl` is set, every entry uses an absolute URL. Without a
+ * `siteUrl`, entries use a path-relative fallback so the file is
+ * structurally valid the user can preview before deciding where to host.
+ *
+ * `xhtml:link rel="alternate"` annotations per language are explicitly out
+ * of scope here — they belong to #24.
  */
-function emitSitemapXml(siteUrl: string | undefined): string {
-  const homeLoc = siteUrl === undefined ? "/" : `${siteUrl}/`;
+function emitSitemapXml(site: Site, siteUrl: string | undefined): string {
   const lines: string[] = [];
   lines.push('<?xml version="1.0" encoding="UTF-8"?>');
   lines.push('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">');
-  lines.push("  <url>");
-  lines.push(`    <loc>${escapeXmlText(homeLoc)}</loc>`);
-  lines.push("  </url>");
+  for (const page of site.pages) {
+    const path = pagePath(site, page);
+    const loc = siteUrl === undefined ? path : `${siteUrl}${path}`;
+    lines.push("  <url>");
+    lines.push(`    <loc>${escapeXmlText(loc)}</loc>`);
+    lines.push("  </url>");
+  }
   lines.push("</urlset>");
   return `${lines.join("\n")}\n`;
 }

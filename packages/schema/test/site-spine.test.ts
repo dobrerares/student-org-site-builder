@@ -63,6 +63,30 @@ describe("site spine schema", () => {
     expect(result.errors.some((i) => i.code.includes("duplicate"))).toBe(true);
   });
 
+  test("rejects malformed slugs with a clear error code", () => {
+    const broken = structuredClone(historipol) as unknown as {
+      pages: { slug: string }[];
+    };
+    broken.pages[0]!.slug = "Bad Slug!";
+    const result = validate(broken);
+    expect(result.ok).toBe(false);
+    expect(result.errors.some((i) => i.code.startsWith("site.page.slug."))).toBe(true);
+    // The path must point at pages[0].slug, not somewhere else.
+    expect(
+      result.errors.some((i) => i.path[0] === "pages" && i.path[1] === 0 && i.path[2] === "slug"),
+    ).toBe(true);
+  });
+
+  test("rejects slugs containing slashes (no nested page hierarchy in v1)", () => {
+    const broken = structuredClone(historipol) as unknown as {
+      pages: { slug: string }[];
+    };
+    broken.pages[0]!.slug = "blog/post";
+    const result = validate(broken);
+    expect(result.ok).toBe(false);
+    expect(result.errors.some((i) => i.code === "site.page.slug.containsSlash")).toBe(true);
+  });
+
   test("parseSite returns typed data on success", () => {
     const site = parseSite(historipol);
     // The TS types are derived; this assertion lives at runtime to make the
