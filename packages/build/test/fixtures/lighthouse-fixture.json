@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "org": {
+    "name": "Asociația Demo",
+    "tagline": "Reprezentativ pentru testul Lighthouse — un site mic, rapid și accesibil."
+  },
+  "theme": {
+    "id": "stub",
+    "tokens": {
+      "colorPrimary": "#1f3a5f",
+      "colorAccent": "#c08a3e"
+    }
+  },
+  "defaultLanguage": "ro",
+  "languages": ["ro"],
+  "pages": [
+    {
+      "slug": "acasa",
+      "lang": "ro",
+      "navLabel": "Acasă",
+      "navOrder": 0,
+      "showInNav": true,
+      "seo": {
+        "title": "Asociația Demo — Acasă",
+        "description": "Site reprezentativ folosit de auditul Lighthouse din CI pentru a verifica scorurile de 95+ pe Performance, Accessibility, Best Practices și SEO."
+      },
+      "blocks": [
+        {
+          "id": "blk_home_hero",
+          "type": "hero",
+          "version": 1,
+          "data": {
+            "eyebrow": "Bun venit",
+            "title": "Asociația Demo",
+            "subtitle": "Un fixture realist pentru auditul Lighthouse — fără imagini grele, fără JS, doar HTML și CSS minimale."
+          }
+        }
+      ]
+    }
+  ]
+}

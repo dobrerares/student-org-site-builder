@@ -17,6 +17,21 @@
 
 import type { Site } from "@sosb/schema";
 import { renderSite } from "@sosb/renderer";
+import {
+  measureBudgets,
+  formatBudgetViolations,
+  type BudgetReport,
+} from "./budget.js";
+
+export {
+  BUDGET_LIMITS,
+  measureBudgets,
+  formatBudgetViolations,
+  type BudgetReport,
+  type PageBudgetReport,
+  type MetricResult,
+  type MetricStatus,
+} from "./budget.js";
 
 /**
  * Caller-supplied build options.
@@ -29,10 +44,23 @@ import { renderSite } from "@sosb/renderer";
  *
  * `themeId` lets callers override the renderer's theme. Defaults to
  * `site.theme.id`, matching how the editor and the demo template wire up.
+ *
+ * `errorOnBudget` promotes Lighthouse-budget warnings (see ADR 0005) from
+ * `console.warn` calls to a thrown `Error`. Default is `false` (warn only)
+ * so that the editor can build a draft site without being blocked by
+ * budget overruns; CI sets this to `true` to hard-fail on regressions.
+ *
+ * `_testInjectExtraCss` is an undocumented test-only escape hatch used by
+ * the budget-warning tests to push the rendered HTML over the CSS budget
+ * without committing a 240KB synthetic theme to the repo. It is NOT part
+ * of the package's public API contract; production callers should ignore
+ * it. The leading underscore signals "internal" per project convention.
  */
 export interface BuildOptions {
   readonly siteUrl?: string;
   readonly themeId?: string;
+  readonly errorOnBudget?: boolean;
+  readonly _testInjectExtraCss?: string;
 }
 
 /**
@@ -69,14 +97,56 @@ export function build(site: Site, options: BuildOptions = {}): DistFolder {
     throw new Error("build: site has no pages");
   }
 
-  const html =
+  let html =
     siteUrl === undefined ? renderedHtml : injectSeoMeta(renderedHtml, site, siteUrl);
+  if (options._testInjectExtraCss !== undefined && options._testInjectExtraCss.length > 0) {
+    html = injectExtraInlineCss(html, options._testInjectExtraCss);
+  }
 
   const dist: DistFolder = new Map();
   dist.set("index.html", html);
   dist.set("robots.txt", emitRobotsTxt(siteUrl));
   dist.set("sitemap.xml", emitSitemapXml(siteUrl));
+
+  // Per-page Lighthouse-budget verification (issue #41 / ADR 0005).
+  // Measure, then attach the report to the dist as a stable JSON artefact.
+  // Surface every violation through `console.warn` so the editor and the
+  // CLI both see them; promote to a thrown Error when `errorOnBudget` is
+  // set so CI can hard-fail on regressions.
+  const budgetReport = measureBudgets(dist);
+  dist.set("_lighthouse-budget.json", serialiseBudgetReport(budgetReport));
+
+  if (budgetReport.status === "warn") {
+    const lines = formatBudgetViolations(budgetReport);
+    if (options.errorOnBudget === true) {
+      throw new Error(`build: Lighthouse budget violations\n${lines.join("\n")}`);
+    }
+    for (const line of lines) {
+      console.warn(line);
+    }
+  }
+
   return dist;
+}
+
+/**
+ * Serialise a `BudgetReport` to a deterministic, pretty-printed JSON
+ * string. Two-space indent matches the project's prettier config so the
+ * artefact reads naturally in PR diffs and editor tabs.
+ */
+function serialiseBudgetReport(report: BudgetReport): string {
+  return `${JSON.stringify(report, null, 2)}\n`;
+}
+
+/**
+ * Append an extra inline `<style>` block immediately before `</head>`. Used
+ * exclusively by the test-only `_testInjectExtraCss` build option.
+ */
+function injectExtraInlineCss(html: string, css: string): string {
+  const styleTag = `<style data-source="test-injected">${css}</style>`;
+  const headCloseIdx = html.indexOf("</head>");
+  if (headCloseIdx === -1) return html;
+  return `${html.slice(0, headCloseIdx)}${styleTag}${html.slice(headCloseIdx)}`;
 }
 
 /**
