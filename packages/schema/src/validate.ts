@@ -1,4 +1,3 @@
-import type { ZodSafeParseResult } from "zod";
 import { z } from "zod";
 import {
   BlockEnvelopeSchema,
@@ -56,14 +55,20 @@ function pathFromZod(path: PropertyKey[]): (string | number)[] {
   return path.map((segment) => (typeof segment === "number" ? segment : String(segment)));
 }
 
-function zodIssuesToErrors<T>(
-  parseResult: ZodSafeParseResult<T>,
-  codePrefix: string,
-): ValidationIssue[] {
+interface ZodIssueLike {
+  readonly path: PropertyKey[];
+  readonly code: string;
+  readonly message: string;
+}
+type ParseResultLike =
+  | { readonly success: true }
+  | { readonly success: false; readonly error: { readonly issues: readonly ZodIssueLike[] } };
+
+function zodIssuesToErrors(parseResult: ParseResultLike, codePrefix: string): ValidationIssue[] {
   if (parseResult.success) return [];
   return parseResult.error.issues.map((issue) => ({
     severity: "error" as const,
-    path: pathFromZod(issue.path),
+    path: pathFromZod([...issue.path]),
     code: `${codePrefix}.${issue.code}`,
     message: issue.message,
   }));
@@ -375,6 +380,24 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
           });
         }
       });
+      break;
+    }
+    case "ctaBanner": {
+      // Warning: a ctaBanner whose backgroundImage AssetRef has empty alt
+      // text is an accessibility nudge — same severity model as hero.
+      const bg = block.data.backgroundImage as { alt?: unknown } | undefined;
+      if (bg !== undefined) {
+        const alt = typeof bg.alt === "string" ? bg.alt : "";
+        if (alt.trim().length === 0) {
+          result.warnings.push({
+            severity: "warning",
+            path: ["data", "backgroundImage", "alt"],
+            code: "block.ctaBanner.backgroundImage.alt.missing",
+            message:
+              "ctaBanner background image has no alt text. Add alt text for screen-reader users.",
+          });
+        }
+      }
       break;
     }
     default: {
