@@ -20,6 +20,9 @@ export type { SlugValidationFailure } from "./slug.js";
 // Blocks
 export {
   BlockEnvelopeSchema,
+  CONTACT_CARD_BLOCK_VERSION,
+  ContactCardBlockSchema,
+  ContactCardDataSchema,
   HERO_BLOCK_VERSION,
   HeroBlockSchema,
   HeroDataSchema,
@@ -35,6 +38,9 @@ export {
 } from "./blocks/index.js";
 export type {
   BlockEnvelope,
+  ContactCardBlock,
+  ContactCardData,
+  ContactCardMapEmbed,
   HeroBlock,
   HeroData,
   KnownBlockType,

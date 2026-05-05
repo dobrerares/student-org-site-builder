@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { HeroBlockSchema } from "./hero.js";
 import { ValueListBlockSchema } from "./value-list.js";
+import { ContactCardBlockSchema } from "./contact-card.js";
 
 export { HeroBlockSchema, HeroDataSchema, HERO_BLOCK_VERSION } from "./hero.js";
 export type { HeroBlock, HeroData } from "./hero.js";
@@ -22,12 +23,19 @@ export type {
   ValueListLayout,
 } from "./value-list.js";
 
+export {
+  ContactCardBlockSchema,
+  ContactCardDataSchema,
+  CONTACT_CARD_BLOCK_VERSION,
+} from "./contact-card.js";
+export type { ContactCardBlock, ContactCardData, ContactCardMapEmbed } from "./contact-card.js";
+
 /**
  * The block envelope is `{ id, type, version, data }`. This generic envelope
  * accepts any string `type` and any positive `version`, so unknown block
  * types from a future editor version still parse and round-trip without
- * losing data. Known types (e.g. hero) are validated against their specific
- * schemas inside `validateBlock`.
+ * losing data. Known types (e.g. hero, contactCard) are validated against
+ * their specific schemas inside `validateBlock`.
  */
 export const BlockEnvelopeSchema = z.looseObject({
   id: z.string().min(1),
@@ -47,6 +55,7 @@ export type BlockEnvelope = z.infer<typeof BlockEnvelopeSchema>;
 export const KnownBlockSchemas = {
   hero: HeroBlockSchema,
   valueList: ValueListBlockSchema,
+  contactCard: ContactCardBlockSchema,
 } as const;
 
 export type KnownBlockType = keyof typeof KnownBlockSchemas;
