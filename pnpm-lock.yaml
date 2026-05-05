@@ -70,7 +70,42 @@ importers:
         specifier: ^0.34.5
         version: 0.34.5
 
-  packages/browser-shell: {}
+  packages/browser-shell:
+    dependencies:
+      '@sosb/build':
+        specifier: workspace:*
+        version: link:../build
+      '@sosb/editor-app':
+        specifier: workspace:*
+        version: link:../editor-app
+      '@sosb/editor-state':
+        specifier: workspace:*
+        version: link:../editor-state
+      '@sosb/renderer':
+        specifier: workspace:*
+        version: link:../renderer
+      '@sosb/schema':
+        specifier: workspace:*
+        version: link:../schema
+      '@sosb/vfs':
+        specifier: workspace:*
+        version: link:../vfs
+      preact:
+        specifier: ^10.29.1
+        version: 10.29.1
+    devDependencies:
+      '@types/jsdom':
+        specifier: ^21.1.7
+        version: 21.1.7
+      esbuild:
+        specifier: ^0.24.0
+        version: 0.24.0
+      fake-indexeddb:
+        specifier: ^6.0.0
+        version: 6.2.5
+      jsdom:
+        specifier: ^25.0.1
+        version: 25.0.1
 
   packages/build:
     dependencies:
@@ -1788,6 +1823,10 @@ packages:
   extsprintf@1.4.1:
     resolution: {integrity: sha512-Wrk35e8ydCKDj/ArClo1VrPVmN8zph5V4AtHwIuHhvMXsKf73UT3BOD+azBIW+3wOJ4FhEH7zyaJCFvChjYvMA==}
     engines: {'0': node >=0.6.0}
+
+  fake-indexeddb@6.2.5:
+    resolution: {integrity: sha512-CGnyrvbhPlWYMngksqrSSUT1BAVP49dZocrHuK0SvtR0D5TMs5wP0o3j7jexDJW01KSadjBp1M/71o/KR3nD1w==}
+    engines: {node: '>=18'}
 
   fast-deep-equal@3.1.3:
     resolution: {integrity: sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==}
@@ -4560,6 +4599,8 @@ snapshots:
 
   extsprintf@1.4.1:
     optional: true
+
+  fake-indexeddb@6.2.5: {}
 
   fast-deep-equal@3.1.3: {}
 
