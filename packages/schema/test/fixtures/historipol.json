@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "org": {
+    "name": "Asociația Studențească HISTORIPOL",
+    "tagline": "Istorie, identitate, comunitate",
+    "foundedYear": 2024,
+    "logo": "assets/8e3a7f.png",
+    "address": "Universitatea „Ovidius” Constanța, Str. Universității nr. 1, Constanța 900527",
+    "email": "contact@historipol.ro",
+    "phone": "+40 241 000 000",
+    "social": [
+      { "platform": "instagram", "url": "https://instagram.com/historipol" },
+      { "platform": "facebook", "url": "https://facebook.com/historipol" }
+    ]
+  },
+  "theme": {
+    "id": "academic",
+    "tokens": {
+      "colorPrimary": "#1f3a5f",
+      "colorAccent": "#c08a3e",
+      "fontHeadline": "Cormorant Garamond",
+      "fontBody": "Inter",
+      "density": "comfortable",
+      "radius": "sm"
+    }
+  },
+  "defaultLanguage": "ro",
+  "languages": ["ro", "en"],
+  "pages": [
+    {
+      "slug": "acasa",
+      "lang": "ro",
+      "navLabel": "Acasă",
+      "navOrder": 0,
+      "showInNav": true,
+      "seo": {
+        "title": "HISTORIPOL — Asociația studenților istorici din Constanța",
+        "description": "Asociația Studențească HISTORIPOL reunește studenții programului de Istorie de la Universitatea „Ovidius” Constanța."
+      },
+      "blocks": [
+        {
+          "id": "blk_home_hero",
+          "type": "hero",
+          "version": 1,
+          "data": {
+            "eyebrow": "Bun venit",
+            "title": "HISTORIPOL",
+            "subtitle": "Comunitatea studenților istorici de la Universitatea „Ovidius” Constanța",
+            "backgroundImage": "assets/4a91d2.jpg",
+            "backgroundAlt": "Studenți la o conferință de istorie în aula universității"
+          }
+        }
+      ],
+      "localizedAs": { "en": "home" }
+    },
+    {
+      "slug": "home",
+      "lang": "en",
+      "navLabel": "Home",
+      "navOrder": 0,
+      "showInNav": true,
+      "seo": {
+        "title": "HISTORIPOL — History Students' Association in Constanța",
+        "description": "HISTORIPOL is the student association of the History programme at Ovidius University of Constanța."
+      },
+      "blocks": [
+        {
+          "id": "blk_home_hero_en",
+          "type": "hero",
+          "version": 1,
+          "data": {
+            "eyebrow": "Welcome",
+            "title": "HISTORIPOL",
+            "subtitle": "The community of history students at Ovidius University of Constanța",
+            "backgroundImage": "assets/4a91d2.jpg",
+            "backgroundAlt": "Students at a history conference in the university hall"
+          }
+        }
+      ],
+      "localizedAs": { "ro": "acasa" }
+    },
+    {
+      "slug": "despre",
+      "lang": "ro",
+      "navLabel": "Despre noi",
+      "navOrder": 1,
+      "showInNav": true,
+      "seo": {
+        "title": "Despre HISTORIPOL",
+        "description": "Misiunea, valorile și activitatea asociației studențești HISTORIPOL."
+      },
+      "blocks": [
+        {
+          "id": "blk_about_hero",
+          "type": "hero",
+          "version": 1,
+          "data": {
+            "title": "Despre noi",
+            "subtitle": "O comunitate clădită în jurul disciplinei istorice"
+          }
+        }
+      ]
+    }
+  ]
+}
