@@ -123,6 +123,9 @@ export function validateBlock(data: unknown): ValidationResult {
   return finalize(result);
 }
 
+/** Union of every known block's parsed shape. */
+type KnownBlockData = z.infer<(typeof KnownBlockSchemas)[keyof typeof KnownBlockSchemas]>;
+
 // ---------------------------------------------------------------------------
 // Rule passes (PRD-listed quality nudges layered on top of schema parse).
 // ---------------------------------------------------------------------------
@@ -212,10 +215,7 @@ function runSiteRules(site: z.infer<typeof SiteSchema>, result: ValidationResult
   }
 }
 
-function runBlockRules(
-  block: z.infer<(typeof KnownBlockSchemas)[keyof typeof KnownBlockSchemas]>,
-  result: ValidationResult,
-): void {
+function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
   switch (block.type) {
     case "hero": {
       // Warning: a hero with a background image but no alt text is an
@@ -241,6 +241,23 @@ function runBlockRules(
           path: ["data", "items"],
           code: "block.valueList.items.empty",
           message: "valueList has no items. Add at least one value to make this block meaningful.",
+        });
+      }
+      break;
+    }
+    case "contactCard": {
+      // Warning: a contactCard with neither email nor phone is a low-value
+      // card. Address-only cards still publish, but we nudge the user to
+      // expose at least one reachable channel.
+      const hasEmail = typeof block.data.email === "string" && block.data.email.trim().length > 0;
+      const hasPhone = typeof block.data.phone === "string" && block.data.phone.trim().length > 0;
+      if (!hasEmail && !hasPhone) {
+        result.warnings.push({
+          severity: "warning",
+          path: ["data"],
+          code: "block.contactCard.contact.missing",
+          message:
+            "contactCard has neither email nor phone. Add at least one contact channel so visitors can reach the organisation.",
         });
       }
       break;

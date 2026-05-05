@@ -119,4 +119,45 @@ main { display: block; }
     grid-template-columns: 1fr;
   }
 }
+[data-block="contactCard"] {
+  padding: var(--space-xl) var(--space-md);
+}
+[data-block="contactCard"] .contact-card__heading {
+  font-family: var(--font-headline);
+  margin: 0 0 var(--space-md) 0;
+  color: var(--color-primary);
+}
+[data-block="contactCard"] .contact-card__address {
+  font-style: normal;
+  margin: 0 0 var(--space-sm) 0;
+  color: var(--color-fg);
+}
+[data-block="contactCard"] .contact-card__email-row,
+[data-block="contactCard"] .contact-card__phone-row {
+  margin: 0 0 var(--space-sm) 0;
+}
+[data-block="contactCard"] .contact-card__socials {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+[data-block="contactCard"] .contact-card__map {
+  margin-top: var(--space-md);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+[data-block="contactCard"] .contact-card__map iframe {
+  display: block;
+  width: 100%;
+  min-height: 300px;
+  border: 0;
+}
+[data-block="contactCard"] .contact-card__map-notice {
+  margin: 0 0 var(--space-sm) 0;
+  font-size: 0.875rem;
+  color: var(--color-muted);
+}
 `.trim();

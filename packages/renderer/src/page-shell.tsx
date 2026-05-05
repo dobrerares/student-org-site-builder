@@ -1,8 +1,16 @@
 /** @jsxImportSource preact */
-import type { Page, Site, BlockEnvelope, HeroBlock, ValueListBlock } from "@sosb/schema";
+import type {
+  Page,
+  Site,
+  BlockEnvelope,
+  ContactCardBlock,
+  HeroBlock,
+  ValueListBlock,
+} from "@sosb/schema";
 import { isKnownBlockType } from "@sosb/schema";
 import { Hero } from "./blocks/hero.js";
 import { ValueList } from "./blocks/value-list.js";
+import { ContactCard } from "./blocks/contact-card.js";
 import { navPagesFor, pagePath } from "./routing.js";
 
 /**
@@ -46,6 +54,9 @@ function renderBlock(block: BlockEnvelope): preact.JSX.Element | null {
   }
   if (block.type === "valueList") {
     return <ValueList block={block as unknown as ValueListBlock} />;
+  }
+  if (block.type === "contactCard") {
+    return <ContactCard block={block as unknown as ContactCardBlock} />;
   }
   return null;
 }

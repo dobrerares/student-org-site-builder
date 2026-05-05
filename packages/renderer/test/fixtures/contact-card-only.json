@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "org": {
+    "name": "Stub Org",
+    "tagline": "Contact card fixture",
+    "email": "contact@example.org"
+  },
+  "theme": {
+    "id": "stub",
+    "tokens": {
+      "colorPrimary": "#1f3a5f",
+      "colorAccent": "#c08a3e"
+    }
+  },
+  "defaultLanguage": "ro",
+  "languages": ["ro"],
+  "pages": [
+    {
+      "slug": "contact",
+      "lang": "ro",
+      "navLabel": "Contact",
+      "navOrder": 0,
+      "showInNav": true,
+      "seo": {
+        "title": "Contact — Stub Org",
+        "description": "Pagina de contact a Stub Org."
+      },
+      "blocks": [
+        {
+          "id": "blk_contact_main",
+          "type": "contactCard",
+          "version": 1,
+          "data": {
+            "address": "Strada Universității 1, Constanța 900527",
+            "email": "contact@example.org",
+            "phone": "+40 241 000 000",
+            "socials": [
+              { "platform": "instagram", "url": "https://instagram.com/example" },
+              { "platform": "facebook", "url": "https://facebook.com/example" }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
