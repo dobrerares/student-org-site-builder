@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "org": {
+    "name": "Asociația HISTORIPOL",
+    "tagline": "Studenți la Istorie și Științe Politice — Universitatea „Ovidius” Constanța"
+  },
+  "theme": {
+    "id": "editorial",
+    "tokens": {}
+  },
+  "defaultLanguage": "ro",
+  "languages": ["ro"],
+  "pages": [
+    {
+      "slug": "acasa",
+      "lang": "ro",
+      "navLabel": "Acasă",
+      "navOrder": 0,
+      "showInNav": true,
+      "seo": {
+        "title": "HISTORIPOL — asociație studențească",
+        "description": "Comunitatea studenților de la Istorie și Științe Politice."
+      },
+      "blocks": [
+        {
+          "id": "blk_home_hero",
+          "type": "hero",
+          "version": 1,
+          "data": {
+            "eyebrow": "Anul universitar 2025–2026",
+            "title": "Un spațiu pentru gând istoric și acțiune politică",
+            "subtitle": "Conferințe, dezbateri și ateliere pentru studenții care vor să înțeleagă lumea — nu doar să o memoreze.",
+            "backgroundImage": "assets/hero.jpg",
+            "backgroundAlt": "Studenți într-o sală de conferințe la Universitatea Ovidius"
+          }
+        }
+      ]
+    }
+  ]
+}

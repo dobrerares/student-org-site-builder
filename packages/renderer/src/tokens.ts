@@ -50,16 +50,35 @@ const BASELINE_TOKENS: ReadonlyArray<readonly [string, string]> = [
 ];
 
 /**
- * Compose the `:root { ... }` CSS rule for a site. Order is deterministic:
- * baseline tokens first (in their declared order), then schema-provided
- * overrides (in the SCHEMA_TOKEN_MAP order). Later wins, so user theme
- * tokens override the baseline.
+ * Compose the `:root { ... }` CSS rule for a site. Order is deterministic
+ * (later wins, standard CSS):
+ *
+ *   1. Baseline tokens (spacing scale, radius, fallback palette/fonts).
+ *   2. Theme defaults (palette + fonts curated by the active theme), if any.
+ *   3. Schema-provided overrides from `site.theme.tokens` (in
+ *      SCHEMA_TOKEN_MAP order).
+ *
+ * The duplicates are by design and cost a few bytes; the alternative —
+ * filtering — would couple the baseline list to the schema's token list at
+ * the wrong layer, per ADR 0003.
  */
-export function emitTokenRoot(site: Site): string {
+export function emitTokenRoot(
+  site: Site,
+  themeDefaults?: Readonly<Record<string, string>>,
+): string {
   const declarations: string[] = [];
 
   for (const [name, value] of BASELINE_TOKENS) {
     declarations.push(`  ${name}: ${value};`);
+  }
+
+  if (themeDefaults !== undefined) {
+    for (const [schemaKey, cssProp] of Object.entries(SCHEMA_TOKEN_MAP)) {
+      const raw = themeDefaults[schemaKey];
+      if (typeof raw === "string" && raw.length > 0) {
+        declarations.push(`  ${cssProp}: ${raw};`);
+      }
+    }
   }
 
   const userTokens = site.theme.tokens ?? {};

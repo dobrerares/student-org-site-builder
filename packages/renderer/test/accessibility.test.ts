@@ -6,12 +6,15 @@ import heroOnly from "./fixtures/hero-only.json" with { type: "json" };
 import valueListOnly from "./fixtures/value-list-only.json" with { type: "json" };
 import documentDownloads from "./fixtures/document-downloads.json" with { type: "json" };
 import eventListOnly from "./fixtures/event-list-only.json" with { type: "json" };
+import heroOnlyEditorial from "./fixtures/hero-only-editorial.json" with { type: "json" };
 import { renderSite } from "../src/index.js";
+import { EDITORIAL_THEME_ID } from "../src/themes/editorial.js";
 
 const heroFixture = heroOnly as unknown as Site;
 const valueListFixture = valueListOnly as unknown as Site;
 const docsFixture = documentDownloads as unknown as Site;
 const eventListFixture = eventListOnly as unknown as Site;
+const editorialFixture = heroOnlyEditorial as unknown as Site;
 
 async function axeRun(html: string): Promise<axe.AxeResults> {
   // The vitest jsdom environment provides a real document/window. Re-hydrate
@@ -53,6 +56,11 @@ describe("renderSite axe-core accessibility", () => {
 
   test("event-list sample with stub theme has zero axe violations", async () => {
     const results = await axeRun(renderSite(eventListFixture, "stub"));
+    expect(results.violations).toEqual([]);
+  });
+
+  test("hero-only sample with editorial theme has zero axe violations", async () => {
+    const results = await axeRun(renderSite(editorialFixture, EDITORIAL_THEME_ID));
     expect(results.violations).toEqual([]);
   });
 });
