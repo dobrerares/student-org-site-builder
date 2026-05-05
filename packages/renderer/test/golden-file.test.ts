@@ -1,9 +1,11 @@
 import { describe, expect, test } from "vitest";
 import type { Site } from "@sosb/schema";
 import heroOnly from "./fixtures/hero-only.json" with { type: "json" };
+import teamGridHistoripol from "./fixtures/team-grid-historipol.json" with { type: "json" };
 import { renderSite } from "../src/index.js";
 
-const fixture = heroOnly as unknown as Site;
+const heroFixture = heroOnly as unknown as Site;
+const teamGridFixture = teamGridHistoripol as unknown as Site;
 
 /**
  * Golden-file framework.
@@ -21,7 +23,18 @@ const fixture = heroOnly as unknown as Site;
 
 describe("golden-file framework — stub theme + hero", () => {
   test("hero-only stub-theme render matches its golden file", async () => {
-    const html = renderSite(fixture, "stub");
+    const html = renderSite(heroFixture, "stub");
     await expect(html).toMatchFileSnapshot("__golden__/stub-theme-hero.html");
+  });
+});
+
+describe("golden-file framework — stub theme + grouped teamGrid", () => {
+  test("HISTORIPOL teamGrid stub-theme render matches its golden file", async () => {
+    // The PRD's "Academic theme" (#47) lands the curated themed golden; the
+    // stub theme is what this issue ships under, so the canonical snapshot
+    // for a grouped teamGrid lives here. The Academic golden re-uses the
+    // same fixture once #47 wires up.
+    const html = renderSite(teamGridFixture, "stub");
+    await expect(html).toMatchFileSnapshot("__golden__/stub-theme-team-grid-grouped.html");
   });
 });
