@@ -23,5 +23,6 @@
  */
 
 export { markdownToHtml } from "./md.js";
+export { renderInline as markdownInlineToHtml } from "./inline.js";
 export { sanitizeUrl } from "./sanitize-url.js";
 export { escapeText, escapeAttr } from "./escape.js";

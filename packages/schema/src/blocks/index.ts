@@ -6,6 +6,7 @@ import { EmbedBlockSchema } from "./embed.js";
 import { CustomHtmlBlockSchema } from "./custom-html.js";
 import { ActivitiesListBlockSchema } from "./activities-list.js";
 import { TeamGridBlockSchema } from "./team-grid.js";
+import { QuoteBlockSchema } from "./quote.js";
 import { RichTextBlockSchema } from "./rich-text.js";
 
 export { HeroBlockSchema, HeroDataSchema, HERO_BLOCK_VERSION } from "./hero.js";
@@ -85,6 +86,8 @@ export {
   RICH_TEXT_BLOCK_VERSION,
 } from "./rich-text.js";
 export type { RichTextBlock, RichTextData } from "./rich-text.js";
+export { QuoteBlockSchema, QuoteDataSchema, QUOTE_BLOCK_VERSION } from "./quote.js";
+export type { QuoteBlock, QuoteData } from "./quote.js";
 
 /**
  * The block envelope is `{ id, type, version, data }`. This generic envelope
@@ -117,6 +120,7 @@ export const KnownBlockSchemas = {
   activitiesList: ActivitiesListBlockSchema,
   teamGrid: TeamGridBlockSchema,
   richText: RichTextBlockSchema,
+  quote: QuoteBlockSchema,
 } as const;
 
 export type KnownBlockType = keyof typeof KnownBlockSchemas;

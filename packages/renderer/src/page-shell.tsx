@@ -7,6 +7,7 @@ import type {
   CustomHtmlBlock,
   EmbedBlock,
   HeroBlock,
+  QuoteBlock,
   RichTextBlock,
   TeamGridBlock,
   ValueListBlock,
@@ -14,6 +15,7 @@ import type {
 } from "@sosb/schema";
 import { isKnownBlockType } from "@sosb/schema";
 import { Hero } from "./blocks/hero.js";
+import { Quote } from "./blocks/quote.js";
 import { RichText } from "./blocks/rich-text.js";
 import { TeamGrid } from "./blocks/team-grid.js";
 import { ValueList } from "./blocks/value-list.js";
@@ -65,6 +67,9 @@ function renderBlock(block: BlockEnvelope): preact.JSX.Element | null {
   }
   if (block.type === "richText") {
     return <RichText block={block as unknown as RichTextBlock} />;
+  }
+  if (block.type === "quote") {
+    return <Quote block={block as unknown as QuoteBlock} />;
   }
   if (block.type === "valueList") {
     return <ValueList block={block as unknown as ValueListBlock} />;

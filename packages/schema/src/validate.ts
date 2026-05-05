@@ -333,6 +333,22 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
       }
       break;
     }
+    case "quote": {
+      // Warning: an authorImage with no alt text is an accessibility nudge,
+      // mirroring the hero `backgroundAlt` rule. The schema does not require
+      // alt text (so the block can be authored before the alt is written),
+      // but the editor surfaces this warning so the user is reminded.
+      if (block.data.authorImage && !block.data.authorImageAlt) {
+        result.warnings.push({
+          severity: "warning",
+          path: ["data", "authorImageAlt"],
+          code: "block.quote.authorImageAlt.missing",
+          message:
+            "Quote block has an author image but no alt text. Add alt text for screen-reader users.",
+        });
+      }
+      break;
+    }
     default: {
       // Exhaustiveness assertion: every known block must have a case branch.
       const _exhaustive: never = block;
