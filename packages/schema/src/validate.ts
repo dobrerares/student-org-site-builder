@@ -318,6 +318,21 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
       });
       break;
     }
+    case "richText": {
+      // Warning: a richText block with no prose is a quality nudge, not a
+      // hard error (the schema accepts the empty case so a placeholder
+      // block can be added before the user has written content).
+      const md = block.data.markdown;
+      if (typeof md !== "string" || md.trim().length === 0) {
+        result.warnings.push({
+          severity: "warning",
+          path: ["data", "markdown"],
+          code: "block.richText.markdown.empty",
+          message: "richText block has no content. Add prose or remove the block.",
+        });
+      }
+      break;
+    }
     default: {
       // Exhaustiveness assertion: every known block must have a case branch.
       const _exhaustive: never = block;

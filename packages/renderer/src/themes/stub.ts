@@ -379,4 +379,35 @@ main { display: block; }
     grid-template-columns: 1fr;
   }
 }
+[data-block="richText"] {
+  padding: var(--space-lg) var(--space-md);
+}
+[data-block="richText"] .rich-text h2,
+[data-block="richText"] .rich-text h3,
+[data-block="richText"] .rich-text h4 {
+  font-family: var(--font-headline);
+  color: var(--color-primary);
+  margin: var(--space-md) 0 var(--space-sm) 0;
+}
+[data-block="richText"] .rich-text p,
+[data-block="richText"] .rich-text ul,
+[data-block="richText"] .rich-text ol,
+[data-block="richText"] .rich-text blockquote {
+  margin: 0 0 var(--space-md) 0;
+}
+[data-block="richText"] .rich-text blockquote {
+  padding-left: var(--space-md);
+  border-left: 4px solid var(--color-accent);
+  color: var(--color-muted);
+}
+[data-block="richText"] .rich-text a {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+[data-block="richText"] .rich-text code {
+  font-family: var(--font-body);
+  background: var(--color-bg);
+  padding: 0 var(--space-xs);
+  border-radius: var(--radius-sm);
+}
 `.trim();
