@@ -145,6 +145,134 @@ All scripts run from the repo root.
 
 All four must pass before a PR is mergeable.
 
+## How to add a schema migration
+
+The `@sosb/schema` package owns block + site schemas plus the migration
+framework that bridges old data to the current shape on load. This section
+is the canonical pattern for adding a new migration; the synthetic hero
+v1 → v2 bump (issue #26, ADR-0003) is the worked example.
+
+### Constraints (PRD + ADR-0003)
+
+- **Additive-only inside v1.x.** Add optional fields with sensible
+  defaults; never rename, retype, or remove an existing field.
+- **Single-hop migrations.** Each migration bumps a block by exactly one
+  version. The framework composes them into chains automatically.
+- **Preserve unknown keys.** `apply` functions must spread the input
+  rather than reconstruct it from scratch, so unknown future fields
+  ride through.
+- **Don't clobber.** Fill defaults only when the field is genuinely
+  absent. A pre-existing value (perhaps from a future editor that
+  round-tripped through this older one) takes precedence.
+
+### Step-by-step (worked example: hero v1 → v2 with `align`)
+
+1. **Bump the block-version constant** in `packages/schema/src/blocks/<block>.ts`.
+
+   ```ts
+   export const HERO_BLOCK_VERSION = 2 as const;
+   ```
+
+2. **Update the data schema additively.** Use `z.looseObject(...)` so
+   unknown keys round-trip. Optional fields with defaults are safe;
+   required field bumps would not be (and are out of scope inside v1.x).
+
+   ```ts
+   export const HeroDataSchema = z.looseObject({
+     // ...existing fields unchanged...
+     align: z.enum(["left", "center", "right"]).optional(),
+   });
+   ```
+
+3. **Bump the schema's `version` literal** so the new schema validates
+   only post-migration data:
+
+   ```ts
+   export const HeroBlockSchema = z.looseObject({
+     id: z.string().min(1),
+     type: z.literal("hero"),
+     version: z.literal(HERO_BLOCK_VERSION),
+     data: HeroDataSchema,
+   });
+   ```
+
+4. **Register the migration** in `packages/schema/src/migrate.ts`. Add
+   one entry to `BLOCK_MIGRATIONS` per `(type, from)` pair. Spread the
+   input rather than reconstructing it, and only fill the new field
+   when it is genuinely absent:
+
+   ```ts
+   {
+     type: "hero",
+     from: 1,
+     apply: (block) => {
+       const enveloped = block as { data?: unknown; [k: string]: unknown };
+       const data =
+         typeof enveloped.data === "object" && enveloped.data !== null
+           ? (enveloped.data as Record<string, unknown>)
+           : {};
+       const newData: Record<string, unknown> = { ...data };
+       if (!Object.prototype.hasOwnProperty.call(newData, "align")) {
+         newData.align = "left";
+       }
+       return { ...enveloped, version: 2, data: newData };
+     },
+   },
+   ```
+
+5. **Update fixtures.** Bump `packages/schema/test/fixtures/historipol.json`
+   to the new shape (so it represents _current_ canonical data), and
+   keep a copy of the pre-migration shape under
+   `packages/schema/test/fixtures/historipol-legacy.json` (or
+   `historipol-legacy-vN.json` if multiple legacy snapshots accumulate).
+   Migration tests run against the legacy fixture.
+
+6. **Write tests** in `packages/schema/test/migration-exercise.test.ts`
+   (or a similarly named per-bump file). At minimum:
+
+   - **Default-fill test:** load a pre-migration block (without the new
+     field) and assert the new field gets the documented default.
+   - **No-clobber test:** load a pre-migration block that already
+     carries the new field and assert the migration leaves it alone.
+   - **Round-trip test:** load a fresh block (already at the new
+     version) and assert the migration is a no-op.
+   - **Forward-compat test:** load a block of a future unknown type and
+     assert it survives migration byte-identical.
+   - **Site-wide test:** call `applyAllMigrations(legacyFixture)` and
+     assert `migrationApplied: true`, `fromVersion`, `toVersion`, and
+     that every block on every page is at the new version.
+
+7. **Hot-path verify:**
+
+   ```bash
+   pnpm install
+   pnpm typecheck
+   pnpm lint
+   pnpm test
+   pnpm build
+   ```
+
+8. **Document the bump** in an ADR under `docs/adr/` if the migration
+   involves a non-trivial decision (new field semantics, non-obvious
+   default, etc.). For a purely additive bump that follows the
+   established pattern, ADR-0003 is sufficient — just reference it in
+   the PR body.
+
+### What the editor does on load
+
+The editor (#7) wires `applyAllMigrations` into the load path:
+
+```ts
+const result = applyAllMigrations(rawSiteData);
+const validation = validate(result.data);
+if (result.migrationApplied) {
+  showToast(`Site upgraded to schema v${result.toVersion}`);
+}
+```
+
+The toast UI itself lives in the editor package. The schema package
+exposes `applyAllMigrations` and the boolean — that is the only seam.
+
 ## Filing issues
 
 Issues live on GitHub. See [`docs/agents/issue-tracker.md`](docs/agents/issue-tracker.md)

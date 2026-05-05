@@ -19,12 +19,12 @@ describe("migration framework scaffold", () => {
     expect(() => migrateSite(future)).toThrowError();
   });
 
-  test("migrateBlock is a no-op for hero v1", () => {
+  test("migrateBlock is a no-op for a hero already at the current version", () => {
     const block = {
       id: "blk_01",
       type: "hero",
-      version: 1,
-      data: { title: "T", subtitle: "S" },
+      version: 2,
+      data: { title: "T", subtitle: "S", align: "left" as const },
     };
     const result = migrateBlock(block);
     expect(result.appliedVersions).toEqual([]);

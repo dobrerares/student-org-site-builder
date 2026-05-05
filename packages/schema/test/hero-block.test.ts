@@ -6,7 +6,7 @@ describe("hero block schema", () => {
     const block = {
       id: "blk_01",
       type: "hero",
-      version: 1,
+      version: 2,
       data: {
         title: "Welcome",
         subtitle: "We are HISTORIPOL",
@@ -19,13 +19,14 @@ describe("hero block schema", () => {
     const block = {
       id: "blk_02",
       type: "hero",
-      version: 1,
+      version: 2,
       data: {
         eyebrow: "Bun venit",
         title: "HISTORIPOL",
         subtitle: "Comunitatea",
         backgroundImage: "assets/4a91d2.jpg",
         backgroundAlt: "Photo of students",
+        align: "center",
       },
     };
     expect(HeroBlockSchema.safeParse(block).success).toBe(true);
@@ -35,7 +36,7 @@ describe("hero block schema", () => {
     const block = {
       id: "blk_03",
       type: "hero",
-      version: 1,
+      version: 2,
       data: {
         subtitle: "Tagline only",
       },
@@ -47,7 +48,7 @@ describe("hero block schema", () => {
     const block = {
       id: "blk_04",
       type: "hero",
-      version: 1,
+      version: 2,
       data: {
         title: "",
         subtitle: "Tagline",
@@ -60,8 +61,18 @@ describe("hero block schema", () => {
     const block = {
       id: "blk_05",
       type: "richText",
-      version: 1,
+      version: 2,
       data: { title: "Welcome" },
+    };
+    expect(HeroBlockSchema.safeParse(block).success).toBe(false);
+  });
+
+  test("rejects hero blocks with an out-of-range align value", () => {
+    const block = {
+      id: "blk_05b",
+      type: "hero",
+      version: 2,
+      data: { title: "Welcome", align: "diagonal" },
     };
     expect(HeroBlockSchema.safeParse(block).success).toBe(false);
   });
@@ -70,7 +81,7 @@ describe("hero block schema", () => {
     const block = {
       id: "blk_06",
       type: "hero",
-      version: 1,
+      version: 2,
       data: { subtitle: "missing title" },
     };
     const result = validateBlock(block);
@@ -83,7 +94,7 @@ describe("hero block schema", () => {
     const block = {
       id: "blk_07",
       type: "hero",
-      version: 1,
+      version: 2,
       data: {
         title: "Welcome",
         backgroundImage: "assets/abc.jpg",
