@@ -10,5 +10,12 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "tsc --build"
+  },
+  "dependencies": {
+    "@sosb/vfs": "workspace:*"
+  },
+  "devDependencies": {
+    "@sosb/schema": "workspace:*",
+    "sharp": "^0.34.5"
   }
 }

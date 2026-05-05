@@ -4,6 +4,7 @@ import { ValueListBlockSchema } from "./value-list.js";
 import { ContactCardBlockSchema } from "./contact-card.js";
 import { EmbedBlockSchema } from "./embed.js";
 import { CustomHtmlBlockSchema } from "./custom-html.js";
+import { ActivitiesListBlockSchema } from "./activities-list.js";
 
 export { HeroBlockSchema, HeroDataSchema, HERO_BLOCK_VERSION } from "./hero.js";
 export type { HeroBlock, HeroData } from "./hero.js";
@@ -47,6 +48,23 @@ export {
   CUSTOM_HTML_BLOCK_VERSION,
 } from "./custom-html.js";
 export type { CustomHtmlBlock, CustomHtmlData } from "./custom-html.js";
+export {
+  ActivitiesListBlockSchema,
+  ActivitiesListDataSchema,
+  ActivitiesListLayoutSchema,
+  ActivityImageRefSchema,
+  ActivityItemSchema,
+  ActivityLinkSchema,
+  ACTIVITIES_LIST_BLOCK_VERSION,
+} from "./activities-list.js";
+export type {
+  ActivitiesListBlock,
+  ActivitiesListData,
+  ActivitiesListLayout,
+  ActivityImageRef,
+  ActivityItem,
+  ActivityLink,
+} from "./activities-list.js";
 
 /**
  * The block envelope is `{ id, type, version, data }`. This generic envelope
@@ -76,6 +94,7 @@ export const KnownBlockSchemas = {
   contactCard: ContactCardBlockSchema,
   embed: EmbedBlockSchema,
   customHTML: CustomHtmlBlockSchema,
+  activitiesList: ActivitiesListBlockSchema,
 } as const;
 
 export type KnownBlockType = keyof typeof KnownBlockSchemas;

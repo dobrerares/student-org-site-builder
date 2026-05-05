@@ -196,4 +196,81 @@ main { display: block; }
   color: var(--color-accent);
   text-decoration: underline;
 }
+[data-block="activitiesList"] {
+  padding: var(--space-xl) var(--space-md);
+}
+[data-block="activitiesList"] .activities-list__title {
+  font-family: var(--font-headline);
+  margin: 0 0 var(--space-md) 0;
+  color: var(--color-primary);
+}
+[data-block="activitiesList"] .activities-list__intro {
+  margin: 0 0 var(--space-lg) 0;
+  color: var(--color-fg);
+}
+[data-block="activitiesList"] .activities-list__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-md);
+}
+[data-block="activitiesList"][data-layout="cards"] .activities-list__items {
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+[data-block="activitiesList"][data-layout="list"] .activities-list__items {
+  grid-template-columns: 1fr;
+}
+[data-block="activitiesList"][data-layout="alternating"] .activities-list__items {
+  grid-template-columns: 1fr;
+}
+[data-block="activitiesList"][data-layout="alternating"] .activities-list__item:nth-child(even) {
+  direction: rtl;
+}
+[data-block="activitiesList"][data-layout="alternating"] .activities-list__item:nth-child(even) .activities-list__body {
+  direction: ltr;
+}
+[data-block="activitiesList"] .activities-list__item {
+  display: grid;
+  gap: var(--space-sm);
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+}
+[data-block="activitiesList"] .activities-list__media {
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+[data-block="activitiesList"] .activities-list__media img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+[data-block="activitiesList"] .activities-list__item-title {
+  font-family: var(--font-headline);
+  margin: 0;
+  color: var(--color-primary);
+}
+[data-block="activitiesList"] .activities-list__description {
+  margin: 0;
+  color: var(--color-fg);
+}
+[data-block="activitiesList"] .activities-list__badge {
+  display: inline-block;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-lg);
+  background: var(--color-accent);
+  color: var(--color-bg);
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+[data-block="activitiesList"] .activities-list__cta {
+  color: var(--color-primary);
+  text-decoration: underline;
+  font-family: var(--font-body);
+}
+[data-block="activitiesList"] .activities-list__cta-chevron {
+  display: inline-block;
+}
 `.trim();

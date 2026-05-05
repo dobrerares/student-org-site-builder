@@ -293,6 +293,14 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
       }
       break;
     }
+    case "activitiesList": {
+      // No additional warnings beyond schema parse: alt enforcement on
+      // images is encoded in `ActivityImageRefSchema` (alt is `min(1)`),
+      // so a missing/empty alt is already an `error`-tier issue. The
+      // upload-time alt check in `@sosb/assets` (#8) is the matching
+      // enforcement at write time.
+      break;
+    }
     default: {
       // Exhaustiveness assertion: every known block must have a case branch.
       const _exhaustive: never = block;
