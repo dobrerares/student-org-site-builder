@@ -56,25 +56,34 @@ describe("build — output shape", () => {
 });
 
 /**
- * AC #2 — HTML output is identical to renderSite() output for the same data.
+ * AC #2 — HTML output preserves the renderer's body and `<head>` baseline.
  *
- * Without `siteUrl`, the build pipeline emits the renderer's output verbatim.
- * With `siteUrl`, the pipeline performs additive head-injection (canonical,
- * og:url, og:image) — every other byte is preserved.
+ * Without `siteUrl`, the build pipeline emits the renderer's output plus
+ * the JSON-LD overlay (Organization is always emitted per #39). With
+ * `siteUrl`, the pipeline performs additive head-injection (canonical,
+ * og:url, og:image, twitter:image absolute, hreflang absolute, JSON-LD) —
+ * every byte the renderer produced outside `<head>` stays untouched.
  */
-describe("build — HTML byte-identity with renderSite", () => {
-  test("dist/index.html equals renderSite(site, themeId) when no siteUrl is provided", async () => {
+describe("build — HTML preserves the renderer's body bytes", () => {
+  test("dist/index.html body matches renderSite() body when no siteUrl is provided", async () => {
     const { renderSite } = await import("@sosb/renderer");
     const expected = renderSite(fixture, fixture.theme.id);
     const dist = build(fixture);
-    expect(dist.get("index.html")).toBe(expected);
+    const stripHead = (s: string): string => s.replace(/<head>[\s\S]*?<\/head>/, "<head/>");
+    expect(stripHead(dist.get("index.html")!)).toBe(stripHead(expected));
   });
 
-  test("dist/index.html equals renderSite(site, themeId) for a default options object too", async () => {
+  test("the no-siteUrl head adds JSON-LD on top of the renderer's head bytes", async () => {
     const { renderSite } = await import("@sosb/renderer");
     const expected = renderSite(fixture, fixture.theme.id);
-    const dist = build(fixture, {});
-    expect(dist.get("index.html")).toBe(expected);
+    const dist = build(fixture);
+    const html = dist.get("index.html")!;
+    // Every byte the renderer produced in `<head>` survives — we only
+    // append additional tags before `</head>`.
+    const baselineHead = expected.match(/<head>[\s\S]*?<\/head>/)![0];
+    const baselineWithoutClose = baselineHead.slice(0, -"</head>".length);
+    expect(html).toContain(baselineWithoutClose);
+    expect(html).toMatch(/<script type="application\/ld\+json">/);
   });
 });
 

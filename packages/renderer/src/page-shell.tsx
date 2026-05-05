@@ -93,6 +93,23 @@ function pageDescription(site: Site, page: Page): string | undefined {
   return undefined;
 }
 
+/**
+ * Pull the page's first hero block's `backgroundImage`, if any. Used both
+ * for `og:image` parity in the build pipeline and for the Twitter Card
+ * (`twitter:image`) the renderer emits. Returns `undefined` when the first
+ * block is not a hero or when `backgroundImage` is absent / empty.
+ */
+function pageOgImage(page: Page): string | undefined {
+  const firstBlock = page.blocks[0];
+  if (firstBlock === undefined) return undefined;
+  if (firstBlock.type !== "hero") return undefined;
+  const data = firstBlock.data as { backgroundImage?: unknown };
+  if (typeof data.backgroundImage !== "string" || data.backgroundImage.length === 0) {
+    return undefined;
+  }
+  return data.backgroundImage;
+}
+
 function renderBlock(block: BlockEnvelope): preact.JSX.Element | null {
   if (!isKnownBlockType(block.type)) return null;
   if (block.type === "hero") {
@@ -168,6 +185,8 @@ export function PageShell(props: { site: Site; page: Page; css: string }): preac
   const { site, page, css } = props;
   const title = pageTitle(site, page);
   const description = pageDescription(site, page);
+  const ogImage = pageOgImage(page);
+  const twitterCardType = ogImage === undefined ? "summary" : "summary_large_image";
   const navPages = navPagesFor(site, page);
   const activeHref = pagePath(site, page);
   const hasLazyEmbed = pageHasLazyEmbed(page.blocks);
@@ -187,15 +206,16 @@ export function PageShell(props: { site: Site; page: Page; css: string }): preac
         <meta property="og:title" content={title} />
         {description !== undefined && <meta property="og:description" content={description} />}
         <meta property="og:type" content="website" />
+        {/* Twitter Card parity. Absolute URLs for og:image/twitter:image are
+         * overlaid by the build pipeline when a `siteUrl` is configured. */}
+        <meta name="twitter:card" content={twitterCardType} />
+        <meta name="twitter:title" content={title} />
+        {description !== undefined && <meta name="twitter:description" content={description} />}
+        {ogImage !== undefined && <meta name="twitter:image" content={ogImage} />}
         {/* hreflang alternates for cross-language SEO. Skipped on
          * single-language sites (no other languages to advertise). */}
         {hreflangs.map((entry) => (
-          <link
-            key={entry.hreflang}
-            rel="alternate"
-            hreflang={entry.hreflang}
-            href={entry.href}
-          />
+          <link key={entry.hreflang} rel="alternate" hreflang={entry.hreflang} href={entry.href} />
         ))}
         <style dangerouslySetInnerHTML={{ __html: css }} />
       </head>
