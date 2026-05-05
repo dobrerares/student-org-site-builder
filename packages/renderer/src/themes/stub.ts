@@ -7,8 +7,9 @@
  *  - layout-only CSS that uses `var(--token)` exclusively (never raw colours)
  *  - no per-theme hero variant — the structural hero from the renderer is used
  *
- * The Academic theme (#47) and the rest (#28-#31) replace this with curated
- * palettes, typography, and per-theme hero compositions.
+ * The Academic theme (#47, see `themes/academic.ts`) ships a curated palette,
+ * typography, and a per-theme hero composition. The rest (#28-#31) follow the
+ * same pattern as #28-#31 land.
  */
 
 export const STUB_THEME_ID = "stub" as const;

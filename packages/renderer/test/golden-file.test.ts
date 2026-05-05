@@ -61,3 +61,10 @@ describe("golden-file framework — stub theme + documentDownloads", () => {
     await expect(html).toMatchFileSnapshot("__golden__/stub-theme-document-downloads.html");
   });
 });
+
+describe("golden-file framework — academic theme + hero", () => {
+  test("hero-only academic-theme render matches its golden file", async () => {
+    const html = renderSite(heroFixture, "academic");
+    await expect(html).toMatchFileSnapshot("__golden__/academic-theme-hero.html");
+  });
+});
