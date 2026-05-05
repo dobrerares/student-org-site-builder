@@ -1,7 +1,18 @@
 # @sosb/editor-state
 
-Live document model with undo/redo, block manipulation actions.
+Live document model with debounced auto-save to a `@sosb/vfs` driver.
 
-Empty placeholder. Implementation tracked in issue future.
+The package is intentionally framework-agnostic: no Preact dependency. The
+Preact-specific binding lives in `@sosb/editor-app`.
 
-See `docs/PRD.md` for the canonical scope of this module.
+## Surface
+
+- `createEditorState({ initial, vfs?, debounceMs? })` — build an in-memory
+  state model around a `Site`.
+- `EditorState.getSnapshot()` / `update(fn)` / `subscribe(listener)` /
+  `flush()`.
+- `loadAutosave(vfs)` — restore the most-recent auto-saved snapshot.
+- `AUTOSAVE_PATH` — the stable path inside the VFS where snapshots live
+  (`editor/autosave.json`).
+
+See ADR-0005 for the design.
