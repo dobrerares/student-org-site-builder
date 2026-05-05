@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: v1 PRD
+    url: https://github.com/dobrerares/student-org-site-builder/blob/main/docs/PRD.md
+    about: Read the v1 product specification before filing scope or design questions.
+  - name: Architecture Decision Records
+    url: https://github.com/dobrerares/student-org-site-builder/tree/main/docs/adr
+    about: Decisions that have already been made — please cite ADR numbers when relevant.
+  - name: How to add a block
+    url: https://github.com/dobrerares/student-org-site-builder/blob/main/docs/how-to-add-a-block.md
+    about: Walkthrough for contributors implementing a new block type.
