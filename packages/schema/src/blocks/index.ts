@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { FaqBlockSchema } from "./faq.js";
 import { HeroBlockSchema } from "./hero.js";
 import { ValueListBlockSchema } from "./value-list.js";
 import { ContactCardBlockSchema } from "./contact-card.js";
@@ -88,6 +89,13 @@ export {
 export type { RichTextBlock, RichTextData } from "./rich-text.js";
 export { QuoteBlockSchema, QuoteDataSchema, QUOTE_BLOCK_VERSION } from "./quote.js";
 export type { QuoteBlock, QuoteData } from "./quote.js";
+export {
+  FaqBlockSchema,
+  FaqDataSchema,
+  FaqItemSchema,
+  FAQ_BLOCK_VERSION,
+} from "./faq.js";
+export type { FaqBlock, FaqData, FaqItem } from "./faq.js";
 
 /**
  * The block envelope is `{ id, type, version, data }`. This generic envelope
@@ -121,6 +129,7 @@ export const KnownBlockSchemas = {
   teamGrid: TeamGridBlockSchema,
   richText: RichTextBlockSchema,
   quote: QuoteBlockSchema,
+  faq: FaqBlockSchema,
 } as const;
 
 export type KnownBlockType = keyof typeof KnownBlockSchemas;

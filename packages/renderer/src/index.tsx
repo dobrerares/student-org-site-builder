@@ -74,3 +74,7 @@ export { STUB_THEME_ID } from "./themes/stub.js";
 export { homePageIndex, navPagesFor, pageDistPath, pagePath } from "./routing.js";
 export { EMBED_LAZY_LOAD_SCRIPT } from "./blocks/embed-lazy-loader.js";
 export { resolveEmbed } from "./blocks/embed.js";
+export {
+  FAQ_ACCORDION_SCRIPT_SOURCE,
+  FAQ_ENHANCED_ATTR,
+} from "./blocks/faq.script.js";

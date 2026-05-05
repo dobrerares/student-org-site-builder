@@ -6,6 +6,7 @@ import type {
   ContactCardBlock,
   CustomHtmlBlock,
   EmbedBlock,
+  FaqBlock,
   HeroBlock,
   QuoteBlock,
   RichTextBlock,
@@ -14,6 +15,7 @@ import type {
   ActivitiesListBlock,
 } from "@sosb/schema";
 import { isKnownBlockType } from "@sosb/schema";
+import { Faq } from "./blocks/faq.js";
 import { Hero } from "./blocks/hero.js";
 import { Quote } from "./blocks/quote.js";
 import { RichText } from "./blocks/rich-text.js";
@@ -88,6 +90,9 @@ function renderBlock(block: BlockEnvelope): preact.JSX.Element | null {
   }
   if (block.type === "teamGrid") {
     return <TeamGrid block={block as unknown as TeamGridBlock} />;
+  }
+  if (block.type === "faq") {
+    return <Faq block={block as unknown as FaqBlock} />;
   }
   return null;
 }

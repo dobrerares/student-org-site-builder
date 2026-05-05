@@ -349,6 +349,34 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
       }
       break;
     }
+    case "faq": {
+      // Warning: an FAQ block with no items is a quality nudge — the
+      // schema accepts the empty case so a placeholder block can sit on a
+      // page before items are written, but a published FAQ with zero items
+      // is a content gap worth surfacing.
+      if (block.data.items.length === 0) {
+        result.warnings.push({
+          severity: "warning",
+          path: ["data", "items"],
+          code: "block.faq.items.empty",
+          message: "FAQ block has no items. Add a question/answer pair or remove the block.",
+        });
+      }
+      // Warning: any item with an empty answer is a quality nudge — the
+      // question is asked but unanswered, which is a publish-blocker for
+      // visitors. We still allow it through so partial drafts can be saved.
+      block.data.items.forEach((item, idx) => {
+        if (typeof item.answer !== "string" || item.answer.trim().length === 0) {
+          result.warnings.push({
+            severity: "warning",
+            path: ["data", "items", idx, "answer"],
+            code: "block.faq.item.answer.empty",
+            message: `FAQ item "${item.question}" has no answer. Fill it in before publishing.`,
+          });
+        }
+      });
+      break;
+    }
     default: {
       // Exhaustiveness assertion: every known block must have a case branch.
       const _exhaustive: never = block;
