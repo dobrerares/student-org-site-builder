@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "org": {
+    "name": "Stub Org",
+    "tagline": "A multi-page renderer fixture"
+  },
+  "theme": {
+    "id": "stub",
+    "tokens": {
+      "colorPrimary": "#1f3a5f",
+      "colorAccent": "#c08a3e"
+    }
+  },
+  "defaultLanguage": "ro",
+  "languages": ["ro"],
+  "pages": [
+    {
+      "slug": "acasa",
+      "lang": "ro",
+      "navLabel": "Acasă",
+      "navOrder": 0,
+      "showInNav": true,
+      "seo": {
+        "title": "Stub — Acasă",
+        "description": "Pagina de acasă."
+      },
+      "blocks": [
+        {
+          "id": "blk_home_hero",
+          "type": "hero",
+          "version": 1,
+          "data": {
+            "eyebrow": "Bun venit",
+            "title": "Acasă"
+          }
+        }
+      ]
+    },
+    {
+      "slug": "despre",
+      "lang": "ro",
+      "navLabel": "Despre",
+      "navOrder": 1,
+      "showInNav": true,
+      "seo": {
+        "title": "Stub — Despre",
+        "description": "Pagina despre noi."
+      },
+      "blocks": [
+        {
+          "id": "blk_about_hero",
+          "type": "hero",
+          "version": 1,
+          "data": {
+            "title": "Despre noi"
+          }
+        }
+      ]
+    },
+    {
+      "slug": "multumim",
+      "lang": "ro",
+      "navLabel": "Mulțumim",
+      "navOrder": 2,
+      "showInNav": false,
+      "blocks": [
+        {
+          "id": "blk_thanks_hero",
+          "type": "hero",
+          "version": 1,
+          "data": {
+            "title": "Mulțumim"
+          }
+        }
+      ]
+    }
+  ]
+}

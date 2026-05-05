@@ -3,6 +3,7 @@ import type { Page, Site, BlockEnvelope, HeroBlock, ValueListBlock } from "@sosb
 import { isKnownBlockType } from "@sosb/schema";
 import { Hero } from "./blocks/hero.js";
 import { ValueList } from "./blocks/value-list.js";
+import { navPagesFor, pagePath } from "./routing.js";
 
 /**
  * The page shell.
@@ -53,6 +54,8 @@ export function PageShell(props: { site: Site; page: Page; css: string }): preac
   const { site, page, css } = props;
   const title = pageTitle(site, page);
   const description = pageDescription(site, page);
+  const navPages = navPagesFor(site, page);
+  const activeHref = pagePath(site, page);
 
   return (
     <html lang={page.lang}>
@@ -68,6 +71,31 @@ export function PageShell(props: { site: Site; page: Page; css: string }): preac
         <style dangerouslySetInnerHTML={{ __html: css }} />
       </head>
       <body>
+        {/* Site-level navigation. Hidden when only one page is in-nav for this
+         * language so single-page UX is preserved. The link list is ordered
+         * by navOrder; the active page is marked with aria-current="page" and
+         * data-active="true" so themes can style without re-ordering DOM. */}
+        {navPages.length > 1 && (
+          <nav data-site-nav aria-label="Site navigation">
+            <ul>
+              {navPages.map((entry) => {
+                const href = pagePath(site, entry);
+                const isActive = href === activeHref;
+                return (
+                  <li key={`${entry.lang}:${entry.slug}`}>
+                    <a
+                      href={href}
+                      data-active={isActive ? "true" : "false"}
+                      aria-current={isActive ? "page" : undefined}
+                    >
+                      {entry.navLabel}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        )}
         <main>
           {page.blocks.map((block) => {
             const rendered = renderBlock(block);

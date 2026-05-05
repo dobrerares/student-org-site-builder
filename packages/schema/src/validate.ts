@@ -2,6 +2,7 @@ import type { ZodSafeParseResult } from "zod";
 import { z } from "zod";
 import { BlockEnvelopeSchema, KnownBlockSchemas, isKnownBlockType } from "./blocks/index.js";
 import { SiteSchema } from "./site.js";
+import { checkSlug } from "./slug.js";
 
 /**
  * The three severity tiers from the PRD:
@@ -153,6 +154,20 @@ function runSiteRules(site: z.infer<typeof SiteSchema>, result: ValidationResult
       });
     } else {
       seen.set(key, idx);
+    }
+  });
+
+  // Errors: page slugs must obey the flat-slug format. The structural
+  // schema only checks `min(1)`; here we layer the URL-safety pattern.
+  site.pages.forEach((page, idx) => {
+    const failure = checkSlug(page.slug);
+    if (failure !== null) {
+      result.errors.push({
+        severity: "error",
+        path: ["pages", idx, "slug"],
+        code: `site.page.${failure.code}`,
+        message: failure.message,
+      });
     }
   });
 

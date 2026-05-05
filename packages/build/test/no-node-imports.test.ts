@@ -49,6 +49,12 @@ async function bundleBuildForBrowser(): Promise<string> {
   return out.text;
 }
 
+// Cold esbuild startup on Windows can exceed vitest's default 5s timeout
+// when bundling the full @sosb/build → @sosb/renderer → @sosb/schema graph
+// (especially as the workspace grows). 30 s is the same generous ceiling
+// the e2e Playwright bundling spec uses.
+const ESBUILD_TIMEOUT_MS = 30_000;
+
 describe("build — browser-runnability (no Node-only imports on runtime path)", () => {
   test("bundles cleanly for the browser without resolution errors", async () => {
     // The bundling itself failing — e.g. with "Could not resolve 'node:fs'" — is
@@ -56,14 +62,14 @@ describe("build — browser-runnability (no Node-only imports on runtime path)",
     // happy with every import on the runtime path.
     const bundle = await bundleBuildForBrowser();
     expect(bundle.length).toBeGreaterThan(0);
-  });
+  }, ESBUILD_TIMEOUT_MS);
 
   test("the browser bundle contains no `node:`-prefixed imports", async () => {
     const bundle = await bundleBuildForBrowser();
     expect(bundle).not.toMatch(/\bfrom\s+["']node:/);
     expect(bundle).not.toMatch(/\brequire\(["']node:/);
     expect(bundle).not.toMatch(/\bimport\(["']node:/);
-  });
+  }, ESBUILD_TIMEOUT_MS);
 
   test("the browser bundle does not reference Node built-in module names", async () => {
     const bundle = await bundleBuildForBrowser();
@@ -94,7 +100,7 @@ describe("build — browser-runnability (no Node-only imports on runtime path)",
       expect(bundle, `Node built-in '${name}' required`).not.toMatch(requirePattern);
       expect(bundle, `Node built-in '${name}' dynamic-imported`).not.toMatch(dynamicImportPattern);
     }
-  });
+  }, ESBUILD_TIMEOUT_MS);
 
   test("the browser bundle does not reference `process` as a global on the hot path", async () => {
     const bundle = await bundleBuildForBrowser();
@@ -104,7 +110,7 @@ describe("build — browser-runnability (no Node-only imports on runtime path)",
     expect(bundle).not.toMatch(/\bprocess\.env\b/);
     expect(bundle).not.toMatch(/\bprocess\.platform\b/);
     expect(bundle).not.toMatch(/\bprocess\.cwd\b/);
-  });
+  }, ESBUILD_TIMEOUT_MS);
 });
 
 function escapeRegExp(value: string): string {

@@ -13,6 +13,10 @@
 export { PageSchema, SITE_SCHEMA_VERSION, SiteSchema, parseSite } from "./site.js";
 export type { Org, Page, Site, Theme } from "./site.js";
 
+// Page slug rules (multi-page support)
+export { SLUG_PATTERN, checkSlug, isValidSlug } from "./slug.js";
+export type { SlugValidationFailure } from "./slug.js";
+
 // Blocks
 export {
   BlockEnvelopeSchema,

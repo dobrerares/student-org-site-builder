@@ -31,6 +31,8 @@ import { SiteSchema } from "@sosb/schema";
 import { fieldsFromSchema } from "./form-generator.js";
 import { SpineForm, applyPatch } from "./spine-form.js";
 import { iframeSrcdoc } from "./iframe-srcdoc.js";
+import { PagesList } from "./pages-list.js";
+import { addPage, clonePage, deletePage, movePage } from "./pages-ops.js";
 import { createPreviewHost } from "@sosb/preview-bridge";
 import { createEditorState, type EditorState } from "@sosb/editor-state";
 
@@ -79,6 +81,13 @@ export function EditorApp(props: EditorAppProps): JSX.Element {
   const isNarrow = viewportWidth < MOBILE_BREAKPOINT_PX;
   const [activeTab, setActiveTab] = useState<TabName>("editor");
 
+  // The page index currently surfaced in the spine form + preview. Defaults
+  // to the home (page 0); reorder/clone/delete update this so the editor
+  // never lands on a deleted page, and a brand-new add jumps to it.
+  const [activePageIndex, setActivePageIndex] = useState<number>(0);
+  // Clamp the active index whenever pages mutate.
+  const safeActivePageIndex = Math.min(activePageIndex, Math.max(snapshot.pages.length - 1, 0));
+
   // Iframe + preview-bridge wiring. The iframe ref is set when the iframe
   // mounts; on every snapshot change we (a) update the iframe's srcdoc
   // baseline and (b) post a `siteData` envelope through the bridge for any
@@ -88,8 +97,8 @@ export function EditorApp(props: EditorAppProps): JSX.Element {
     const iframe = iframeRef.current;
     if (iframe === null) return;
     const host = createPreviewHost({ iframe });
-    host.postSiteData(snapshot, snapshot.theme.id);
-  }, [snapshot]);
+    host.postSiteData(snapshot, snapshot.theme.id, safeActivePageIndex);
+  }, [snapshot, safeActivePageIndex]);
 
   function patch(path: readonly (string | number)[], value: unknown): void {
     state.update((draft) => {
@@ -97,13 +106,55 @@ export function EditorApp(props: EditorAppProps): JSX.Element {
     });
   }
 
+  function handleAddPage(slug: string): void {
+    state.update((draft) => {
+      Object.assign(draft, addPage(draft, slug));
+    });
+    // Jump to the newly-added page (last in pages[]).
+    setActivePageIndex(snapshot.pages.length); // index of new last page
+  }
+
+  function handleClonePage(index: number, slug: string): void {
+    state.update((draft) => {
+      Object.assign(draft, clonePage(draft, index, slug));
+    });
+    setActivePageIndex(index + 1);
+  }
+
+  function handleDeletePage(index: number): void {
+    state.update((draft) => {
+      Object.assign(draft, deletePage(draft, index));
+    });
+    if (index <= activePageIndex && activePageIndex > 0) {
+      setActivePageIndex(activePageIndex - 1);
+    }
+  }
+
+  function handleMovePage(index: number, direction: "up" | "down"): void {
+    state.update((draft) => {
+      Object.assign(draft, movePage(draft, index, direction));
+    });
+    const target = direction === "up" ? index - 1 : index + 1;
+    if (activePageIndex === index) setActivePageIndex(target);
+    else if (activePageIndex === target) setActivePageIndex(index);
+  }
+
   const editorPane = (
     <section data-testid="editor-pane">
+      <PagesList
+        site={snapshot}
+        activeIndex={safeActivePageIndex}
+        onSelect={setActivePageIndex}
+        onAdd={handleAddPage}
+        onClone={handleClonePage}
+        onDelete={handleDeletePage}
+        onMove={handleMovePage}
+      />
       <SpineForm fields={fields} site={snapshot} onPatch={patch} />
     </section>
   );
 
-  const previewSrcdoc = iframeSrcdoc(snapshot, snapshot.theme.id);
+  const previewSrcdoc = iframeSrcdoc(snapshot, snapshot.theme.id, safeActivePageIndex);
   const previewPane = (
     <section data-testid="preview-pane">
       <iframe

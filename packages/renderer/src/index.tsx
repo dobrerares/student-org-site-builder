@@ -71,3 +71,4 @@ function themeCssFor(themeId: string): string {
 }
 
 export { STUB_THEME_ID } from "./themes/stub.js";
+export { homePageIndex, navPagesFor, pageDistPath, pagePath } from "./routing.js";
