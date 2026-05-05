@@ -6,4 +6,11 @@ export default defineConfig({
     passWithNoTests: true,
     environment: "node",
   },
+  esbuild: {
+    // Editor-app tests use Preact JSX. The renderer's `.tsx` source already
+    // has its own JSX directive, so this only applies where no per-file
+    // pragma is set.
+    jsx: "automatic",
+    jsxImportSource: "preact",
+  },
 });
