@@ -318,6 +318,37 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
       });
       break;
     }
+    case "richText": {
+      // Warning: a richText block with no prose is a quality nudge, not a
+      // hard error (the schema accepts the empty case so a placeholder
+      // block can be added before the user has written content).
+      const md = block.data.markdown;
+      if (typeof md !== "string" || md.trim().length === 0) {
+        result.warnings.push({
+          severity: "warning",
+          path: ["data", "markdown"],
+          code: "block.richText.markdown.empty",
+          message: "richText block has no content. Add prose or remove the block.",
+        });
+      }
+      break;
+    }
+    case "quote": {
+      // Warning: an authorImage with no alt text is an accessibility nudge,
+      // mirroring the hero `backgroundAlt` rule. The schema does not require
+      // alt text (so the block can be authored before the alt is written),
+      // but the editor surfaces this warning so the user is reminded.
+      if (block.data.authorImage && !block.data.authorImageAlt) {
+        result.warnings.push({
+          severity: "warning",
+          path: ["data", "authorImageAlt"],
+          code: "block.quote.authorImageAlt.missing",
+          message:
+            "Quote block has an author image but no alt text. Add alt text for screen-reader users.",
+        });
+      }
+      break;
+    }
     default: {
       // Exhaustiveness assertion: every known block must have a case branch.
       const _exhaustive: never = block;

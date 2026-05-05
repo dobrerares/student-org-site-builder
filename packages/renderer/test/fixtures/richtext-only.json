@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "org": {
+    "name": "Stub Org",
+    "tagline": "A fixture for renderer tests"
+  },
+  "theme": {
+    "id": "stub",
+    "tokens": {
+      "colorPrimary": "#1f3a5f",
+      "colorAccent": "#c08a3e"
+    }
+  },
+  "defaultLanguage": "ro",
+  "languages": ["ro"],
+  "pages": [
+    {
+      "slug": "despre",
+      "lang": "ro",
+      "navLabel": "Despre",
+      "navOrder": 0,
+      "showInNav": true,
+      "seo": {
+        "title": "Stub site — despre",
+        "description": "RichText fixture for renderer tests."
+      },
+      "blocks": [
+        {
+          "id": "blk_about_intro",
+          "type": "richText",
+          "version": 1,
+          "data": {
+            "markdown": "## Despre noi\n\nSuntem o asociație **studențească** fondată în *2024*.\n\nValorile noastre:\n\n- Cercetare\n- Comunitate\n- Implicare\n\n> Calitatea nu este opțională.\n\nVizitați [site-ul nostru](https://anosr.ro) pentru detalii."
+          }
+        }
+      ]
+    }
+  ]
+}

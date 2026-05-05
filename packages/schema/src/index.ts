@@ -35,6 +35,12 @@ export {
   HeroBlockSchema,
   HeroDataSchema,
   KnownBlockSchemas,
+  QUOTE_BLOCK_VERSION,
+  QuoteBlockSchema,
+  QuoteDataSchema,
+  RICH_TEXT_BLOCK_VERSION,
+  RichTextBlockSchema,
+  RichTextDataSchema,
   TEAM_GRID_BLOCK_VERSION,
   TeamGridBlockSchema,
   TeamGridDataSchema,
@@ -68,6 +74,8 @@ export type {
   HeroBlock,
   HeroData,
   KnownBlockType,
+  QuoteBlock,
+  QuoteData,
   TeamGridBlock,
   TeamGridData,
   TeamGridPerson,
@@ -85,6 +93,8 @@ export type {
   ActivityImageRef,
   ActivityItem,
   ActivityLink,
+  RichTextBlock,
+  RichTextData,
 } from "./blocks/index.js";
 
 // Validation

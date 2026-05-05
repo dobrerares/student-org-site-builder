@@ -23,6 +23,7 @@
     "build": "tsc --build"
   },
   "dependencies": {
+    "@sosb/markdown": "workspace:*",
     "@sosb/schema": "workspace:*",
     "dompurify": "^3.4.2",
     "preact": "^10.29.1",
