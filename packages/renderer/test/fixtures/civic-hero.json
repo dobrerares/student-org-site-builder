@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "org": {
+    "name": "Asociația Studențească HISTORIPOL",
+    "tagline": "Învățăm din istorie. Construim politică."
+  },
+  "theme": {
+    "id": "civic"
+  },
+  "defaultLanguage": "ro",
+  "languages": ["ro"],
+  "pages": [
+    {
+      "slug": "acasa",
+      "lang": "ro",
+      "navLabel": "Acasă",
+      "navOrder": 0,
+      "showInNav": true,
+      "seo": {
+        "title": "HISTORIPOL — Asociație studențească",
+        "description": "Comunitate de studenți pasionați de istorie și politică, fondată în 2024 la Universitatea „Ovidius” din Constanța."
+      },
+      "blocks": [
+        {
+          "id": "blk_home_hero",
+          "type": "hero",
+          "version": 1,
+          "data": {
+            "eyebrow": "Constanța · Fondată în 2024",
+            "title": "Învățăm din istorie. Construim politică.",
+            "subtitle": "Asociația Studențească HISTORIPOL adună studenți de la Universitatea „Ovidius” într-o comunitate civică, academică și deschisă oricui vrea să înțeleagă cum se face cetățenia.",
+            "backgroundImage": "assets/hero.jpg",
+            "backgroundAlt": "Studenți participând la o dezbatere academică"
+          }
+        }
+      ]
+    }
+  ]
+}

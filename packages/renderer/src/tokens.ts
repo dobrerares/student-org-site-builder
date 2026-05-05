@@ -54,17 +54,23 @@ const BASELINE_TOKENS: ReadonlyArray<readonly [string, string]> = [
  * (later wins, standard CSS):
  *
  *   1. Baseline tokens (spacing scale, radius, fallback palette/fonts).
- *   2. Theme defaults (palette + fonts curated by the active theme), if any.
- *   3. Schema-provided overrides from `site.theme.tokens` (in
+ *   2. Schema-keyed theme defaults (`themeDefaults`) — palette + fonts
+ *      curated by the active theme, looked up via `SCHEMA_TOKEN_MAP` so the
+ *      keys stay aligned with `site.theme.tokens`.
+ *   3. CSS-prop-keyed theme baseline (`themeBaseline`) — raw
+ *      `[--css-prop, value]` pairs for themes that ship palettes outside
+ *      the schema-token surface.
+ *   4. Schema-provided user overrides from `site.theme.tokens` (in
  *      SCHEMA_TOKEN_MAP order).
  *
- * The duplicates are by design and cost a few bytes; the alternative —
- * filtering — would couple the baseline list to the schema's token list at
- * the wrong layer, per ADR 0003.
+ * The duplicates between baseline and overrides are by design and cost a
+ * few bytes; the alternative — filtering — would couple the baseline list
+ * to the schema's token list at the wrong layer, per ADR 0003.
  */
 export function emitTokenRoot(
   site: Site,
   themeDefaults?: Readonly<Record<string, string>>,
+  themeBaseline: ReadonlyArray<readonly [string, string]> = [],
 ): string {
   const declarations: string[] = [];
 
@@ -79,6 +85,10 @@ export function emitTokenRoot(
         declarations.push(`  ${cssProp}: ${raw};`);
       }
     }
+  }
+
+  for (const [name, value] of themeBaseline) {
+    declarations.push(`  ${name}: ${value};`);
   }
 
   const userTokens = site.theme.tokens ?? {};

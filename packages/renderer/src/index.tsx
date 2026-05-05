@@ -23,6 +23,7 @@ import {
   EDITORIAL_THEME_ID,
   EDITORIAL_THEME_TOKENS,
 } from "./themes/editorial.js";
+import { CIVIC_THEME_BASELINE_TOKENS, CIVIC_THEME_CSS, CIVIC_THEME_ID } from "./themes/civic.js";
 
 export interface RenderOptions {
   /**
@@ -44,9 +45,9 @@ export interface RenderOptions {
  * @param data    Validated site data. Callers should run `@sosb/schema`'s
  *                `validate(data)` first; this function trusts the shape.
  * @param themeId Theme to render under. Today `"stub"` (the renderer's
- *                layout-only sentinel) and `"modern"` (the curated theme
- *                from #28) are registered; future themes (#29-#31, #47)
- *                register additional ids.
+ *                layout-only sentinel), `"minimal"` (#29), `"modern"`
+ *                (#28), and `"civic"` (#30) are registered; future themes
+ *                (#31, #47) register additional ids the same way.
  * @param opts    Optional page selection.
  * @returns       A complete HTML document beginning with `<!doctype html>`.
  */
@@ -65,13 +66,14 @@ export function renderSite(data: Site, themeId: string, opts?: RenderOptions): s
 }
 
 function composeCss(site: Site, themeId: string): string {
-  const root = emitTokenRoot(site, themeDefaultsFor(themeId));
+  const root = emitTokenRoot(site, themeDefaultsFor(themeId), themeBaselineTokensFor(themeId));
   const themeCss = themeCssFor(themeId);
   return `${root}\n${themeCss}`;
 }
 
 function themeCssFor(themeId: string): string {
   if (themeId === EDITORIAL_THEME_ID) return EDITORIAL_THEME_CSS;
+  if (themeId === CIVIC_THEME_ID) return CIVIC_THEME_CSS;
   if (themeId === STUB_THEME_ID) return STUB_THEME_CSS;
   if (themeId === MINIMAL_THEME_ID) return MINIMAL_THEME_CSS;
   if (themeId === MODERN_THEME_ID) return MODERN_THEME_CSS;
@@ -89,10 +91,22 @@ function themeDefaultsFor(themeId: string): Readonly<Record<string, string>> | u
   return undefined;
 }
 
+/**
+ * Per-theme baseline tokens shipped as raw [cssProp, value] pairs. Composed
+ * into `:root` after the renderer's universal baseline and after schema-keyed
+ * theme defaults, so themes that prefer to ship CSS-property-keyed palettes
+ * (civic = #30) can do so without funnelling through `SCHEMA_TOKEN_MAP`.
+ */
+function themeBaselineTokensFor(themeId: string): ReadonlyArray<readonly [string, string]> {
+  if (themeId === CIVIC_THEME_ID) return CIVIC_THEME_BASELINE_TOKENS;
+  return [];
+}
+
 export { STUB_THEME_ID } from "./themes/stub.js";
 export { MINIMAL_THEME_ID } from "./themes/minimal.js";
 export { MODERN_THEME_ID } from "./themes/modern.js";
 export { EDITORIAL_THEME_ID } from "./themes/editorial.js";
+export { CIVIC_THEME_ID } from "./themes/civic.js";
 export {
   homePageIndex,
   homePagePathForLanguage,
