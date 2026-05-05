@@ -20,9 +20,19 @@ export {
   HeroBlockSchema,
   HeroDataSchema,
   KnownBlockSchemas,
+  RICH_TEXT_BLOCK_VERSION,
+  RichTextBlockSchema,
+  RichTextDataSchema,
   isKnownBlockType,
 } from "./blocks/index.js";
-export type { BlockEnvelope, HeroBlock, HeroData, KnownBlockType } from "./blocks/index.js";
+export type {
+  BlockEnvelope,
+  HeroBlock,
+  HeroData,
+  KnownBlockType,
+  RichTextBlock,
+  RichTextData,
+} from "./blocks/index.js";
 
 // Validation
 export { validate, validateBlock } from "./validate.js";

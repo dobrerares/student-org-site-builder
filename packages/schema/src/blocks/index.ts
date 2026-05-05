@@ -1,15 +1,22 @@
 import { z } from "zod";
 import { HeroBlockSchema } from "./hero.js";
+import { RichTextBlockSchema } from "./rich-text.js";
 
 export { HeroBlockSchema, HeroDataSchema, HERO_BLOCK_VERSION } from "./hero.js";
 export type { HeroBlock, HeroData } from "./hero.js";
+export {
+  RichTextBlockSchema,
+  RichTextDataSchema,
+  RICH_TEXT_BLOCK_VERSION,
+} from "./rich-text.js";
+export type { RichTextBlock, RichTextData } from "./rich-text.js";
 
 /**
  * The block envelope is `{ id, type, version, data }`. This generic envelope
  * accepts any string `type` and any positive `version`, so unknown block
  * types from a future editor version still parse and round-trip without
- * losing data. Known types (e.g. hero) are validated against their specific
- * schemas inside `validateBlock`.
+ * losing data. Known types (e.g. hero, richText) are validated against
+ * their specific schemas inside `validateBlock`.
  */
 export const BlockEnvelopeSchema = z.looseObject({
   id: z.string().min(1),
@@ -28,6 +35,7 @@ export type BlockEnvelope = z.infer<typeof BlockEnvelopeSchema>;
  */
 export const KnownBlockSchemas = {
   hero: HeroBlockSchema,
+  richText: RichTextBlockSchema,
 } as const;
 
 export type KnownBlockType = keyof typeof KnownBlockSchemas;

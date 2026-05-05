@@ -137,6 +137,9 @@ importers:
 
   packages/renderer:
     dependencies:
+      '@sosb/markdown':
+        specifier: workspace:*
+        version: link:../markdown
       '@sosb/schema':
         specifier: workspace:*
         version: link:../schema

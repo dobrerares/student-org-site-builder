@@ -1,7 +1,8 @@
 /** @jsxImportSource preact */
-import type { Page, Site, BlockEnvelope, HeroBlock } from "@sosb/schema";
+import type { Page, Site, BlockEnvelope, HeroBlock, RichTextBlock } from "@sosb/schema";
 import { isKnownBlockType } from "@sosb/schema";
 import { Hero } from "./blocks/hero.js";
+import { RichText } from "./blocks/rich-text.js";
 
 /**
  * The page shell.
@@ -38,12 +39,18 @@ function pageDescription(site: Site, page: Page): string | undefined {
 }
 
 function renderBlock(block: BlockEnvelope): preact.JSX.Element | null {
-  if (block.type === "hero") {
-    if (isKnownBlockType(block.type)) {
+  if (!isKnownBlockType(block.type)) return null;
+  switch (block.type) {
+    case "hero":
       return <Hero block={block as unknown as HeroBlock} />;
+    case "richText":
+      return <RichText block={block as unknown as RichTextBlock} />;
+    default: {
+      const _exhaustive: never = block.type;
+      void _exhaustive;
+      return null;
     }
   }
-  return null;
 }
 
 export function PageShell(props: { site: Site; page: Page; css: string }): preact.JSX.Element {
