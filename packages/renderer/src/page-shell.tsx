@@ -11,6 +11,7 @@ import type {
   HeroBlock,
   QuoteBlock,
   RichTextBlock,
+  PartnerLogosBlock,
   TeamGridBlock,
   ValueListBlock,
   ActivitiesListBlock,
@@ -28,6 +29,7 @@ import { Embed, pageHasLazyEmbed, EMBED_LOADER_MARKER } from "./blocks/embed.js"
 import { EMBED_LAZY_LOAD_SCRIPT } from "./blocks/embed-lazy-loader.js";
 import { CustomHtml } from "./blocks/custom-html.js";
 import { ActivitiesList } from "./blocks/activities-list.js";
+import { PartnerLogos } from "./blocks/partner-logos.js";
 import { navPagesFor, pagePath } from "./routing.js";
 
 /**
@@ -98,6 +100,9 @@ function renderBlock(block: BlockEnvelope): preact.JSX.Element | null {
   }
   if (block.type === "ctaBanner") {
     return <CtaBanner block={block as unknown as CtaBannerBlock} />;
+  }
+  if (block.type === "partnerLogos") {
+    return <PartnerLogos block={block as unknown as PartnerLogosBlock} />;
   }
   return null;
 }
