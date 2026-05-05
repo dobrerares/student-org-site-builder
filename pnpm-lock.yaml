@@ -55,6 +55,19 @@ importers:
 
   packages/browser-shell: {}
 
+  packages/build:
+    dependencies:
+      '@sosb/renderer':
+        specifier: workspace:*
+        version: link:../renderer
+      '@sosb/schema':
+        specifier: workspace:*
+        version: link:../schema
+    devDependencies:
+      esbuild:
+        specifier: ^0.24.0
+        version: 0.24.0
+
   packages/editor-app: {}
 
   packages/editor-state: {}
