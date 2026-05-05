@@ -40,3 +40,13 @@ export {
   type ExportConfirmDialogProps,
 } from "./export-confirm.js";
 export { navigateToIssue, findIssueTarget, pathToDotted } from "./issue-navigate.js";
+export { AddBlockDialog, type AddBlockDialogProps } from "./add-block-dialog.js";
+export { BlockListEditor, type BlockListEditorProps } from "./block-list-editor.js";
+export {
+  buildBlockCatalog,
+  type BlockCatalog,
+  type BlockCatalogEntry,
+  type BlockCatalogGroup,
+  type BlockCategory,
+} from "./block-catalog.js";
+export { defaultBlockFor } from "./block-defaults.js";
