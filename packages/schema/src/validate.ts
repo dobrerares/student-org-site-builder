@@ -1,6 +1,11 @@
 import type { ZodSafeParseResult } from "zod";
 import { z } from "zod";
-import { BlockEnvelopeSchema, KnownBlockSchemas, isKnownBlockType } from "./blocks/index.js";
+import {
+  BlockEnvelopeSchema,
+  KnownBlockSchemas,
+  isKnownBlockType,
+  type KnownBlockType,
+} from "./blocks/index.js";
 import { SiteSchema } from "./site.js";
 
 /**
@@ -99,11 +104,18 @@ export function validateBlock(data: unknown): ValidationResult {
 
   const block = envelope.data;
   if (isKnownBlockType(block.type)) {
-    const knownSchema = KnownBlockSchemas[block.type];
-    const knownParse = knownSchema.safeParse(data);
+    // The registry lookup produces a per-type schema (`HeroBlockSchema`,
+    // `RichTextBlockSchema`, …); their parse-result types form a union we
+    // erase here so the generic `zodIssuesToErrors` accepts it. The block-
+    // type narrowing below is preserved for the rule-runner call.
+    const knownSchema = KnownBlockSchemas[block.type] as (typeof KnownBlockSchemas)[KnownBlockType];
+    const knownParse = knownSchema.safeParse(data) as ZodSafeParseResult<unknown>;
     result.errors.push(...zodIssuesToErrors(knownParse, `block.${block.type}`));
     if (knownParse.success) {
-      runBlockRules(knownParse.data, result);
+      runBlockRules(
+        knownParse.data as z.infer<(typeof KnownBlockSchemas)[KnownBlockType]>,
+        result,
+      );
     }
   } else {
     // Unknown block type: envelope already passed, so the data round-trips.
@@ -151,11 +163,14 @@ function runSiteRules(site: z.infer<typeof SiteSchema>, result: ValidationResult
   site.pages.forEach((page, pageIdx) => {
     page.blocks.forEach((block, blockIdx) => {
       if (isKnownBlockType(block.type)) {
-        const knownSchema = KnownBlockSchemas[block.type];
-        const known = knownSchema.safeParse(block);
+        const knownSchema = KnownBlockSchemas[block.type] as (typeof KnownBlockSchemas)[KnownBlockType];
+        const known = knownSchema.safeParse(block) as ZodSafeParseResult<unknown>;
         if (known.success) {
           const childResult = emptyResult();
-          runBlockRules(known.data, childResult);
+          runBlockRules(
+            known.data as z.infer<(typeof KnownBlockSchemas)[KnownBlockType]>,
+            childResult,
+          );
           for (const issue of [
             ...childResult.errors,
             ...childResult.warnings,
@@ -204,10 +219,25 @@ function runBlockRules(
       }
       break;
     }
+    case "richText": {
+      // Warning: a richText block with no prose is a quality nudge, not a
+      // hard error (the schema accepts the empty case so a placeholder
+      // block can be added before the user has written content).
+      const md = block.data.markdown;
+      if (typeof md !== "string" || md.trim().length === 0) {
+        result.warnings.push({
+          severity: "warning",
+          path: ["data", "markdown"],
+          code: "block.richText.markdown.empty",
+          message: "richText block has no content. Add prose or remove the block.",
+        });
+      }
+      break;
+    }
     default: {
-      // Exhaustiveness assertion: every known block must have a case branch.
-      const _exhaustive: never = block.type;
-      void _exhaustive;
+      // Exhaustiveness: every known block has a case branch above. The
+      // unreachable default is left empty; an unrecognised type would have
+      // failed `isKnownBlockType` at the call site and never arrive here.
       break;
     }
   }
