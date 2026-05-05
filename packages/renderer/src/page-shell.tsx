@@ -8,6 +8,7 @@ import type {
   CustomHtmlBlock,
   DocumentDownloadsBlock,
   EmbedBlock,
+  EventListBlock,
   FaqBlock,
   HeroBlock,
   QuoteBlock,
@@ -35,6 +36,8 @@ import { PartnerLogos } from "./blocks/partner-logos.js";
 import { ImageGallery } from "./blocks/image-gallery.js";
 import { LIGHTBOX_SCRIPT } from "./lightbox-script.js";
 import { DocumentDownloads } from "./blocks/document-downloads.js";
+import { EventList } from "./blocks/event-list.js";
+import { EVENT_LIST_PAST_FADE_SCRIPT } from "./blocks/event-list-past-fade.js";
 import { navPagesFor, pagePath } from "./routing.js";
 
 /**
@@ -51,7 +54,7 @@ import { navPagesFor, pagePath } from "./routing.js";
  * dialog scaffold and the inline vanilla-JS bootstrap. The script is
  * shipped exactly once per page, regardless of how many galleries opt in.
  *
- * SECURITY NOTE on dangerouslySetInnerHTML usage in this file:
+ * SECURITY NOTE on inline HTML / script usage in this file:
  *  - The `<style>` block content is the renderer's own composed CSS string
  *    (token rule + theme CSS, both renderer-owned constants and validated
  *    schema values). It contains no user prose.
@@ -64,6 +67,10 @@ import { navPagesFor, pagePath } from "./routing.js";
  *    has been parsed against the BlockEnvelope schema (must be a non-empty
  *    string) and then comment-escaped via `escapeHtmlComment` to remove the
  *    `--` and `>` sequences that could break out. There is no script context.
+ *  - The eventList past-fade `<script>` body is
+ *    `EVENT_LIST_PAST_FADE_SCRIPT`, a renderer-owned compile-time constant
+ *    (no user input). It is only emitted when at least one eventList block
+ *    is present on the page; pages without event lists ship zero JS.
  */
 
 function pageTitle(site: Site, page: Page): string {
@@ -125,6 +132,9 @@ function renderBlock(block: BlockEnvelope): preact.JSX.Element | null {
   if (block.type === "documentDownloads") {
     return <DocumentDownloads block={block as unknown as DocumentDownloadsBlock} />;
   }
+  if (block.type === "eventList") {
+    return <EventList block={block as unknown as EventListBlock} />;
+  }
   return null;
 }
 
@@ -145,6 +155,10 @@ function pageNeedsLightbox(page: Page): boolean {
   return false;
 }
 
+function pageHasEventList(page: Page): boolean {
+  return page.blocks.some((b) => b.type === "eventList");
+}
+
 export function PageShell(props: { site: Site; page: Page; css: string }): preact.JSX.Element {
   const { site, page, css } = props;
   const title = pageTitle(site, page);
@@ -153,6 +167,7 @@ export function PageShell(props: { site: Site; page: Page; css: string }): preac
   const activeHref = pagePath(site, page);
   const hasLazyEmbed = pageHasLazyEmbed(page.blocks);
   const needsLightbox = pageNeedsLightbox(page);
+  const hasEventList = pageHasEventList(page);
 
   return (
     <html lang={page.lang}>
@@ -218,6 +233,12 @@ export function PageShell(props: { site: Site; page: Page; css: string }): preac
           <script
             data-sosb-lightbox-script
             dangerouslySetInnerHTML={{ __html: LIGHTBOX_SCRIPT }}
+          />
+        )}
+        {hasEventList && (
+          <script
+            data-sosb="event-list-past-fade"
+            dangerouslySetInnerHTML={{ __html: EVENT_LIST_PAST_FADE_SCRIPT }}
           />
         )}
       </body>

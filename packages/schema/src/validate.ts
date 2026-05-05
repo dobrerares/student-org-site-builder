@@ -429,6 +429,14 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
       // doc, etc.) they land here.
       break;
     }
+    case "eventList": {
+      // No quality nudges defined for v1. The schema-level checks (ISO 8601
+      // with offset, non-empty title/id, closed enums) are the entire
+      // contract. Future warnings (e.g. missing image alt on individual
+      // events, "all events are in the past — consider hiding the block")
+      // can layer on without changing this signature.
+      break;
+    }
     default: {
       // Exhaustiveness assertion: every known block must have a case branch.
       const _exhaustive: never = block;
