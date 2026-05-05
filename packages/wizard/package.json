@@ -5,10 +5,20 @@
   "description": "6-step state machine + Preact UI for guided onboarding.",
   "license": "MIT",
   "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./src/index.tsx",
+  "types": "./src/index.tsx",
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json",
     "build": "tsc --build"
+  },
+  "dependencies": {
+    "@sosb/schema": "workspace:*",
+    "@sosb/vfs": "workspace:*",
+    "preact": "^10.29.1"
+  },
+  "devDependencies": {
+    "@testing-library/preact": "^3.2.4",
+    "@types/jsdom": "^21.1.7",
+    "jsdom": "^25.0.1"
   }
 }
