@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "org": {
+    "name": "Stub Org",
+    "tagline": "Document downloads fixture",
+    "email": "test@example.org"
+  },
+  "theme": {
+    "id": "stub",
+    "tokens": {
+      "colorPrimary": "#1f3a5f",
+      "colorAccent": "#c08a3e"
+    }
+  },
+  "defaultLanguage": "ro",
+  "languages": ["ro"],
+  "pages": [
+    {
+      "slug": "documente",
+      "lang": "ro",
+      "navLabel": "Documente",
+      "navOrder": 0,
+      "showInNav": true,
+      "seo": {
+        "title": "Documente — Stub Org",
+        "description": "Materialele oficiale ale organizației."
+      },
+      "blocks": [
+        {
+          "id": "blk_home_hero",
+          "type": "hero",
+          "version": 1,
+          "data": {
+            "title": "Documente publice",
+            "subtitle": "Materialele oficiale ale organizației."
+          }
+        },
+        {
+          "id": "blk_documents",
+          "type": "documentDownloads",
+          "version": 1,
+          "data": {
+            "title": "Materiale descărcabile",
+            "intro": "Documentele oficiale ale asociației pot fi descărcate aici.",
+            "layout": "list",
+            "files": [
+              {
+                "asset": {
+                  "hash": "8e3a7f9b1c0d2e4f",
+                  "path": "assets/8e3a7f9b1c0d2e4f.pdf",
+                  "metadataPath": "assets/8e3a7f9b1c0d2e4f.metadata.json",
+                  "mime": "application/pdf",
+                  "byteSize": 184320
+                },
+                "label": "Regulament intern",
+                "description": "Regulamentul anual al organizației, ediția 2026."
+              },
+              {
+                "asset": {
+                  "hash": "1234abcd5678ef90",
+                  "path": "assets/1234abcd5678ef90.docx",
+                  "metadataPath": "assets/1234abcd5678ef90.metadata.json",
+                  "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                  "byteSize": 25600
+                },
+                "label": "Statut"
+              },
+              {
+                "asset": {
+                  "hash": "fedcba9876543210",
+                  "path": "assets/fedcba9876543210.csv",
+                  "metadataPath": "assets/fedcba9876543210.metadata.json",
+                  "mime": "text/csv",
+                  "byteSize": 4096
+                },
+                "label": "Membri 2026",
+                "description": "Lista publică a membrilor activi."
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
