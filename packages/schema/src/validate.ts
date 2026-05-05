@@ -400,6 +400,11 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
       }
       break;
     }
+    case "partnerLogos": {
+      // No warnings v1: the schema already enforces non-empty partner names
+      // (the alt-text source) and AssetRef alt fields.
+      break;
+    }
     default: {
       // Exhaustiveness assertion: every known block must have a case branch.
       const _exhaustive: never = block;

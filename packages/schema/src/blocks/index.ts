@@ -10,6 +10,7 @@ import { TeamGridBlockSchema } from "./team-grid.js";
 import { QuoteBlockSchema } from "./quote.js";
 import { RichTextBlockSchema } from "./rich-text.js";
 import { CtaBannerBlockSchema } from "./cta-banner.js";
+import { PartnerLogosBlockSchema } from "./partner-logos.js";
 
 export { HeroBlockSchema, HeroDataSchema, HERO_BLOCK_VERSION } from "./hero.js";
 export type { HeroBlock, HeroData } from "./hero.js";
@@ -97,6 +98,18 @@ export {
   FAQ_BLOCK_VERSION,
 } from "./faq.js";
 export type { FaqBlock, FaqData, FaqItem } from "./faq.js";
+export {
+  AssetRefSchema,
+  PARTNER_LOGOS_BLOCK_VERSION,
+  PartnerLogosBlockSchema,
+  PartnerLogosDataSchema,
+} from "./partner-logos.js";
+export type {
+  AssetRefValue,
+  Partner,
+  PartnerLogosBlock,
+  PartnerLogosData,
+} from "./partner-logos.js";
 
 export {
   CTA_BANNER_BLOCK_VERSION,
@@ -148,6 +161,7 @@ export const KnownBlockSchemas = {
   quote: QuoteBlockSchema,
   faq: FaqBlockSchema,
   ctaBanner: CtaBannerBlockSchema,
+  partnerLogos: PartnerLogosBlockSchema,
 } as const;
 
 export type KnownBlockType = keyof typeof KnownBlockSchemas;

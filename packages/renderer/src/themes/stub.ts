@@ -572,4 +572,37 @@ main { display: block; }
   color: var(--color-primary);
   text-decoration: underline;
 }
+[data-block="partnerLogos"] {
+  padding: var(--space-xl) var(--space-md);
+}
+[data-block="partnerLogos"] .partner-logos__title {
+  font-family: var(--font-headline);
+  margin: 0 0 var(--space-md) 0;
+  color: var(--color-primary);
+}
+.partner-logos__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-md);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.partner-logos__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.partner-logos__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.partner-logos__logo {
+  display: block;
+  height: var(--space-xl);
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
 `.trim();

@@ -19,6 +19,7 @@ export type { SlugValidationFailure } from "./slug.js";
 
 // Blocks
 export {
+  AssetRefSchema,
   BlockEnvelopeSchema,
   CONTACT_CARD_BLOCK_VERSION,
   CTA_BANNER_BLOCK_VERSION,
@@ -61,6 +62,9 @@ export {
   ValueListBlockSchema,
   ValueListDataSchema,
   ValueListItemSchema,
+  PARTNER_LOGOS_BLOCK_VERSION,
+  PartnerLogosBlockSchema,
+  PartnerLogosDataSchema,
   isKnownBlockType,
   isValidEmbedUrl,
   ACTIVITIES_LIST_BLOCK_VERSION,
@@ -72,6 +76,7 @@ export {
   ActivityLinkSchema,
 } from "./blocks/index.js";
 export type {
+  AssetRefValue,
   BlockEnvelope,
   ContactCardBlock,
   ContactCardData,
@@ -94,6 +99,9 @@ export type {
   KnownBlockType,
   QuoteBlock,
   QuoteData,
+  Partner,
+  PartnerLogosBlock,
+  PartnerLogosData,
   TeamGridBlock,
   TeamGridData,
   TeamGridPerson,
