@@ -44,6 +44,13 @@ export {
   ValueListItemSchema,
   isKnownBlockType,
   isValidEmbedUrl,
+  ACTIVITIES_LIST_BLOCK_VERSION,
+  ActivitiesListBlockSchema,
+  ActivitiesListDataSchema,
+  ActivitiesListLayoutSchema,
+  ActivityImageRefSchema,
+  ActivityItemSchema,
+  ActivityLinkSchema,
 } from "./blocks/index.js";
 export type {
   BlockEnvelope,
@@ -64,6 +71,12 @@ export type {
   ValueListIconName,
   ValueListItem,
   ValueListLayout,
+  ActivitiesListBlock,
+  ActivitiesListData,
+  ActivitiesListLayout,
+  ActivityImageRef,
+  ActivityItem,
+  ActivityLink,
 } from "./blocks/index.js";
 
 // Validation

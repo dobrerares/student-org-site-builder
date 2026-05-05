@@ -8,6 +8,7 @@ import type {
   EmbedBlock,
   HeroBlock,
   ValueListBlock,
+  ActivitiesListBlock,
 } from "@sosb/schema";
 import { isKnownBlockType } from "@sosb/schema";
 import { Hero } from "./blocks/hero.js";
@@ -16,6 +17,7 @@ import { ContactCard } from "./blocks/contact-card.js";
 import { Embed, pageHasLazyEmbed, EMBED_LOADER_MARKER } from "./blocks/embed.js";
 import { EMBED_LAZY_LOAD_SCRIPT } from "./blocks/embed-lazy-loader.js";
 import { CustomHtml } from "./blocks/custom-html.js";
+import { ActivitiesList } from "./blocks/activities-list.js";
 import { navPagesFor, pagePath } from "./routing.js";
 
 /**
@@ -68,6 +70,9 @@ function renderBlock(block: BlockEnvelope): preact.JSX.Element | null {
   }
   if (block.type === "customHTML") {
     return <CustomHtml block={block as unknown as CustomHtmlBlock} />;
+  }
+  if (block.type === "activitiesList") {
+    return <ActivitiesList block={block as unknown as ActivitiesListBlock} />;
   }
   return null;
 }
