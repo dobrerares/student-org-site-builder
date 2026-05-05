@@ -4,6 +4,7 @@ import type {
   Site,
   BlockEnvelope,
   ContactCardBlock,
+  CustomHtmlBlock,
   EmbedBlock,
   HeroBlock,
   ValueListBlock,
@@ -14,6 +15,7 @@ import { ValueList } from "./blocks/value-list.js";
 import { ContactCard } from "./blocks/contact-card.js";
 import { Embed, pageHasLazyEmbed, EMBED_LOADER_MARKER } from "./blocks/embed.js";
 import { EMBED_LAZY_LOAD_SCRIPT } from "./blocks/embed-lazy-loader.js";
+import { CustomHtml } from "./blocks/custom-html.js";
 import { navPagesFor, pagePath } from "./routing.js";
 
 /**
@@ -63,6 +65,9 @@ function renderBlock(block: BlockEnvelope): preact.JSX.Element | null {
   }
   if (block.type === "embed") {
     return <Embed block={block as unknown as EmbedBlock} />;
+  }
+  if (block.type === "customHTML") {
+    return <CustomHtml block={block as unknown as CustomHtmlBlock} />;
   }
   return null;
 }

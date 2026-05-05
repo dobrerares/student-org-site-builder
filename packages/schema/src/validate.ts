@@ -1,6 +1,10 @@
 import type { ZodSafeParseResult } from "zod";
 import { z } from "zod";
-import { BlockEnvelopeSchema, KnownBlockSchemas, isKnownBlockType } from "./blocks/index.js";
+import {
+  BlockEnvelopeSchema,
+  KnownBlockSchemas,
+  isKnownBlockType,
+} from "./blocks/index.js";
 import { SiteSchema } from "./site.js";
 import { checkSlug } from "./slug.js";
 
@@ -216,6 +220,12 @@ function runSiteRules(site: z.infer<typeof SiteSchema>, result: ValidationResult
 }
 
 function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
+  // The discriminator (`block.type`) survives schema-level `looseObject`
+  // because each known block declares it as `z.literal(...)`. The switch
+  // covers every entry of `KnownBlockSchemas`; the default branch is
+  // unreachable for known types and is only here as a defensive no-op for
+  // future block types that arrive in the registry before this switch is
+  // updated.
   switch (block.type) {
     case "hero": {
       // Warning: a hero with a background image but no alt text is an
@@ -266,6 +276,21 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
       // Schema-level validation already enforces title presence and URL/provider
       // match. A future quality nudge could warn on very short titles; not
       // included today.
+      break;
+    }
+    case "customHTML": {
+      // Warning: sanitize-off is a deliberate-danger opt-in. The editor
+      // surfaces a persistent warning UI inline; this validation issue lets
+      // the Site Health panel and the validation report record it too.
+      if (block.data.sanitize === false) {
+        result.warnings.push({
+          severity: "warning",
+          path: ["data", "sanitize"],
+          code: "block.customHTML.sanitize.off",
+          message:
+            "Custom HTML block has sanitization disabled. Raw HTML will be rendered without protection — only use for trusted content.",
+        });
+      }
       break;
     }
     default: {

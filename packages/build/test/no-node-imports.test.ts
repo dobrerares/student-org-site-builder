@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { beforeAll, describe, expect, test } from "vitest";
 import { build as esbuild } from "esbuild";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -56,23 +56,30 @@ async function bundleBuildForBrowser(): Promise<string> {
 const ESBUILD_TIMEOUT_MS = 30_000;
 
 describe("build — browser-runnability (no Node-only imports on runtime path)", () => {
-  test("bundles cleanly for the browser without resolution errors", async () => {
+  // Cache the bundle so each test reuses one build. Bundling pulls the full
+  // renderer dependency tree (Preact + DOMPurify) and takes ~2-3s on cold
+  // run; running it four separate times exceeded vitest's per-test 5s
+  // timeout under parallel load. The bundle output is stable for the
+  // suite's lifetime, so caching is correct.
+  let bundle = "";
+  beforeAll(async () => {
+    bundle = await bundleBuildForBrowser();
+  }, 30000);
+
+  test("bundles cleanly for the browser without resolution errors", () => {
     // The bundling itself failing — e.g. with "Could not resolve 'node:fs'" — is
     // the primary signal. Reaching this assertion at all means esbuild was
     // happy with every import on the runtime path.
-    const bundle = await bundleBuildForBrowser();
     expect(bundle.length).toBeGreaterThan(0);
   }, ESBUILD_TIMEOUT_MS);
 
-  test("the browser bundle contains no `node:`-prefixed imports", async () => {
-    const bundle = await bundleBuildForBrowser();
+  test("the browser bundle contains no `node:`-prefixed imports", () => {
     expect(bundle).not.toMatch(/\bfrom\s+["']node:/);
     expect(bundle).not.toMatch(/\brequire\(["']node:/);
     expect(bundle).not.toMatch(/\bimport\(["']node:/);
   }, ESBUILD_TIMEOUT_MS);
 
-  test("the browser bundle does not reference Node built-in module names", async () => {
-    const bundle = await bundleBuildForBrowser();
+  test("the browser bundle does not reference Node built-in module names", () => {
     // The forbidden built-ins. We deliberately do NOT include `process` /
     // `Buffer` here because those are global identifiers; checking for `from
     // "process"` etc. as an import specifier is the right grain.
@@ -102,8 +109,7 @@ describe("build — browser-runnability (no Node-only imports on runtime path)",
     }
   }, ESBUILD_TIMEOUT_MS);
 
-  test("the browser bundle does not reference `process` as a global on the hot path", async () => {
-    const bundle = await bundleBuildForBrowser();
+  test("the browser bundle does not reference `process` as a global on the hot path", () => {
     // `process.env.NODE_ENV` style references. We check for unwrapped
     // accesses; esbuild often leaves these alone for browser bundles, which
     // is exactly the failure mode we want to catch.

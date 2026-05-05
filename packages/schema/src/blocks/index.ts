@@ -3,6 +3,7 @@ import { HeroBlockSchema } from "./hero.js";
 import { ValueListBlockSchema } from "./value-list.js";
 import { ContactCardBlockSchema } from "./contact-card.js";
 import { EmbedBlockSchema } from "./embed.js";
+import { CustomHtmlBlockSchema } from "./custom-html.js";
 
 export { HeroBlockSchema, HeroDataSchema, HERO_BLOCK_VERSION } from "./hero.js";
 export type { HeroBlock, HeroData } from "./hero.js";
@@ -40,6 +41,13 @@ export {
 } from "./embed.js";
 export type { EmbedBlock, EmbedData, EmbedProvider } from "./embed.js";
 
+export {
+  CustomHtmlBlockSchema,
+  CustomHtmlDataSchema,
+  CUSTOM_HTML_BLOCK_VERSION,
+} from "./custom-html.js";
+export type { CustomHtmlBlock, CustomHtmlData } from "./custom-html.js";
+
 /**
  * The block envelope is `{ id, type, version, data }`. This generic envelope
  * accepts any string `type` and any positive `version`, so unknown block
@@ -67,6 +75,7 @@ export const KnownBlockSchemas = {
   valueList: ValueListBlockSchema,
   contactCard: ContactCardBlockSchema,
   embed: EmbedBlockSchema,
+  customHTML: CustomHtmlBlockSchema,
 } as const;
 
 export type KnownBlockType = keyof typeof KnownBlockSchemas;
