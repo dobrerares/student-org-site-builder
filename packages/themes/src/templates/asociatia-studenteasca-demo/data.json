@@ -1,0 +1,412 @@
+{
+  "schemaVersion": 1,
+  "org": {
+    "name": "Asociația Studențească Demo",
+    "tagline": "O comunitate de studenți care învață împreună",
+    "foundedYear": 2021,
+    "logo": "assets/placeholder-logo.svg",
+    "address": "Strada Universității nr. 1, Demo City 010101",
+    "email": "contact@demo-asociatie.example",
+    "phone": "+40 700 000 000",
+    "social": [
+      { "platform": "instagram", "url": "https://instagram.com/demo-asociatie" },
+      { "platform": "facebook", "url": "https://facebook.com/demo-asociatie" },
+      { "platform": "linkedin", "url": "https://linkedin.com/company/demo-asociatie" }
+    ]
+  },
+  "theme": {
+    "id": "academic",
+    "tokens": {
+      "colorPrimary": "#1f3a5f",
+      "colorAccent": "#c08a3e",
+      "fontHeadline": "Inter",
+      "fontBody": "Inter",
+      "density": "comfortable",
+      "radius": "sm"
+    }
+  },
+  "defaultLanguage": "ro",
+  "languages": ["ro"],
+  "pages": [
+    {
+      "slug": "acasa",
+      "lang": "ro",
+      "navLabel": "Acasă",
+      "navOrder": 0,
+      "showInNav": true,
+      "seo": {
+        "title": "Asociația Studențească Demo — Acasă",
+        "description": "Asociația Studențească Demo reunește studenți care vor să crească împreună prin proiecte academice, culturale și de voluntariat."
+      },
+      "blocks": [
+        {
+          "id": "blk_home_hero",
+          "type": "hero",
+          "version": 1,
+          "data": {
+            "eyebrow": "Bun venit",
+            "title": "Asociația Studențească Demo",
+            "subtitle": "Învățăm, creștem și construim împreună o comunitate studențească puternică.",
+            "backgroundImage": "assets/placeholder-photo-hero.jpg",
+            "backgroundAlt": "Studenți în aulă în timpul unei conferințe academice"
+          }
+        },
+        {
+          "id": "blk_home_intro",
+          "type": "richText",
+          "version": 1,
+          "data": {
+            "markdown": "Suntem o asociație studențească dedicată sprijinirii colegilor noștri pe parcursul anilor universitari. Organizăm conferințe, ateliere practice, vizite de studiu și activități de voluntariat. Toate proiectele noastre pornesc de la o singură întrebare: ce ne-ar fi fost de folos nouă, în primul an? Răspunsurile devin programe concrete pentru fiecare nouă generație."
+          }
+        },
+        {
+          "id": "blk_home_values",
+          "type": "valueList",
+          "version": 1,
+          "data": {
+            "headline": "Valorile noastre",
+            "items": [
+              {
+                "title": "Curiozitate academică",
+                "description": "Punem întrebări dincolo de programa cursului și căutăm răspunsuri împreună."
+              },
+              {
+                "title": "Solidaritate între generații",
+                "description": "Studenții din ani mai mari sprijină boboci prin mentorat și sesiuni de tutoriat."
+              },
+              {
+                "title": "Implicare civică",
+                "description": "Considerăm că rolul nostru depășește amfiteatrul: contribuim la comunitatea locală."
+              },
+              {
+                "title": "Transparență",
+                "description": "Publicăm rapoarte anuale, decizii de buget și procese-verbale ale ședințelor."
+              },
+              {
+                "title": "Incluziune",
+                "description": "Proiectele noastre sunt deschise tuturor studenților, indiferent de specializare."
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_home_activities",
+          "type": "activitiesList",
+          "version": 1,
+          "data": {
+            "headline": "Ce facem împreună",
+            "items": [
+              {
+                "title": "Conferința Anuală a Studenților",
+                "description": "Două zile de paneluri academice, mese rotunde și dezbateri pe teme alese de studenți.",
+                "image": "assets/placeholder-photo-activity-1.jpg",
+                "imageAlt": "Studenți așezați în sală în timpul unei prezentări",
+                "badge": "Anual"
+              },
+              {
+                "title": "Mentorat pentru boboci",
+                "description": "Cuplăm studenții din anul I cu mentori din ani mai mari pentru sprijin academic și administrativ.",
+                "image": "assets/placeholder-photo-activity-2.jpg",
+                "imageAlt": "Două studente discutând la o masă din bibliotecă",
+                "badge": "Lunar"
+              },
+              {
+                "title": "Atelierele de scriere academică",
+                "description": "Sesiuni practice de redactare, citare și prezentare orală pentru lucrări de licență și disertație.",
+                "image": "assets/placeholder-photo-activity-3.jpg",
+                "imageAlt": "Studenți la calculatoare în timpul unui atelier",
+                "badge": "Sezonier"
+              },
+              {
+                "title": "Voluntariat în comunitate",
+                "description": "Proiecte sociale realizate alături de ONG-uri din oraș: tabere educaționale și acțiuni de mediu.",
+                "image": "assets/placeholder-photo-activity-4.jpg",
+                "imageAlt": "Studenți în voluntariat în natură",
+                "badge": "Sezonier"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_home_quote",
+          "type": "quote",
+          "version": 1,
+          "data": {
+            "text": "Asociația mi-a oferit primul context în care am simțit că opinia mea contează — și primul cadru în care am învățat să o argumentez.",
+            "attribution": "Andreea, absolventă, 2024"
+          }
+        },
+        {
+          "id": "blk_home_cta",
+          "type": "ctaBanner",
+          "version": 1,
+          "data": {
+            "headline": "Vrei să ni te alături?",
+            "subheadline": "Recrutăm membri noi în fiecare semestru. Trimite-ne un mesaj scurt despre tine și domeniul care te interesează.",
+            "buttonLabel": "Scrie-ne",
+            "buttonUrl": "mailto:contact@demo-asociatie.example"
+          }
+        },
+        {
+          "id": "blk_home_partners",
+          "type": "partnerLogos",
+          "version": 1,
+          "data": {
+            "headline": "Ne sprijină",
+            "items": [
+              {
+                "name": "Editura Demo",
+                "logo": "assets/placeholder-logo-partner-1.svg",
+                "url": "https://editura.example"
+              },
+              {
+                "name": "Fundația Demo pentru Educație",
+                "logo": "assets/placeholder-logo-partner-2.svg",
+                "url": "https://fundatie.example"
+              },
+              {
+                "name": "Librăria Demo",
+                "logo": "assets/placeholder-logo-partner-3.svg",
+                "url": "https://librarie.example"
+              },
+              {
+                "name": "Centrul Cultural Demo",
+                "logo": "assets/placeholder-logo-partner-4.svg",
+                "url": "https://centru-cultural.example"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_home_events",
+          "type": "eventList",
+          "version": 1,
+          "data": {
+            "headline": "Evenimente",
+            "items": [
+              {
+                "title": "Conferința Anuală — ediția 2026",
+                "date": "2026-04-18",
+                "summary": "Două zile de discuții deschise cu profesori invitați și absolvenți.",
+                "status": "upcoming"
+              },
+              {
+                "title": "Atelier de scriere academică",
+                "date": "2026-03-12",
+                "summary": "Tehnici de structurare și citare pentru lucrări de licență.",
+                "status": "upcoming"
+              },
+              {
+                "title": "Caravana de voluntariat 2025",
+                "date": "2025-09-20",
+                "summary": "Ediția de toamnă a programului nostru de voluntariat.",
+                "status": "past"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "slug": "despre",
+      "lang": "ro",
+      "navLabel": "Despre noi",
+      "navOrder": 1,
+      "showInNav": true,
+      "seo": {
+        "title": "Despre Asociația Studențească Demo",
+        "description": "Misiunea, viziunea, echipa și partenerii Asociației Studențești Demo."
+      },
+      "blocks": [
+        {
+          "id": "blk_about_hero",
+          "type": "hero",
+          "version": 1,
+          "data": {
+            "eyebrow": "Despre noi",
+            "title": "Cine suntem",
+            "subtitle": "O asociație fondată de studenți, pentru studenți, în jurul ideii că învățarea cea mai bună se întâmplă într-o comunitate."
+          }
+        },
+        {
+          "id": "blk_about_mission",
+          "type": "richText",
+          "version": 1,
+          "data": {
+            "markdown": "## Misiunea noastră\n\nSă oferim fiecărui student din comunitatea noastră un cadru în care poate să își dezvolte gândirea critică, abilitățile de comunicare și încrederea în propria voce.\n\n## Viziunea noastră\n\nO universitate în care studenții nu sunt doar destinatari ai educației, ci coautori activi ai vieții academice — prin proiecte, evenimente și inițiative pe care le construiesc împreună."
+          }
+        },
+        {
+          "id": "blk_about_team",
+          "type": "teamGrid",
+          "version": 1,
+          "data": {
+            "headline": "Echipa de coordonare",
+            "members": [
+              {
+                "name": "Maria Popescu",
+                "role": "Președintă",
+                "photo": "assets/placeholder-avatar-1.jpg",
+                "photoAlt": "Portret studentă, fundal neutru",
+                "bio": "Studentă în anul III, coordonează echipa și relațiile cu partenerii.",
+                "social": [{ "platform": "linkedin", "url": "https://linkedin.com/in/demo-1" }]
+              },
+              {
+                "name": "Andrei Ionescu",
+                "role": "Vicepreședinte — Proiecte",
+                "photo": "assets/placeholder-avatar-2.jpg",
+                "photoAlt": "Portret student, fundal neutru",
+                "bio": "Coordonează echipa de proiecte academice și conferința anuală."
+              },
+              {
+                "name": "Ioana Marin",
+                "role": "Vicepreședintă — Comunicare",
+                "photo": "assets/placeholder-avatar-3.jpg",
+                "photoAlt": "Portret studentă, fundal neutru",
+                "bio": "Răspunde de identitatea vizuală și relația cu media."
+              },
+              {
+                "name": "Ștefan Constantin",
+                "role": "Director — Voluntariat",
+                "photo": "assets/placeholder-avatar-4.jpg",
+                "photoAlt": "Portret student, fundal neutru",
+                "bio": "Conduce programele de implicare în comunitatea locală."
+              },
+              {
+                "name": "Alexandra Dumitru",
+                "role": "Director — Mentorat",
+                "photo": "assets/placeholder-avatar-5.jpg",
+                "photoAlt": "Portret studentă, fundal neutru",
+                "bio": "Construiește perechile de mentor-bobocă pentru fiecare an universitar."
+              },
+              {
+                "name": "Tudor Radu",
+                "role": "Trezorier",
+                "photo": "assets/placeholder-avatar-6.jpg",
+                "photoAlt": "Portret student, fundal neutru",
+                "bio": "Ține evidența bugetului și publică rapoartele financiare."
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_about_gallery",
+          "type": "imageGallery",
+          "version": 1,
+          "data": {
+            "headline": "Imagini din activitățile noastre",
+            "items": [
+              {
+                "image": "assets/placeholder-photo-gallery-1.jpg",
+                "alt": "Studenți la o conferință",
+                "caption": "Conferința Anuală, 2024"
+              },
+              {
+                "image": "assets/placeholder-photo-gallery-2.jpg",
+                "alt": "Atelier de scriere academică",
+                "caption": "Atelier de scriere academică"
+              },
+              {
+                "image": "assets/placeholder-photo-gallery-3.jpg",
+                "alt": "Voluntariat în natură",
+                "caption": "Caravana de voluntariat"
+              },
+              {
+                "image": "assets/placeholder-photo-gallery-4.jpg",
+                "alt": "Sesiune de mentorat în bibliotecă",
+                "caption": "Sesiune de mentorat"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_about_faq",
+          "type": "faq",
+          "version": 1,
+          "data": {
+            "headline": "Întrebări frecvente",
+            "items": [
+              {
+                "question": "Cine se poate înscrie în asociație?",
+                "answer": "Orice student al universității, indiferent de specializare sau an de studiu, poate deveni membru al asociației."
+              },
+              {
+                "question": "Există o cotizație?",
+                "answer": "Cotizația este simbolică și acoperă consumabile de bază pentru ateliere. Detaliile se discută la prima întâlnire de orientare."
+              },
+              {
+                "question": "Cât timp trebuie să dedic săptămânal?",
+                "answer": "Implicarea este flexibilă: în medie, 2–4 ore pe săptămână pentru membri activi. Participarea la evenimente este opțională."
+              },
+              {
+                "question": "Pot propune un proiect nou?",
+                "answer": "Da. În fiecare semestru organizăm o sesiune deschisă în care orice membru poate propune un proiect; proiectele alese primesc sprijin organizatoric și buget."
+              },
+              {
+                "question": "Cum vă pot contacta?",
+                "answer": "Trimiteți-ne un mesaj la adresa de e-mail din pagina de contact sau scrieți-ne pe rețelele sociale. Răspundem în maximum 48 de ore în zilele lucrătoare."
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_about_documents",
+          "type": "documentDownloads",
+          "version": 1,
+          "data": {
+            "headline": "Documente publice",
+            "items": [
+              {
+                "title": "Statutul asociației",
+                "description": "Document fondator, în vigoare din 2021.",
+                "file": "assets/placeholder-document-statut.pdf"
+              },
+              {
+                "title": "Raport anual 2024",
+                "description": "Bilanțul activităților și al bugetului pentru anul universitar 2023–2024.",
+                "file": "assets/placeholder-document-raport-2024.pdf"
+              },
+              {
+                "title": "Formular de înscriere membru",
+                "description": "Formular oficial pentru noii membri.",
+                "file": "assets/placeholder-document-formular.pdf"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_about_embed",
+          "type": "embed",
+          "version": 1,
+          "data": {
+            "provider": "youtube",
+            "url": "https://www.youtube.com/watch?v=placeholder",
+            "title": "Prezentarea asociației — clip de 90 de secunde",
+            "caption": "Un scurt clip realizat de echipa de comunicare."
+          }
+        },
+        {
+          "id": "blk_about_contact",
+          "type": "contactCard",
+          "version": 1,
+          "data": {
+            "headline": "Cum ne găsești",
+            "address": "Strada Universității nr. 1, Demo City 010101",
+            "email": "contact@demo-asociatie.example",
+            "phone": "+40 700 000 000",
+            "hours": "Luni–Vineri, 10:00–17:00",
+            "mapUrl": "https://maps.example/demo-asociatie"
+          }
+        },
+        {
+          "id": "blk_about_custom_html",
+          "type": "customHTML",
+          "version": 1,
+          "data": {
+            "html": "<aside class=\"newsletter-note\"><p>Abonează-te la newsletterul nostru lunar pentru a primi anunțurile despre evenimente. Acesta este un bloc HTML personalizat — folosește-l doar când celelalte blocuri nu acoperă cazul tău.</p></aside>"
+          }
+        }
+      ]
+    }
+  ]
+}

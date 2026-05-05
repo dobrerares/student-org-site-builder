@@ -2,13 +2,17 @@
   "name": "@sosb/themes",
   "version": "0.0.0",
   "private": true,
-  "description": "Five Preact theme component sets + token defaults.",
+  "description": "Five Preact theme component sets + token defaults; curated demo template.",
   "license": "MIT",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json",
     "build": "tsc --build"
+  },
+  "dependencies": {
+    "@sosb/renderer": "workspace:*",
+    "@sosb/schema": "workspace:*"
   }
 }

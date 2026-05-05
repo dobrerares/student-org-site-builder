@@ -238,7 +238,14 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
 
-  packages/themes: {}
+  packages/themes:
+    dependencies:
+      '@sosb/renderer':
+        specifier: workspace:*
+        version: link:../renderer
+      '@sosb/schema':
+        specifier: workspace:*
+        version: link:../schema
 
   packages/vfs:
     dependencies:
