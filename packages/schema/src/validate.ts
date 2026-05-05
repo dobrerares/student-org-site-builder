@@ -183,6 +183,69 @@ function runSiteRules(site: z.infer<typeof SiteSchema>, result: ValidationResult
     }
   });
 
+  // Errors / warnings: localizedAs cross-references (#24).
+  //
+  //   - referenced language must be declared in site.languages (error)
+  //   - referenced slug must exist in pages[] for that language (error)
+  //   - a page must not list its own language in localizedAs (error)
+  //   - on a multi-language site, a page lacking a counterpart in some other
+  //     declared language is a quality warning, not an error.
+  const langSlugs = new Map<string, Set<string>>();
+  site.pages.forEach((page) => {
+    const set = langSlugs.get(page.lang) ?? new Set<string>();
+    set.add(page.slug);
+    langSlugs.set(page.lang, set);
+  });
+  site.pages.forEach((page, idx) => {
+    const localized = page.localizedAs;
+    if (localized !== undefined) {
+      for (const [otherLang, counterpartSlug] of Object.entries(localized)) {
+        if (otherLang === page.lang) {
+          result.errors.push({
+            severity: "error",
+            path: ["pages", idx, "localizedAs", otherLang],
+            code: "site.page.localizedAs.selfReference",
+            message: `Page "${page.slug}" lists its own language "${otherLang}" in localizedAs.`,
+          });
+          continue;
+        }
+        if (!site.languages.includes(otherLang)) {
+          result.errors.push({
+            severity: "error",
+            path: ["pages", idx, "localizedAs", otherLang],
+            code: "site.page.localizedAs.unknownLanguage",
+            message: `Page "${page.slug}" references undeclared language "${otherLang}" in localizedAs.`,
+          });
+          continue;
+        }
+        const slugsForLang = langSlugs.get(otherLang) ?? new Set<string>();
+        if (!slugsForLang.has(counterpartSlug)) {
+          result.errors.push({
+            severity: "error",
+            path: ["pages", idx, "localizedAs", otherLang],
+            code: "site.page.localizedAs.unknownCounterpart",
+            message: `Page "${page.slug}" references "${counterpartSlug}" in language "${otherLang}", but no such page exists.`,
+          });
+        }
+      }
+    }
+    // Quality nudge: bilingual sites should have counterparts everywhere.
+    if (site.languages.length >= 2) {
+      const localizedKeys = new Set(Object.keys(localized ?? {}));
+      const missing = site.languages.filter(
+        (lng) => lng !== page.lang && !localizedKeys.has(lng),
+      );
+      if (missing.length > 0) {
+        result.warnings.push({
+          severity: "warning",
+          path: ["pages", idx, "localizedAs"],
+          code: "site.page.localizedAs.missingCounterpart",
+          message: `Page "${page.slug}" has no counterpart in language(s): ${missing.join(", ")}.`,
+        });
+      }
+    }
+  });
+
   // Errors + warnings: each known block on each page is parsed against
   // its specific schema (deeper than the envelope) and rule-checked.
   // Deep-schema parse failures become `error` issues with paths rebased

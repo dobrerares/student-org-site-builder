@@ -16,7 +16,7 @@
  */
 
 import type { Page, Site } from "@sosb/schema";
-import { pageDistPath, pagePath, renderSite } from "@sosb/renderer";
+import { hreflangEntriesFor, pageDistPath, pagePath, renderSite } from "@sosb/renderer";
 import {
   measureBudgets,
   formatBudgetViolations,
@@ -196,15 +196,20 @@ function pageHeroBackgroundImage(page: Page): string | undefined {
 }
 
 /**
- * Inject canonical / og:url / og:image into the renderer's emitted `<head>`.
+ * Inject canonical / og:url / og:image / hreflang absolutes into the
+ * renderer's emitted `<head>`.
  *
  * Strategy: locate the closing `</head>` tag and insert the additional meta
- * tags immediately before it. This keeps the renderer's existing head
- * unchanged and adds an additive overlay that the build pipeline owns.
+ * tags immediately before it. The renderer already emits relative-path
+ * hreflang alternates; when a `siteUrl` is set, we rewrite those to
+ * absolute URLs (Google's i18n SEO docs explicitly recommend absolute
+ * hrefs for hreflang).
  *
- * Emits in a deterministic order (canonical → og:url → og:image) so repeat
- * calls produce byte-identical output. Each page's canonical points at its
- * own `pagePath` so multi-page sites get correct per-page canonicals.
+ * Emits in a deterministic order so repeat calls produce byte-identical
+ * output: relative hreflang alternates are stripped, then we insert
+ * canonical → og:url → og:image → absolute hreflang alternates. Each
+ * page's canonical points at its own `pagePath` so multi-page sites get
+ * correct per-page canonicals.
  */
 function injectSeoMeta(html: string, site: Site, page: Page, siteUrl: string): string {
   const path = pagePath(site, page);
@@ -218,15 +223,33 @@ function injectSeoMeta(html: string, site: Site, page: Page, siteUrl: string): s
   if (ogImage !== undefined) {
     tags.push(`<meta property="og:image" content="${escapeAttr(ogImage)}"/>`);
   }
+  // hreflang alternates absolutised against the siteUrl. The renderer
+  // already emits the relative-path version; we rewrite to absolutes by
+  // re-emitting from the same data source (no string parsing of the
+  // renderer's output) and stripping the relative versions below.
+  const hreflangs = hreflangEntriesFor(site, page);
+  for (const entry of hreflangs) {
+    const absoluteHref = `${siteUrl}${entry.href}`;
+    tags.push(
+      `<link rel="alternate" hreflang="${escapeAttr(entry.hreflang)}" href="${escapeAttr(absoluteHref)}"/>`,
+    );
+  }
+
+  // Strip the renderer's relative-path hreflang alternates so the absolutes
+  // we just emitted are the only ones in the document. The renderer's
+  // output uses Preact's self-closing form `<link ... />` (with a space
+  // before the slash); we match liberally to survive small DOM changes.
+  const relativeHreflangPattern = /<link rel="alternate" hreflang="[^"]+" href="[^"]*"\s*\/>/g;
+  const stripped = html.replace(relativeHreflangPattern, "");
 
   const overlay = tags.join("");
-  const headCloseIdx = html.indexOf("</head>");
+  const headCloseIdx = stripped.indexOf("</head>");
   if (headCloseIdx === -1) {
     // The renderer always emits `<head>...</head>`. If that contract ever
     // changes, the parity tests catch it before we ship — but be defensive.
-    return html;
+    return stripped;
   }
-  return `${html.slice(0, headCloseIdx)}${overlay}${html.slice(headCloseIdx)}`;
+  return `${stripped.slice(0, headCloseIdx)}${overlay}${stripped.slice(headCloseIdx)}`;
 }
 
 /**
@@ -272,18 +295,38 @@ function emitRobotsTxt(siteUrl: string | undefined): string {
  * `siteUrl`, entries use a path-relative fallback so the file is
  * structurally valid the user can preview before deciding where to host.
  *
- * `xhtml:link rel="alternate"` annotations per language are explicitly out
- * of scope here — they belong to #24.
+ * For multi-language sites (#24), each `<url>` carries
+ * `<xhtml:link rel="alternate" hreflang="..."/>` annotations: one per
+ * declared language plus an `x-default`. Missing counterparts gracefully
+ * fall back to the language home page. Single-language sites omit these
+ * annotations entirely (and the xhtml namespace declaration is omitted to
+ * keep the output minimal — pre-#24 byte-identical).
  */
 function emitSitemapXml(site: Site, siteUrl: string | undefined): string {
+  const isMultiLanguage = site.languages.length >= 2;
   const lines: string[] = [];
   lines.push('<?xml version="1.0" encoding="UTF-8"?>');
-  lines.push('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">');
+  if (isMultiLanguage) {
+    lines.push(
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">',
+    );
+  } else {
+    lines.push('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">');
+  }
   for (const page of site.pages) {
     const path = pagePath(site, page);
     const loc = siteUrl === undefined ? path : `${siteUrl}${path}`;
     lines.push("  <url>");
     lines.push(`    <loc>${escapeXmlText(loc)}</loc>`);
+    if (isMultiLanguage) {
+      const hreflangs = hreflangEntriesFor(site, page);
+      for (const entry of hreflangs) {
+        const altHref = siteUrl === undefined ? entry.href : `${siteUrl}${entry.href}`;
+        lines.push(
+          `    <xhtml:link rel="alternate" hreflang="${escapeAttr(entry.hreflang)}" href="${escapeAttr(altHref)}"/>`,
+        );
+      }
+    }
     lines.push("  </url>");
   }
   lines.push("</urlset>");

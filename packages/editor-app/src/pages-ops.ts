@@ -6,6 +6,7 @@
  * keyboard-shortcut surface.
  */
 import type { BlockEnvelope, Page, Site } from "@sosb/schema";
+import { isValidSlug } from "@sosb/schema";
 
 /**
  * Add a brand-new page in the site's default language. The new page lands
@@ -108,4 +109,102 @@ export function movePage(site: Site, index: number, direction: "up" | "down"): S
     return { ...page, navOrder: next };
   });
   return { ...site, pages: renumbered };
+}
+
+/**
+ * Languages declared on the site that the given page does NOT have a
+ * counterpart for in `localizedAs`.
+ *
+ * Used by the editor to surface a per-row "missing translation" indicator,
+ * and by the layered validation rule that emits a quality warning for
+ * untranslated pages on bilingual sites (PRD § 204).
+ */
+export function missingTranslationLanguages(site: Site, page: Page): string[] {
+  if (site.languages.length < 2) return [];
+  const localizedKeys = new Set(Object.keys(page.localizedAs ?? {}));
+  return site.languages.filter(
+    (lang) => lang !== page.lang && !localizedKeys.has(lang),
+  );
+}
+
+/**
+ * Add a language version (counterpart) of an existing page.
+ *
+ * Creates a new page in the target language with:
+ *   - the source's slug (preferred), falling back to a unique suffix when
+ *     the source slug is already used in the target language,
+ *   - the source's navLabel as a placeholder (the editor will surface this
+ *     as "to be translated" text, not in scope for #24's renderer),
+ *   - a fresh hero block so the new page renders something on first visit,
+ *   - `localizedAs` wired both ways so the language switcher can resolve
+ *     the cross-reference.
+ *
+ * Returns the original site unchanged when:
+ *   - the source index is out of range,
+ *   - the target language is not declared on the site,
+ *   - the source already has a counterpart in the target language.
+ */
+export function addLanguageVersion(site: Site, sourceIndex: number, targetLang: string): Site {
+  if (sourceIndex < 0 || sourceIndex >= site.pages.length) return site;
+  const source = site.pages[sourceIndex];
+  if (source === undefined) return site;
+  if (!site.languages.includes(targetLang)) return site;
+  if (targetLang === source.lang) return site;
+  const existing = source.localizedAs?.[targetLang];
+  if (existing !== undefined) return site;
+
+  // Pick a slug for the counterpart: same as the source unless taken.
+  let counterpartSlug = source.slug;
+  if (
+    !isValidSlug(counterpartSlug) ||
+    site.pages.some((p) => p.lang === targetLang && p.slug === counterpartSlug)
+  ) {
+    let counter = 2;
+    let candidate = `${source.slug}-${targetLang}`;
+    if (!isValidSlug(candidate)) candidate = `page-${targetLang}`;
+    while (site.pages.some((p) => p.lang === targetLang && p.slug === candidate)) {
+      candidate = `${source.slug}-${targetLang}-${counter}`;
+      counter += 1;
+    }
+    counterpartSlug = candidate;
+  }
+
+  // navOrder = next free order in the target language.
+  const langPages = site.pages.filter((p) => p.lang === targetLang);
+  const maxOrder = langPages.reduce((max, p) => (p.navOrder > max ? p.navOrder : max), -1);
+
+  const blockSuffix = counterpartSlug.replace(/-/g, "_");
+  const counterpartBlocks: BlockEnvelope[] = [
+    {
+      id: `blk_${blockSuffix}_${targetLang}_hero`,
+      type: "hero",
+      version: 1,
+      data: {
+        title: source.navLabel,
+      },
+    },
+  ];
+
+  const counterpart: Page = {
+    slug: counterpartSlug,
+    lang: targetLang,
+    navLabel: source.navLabel,
+    navOrder: maxOrder + 1,
+    showInNav: source.showInNav,
+    blocks: counterpartBlocks,
+    localizedAs: { [source.lang]: source.slug },
+  };
+
+  // Wire the source's localizedAs to point at the new counterpart.
+  const updatedSource: Page = {
+    ...source,
+    localizedAs: {
+      ...(source.localizedAs ?? {}),
+      [targetLang]: counterpartSlug,
+    },
+  };
+
+  const nextPages = site.pages.map((p, idx) => (idx === sourceIndex ? updatedSource : p));
+  nextPages.push(counterpart);
+  return { ...site, pages: nextPages };
 }

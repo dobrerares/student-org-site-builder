@@ -38,7 +38,12 @@ import { LIGHTBOX_SCRIPT } from "./lightbox-script.js";
 import { DocumentDownloads } from "./blocks/document-downloads.js";
 import { EventList } from "./blocks/event-list.js";
 import { EVENT_LIST_PAST_FADE_SCRIPT } from "./blocks/event-list-past-fade.js";
-import { navPagesFor, pagePath } from "./routing.js";
+import {
+  hreflangEntriesFor,
+  languageSwitcherEntriesFor,
+  navPagesFor,
+  pagePath,
+} from "./routing.js";
 
 /**
  * The page shell.
@@ -168,6 +173,8 @@ export function PageShell(props: { site: Site; page: Page; css: string }): preac
   const hasLazyEmbed = pageHasLazyEmbed(page.blocks);
   const needsLightbox = pageNeedsLightbox(page);
   const hasEventList = pageHasEventList(page);
+  const switcherEntries = languageSwitcherEntriesFor(site, page);
+  const hreflangs = hreflangEntriesFor(site, page);
 
   return (
     <html lang={page.lang}>
@@ -180,6 +187,16 @@ export function PageShell(props: { site: Site; page: Page; css: string }): preac
         <meta property="og:title" content={title} />
         {description !== undefined && <meta property="og:description" content={description} />}
         <meta property="og:type" content="website" />
+        {/* hreflang alternates for cross-language SEO. Skipped on
+         * single-language sites (no other languages to advertise). */}
+        {hreflangs.map((entry) => (
+          <link
+            key={entry.hreflang}
+            rel="alternate"
+            hreflang={entry.hreflang}
+            href={entry.href}
+          />
+        ))}
         <style dangerouslySetInnerHTML={{ __html: css }} />
       </head>
       <body>
@@ -205,6 +222,31 @@ export function PageShell(props: { site: Site; page: Page; css: string }): preac
                   </li>
                 );
               })}
+            </ul>
+          </nav>
+        )}
+        {/* Language switcher. Rendered when the site has 2+ declared
+         * languages. Native names only (no flags — see PRD § 109). The
+         * active language self-links so theme styling can rely on
+         * aria-current; non-active languages link to localizedAs
+         * counterparts, with a graceful fallback to the language home when
+         * no counterpart exists. */}
+        {switcherEntries.length > 0 && (
+          <nav data-language-switcher aria-label="Language">
+            <ul>
+              {switcherEntries.map((entry) => (
+                <li key={entry.lang}>
+                  <a
+                    href={entry.href}
+                    lang={entry.lang}
+                    hrefLang={entry.lang}
+                    data-active={entry.isActive ? "true" : "false"}
+                    aria-current={entry.isActive ? "true" : undefined}
+                  >
+                    {entry.nativeName}
+                  </a>
+                </li>
+              ))}
             </ul>
           </nav>
         )}
