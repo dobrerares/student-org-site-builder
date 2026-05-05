@@ -55,9 +55,7 @@ test("at 1200px viewport, the editor renders the two-pane layout", async ({ page
   await page.setViewportSize({ width: 1200, height: 900 });
   const bundle = await bundleForBrowser();
 
-  await page.setContent(
-    '<!doctype html><html><body><div id="root"></div></body></html>',
-  );
+  await page.setContent('<!doctype html><html><body><div id="root"></div></body></html>');
   await page.addScriptTag({ type: "module", content: bundle });
   await page.evaluate((siteData) => {
     const root = document.getElementById("root");
@@ -80,9 +78,7 @@ test("at 600px viewport, the editor renders Editor | Preview tabs", async ({ pag
   await page.setViewportSize({ width: 600, height: 900 });
   const bundle = await bundleForBrowser();
 
-  await page.setContent(
-    '<!doctype html><html><body><div id="root"></div></body></html>',
-  );
+  await page.setContent('<!doctype html><html><body><div id="root"></div></body></html>');
   await page.addScriptTag({ type: "module", content: bundle });
   await page.evaluate((siteData) => {
     const root = document.getElementById("root");
@@ -103,9 +99,7 @@ test("the iframe preview's srcdoc is a complete HTML document with the org name"
   await page.setViewportSize({ width: 1200, height: 900 });
   const bundle = await bundleForBrowser();
 
-  await page.setContent(
-    '<!doctype html><html><body><div id="root"></div></body></html>',
-  );
+  await page.setContent('<!doctype html><html><body><div id="root"></div></body></html>');
   await page.addScriptTag({ type: "module", content: bundle });
   await page.evaluate((siteData) => {
     const root = document.getElementById("root");
@@ -113,9 +107,7 @@ test("the iframe preview's srcdoc is a complete HTML document with the org name"
     window.__sosbEditor.mount(siteData as never, root);
   }, fixture);
 
-  const srcdoc = await page
-    .locator('[data-testid="preview-pane"] iframe')
-    .getAttribute("srcdoc");
+  const srcdoc = await page.locator('[data-testid="preview-pane"] iframe').getAttribute("srcdoc");
   expect(srcdoc).not.toBeNull();
   expect(srcdoc!.startsWith("<!doctype html>")).toBe(true);
   // Expect the fixture's org name to round-trip into the rendered preview.

@@ -20,9 +20,27 @@ export {
   HeroBlockSchema,
   HeroDataSchema,
   KnownBlockSchemas,
+  VALUE_LIST_BLOCK_VERSION,
+  VALUE_LIST_COLUMNS,
+  VALUE_LIST_ICON_NAMES,
+  VALUE_LIST_LAYOUTS,
+  ValueListBlockSchema,
+  ValueListDataSchema,
+  ValueListItemSchema,
   isKnownBlockType,
 } from "./blocks/index.js";
-export type { BlockEnvelope, HeroBlock, HeroData, KnownBlockType } from "./blocks/index.js";
+export type {
+  BlockEnvelope,
+  HeroBlock,
+  HeroData,
+  KnownBlockType,
+  ValueListBlock,
+  ValueListColumns,
+  ValueListData,
+  ValueListIconName,
+  ValueListItem,
+  ValueListLayout,
+} from "./blocks/index.js";
 
 // Validation
 export { validate, validateBlock } from "./validate.js";

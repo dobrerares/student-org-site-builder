@@ -42,7 +42,9 @@ describe("preview-bridge protocol", () => {
   });
 
   test("decodeHostMessage rejects payloads from a different channel", () => {
-    expect(decodeHostMessage({ channel: "other", version: 1, payload: { type: "siteData" } })).toBeNull();
+    expect(
+      decodeHostMessage({ channel: "other", version: 1, payload: { type: "siteData" } }),
+    ).toBeNull();
     expect(decodeHostMessage(null)).toBeNull();
     expect(decodeHostMessage("not an envelope")).toBeNull();
   });
@@ -70,9 +72,7 @@ describe("preview-bridge protocol", () => {
   test("decodePreviewMessage round-trips ready and error events", () => {
     const ready = decodePreviewMessage(encodePreviewMessage({ type: "ready" }));
     expect(ready).toEqual({ type: "ready" });
-    const err = decodePreviewMessage(
-      encodePreviewMessage({ type: "error", message: "boom" }),
-    );
+    const err = decodePreviewMessage(encodePreviewMessage({ type: "error", message: "boom" }));
     expect(err).toEqual({ type: "error", message: "boom" });
   });
 

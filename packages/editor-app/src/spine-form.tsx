@@ -14,7 +14,7 @@ import { getAtPath, setAtPath } from "./get-set-path.js";
 export interface SpineFormProps {
   readonly fields: FieldNode[];
   readonly site: Site;
-  readonly onPatch: (path: readonly string[], value: unknown) => void;
+  readonly onPatch: (path: readonly (string | number)[], value: unknown) => void;
 }
 
 export function SpineForm({ fields, site, onPatch }: SpineFormProps): JSX.Element {
@@ -30,7 +30,7 @@ export function SpineForm({ fields, site, onPatch }: SpineFormProps): JSX.Elemen
 interface FieldRendererProps {
   readonly node: FieldNode;
   readonly site: Site;
-  readonly onPatch: (path: readonly string[], value: unknown) => void;
+  readonly onPatch: (path: readonly (string | number)[], value: unknown) => void;
 }
 
 function FieldRenderer({ node, site, onPatch }: FieldRendererProps): JSX.Element {
@@ -43,12 +43,7 @@ function FieldRenderer({ node, site, onPatch }: FieldRendererProps): JSX.Element
         <fieldset data-field={dottedPath} data-kind="object">
           <legend>{node.name}</legend>
           {node.fields.map((child) => (
-            <FieldRenderer
-              key={child.path.join(".")}
-              node={child}
-              site={site}
-              onPatch={onPatch}
-            />
+            <FieldRenderer key={child.path.join(".")} node={child} site={site} onPatch={onPatch} />
           ))}
         </fieldset>
       );
@@ -145,7 +140,7 @@ function FieldRenderer({ node, site, onPatch }: FieldRendererProps): JSX.Element
  * Apply a patch produced by the spine form. Pure helper; exported so unit
  * tests can drive it without a Preact render.
  */
-export function applyPatch(site: Site, path: readonly string[], value: unknown): Site {
+export function applyPatch(site: Site, path: readonly (string | number)[], value: unknown): Site {
   const draft = structuredClone(site) as unknown as Record<string, unknown>;
   setAtPath(draft, path, value);
   return draft as unknown as Site;

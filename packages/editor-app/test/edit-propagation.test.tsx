@@ -55,9 +55,7 @@ describe("edit propagation via the preview bridge", () => {
     // Find the org-name input. The form generator renders one input per
     // string field, and we tag each by its dotted path (e.g.
     // `field-org.name`).
-    const orgNameInput = container.querySelector<HTMLInputElement>(
-      '[data-field="org.name"]',
-    );
+    const orgNameInput = container.querySelector<HTMLInputElement>('[data-field="org.name"]');
     expect(orgNameInput).not.toBeNull();
 
     const t0 = performance.now();
