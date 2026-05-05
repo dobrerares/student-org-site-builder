@@ -14,5 +14,6 @@
 export type { Vfs } from "./vfs.js";
 export { MemoryDriver } from "./memory.js";
 export { ZipDriver, ZIP_DRIVER_MTIME } from "./zip-driver.js";
+export { FsDriver } from "./fs-driver.js";
 export { VfsInvalidPathError, VfsNotFoundError, VfsAlreadyExistsError } from "./errors.js";
 export { validatePath, validatePrefix } from "./path.js";

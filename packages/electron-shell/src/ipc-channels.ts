@@ -6,10 +6,9 @@
  * a random `ipcRenderer.send` somewhere else in the app or in a third-party
  * library that reaches into Electron's IPC bus.
  *
- * Out of scope for #35 (and therefore not present here):
+ * Out of scope here:
  *
- * - Sharp / asset-pipeline channels — owned by #37.
- * - Auto-update channels (`electron-updater`) — owned by #36.
+ * - Auto-update channels (`electron-updater`) -- owned by #36.
  */
 
 export const IpcChannels = {
@@ -23,6 +22,13 @@ export const IpcChannels = {
   addRecentSite: "sosb:add-recent-site",
   /** Empty the recent-sites list. */
   clearRecentSites: "sosb:clear-recent-sites",
+  /**
+   * Asset pipeline (#37): main-process Sharp produces canonical bytes
+   * + responsive variants from renderer-supplied image bytes. The
+   * renderer never gets a filesystem reach -- the IPC accepts only
+   * bytes, not paths.
+   */
+  processAssetForVariants: "sosb:process-asset-for-variants",
 } as const;
 
 export type IpcChannel = (typeof IpcChannels)[keyof typeof IpcChannels];
@@ -38,6 +44,7 @@ export const IPC_CHANNEL_LIST: readonly IpcChannel[] = [
   IpcChannels.getRecentSites,
   IpcChannels.addRecentSite,
   IpcChannels.clearRecentSites,
+  IpcChannels.processAssetForVariants,
 ];
 
 /**

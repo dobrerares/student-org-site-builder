@@ -18,8 +18,10 @@
     "build": "tsc --build"
   },
   "dependencies": {
+    "@sosb/assets": "workspace:*",
     "@sosb/editor-app": "workspace:*",
     "@sosb/schema": "workspace:*",
+    "@sosb/vfs": "workspace:*",
     "electron-updater": "^6.6.2"
   },
   "devDependencies": {
