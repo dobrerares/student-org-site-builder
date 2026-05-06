@@ -1,0 +1,115 @@
+<!doctype html><html lang="ro"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Stub site — home</title><meta name="description" content="A minimal site for renderer tests."/><meta property="og:title" content="Stub site — home"/><meta property="og:description" content="A minimal site for renderer tests."/><meta property="og:type" content="website"/><style>:root {
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 2rem;
+  --space-xl: 4rem;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --font-headline: Georgia, serif;
+  --font-body: system-ui, sans-serif;
+  --color-primary: #1f3a5f;
+  --color-accent: #c08a3e;
+  --color-fg: #1a1a1a;
+  --color-bg: #ffffff;
+  --color-muted: #5c5c5c;
+  --color-primary: #1a2440;
+  --color-bg: #f7f1e3;
+  --color-fg: #2a2418;
+  --color-accent: #a67c2e;
+  --color-muted: #6b5f4a;
+  --font-headline: "Iowan Old Style", "Charter", "Charis SIL", Georgia, "Palatino Linotype", Palatino, serif;
+  --font-body: "Iowan Old Style", "Charter", "Charis SIL", Georgia, "Palatino Linotype", Palatino, serif;
+  --type-scale-base: 1rem;
+  --type-scale-sm: 0.8rem;
+  --type-scale-lg: 1.25rem;
+  --type-scale-xl: 1.5625rem;
+  --type-scale-2xl: 1.953rem;
+  --type-scale-3xl: 2.441rem;
+  --leading-body: 1.65;
+  --leading-display: 1.15;
+  --measure-body: 70ch;
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --color-primary: #1f3a5f;
+  --color-accent: #c08a3e;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-body);
+  font-size: var(--type-scale-base);
+  line-height: var(--leading-body);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+main { display: block; }
+
+/* Headings — serif display, tighter line-height, slightly tracked. */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-headline);
+  line-height: var(--leading-display);
+  color: var(--color-primary);
+  margin: 0 0 var(--space-md) 0;
+  font-weight: 600;
+}
+h1 { font-size: var(--type-scale-3xl); letter-spacing: -0.005em; }
+h2 { font-size: var(--type-scale-2xl); }
+h3 { font-size: var(--type-scale-xl); }
+h4 { font-size: var(--type-scale-lg); }
+h5, h6 { font-size: var(--type-scale-base); }
+
+/* Paragraph rhythm and the academic measure. */
+p {
+  margin: 0 0 var(--space-md) 0;
+  max-width: var(--measure-body);
+}
+
+/* Italic emphasis — the academic register prefers italics over bold. */
+em, i, cite { font-style: italic; }
+
+/* Hero — page-opening composition. */
+[data-block="hero"] {
+  padding: var(--space-xl) var(--space-md);
+  border-bottom: 1px solid var(--color-accent);
+}
+[data-block="hero"] .hero__inner {
+  max-width: 70ch;
+  margin: 0 auto;
+}
+[data-block="hero"] .hero__eyebrow {
+  font-size: var(--type-scale-sm);
+  font-style: italic;
+  letter-spacing: 0.06em;
+  color: var(--color-accent);
+  margin: 0 0 var(--space-sm) 0;
+  text-transform: uppercase;
+}
+[data-block="hero"] h1 {
+  font-family: var(--font-headline);
+  font-size: var(--type-scale-3xl);
+  line-height: var(--leading-display);
+  color: var(--color-primary);
+  margin: 0 0 var(--space-md) 0;
+}
+[data-block="hero"] .hero__subtitle {
+  margin: 0 0 var(--space-md) 0;
+  color: var(--color-fg);
+  font-size: var(--type-scale-lg);
+  line-height: var(--leading-body);
+  max-width: var(--measure-body);
+}
+[data-block="hero"] .hero__media {
+  margin-top: var(--space-md);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+[data-block="hero"] .hero__media img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}</style></head><body><main><section data-block="hero" data-block-id="blk_home_hero" aria-labelledby="blk_home_hero__title"><div class="hero__inner"><p class="hero__eyebrow">Bun venit</p><h1 id="blk_home_hero__title" class="hero__title">Stub Org</h1><p class="hero__subtitle">A fixture for renderer tests</p><div class="hero__media"><img src="assets/hero.jpg" alt="Studenți la o conferință" loading="lazy"/></div></div></section></main></body></html>

@@ -43,9 +43,30 @@ rendered, unknown fields on `data` are ignored without throwing. Unknown
 block types render as `<!-- unknown block: <type> -->` HTML comments to
 satisfy the v1.x preserve-unknown-keys contract.
 
+## Themes
+
+Two theme ids ship with this package today:
+
+- `stub` — layout-only, no design decisions; the renderer's framework
+  baseline.
+- `academic` — the brand-bearing skin for the project's canonical reference
+  org (HISTORIPOL). Serif throughout, Oxford-Navy + Antique-Parchment
+  palette, modular type scale at 1.25 ratio, generous reading rhythm. See
+  [`docs/adr/0006-academic-theme-first-pass.md`](../../docs/adr/0006-academic-theme-first-pass.md).
+  Marked AI-scaffolded draft per #47's scope expansion; maintainer
+  curation expected before shipping.
+
+Other themes (Modern, Editorial, Civic, Minimal) follow the same pattern
+as #28-#31 land. Each theme is a `themes/<id>.ts` module exporting an id
+constant, a `_TOKENS` array (per-theme baseline that overrides the generic
+baseline), and a `_CSS` string (layout-only, every value either a
+structural primitive or a `var(--token)` reference).
+
 ## Architecture
 
 See [`docs/adr/0003-renderer-skeleton-and-determinism.md`](../../docs/adr/0003-renderer-skeleton-and-determinism.md)
-for the design decisions behind this package.
+for the renderer skeleton decisions and
+[`docs/adr/0006-academic-theme-first-pass.md`](../../docs/adr/0006-academic-theme-first-pass.md)
+for the Academic theme's design choices.
 
-Tracking issue: #46.
+Tracking issues: #46 (skeleton), #47 (Academic theme).
