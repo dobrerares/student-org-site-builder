@@ -16,6 +16,7 @@ import type { Site } from "@sosb/schema";
 import { PageShell } from "./page-shell.js";
 import { emitTokenRoot } from "./tokens.js";
 import { STUB_THEME_CSS, STUB_THEME_ID } from "./themes/stub.js";
+import { MINIMAL_THEME_CSS, MINIMAL_THEME_ID } from "./themes/minimal.js";
 
 export interface RenderOptions {
   /**
@@ -63,14 +64,16 @@ function composeCss(site: Site, themeId: string): string {
 
 function themeCssFor(themeId: string): string {
   if (themeId === STUB_THEME_ID) return STUB_THEME_CSS;
+  if (themeId === MINIMAL_THEME_ID) return MINIMAL_THEME_CSS;
   // Unknown / future themes fall back to the stub layout. This keeps the
   // renderer functional even before the themes package lands its full set
-  // (#28-#31, #47). The themes package will register itself by id when it
+  // (#28-#30, #47). The themes package will register itself by id when it
   // arrives.
   return STUB_THEME_CSS;
 }
 
 export { STUB_THEME_ID } from "./themes/stub.js";
+export { MINIMAL_THEME_ID } from "./themes/minimal.js";
 export {
   homePageIndex,
   homePagePathForLanguage,
