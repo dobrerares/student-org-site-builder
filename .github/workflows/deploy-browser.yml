@@ -50,6 +50,13 @@ jobs:
       - name: Build archival HTML (hosted browser editor)
         run: pnpm --filter @sosb/browser-shell build:archival
 
+      # `build:archival` outputs `builder.html` (descriptive name for the
+      # downloadable archival use case). CF Pages serves `index.html` at
+      # `/` by default, so we stage a copy here. Both URLs work:
+      # `/` and `/builder.html`.
+      - name: Stage as index.html for CF Pages root serving
+        run: cp packages/browser-shell/dist/archival/builder.html packages/browser-shell/dist/archival/index.html
+
       - name: Ensure Pages project exists (idempotent)
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

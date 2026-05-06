@@ -169,6 +169,13 @@ jobs:
         with:
           files: packages/browser-shell/dist/archival/builder.html
 
+      # CF Pages serves `index.html` at `/` by default. We stage a copy
+      # AFTER the GH Release attach so the downloadable asset keeps its
+      # descriptive `builder.html` name; the CF Pages directory then
+      # serves the same content at both `/` and `/builder.html`.
+      - name: Stage as index.html for CF Pages root serving
+        run: cp packages/browser-shell/dist/archival/builder.html packages/browser-shell/dist/archival/index.html
+
       - name: Publish to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
