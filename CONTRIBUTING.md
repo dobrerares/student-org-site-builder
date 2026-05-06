@@ -462,6 +462,49 @@ before stabilising upstream. ADR 0026 records the rationale.
 When in doubt, file an issue with the `accessibility` label rather than
 relaxing a rule in the suite.
 
+## Cutting a release (and verifying auto-update end-to-end)
+
+The desktop release pipeline lives in `.github/workflows/release.yml`. It
+fires on tag pushes matching `v*` and produces a `.exe`, `.dmg`, and
+`.AppImage` per release, uploaded to a GitHub Release for
+`electron-updater` to discover at runtime.
+
+To cut a release:
+
+```bash
+# Bump version in packages/electron-shell/package.json (and root
+# package.json if relevant), commit, then tag.
+git tag v1.2.3
+git push origin v1.2.3
+```
+
+The workflow runs the same four CI jobs (typecheck, lint, test, build)
+on each platform runner before packaging — a green release implies a
+green CI.
+
+### One-time end-to-end auto-update verification
+
+The `electron-updater` flow can't be exercised in CI; it requires two
+real GitHub Releases. Run this checklist once per major version bump:
+
+1. **Cut v0.0.1.** Install the resulting installers on Windows, Linux,
+   and macOS. (macOS: right-click → Open to bypass Gatekeeper —
+   builds are unsigned per `.out-of-scope/mac-code-signing.md`.)
+2. **Bump to v0.0.2 and re-tag.** Wait for `release.yml` to finish.
+3. Re-launch v0.0.1 on each platform. Within ~10s, the auto-updater's
+   initial check fires; confirm the top banner says
+   "Update 0.0.2 available — downloading…".
+4. Wait for the background download. Confirm the banner switches to
+   "Update 0.0.2 ready to install" with a "Restart now" + "Later" pair.
+5. Click "Later". Confirm the banner dismisses, quit + relaunch, and
+   the banner stays hidden (declined-version logic, recorded in
+   `auto-update-settings.json` inside `app.getPath("userData")`).
+6. **Cut v0.0.3.** Repeat the launch + check; this time click
+   "Restart now"; confirm the app relaunches at v0.0.3.
+
+If any step fails, file an issue against `electron-shell` with the OS,
+version pair, and a console log from the launched app.
+
 ## Filing issues
 
 Use the [issue templates](.github/ISSUE_TEMPLATE/) when filing — they prompt

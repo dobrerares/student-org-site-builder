@@ -1,7 +1,7 @@
 /**
  * `@sosb/editor-app` — Preact editor shell.
  *
- * Tracking issue: #7. ADR 0005 records the design.
+ * Tracking issues: #7, #36. ADR 0005 records the editor-shell design.
  * Validation surfaces: #25. ADR 0008 records the design.
  * i18n integration: #42. ADR 0028 records the design.
  *
@@ -32,6 +32,11 @@
  * - `<I18nProvider value={translator}>` — the context provider; useful when
  *   composing the editor inside a larger host (browser shell, Electron
  *   shell) that wants a single translator across multiple panes.
+ * - `<UpdateBanner bridge={...} />` (#36) — surfaces auto-update lifecycle
+ *   events as a top-bar banner. Decoupled from Electron via the
+ *   `UpdateBridge` interface; the desktop wiring uses
+ *   `createSosbUpdateBridge(window.sosb)`. The browser SPA never mounts
+ *   the banner (auto-update is desktop-only).
  */
 
 export { EditorApp, type EditorAppProps } from "./editor-app.js";
@@ -61,3 +66,15 @@ export {
 export { defaultBlockFor } from "./block-defaults.js";
 export { LocaleToggle } from "./locale-toggle.js";
 export { I18nProvider, useTranslator } from "./i18n-context.js";
+export {
+  UpdateBanner,
+  type UpdateBannerProps,
+  type UpdateBridge,
+  type UpdateInfo,
+  type UpdateError,
+} from "./update-banner.js";
+export {
+  createSosbUpdateBridge,
+  isElectronShellAvailable,
+  type SosbUpdateSurface,
+} from "./sosb-update-bridge.js";

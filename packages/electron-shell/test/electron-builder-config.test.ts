@@ -31,6 +31,12 @@ interface TargetEntry {
 }
 type TargetSpec = string | TargetEntry | ReadonlyArray<string | TargetEntry>;
 
+interface PublishProvider {
+  readonly provider: string;
+  readonly owner?: string;
+  readonly repo?: string;
+}
+
 interface ElectronBuilderConfig {
   readonly appId?: string;
   readonly productName?: string;
@@ -38,6 +44,12 @@ interface ElectronBuilderConfig {
   readonly win?: { readonly target?: TargetSpec };
   readonly linux?: { readonly target?: TargetSpec };
   readonly afterSign?: unknown;
+  readonly publish?: PublishProvider | readonly PublishProvider[];
+}
+
+function publishProviders(config: ElectronBuilderConfig): readonly PublishProvider[] {
+  if (!config.publish) return [];
+  return Array.isArray(config.publish) ? config.publish : [config.publish as PublishProvider];
 }
 
 function targetNames(spec: TargetSpec | undefined): string[] {
@@ -79,5 +91,23 @@ describe("electron-builder config", () => {
       expect(config.mac.identity).toBeNull();
     }
     expect(config.afterSign).toBeUndefined();
+  });
+
+  // Auto-update (#36) — electron-updater consumes the `publish` block from
+  // the builder config to know where to fetch updates from.
+  describe("auto-update publish provider", () => {
+    test("declares a `github` publish provider", () => {
+      const providers = publishProviders(config);
+      expect(providers.length).toBeGreaterThan(0);
+      expect(providers.some((p) => p.provider === "github")).toBe(true);
+    });
+
+    test("github provider points at the SOSB repo", () => {
+      const providers = publishProviders(config);
+      const github = providers.find((p) => p.provider === "github");
+      expect(github).toBeDefined();
+      expect(github!.owner).toBe("dobrerares");
+      expect(github!.repo).toBe("student-org-site-builder");
+    });
   });
 });

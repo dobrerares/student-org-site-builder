@@ -28,12 +28,20 @@ describe("preload API surface", () => {
   });
 
   test("PRELOAD_API_METHODS lists every method the renderer can call", () => {
+    // Extended in #36 with the auto-update routes; the dialog + recent-site
+    // entries from #35 still come first.
     expect(PRELOAD_API_METHODS).toEqual([
       "openSiteDialog",
       "saveSiteDialog",
       "getRecentSites",
       "addRecentSite",
       "clearRecentSites",
+      "checkForUpdates",
+      "installUpdateAndRelaunch",
+      "declineUpdate",
+      "getAutoUpdateSettings",
+      "setAutoUpdateSettings",
+      "onUpdateEvent",
     ]);
   });
 

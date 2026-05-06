@@ -1,0 +1,100 @@
+# Release workflow — builds + publishes per-platform installers when a
+# version tag (`v*`) is pushed.
+#
+# Triggers
+# --------
+# - Push of any tag matching `v*` (e.g. `v1.0.0`, `v1.2.3-beta.1`).
+# - Manual run via the Actions UI (`workflow_dispatch`) for dry-run checks
+#   on a tagged commit; this path can be told to skip the publish step.
+#
+# Why per-platform runners
+# ------------------------
+# electron-builder needs the native toolchain for each target installer:
+#
+#   - Linux runner builds the AppImage (and could also build .deb / .rpm).
+#   - macOS runner builds the .dmg (must run on macOS).
+#   - Windows runner builds the NSIS .exe.
+#
+# Cross-compiling unsigned builds is technically possible from one runner
+# (electron-builder supports it for AppImage), but Mac DMG and Windows
+# NSIS are reliable only on their native runners. A 3-platform matrix is
+# the documented electron-builder pattern.
+#
+# Auto-update wiring
+# ------------------
+# `electron-builder --publish always` uploads the built installer + the
+# `latest-*.yml` manifest to the GitHub Release that the tag created.
+# `electron-updater` (running inside the packaged app) polls those
+# manifests at runtime to discover new releases (#36 acceptance criteria).
+#
+# `secrets.GITHUB_TOKEN` is the GitHub-provisioned token automatically
+# available to actions; electron-builder picks it up via the `GH_TOKEN`
+# env var. No personal access token required.
+#
+# Mac signing
+# -----------
+# Mac code signing is OUT OF SCOPE for v1 (#44, wontfix). The
+# `mac.identity: null` line in `electron-builder.config.cjs` makes the
+# unsigned build explicit. Users open the app via right-click → Open on
+# first launch.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      dryRun:
+        description: "Build without publishing to a Release (dry run)"
+        required: false
+        default: "false"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Enable Corepack (pnpm)
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build workspace
+        run: pnpm build
+
+      - name: Package + publish (electron-builder)
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.dryRun != 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm exec electron-builder --config packages/electron-shell/electron-builder.config.cjs --publish always
+
+      - name: Package only (dry run)
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dryRun == 'true' }}
+        run: pnpm exec electron-builder --config packages/electron-shell/electron-builder.config.cjs --publish never

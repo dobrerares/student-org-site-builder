@@ -7,10 +7,10 @@
  * - Win:    .exe (NSIS)   (unsigned)
  * - Linux:  .AppImage
  *
- * Per-platform CI runners (see release.yml when it lands in the release
- * issue) build their own native installer; cross-platform builds from a
- * single runner are supported by electron-builder for non-signed Linux,
- * but signed mac builds in particular need to run on macOS.
+ * Per-platform CI runners (see `.github/workflows/release.yml`) build
+ * their own native installer; cross-platform builds from a single runner
+ * are supported by electron-builder for non-signed Linux, but signed mac
+ * builds in particular need to run on macOS.
  *
  * Mac code signing and Apple notarization are deliberately out of scope
  * for v1 (issue #44 closed as wontfix). `mac.identity = null` tells
@@ -22,7 +22,13 @@
  * the `renderer/` HTML, and the package manifest. Test files, the
  * builder config itself, and the source `.ts` are excluded.
  *
+ * The `publish` block declares the GitHub Releases provider that both
+ * electron-builder (during `--publish always`) and electron-updater (at
+ * runtime) consume. electron-updater reads the same config to know which
+ * GitHub repo to poll for new releases.
+ *
  * Reference: https://www.electron.build/configuration/configuration
+ *            https://www.electron.build/configuration/publish#githuboptions
  *
  * @type {import('electron-builder').Configuration}
  */
@@ -62,4 +68,17 @@ module.exports = {
     target: [{ target: "AppImage", arch: ["x64"] }],
     category: "Development",
   },
+  // Auto-update channel for #36. electron-updater consumes this block at
+  // runtime via `app-update.yml` (electron-builder generates that file
+  // from `publish` and packs it into the installer). Single stable
+  // channel for v1 — no `releaseType: "draft"` or per-channel branching.
+  publish: [
+    {
+      provider: "github",
+      owner: "dobrerares",
+      repo: "student-org-site-builder",
+      // PRD: "Single stable channel for v1." Pre-releases are excluded.
+      releaseType: "release",
+    },
+  ],
 };
