@@ -15,7 +15,8 @@
  * `pagePath`); see ADR 0007. `hreflang` annotations remain owned by #24.
  */
 
-import type { Page, Site } from "@sosb/schema";
+import type { Page, Site, ValidationIssue } from "@sosb/schema";
+import { validate } from "@sosb/schema";
 import { hreflangEntriesFor, pageDistPath, pagePath, renderSite } from "@sosb/renderer";
 import {
   measureBudgets,
@@ -33,6 +34,26 @@ export {
   type MetricResult,
   type MetricStatus,
 } from "./budget.js";
+
+/**
+ * Thrown by `build()` when the site has any validation errors. Carries
+ * the full error list so callers can render them (the editor's pre-export
+ * dialog uses the same data shape).
+ *
+ * Tracking issue: #25 — the build pipeline runs the same validation as
+ * the editor; errors fail the build, warnings are logged.
+ */
+export class BuildValidationError extends Error {
+  public override readonly name = "BuildValidationError";
+  public readonly errors: readonly ValidationIssue[];
+
+  constructor(errors: readonly ValidationIssue[]) {
+    super(
+      `build: site has ${errors.length} validation error(s); fix them before building`,
+    );
+    this.errors = errors;
+  }
+}
 
 /**
  * Caller-supplied build options.
@@ -56,12 +77,22 @@ export {
  * without committing a 240KB synthetic theme to the repo. It is NOT part
  * of the package's public API contract; production callers should ignore
  * it. The leading underscore signals "internal" per project convention.
+ *
+ * `onWarning` receives every warning produced by `validate(site)`. Build
+ * never blocks on warnings (per PRD severity model) but callers (the
+ * editor, the Electron shell, CI) can route them to logs or the user.
+ *
+ * `skipValidation` is an escape hatch for callers that have already run
+ * `validate(site)` themselves and don't want to pay the cost a second
+ * time. Off by default — the safe path is to validate.
  */
 export interface BuildOptions {
   readonly siteUrl?: string;
   readonly themeId?: string;
   readonly errorOnBudget?: boolean;
   readonly _testInjectExtraCss?: string;
+  readonly onWarning?: (issue: ValidationIssue) => void;
+  readonly skipValidation?: boolean;
 }
 
 /**
@@ -89,6 +120,20 @@ export type DistFolder = Map<string, string>;
  * @returns       A `Map<string, string>` representing the dist folder.
  */
 export function build(site: Site, options: BuildOptions = {}): DistFolder {
+  // AC #6: errors fail the build, warnings are logged. Same `validate()`
+  // the editor uses (per PRD: "build pipeline runs the same validation").
+  if (options.skipValidation !== true) {
+    const validation = validate(site);
+    if (validation.errors.length > 0) {
+      throw new BuildValidationError(validation.errors);
+    }
+    if (options.onWarning !== undefined) {
+      for (const warning of validation.warnings) {
+        options.onWarning(warning);
+      }
+    }
+  }
+
   const themeId = options.themeId ?? site.theme.id;
   const siteUrl = normaliseSiteUrl(options.siteUrl);
 
