@@ -39,8 +39,19 @@ import { SpineForm, applyPatch } from "./spine-form.js";
 import { iframeSrcdoc } from "./iframe-srcdoc.js";
 import { PagesList } from "./pages-list.js";
 import { addLanguageVersion, addPage, clonePage, deletePage, movePage } from "./pages-ops.js";
+import { AddBlockDialog } from "./add-block-dialog.js";
+import { BlockListEditor } from "./block-list-editor.js";
+import { defaultBlockFor } from "./block-defaults.js";
 import { createPreviewHost } from "@sosb/preview-bridge";
-import { createEditorState, type EditorState } from "@sosb/editor-state";
+import {
+  addBlockToPage,
+  createEditorState,
+  createHistoryStore,
+  moveBlockInPage,
+  removeBlockFromPage,
+  type EditorState,
+  type HistoryStore,
+} from "@sosb/editor-state";
 import { SiteHealthPanel } from "./site-health.js";
 import { HealthFooter } from "./health-footer.js";
 import { ExportConfirmDialog } from "./export-confirm.js";
@@ -68,7 +79,21 @@ export function EditorApp(props: EditorAppProps): JSX.Element {
   }
   const state = stateRef.current;
 
+  // History store layered over the editor state. Every discrete user action
+  // (add block, remove block, reorder block, edit field) pushes the post-
+  // change snapshot. Undo/redo set the editor state back to that snapshot.
+  // The history store is created lazily so the initial snapshot lines up
+  // with the editor's first `getSnapshot()`.
+  const historyRef = useRef<HistoryStore<Site>>();
+  if (historyRef.current === undefined) {
+    historyRef.current = createHistoryStore<Site>({
+      initial: state.getSnapshot(),
+    });
+  }
+  const history = historyRef.current;
+
   const [snapshot, setSnapshot] = useState<Site>(state.getSnapshot());
+  const [historyVersion, setHistoryVersion] = useState<number>(0);
   useEffect(() => state.subscribe(setSnapshot), [state]);
 
   const fields = useMemo(() => fieldsFromSchema(SiteSchema), []);
@@ -77,6 +102,69 @@ export function EditorApp(props: EditorAppProps): JSX.Element {
   // is pure / cheap — running it inline keeps the panel and footer
   // perfectly in sync without a separate event channel.
   const validationResult = useMemo<ValidationResult>(() => validate(snapshot), [snapshot]);
+
+  /**
+   * Push the current snapshot onto the history stack. Called after a
+   * discrete user action (block add/remove/reorder, form edit committed via
+   * a click-out etc.). Form-level keystroke edits still flow through
+   * `state.update` directly without an immediate history push — debounced
+   * snapshots collapse a stream of typing into a single history entry.
+   * That batching policy is documented in the ADR.
+   */
+  function pushHistory(next: Site): void {
+    history.push(next);
+    setHistoryVersion((v) => v + 1);
+  }
+
+  function applySite(next: Site): void {
+    state.update((draft) => {
+      Object.assign(draft, next);
+    });
+    pushHistory(next);
+  }
+
+  function doUndo(): void {
+    const restored = history.undo();
+    if (restored === null) return;
+    state.update((draft) => {
+      Object.assign(draft, restored);
+    });
+    setHistoryVersion((v) => v + 1);
+  }
+
+  function doRedo(): void {
+    const restored = history.redo();
+    if (restored === null) return;
+    state.update((draft) => {
+      Object.assign(draft, restored);
+    });
+    setHistoryVersion((v) => v + 1);
+  }
+
+  // Keyboard shortcuts: Ctrl+Z / Cmd+Z for undo, Ctrl+Shift+Z /
+  // Cmd+Shift+Z for redo. We ignore key events whose target is an input
+  // currently holding text composition focus only when the modifier is not
+  // pressed — with Ctrl/Cmd we always honour the shortcut, matching how
+  // VS Code and Figma behave.
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key !== "z" && event.key !== "Z") return;
+      const mod = event.ctrlKey || event.metaKey;
+      if (!mod) return;
+      event.preventDefault();
+      if (event.shiftKey) {
+        doRedo();
+      } else {
+        doUndo();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+    // doUndo/doRedo close over refs (state, history) that are stable for
+    // the lifetime of the component, so an empty deps array is safe.
+  }, []);
 
   // Track viewport for the layout switch. Default to 1200 in non-DOM
   // environments so SSR / tests render the two-pane layout by default.
@@ -102,6 +190,9 @@ export function EditorApp(props: EditorAppProps): JSX.Element {
   const [activePageIndex, setActivePageIndex] = useState<number>(0);
   // Clamp the active index whenever pages mutate.
   const safeActivePageIndex = Math.min(activePageIndex, Math.max(snapshot.pages.length - 1, 0));
+  // Slug of the currently-active page. Block-editing helpers receive this
+  // explicitly so they stay un-coupled from index assumptions.
+  const activePageSlug = snapshot.pages[safeActivePageIndex]?.slug ?? "";
 
   // Site Health panel disclosure + export-confirm dialog state.
   const [panelOpen, setPanelOpen] = useState<boolean>(false);
@@ -127,6 +218,35 @@ export function EditorApp(props: EditorAppProps): JSX.Element {
     state.update((draft) => {
       Object.assign(draft, applyPatch(draft, path, value));
     });
+    // Push a history snapshot after every form patch. The form's `onInput`
+    // already produces one patch per keystroke, so this is "one history
+    // entry per keystroke" — coarser batching can be added later without
+    // changing the public API. The bounded history capacity keeps memory
+    // cost predictable.
+    pushHistory(state.getSnapshot());
+  }
+
+  const [pickerOpen, setPickerOpen] = useState<boolean>(false);
+
+  function onPickBlockType(type: string): void {
+    if (activePageSlug === "") return;
+    const block = defaultBlockFor(type);
+    const next = addBlockToPage(snapshot, activePageSlug, block);
+    applySite(next);
+    setPickerOpen(false);
+  }
+
+  function onMoveBlock(from: number, to: number): void {
+    if (activePageSlug === "") return;
+    if (from === to) return;
+    const next = moveBlockInPage(snapshot, activePageSlug, from, to);
+    applySite(next);
+  }
+
+  function onRemoveBlock(blockId: string): void {
+    if (activePageSlug === "") return;
+    const next = removeBlockFromPage(snapshot, activePageSlug, blockId);
+    applySite(next);
   }
 
   function handleAddPage(slug: string): void {
@@ -208,6 +328,15 @@ export function EditorApp(props: EditorAppProps): JSX.Element {
         onAddLanguageVersion={handleAddLanguageVersion}
       />
       <SpineForm fields={fields} site={snapshot} onPatch={patch} />
+      {activePageSlug !== "" ? (
+        <BlockListEditor
+          site={snapshot}
+          pageSlug={activePageSlug}
+          onMove={onMoveBlock}
+          onRemove={onRemoveBlock}
+          onAddBlock={() => setPickerOpen(true)}
+        />
+      ) : null}
     </section>
   );
 
@@ -223,12 +352,23 @@ export function EditorApp(props: EditorAppProps): JSX.Element {
     </section>
   );
 
+  // historyVersion participates in the closure so the disabled state
+  // re-renders alongside the undo/redo capabilities. Without referencing
+  // it the linter sees an "unused" state setter.
+  void historyVersion;
+  const canUndo = history.canUndo();
+  const canRedo = history.canRedo();
+
   return (
     <div data-testid="editor-app" ref={rootRef}>
       <TopBar
         onImport={props.onImport}
         onExport={handleExportClick}
         onReset={props.onReset}
+        onUndo={doUndo}
+        onRedo={doRedo}
+        canUndo={canUndo}
+        canRedo={canRedo}
       />
       {isNarrow ? (
         <div data-testid="layout-tabs">
@@ -276,6 +416,12 @@ export function EditorApp(props: EditorAppProps): JSX.Element {
           onCancel={handleExportCancel}
         />
       ) : null}
+
+      <AddBlockDialog
+        open={pickerOpen}
+        onPick={onPickBlockType}
+        onClose={() => setPickerOpen(false)}
+      />
     </div>
   );
 }
@@ -284,6 +430,10 @@ interface TopBarProps {
   readonly onImport: (() => void) | undefined;
   readonly onExport: (() => void) | undefined;
   readonly onReset: (() => void) | undefined;
+  readonly onUndo: () => void;
+  readonly onRedo: () => void;
+  readonly canUndo: boolean;
+  readonly canRedo: boolean;
 }
 
 function TopBar(props: TopBarProps): JSX.Element {
@@ -297,6 +447,26 @@ function TopBar(props: TopBarProps): JSX.Element {
       </button>
       <button type="button" data-action="reset" onClick={props.onReset}>
         Reset
+      </button>
+      <button
+        type="button"
+        data-testid="undo-button"
+        data-action="undo"
+        aria-label="Undo (Ctrl+Z)"
+        disabled={!props.canUndo}
+        onClick={props.onUndo}
+      >
+        Undo
+      </button>
+      <button
+        type="button"
+        data-testid="redo-button"
+        data-action="redo"
+        aria-label="Redo (Ctrl+Shift+Z)"
+        disabled={!props.canRedo}
+        onClick={props.onRedo}
+      >
+        Redo
       </button>
     </header>
   );
