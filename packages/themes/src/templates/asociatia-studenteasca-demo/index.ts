@@ -112,23 +112,23 @@ export const asociatiaStudenteascaDemoMetadata: AsociatiaStudenteascaDemoMetadat
       hint: "Replace the placeholder address with your real headquarters / mailing address.",
     },
     {
-      code: "team.members",
-      path: "/pages[slug=despre]/blocks[type=teamGrid]/data/members",
+      code: "team.people",
+      path: "/pages[slug=despre]/blocks[type=teamGrid]/data/people",
       hint: "Replace the placeholder team members with your current leadership.",
     },
     {
-      code: "partners.items",
-      path: "/pages[slug=acasa]/blocks[type=partnerLogos]/data/items",
+      code: "partners.partners",
+      path: "/pages[slug=acasa]/blocks[type=partnerLogos]/data/partners",
       hint: "Replace the placeholder partner logos with your real sponsors.",
     },
     {
-      code: "events.items",
-      path: "/pages[slug=acasa]/blocks[type=eventList]/data/items",
+      code: "events.events",
+      path: "/pages[slug=acasa]/blocks[type=eventList]/data/events",
       hint: "Replace the example events with your organisation's real schedule.",
     },
     {
-      code: "documents.items",
-      path: "/pages[slug=despre]/blocks[type=documentDownloads]/data/items",
+      code: "documents.files",
+      path: "/pages[slug=despre]/blocks[type=documentDownloads]/data/files",
       hint: "Replace the placeholder document links with your real public files.",
     },
     {

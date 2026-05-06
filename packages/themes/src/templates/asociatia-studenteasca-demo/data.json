@@ -64,26 +64,33 @@
           "type": "valueList",
           "version": 1,
           "data": {
-            "headline": "Valorile noastre",
+            "title": "Valorile noastre",
+            "layout": "grid",
+            "columns": 3,
             "items": [
               {
-                "title": "Curiozitate academică",
+                "icon": "lightbulb",
+                "label": "Curiozitate academică",
                 "description": "Punem întrebări dincolo de programa cursului și căutăm răspunsuri împreună."
               },
               {
-                "title": "Solidaritate între generații",
+                "icon": "hand-heart",
+                "label": "Solidaritate între generații",
                 "description": "Studenții din ani mai mari sprijină boboci prin mentorat și sesiuni de tutoriat."
               },
               {
-                "title": "Implicare civică",
+                "icon": "users",
+                "label": "Implicare civică",
                 "description": "Considerăm că rolul nostru depășește amfiteatrul: contribuim la comunitatea locală."
               },
               {
-                "title": "Transparență",
+                "icon": "scale",
+                "label": "Transparență",
                 "description": "Publicăm rapoarte anuale, decizii de buget și procese-verbale ale ședințelor."
               },
               {
-                "title": "Incluziune",
+                "icon": "heart",
+                "label": "Incluziune",
                 "description": "Proiectele noastre sunt deschise tuturor studenților, indiferent de specializare."
               }
             ]
@@ -94,34 +101,63 @@
           "type": "activitiesList",
           "version": 1,
           "data": {
-            "headline": "Ce facem împreună",
+            "title": "Ce facem împreună",
+            "layout": "cards",
             "items": [
               {
                 "title": "Conferința Anuală a Studenților",
                 "description": "Două zile de paneluri academice, mese rotunde și dezbateri pe teme alese de studenți.",
-                "image": "assets/placeholder-photo-activity-1.jpg",
-                "imageAlt": "Studenți așezați în sală în timpul unei prezentări",
+                "image": {
+                  "hash": "a1f3c7d901",
+                  "path": "assets/placeholder-photo-activity-1.jpg",
+                  "metadataPath": "assets/placeholder-photo-activity-1.metadata.json",
+                  "mime": "image/jpeg",
+                  "width": 1200,
+                  "height": 800,
+                  "alt": "Studenți așezați în sală în timpul unei prezentări"
+                },
                 "badge": "Anual"
               },
               {
                 "title": "Mentorat pentru boboci",
                 "description": "Cuplăm studenții din anul I cu mentori din ani mai mari pentru sprijin academic și administrativ.",
-                "image": "assets/placeholder-photo-activity-2.jpg",
-                "imageAlt": "Două studente discutând la o masă din bibliotecă",
+                "image": {
+                  "hash": "b2e4d8a012",
+                  "path": "assets/placeholder-photo-activity-2.jpg",
+                  "metadataPath": "assets/placeholder-photo-activity-2.metadata.json",
+                  "mime": "image/jpeg",
+                  "width": 1200,
+                  "height": 800,
+                  "alt": "Două studente discutând la o masă din bibliotecă"
+                },
                 "badge": "Lunar"
               },
               {
                 "title": "Atelierele de scriere academică",
                 "description": "Sesiuni practice de redactare, citare și prezentare orală pentru lucrări de licență și disertație.",
-                "image": "assets/placeholder-photo-activity-3.jpg",
-                "imageAlt": "Studenți la calculatoare în timpul unui atelier",
+                "image": {
+                  "hash": "c3f5e9b123",
+                  "path": "assets/placeholder-photo-activity-3.jpg",
+                  "metadataPath": "assets/placeholder-photo-activity-3.metadata.json",
+                  "mime": "image/jpeg",
+                  "width": 1200,
+                  "height": 800,
+                  "alt": "Studenți la calculatoare în timpul unui atelier"
+                },
                 "badge": "Sezonier"
               },
               {
                 "title": "Voluntariat în comunitate",
                 "description": "Proiecte sociale realizate alături de ONG-uri din oraș: tabere educaționale și acțiuni de mediu.",
-                "image": "assets/placeholder-photo-activity-4.jpg",
-                "imageAlt": "Studenți în voluntariat în natură",
+                "image": {
+                  "hash": "d4a6f0c234",
+                  "path": "assets/placeholder-photo-activity-4.jpg",
+                  "metadataPath": "assets/placeholder-photo-activity-4.metadata.json",
+                  "mime": "image/jpeg",
+                  "width": 1200,
+                  "height": 800,
+                  "alt": "Studenți în voluntariat în natură"
+                },
                 "badge": "Sezonier"
               }
             ]
@@ -141,10 +177,13 @@
           "type": "ctaBanner",
           "version": 1,
           "data": {
-            "headline": "Vrei să ni te alături?",
-            "subheadline": "Recrutăm membri noi în fiecare semestru. Trimite-ne un mesaj scurt despre tine și domeniul care te interesează.",
-            "buttonLabel": "Scrie-ne",
-            "buttonUrl": "mailto:contact@demo-asociatie.example"
+            "title": "Vrei să ni te alături?",
+            "subtitle": "Recrutăm membri noi în fiecare semestru. Trimite-ne un mesaj scurt despre tine și domeniul care te interesează.",
+            "button": {
+              "label": "Scrie-ne",
+              "url": "mailto:contact@demo-asociatie.example",
+              "style": "primary"
+            }
           }
         },
         {
@@ -152,27 +191,59 @@
           "type": "partnerLogos",
           "version": 1,
           "data": {
-            "headline": "Ne sprijină",
-            "items": [
+            "title": "Ne sprijină",
+            "partners": [
               {
                 "name": "Editura Demo",
-                "logo": "assets/placeholder-logo-partner-1.svg",
-                "url": "https://editura.example"
+                "url": "https://editura.example",
+                "logo": {
+                  "hash": "p1a1b2c3d4",
+                  "path": "assets/placeholder-logo-partner-1.svg",
+                  "metadataPath": "assets/placeholder-logo-partner-1.metadata.json",
+                  "mime": "image/svg+xml",
+                  "width": 320,
+                  "height": 120,
+                  "alt": "Logo Editura Demo"
+                }
               },
               {
                 "name": "Fundația Demo pentru Educație",
-                "logo": "assets/placeholder-logo-partner-2.svg",
-                "url": "https://fundatie.example"
+                "url": "https://fundatie.example",
+                "logo": {
+                  "hash": "p2e5f6a7b8",
+                  "path": "assets/placeholder-logo-partner-2.svg",
+                  "metadataPath": "assets/placeholder-logo-partner-2.metadata.json",
+                  "mime": "image/svg+xml",
+                  "width": 320,
+                  "height": 120,
+                  "alt": "Logo Fundația Demo pentru Educație"
+                }
               },
               {
                 "name": "Librăria Demo",
-                "logo": "assets/placeholder-logo-partner-3.svg",
-                "url": "https://librarie.example"
+                "url": "https://librarie.example",
+                "logo": {
+                  "hash": "p3c9d0e1f2",
+                  "path": "assets/placeholder-logo-partner-3.svg",
+                  "metadataPath": "assets/placeholder-logo-partner-3.metadata.json",
+                  "mime": "image/svg+xml",
+                  "width": 320,
+                  "height": 120,
+                  "alt": "Logo Librăria Demo"
+                }
               },
               {
                 "name": "Centrul Cultural Demo",
-                "logo": "assets/placeholder-logo-partner-4.svg",
-                "url": "https://centru-cultural.example"
+                "url": "https://centru-cultural.example",
+                "logo": {
+                  "hash": "p4a3b4c5d6",
+                  "path": "assets/placeholder-logo-partner-4.svg",
+                  "metadataPath": "assets/placeholder-logo-partner-4.metadata.json",
+                  "mime": "image/svg+xml",
+                  "width": 320,
+                  "height": 120,
+                  "alt": "Logo Centrul Cultural Demo"
+                }
               }
             ]
           }
@@ -182,25 +253,28 @@
           "type": "eventList",
           "version": 1,
           "data": {
-            "headline": "Evenimente",
-            "items": [
+            "title": "Evenimente",
+            "events": [
               {
+                "id": "evt_conferinta_2026",
                 "title": "Conferința Anuală — ediția 2026",
-                "date": "2026-04-18",
-                "summary": "Două zile de discuții deschise cu profesori invitați și absolvenți.",
-                "status": "upcoming"
+                "description": "Două zile de discuții deschise cu profesori invitați și absolvenți.",
+                "startsAt": "2026-04-18T10:00:00+03:00",
+                "endsAt": "2026-04-19T18:00:00+03:00",
+                "location": "Aula Magna, Demo City"
               },
               {
+                "id": "evt_atelier_scriere_2026",
                 "title": "Atelier de scriere academică",
-                "date": "2026-03-12",
-                "summary": "Tehnici de structurare și citare pentru lucrări de licență.",
-                "status": "upcoming"
+                "description": "Tehnici de structurare și citare pentru lucrări de licență.",
+                "startsAt": "2026-03-12T18:00:00+02:00",
+                "location": "Sala de seminar B12"
               },
               {
+                "id": "evt_caravana_2025",
                 "title": "Caravana de voluntariat 2025",
-                "date": "2025-09-20",
-                "summary": "Ediția de toamnă a programului nostru de voluntariat.",
-                "status": "past"
+                "description": "Ediția de toamnă a programului nostru de voluntariat.",
+                "startsAt": "2025-09-20T09:00:00+03:00"
               }
             ]
           }
@@ -241,50 +315,93 @@
           "type": "teamGrid",
           "version": 1,
           "data": {
-            "headline": "Echipa de coordonare",
-            "members": [
+            "title": "Echipa de coordonare",
+            "columns": 3,
+            "people": [
               {
                 "name": "Maria Popescu",
                 "role": "Președintă",
-                "photo": "assets/placeholder-avatar-1.jpg",
-                "photoAlt": "Portret studentă, fundal neutru",
                 "bio": "Studentă în anul III, coordonează echipa și relațiile cu partenerii.",
-                "social": [{ "platform": "linkedin", "url": "https://linkedin.com/in/demo-1" }]
+                "photo": {
+                  "hash": "av1m2a3r4i",
+                  "path": "assets/placeholder-avatar-1.jpg",
+                  "metadataPath": "assets/placeholder-avatar-1.metadata.json",
+                  "mime": "image/jpeg",
+                  "width": 600,
+                  "height": 600,
+                  "alt": "Portret Maria Popescu, fundal neutru"
+                },
+                "socials": [{ "platform": "linkedin", "url": "https://linkedin.com/in/demo-1" }]
               },
               {
                 "name": "Andrei Ionescu",
                 "role": "Vicepreședinte — Proiecte",
-                "photo": "assets/placeholder-avatar-2.jpg",
-                "photoAlt": "Portret student, fundal neutru",
-                "bio": "Coordonează echipa de proiecte academice și conferința anuală."
+                "bio": "Coordonează echipa de proiecte academice și conferința anuală.",
+                "photo": {
+                  "hash": "av2a3n4d5r",
+                  "path": "assets/placeholder-avatar-2.jpg",
+                  "metadataPath": "assets/placeholder-avatar-2.metadata.json",
+                  "mime": "image/jpeg",
+                  "width": 600,
+                  "height": 600,
+                  "alt": "Portret Andrei Ionescu, fundal neutru"
+                }
               },
               {
                 "name": "Ioana Marin",
                 "role": "Vicepreședintă — Comunicare",
-                "photo": "assets/placeholder-avatar-3.jpg",
-                "photoAlt": "Portret studentă, fundal neutru",
-                "bio": "Răspunde de identitatea vizuală și relația cu media."
+                "bio": "Răspunde de identitatea vizuală și relația cu media.",
+                "photo": {
+                  "hash": "av3i4o5a6n",
+                  "path": "assets/placeholder-avatar-3.jpg",
+                  "metadataPath": "assets/placeholder-avatar-3.metadata.json",
+                  "mime": "image/jpeg",
+                  "width": 600,
+                  "height": 600,
+                  "alt": "Portret Ioana Marin, fundal neutru"
+                }
               },
               {
                 "name": "Ștefan Constantin",
                 "role": "Director — Voluntariat",
-                "photo": "assets/placeholder-avatar-4.jpg",
-                "photoAlt": "Portret student, fundal neutru",
-                "bio": "Conduce programele de implicare în comunitatea locală."
+                "bio": "Conduce programele de implicare în comunitatea locală.",
+                "photo": {
+                  "hash": "av4s5t6e7f",
+                  "path": "assets/placeholder-avatar-4.jpg",
+                  "metadataPath": "assets/placeholder-avatar-4.metadata.json",
+                  "mime": "image/jpeg",
+                  "width": 600,
+                  "height": 600,
+                  "alt": "Portret Ștefan Constantin, fundal neutru"
+                }
               },
               {
                 "name": "Alexandra Dumitru",
                 "role": "Director — Mentorat",
-                "photo": "assets/placeholder-avatar-5.jpg",
-                "photoAlt": "Portret studentă, fundal neutru",
-                "bio": "Construiește perechile de mentor-bobocă pentru fiecare an universitar."
+                "bio": "Construiește perechile de mentor-bobocă pentru fiecare an universitar.",
+                "photo": {
+                  "hash": "av5a6l7e8x",
+                  "path": "assets/placeholder-avatar-5.jpg",
+                  "metadataPath": "assets/placeholder-avatar-5.metadata.json",
+                  "mime": "image/jpeg",
+                  "width": 600,
+                  "height": 600,
+                  "alt": "Portret Alexandra Dumitru, fundal neutru"
+                }
               },
               {
                 "name": "Tudor Radu",
                 "role": "Trezorier",
-                "photo": "assets/placeholder-avatar-6.jpg",
-                "photoAlt": "Portret student, fundal neutru",
-                "bio": "Ține evidența bugetului și publică rapoartele financiare."
+                "bio": "Ține evidența bugetului și publică rapoartele financiare.",
+                "photo": {
+                  "hash": "av6t7u8d9o",
+                  "path": "assets/placeholder-avatar-6.jpg",
+                  "metadataPath": "assets/placeholder-avatar-6.metadata.json",
+                  "mime": "image/jpeg",
+                  "width": 600,
+                  "height": 600,
+                  "alt": "Portret Tudor Radu, fundal neutru"
+                }
               }
             ]
           }
@@ -294,25 +411,60 @@
           "type": "imageGallery",
           "version": 1,
           "data": {
-            "headline": "Imagini din activitățile noastre",
-            "items": [
+            "title": "Imagini din activitățile noastre",
+            "layout": "grid",
+            "columns": 2,
+            "lightbox": true,
+            "images": [
               {
-                "image": "assets/placeholder-photo-gallery-1.jpg",
+                "asset": {
+                  "hash": "g1a1b2c3d4",
+                  "path": "assets/placeholder-photo-gallery-1.jpg",
+                  "metadataPath": "assets/placeholder-photo-gallery-1.metadata.json",
+                  "mime": "image/jpeg",
+                  "width": 1600,
+                  "height": 1067,
+                  "alt": "Studenți la o conferință"
+                },
                 "alt": "Studenți la o conferință",
                 "caption": "Conferința Anuală, 2024"
               },
               {
-                "image": "assets/placeholder-photo-gallery-2.jpg",
+                "asset": {
+                  "hash": "g2e5f6a7b8",
+                  "path": "assets/placeholder-photo-gallery-2.jpg",
+                  "metadataPath": "assets/placeholder-photo-gallery-2.metadata.json",
+                  "mime": "image/jpeg",
+                  "width": 1600,
+                  "height": 1067,
+                  "alt": "Atelier de scriere academică"
+                },
                 "alt": "Atelier de scriere academică",
                 "caption": "Atelier de scriere academică"
               },
               {
-                "image": "assets/placeholder-photo-gallery-3.jpg",
+                "asset": {
+                  "hash": "g3c9d0e1f2",
+                  "path": "assets/placeholder-photo-gallery-3.jpg",
+                  "metadataPath": "assets/placeholder-photo-gallery-3.metadata.json",
+                  "mime": "image/jpeg",
+                  "width": 1600,
+                  "height": 1067,
+                  "alt": "Voluntariat în natură"
+                },
                 "alt": "Voluntariat în natură",
                 "caption": "Caravana de voluntariat"
               },
               {
-                "image": "assets/placeholder-photo-gallery-4.jpg",
+                "asset": {
+                  "hash": "g4a3b4c5d6",
+                  "path": "assets/placeholder-photo-gallery-4.jpg",
+                  "metadataPath": "assets/placeholder-photo-gallery-4.metadata.json",
+                  "mime": "image/jpeg",
+                  "width": 1600,
+                  "height": 1067,
+                  "alt": "Sesiune de mentorat în bibliotecă"
+                },
                 "alt": "Sesiune de mentorat în bibliotecă",
                 "caption": "Sesiune de mentorat"
               }
@@ -354,22 +506,41 @@
           "type": "documentDownloads",
           "version": 1,
           "data": {
-            "headline": "Documente publice",
-            "items": [
+            "title": "Documente publice",
+            "layout": "list",
+            "files": [
               {
-                "title": "Statutul asociației",
-                "description": "Document fondator, în vigoare din 2021.",
-                "file": "assets/placeholder-document-statut.pdf"
+                "asset": {
+                  "hash": "doc1statut01",
+                  "path": "assets/placeholder-document-statut.pdf",
+                  "metadataPath": "assets/placeholder-document-statut.metadata.json",
+                  "mime": "application/pdf",
+                  "byteSize": 184320
+                },
+                "label": "Statutul asociației",
+                "description": "Document fondator, în vigoare din 2021."
               },
               {
-                "title": "Raport anual 2024",
-                "description": "Bilanțul activităților și al bugetului pentru anul universitar 2023–2024.",
-                "file": "assets/placeholder-document-raport-2024.pdf"
+                "asset": {
+                  "hash": "doc2raport24",
+                  "path": "assets/placeholder-document-raport-2024.pdf",
+                  "metadataPath": "assets/placeholder-document-raport-2024.metadata.json",
+                  "mime": "application/pdf",
+                  "byteSize": 256000
+                },
+                "label": "Raport anual 2024",
+                "description": "Bilanțul activităților și al bugetului pentru anul universitar 2023–2024."
               },
               {
-                "title": "Formular de înscriere membru",
-                "description": "Formular oficial pentru noii membri.",
-                "file": "assets/placeholder-document-formular.pdf"
+                "asset": {
+                  "hash": "doc3formula3",
+                  "path": "assets/placeholder-document-formular.pdf",
+                  "metadataPath": "assets/placeholder-document-formular.metadata.json",
+                  "mime": "application/pdf",
+                  "byteSize": 32768
+                },
+                "label": "Formular de înscriere membru",
+                "description": "Formular oficial pentru noii membri."
               }
             ]
           }
@@ -403,7 +574,8 @@
           "type": "customHTML",
           "version": 1,
           "data": {
-            "html": "<aside class=\"newsletter-note\"><p>Abonează-te la newsletterul nostru lunar pentru a primi anunțurile despre evenimente. Acesta este un bloc HTML personalizat — folosește-l doar când celelalte blocuri nu acoperă cazul tău.</p></aside>"
+            "html": "<aside class=\"newsletter-note\"><p>Abonează-te la newsletterul nostru lunar pentru a primi anunțurile despre evenimente. Acesta este un bloc HTML personalizat — folosește-l doar când celelalte blocuri nu acoperă cazul tău.</p></aside>",
+            "sanitize": true
           }
         }
       ]

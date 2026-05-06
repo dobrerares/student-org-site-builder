@@ -43,6 +43,7 @@ describe("build - per-language URL trees", () => {
   test("the output Map contains exactly the expected per-language paths", () => {
     const dist = build(fixture);
     expect([...dist.keys()].sort()).toEqual([
+      "_lighthouse-budget.json",
       "despre/index.html",
       "en/about/index.html",
       "en/index.html",

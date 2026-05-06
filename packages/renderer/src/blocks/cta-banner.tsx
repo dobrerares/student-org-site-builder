@@ -28,11 +28,6 @@ export function CtaBanner(props: { block: CtaBannerBlock }): preact.JSX.Element 
   const sectionClasses = ["ctaBanner"];
   if (backgroundImage === undefined) sectionClasses.push("ctaBanner--solid");
 
-  // Style class on the button. Schema validates `style` is "primary" or
-  // "secondary"; we still default conservatively to primary to keep render
-  // output well-formed even when called with looseObject extras.
-  const buttonStyle = button.style === "secondary" ? "secondary" : "primary";
-
   return (
     <section
       data-block="ctaBanner"
@@ -47,11 +42,16 @@ export function CtaBanner(props: { block: CtaBannerBlock }): preact.JSX.Element 
           </h2>
           {subtitle !== undefined && <p class="ctaBanner__subtitle">{subtitle}</p>}
         </div>
-        <div class="ctaBanner__actions">
-          <a class={`ctaBanner__button ctaBanner__button--${buttonStyle}`} href={button.url}>
-            {button.label}
-          </a>
-        </div>
+        {button !== undefined && (
+          <div class="ctaBanner__actions">
+            <a
+              class={`ctaBanner__button ctaBanner__button--${button.style === "secondary" ? "secondary" : "primary"}`}
+              href={button.url}
+            >
+              {button.label}
+            </a>
+          </div>
+        )}
         {backgroundImage !== undefined && (
           <div class="ctaBanner__media">
             <img src={backgroundImage.path} alt={backgroundImage.alt} loading="lazy" />

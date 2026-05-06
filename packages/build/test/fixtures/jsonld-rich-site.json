@@ -68,8 +68,21 @@
           "type": "teamGrid",
           "version": 1,
           "data": {
-            "members": [
-              { "name": "Ana Popescu", "role": "Președinte", "image": "assets/ana.jpg" },
+            "columns": 2,
+            "people": [
+              {
+                "name": "Ana Popescu",
+                "role": "Președinte",
+                "photo": {
+                  "hash": "anaph0t01234",
+                  "path": "assets/ana.jpg",
+                  "metadataPath": "assets/ana.metadata.json",
+                  "mime": "image/jpeg",
+                  "width": 600,
+                  "height": 600,
+                  "alt": "Portret Ana Popescu"
+                }
+              },
               { "name": "Bogdan Ionescu", "role": "Vicepreședinte" }
             ]
           }
@@ -100,16 +113,18 @@
           "data": {
             "events": [
               {
-                "name": "Conferința de toamnă",
-                "startDate": "2026-10-12T18:00:00+03:00",
-                "endDate": "2026-10-12T21:00:00+03:00",
+                "id": "evt_conferinta_toamna",
+                "title": "Conferința de toamnă",
+                "startsAt": "2026-10-12T18:00:00+03:00",
+                "endsAt": "2026-10-12T21:00:00+03:00",
                 "location": "Aula Mare",
                 "image": "assets/conf.jpg",
                 "description": "O conferință despre studenție."
               },
               {
-                "name": "Workshop primăvară",
-                "startDate": "2026-04-05",
+                "id": "evt_workshop_primavara",
+                "title": "Workshop primăvară",
+                "startsAt": "2026-04-05T10:00:00+03:00",
                 "location": "Sala 12"
               }
             ]

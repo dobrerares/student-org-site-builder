@@ -142,12 +142,12 @@ function personBlobsFromTeamGrid(
   block: BlockEnvelope,
   siteUrl: string | undefined,
 ): JsonLdBlob[] {
-  const data = block.data as { members?: unknown };
-  if (!Array.isArray(data.members)) return [];
+  const data = block.data as { people?: unknown };
+  if (!Array.isArray(data.people)) return [];
   const blobs: JsonLdBlob[] = [];
-  for (const member of data.members as unknown[]) {
-    if (typeof member !== "object" || member === null) continue;
-    const m = member as Record<string, unknown>;
+  for (const person of data.people as unknown[]) {
+    if (typeof person !== "object" || person === null) continue;
+    const m = person as Record<string, unknown>;
     if (typeof m.name !== "string" || m.name.length === 0) continue;
     const blob: JsonLdBlob = {
       "@context": "https://schema.org",
@@ -157,8 +157,13 @@ function personBlobsFromTeamGrid(
     if (typeof m.role === "string" && m.role.length > 0) {
       blob.jobTitle = m.role;
     }
-    if (typeof m.image === "string" && m.image.length > 0) {
-      blob.image = absolutiseUrl(siteUrl, m.image);
+    // Schema migrated `image: string` → `photo: AssetRef`. The renderable URL
+    // lives at `photo.path`; schema.org's Person.image stays a single string.
+    if (typeof m.photo === "object" && m.photo !== null) {
+      const path = (m.photo as { path?: unknown }).path;
+      if (typeof path === "string" && path.length > 0) {
+        blob.image = absolutiseUrl(siteUrl, path);
+      }
     }
     blobs.push(blob);
   }
@@ -175,16 +180,19 @@ function eventBlobsFromEventList(
   for (const event of data.events as unknown[]) {
     if (typeof event !== "object" || event === null) continue;
     const e = event as Record<string, unknown>;
-    if (typeof e.name !== "string" || e.name.length === 0) continue;
-    if (typeof e.startDate !== "string" || e.startDate.length === 0) continue;
+    // Schema field names: `title` (not `name`), `startsAt` / `endsAt` (not
+    // `startDate` / `endDate`). The output JSON-LD field names follow
+    // schema.org's Event vocabulary (`name`, `startDate`, `endDate`).
+    if (typeof e.title !== "string" || e.title.length === 0) continue;
+    if (typeof e.startsAt !== "string" || e.startsAt.length === 0) continue;
     const blob: JsonLdBlob = {
       "@context": "https://schema.org",
       "@type": "Event",
-      name: e.name,
-      startDate: e.startDate,
+      name: e.title,
+      startDate: e.startsAt,
     };
-    if (typeof e.endDate === "string" && e.endDate.length > 0) {
-      blob.endDate = e.endDate;
+    if (typeof e.endsAt === "string" && e.endsAt.length > 0) {
+      blob.endDate = e.endsAt;
     }
     if (typeof e.location === "string" && e.location.length > 0) {
       blob.location = {

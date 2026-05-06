@@ -200,7 +200,7 @@ describe("build - JSON-LD: Event (when eventList block present)", () => {
     );
     const minimal = events[1]!;
     expect(minimal.name).toBe("Workshop primăvară");
-    expect(minimal.startDate).toBe("2026-04-05");
+    expect(minimal.startDate).toBe("2026-04-05T10:00:00+03:00");
     expect(minimal).not.toHaveProperty("endDate");
     expect(minimal).not.toHaveProperty("image");
     expect(minimal).not.toHaveProperty("description");

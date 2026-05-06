@@ -32,6 +32,7 @@ describe("build — multi-page output structure", () => {
   test("the output Map contains exactly the expected keys (no stray paths)", () => {
     const dist = build(fixture);
     expect([...dist.keys()].sort()).toEqual([
+      "_lighthouse-budget.json",
       "despre/index.html",
       "index.html",
       "puterea-cuvintelor/index.html",

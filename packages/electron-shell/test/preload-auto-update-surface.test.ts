@@ -61,6 +61,7 @@ describe("preload auto-update surface", () => {
       "getAutoUpdateSettings",
       "setAutoUpdateSettings",
       "onUpdateEvent",
+      "processAssetForVariants",
     ]);
   });
 
