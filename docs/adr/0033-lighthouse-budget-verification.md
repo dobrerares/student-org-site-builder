@@ -1,4 +1,4 @@
-# 0005 - Per-page Lighthouse-budget verification in the build pipeline
+# 0033 - Per-page Lighthouse-budget verification in the build pipeline
 
 - **Status:** Accepted
 - **Date:** 2026-05-05

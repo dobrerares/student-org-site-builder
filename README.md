@@ -120,7 +120,7 @@ conventions — see [CONTRIBUTING.md](CONTRIBUTING.md).
 | Reading the project for the first time | [docs/PRD.md](docs/PRD.md) — the v1 spec.                                                        |
 | Setting up locally to contribute       | [CONTRIBUTING.md](CONTRIBUTING.md).                                                              |
 | Adding a new block type                | [docs/how-to-add-a-block.md](docs/how-to-add-a-block.md).                                        |
-| Adding a new theme                     | [ADR 0003](docs/adr/0003-renderer-skeleton-and-determinism.md).                                  |
+| Adding a new theme                     | [ADR 0032](docs/adr/0032-renderer-skeleton-and-determinism.md).                                  |
 | Architectural decisions                | [docs/adr/](docs/adr/) — numbered, dated, immutable.                                             |
 | Filing an issue                        | [Issue templates](.github/ISSUE_TEMPLATE/) and the [agents notes](docs/agents/issue-tracker.md). |
 | Conduct                                | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).                                                        |

@@ -21,7 +21,7 @@ Read the following before opening a block-implementation PR:
 - [ADR 0002 — Schema library and validation model](adr/0002-schema-library-and-validation-model.md) —
   why blocks are described as Zod `looseObject`s, how severity tiers
   work, and the round-trip identity contract.
-- [ADR 0003 — Renderer skeleton, tokens, determinism](adr/0003-renderer-skeleton-and-determinism.md) —
+- [ADR 0032 — Renderer skeleton, tokens, determinism](adr/0032-renderer-skeleton-and-determinism.md) —
   the renderer's purity guarantees, how tokens flow, the golden-file
   framework, and the no-runtime-in-output contract.
 - [ADR 0008 — Block library picker, DnD, undo](adr/0008-block-library-dnd-and-undo.md) —

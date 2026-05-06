@@ -1,4 +1,4 @@
-# 0006 — Embed block: 8-provider whitelist, nocookie variants, lazy iframe loading
+# 0039 — Embed block: 8-provider whitelist, nocookie variants, lazy iframe loading
 
 - **Status:** Accepted
 - **Date:** 2026-05-05

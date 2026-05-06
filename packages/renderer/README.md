@@ -64,7 +64,7 @@ structural primitive or a `var(--token)` reference).
 
 ## Architecture
 
-See [`docs/adr/0003-renderer-skeleton-and-determinism.md`](../../docs/adr/0003-renderer-skeleton-and-determinism.md)
+See [`docs/adr/0032-renderer-skeleton-and-determinism.md`](../../docs/adr/0032-renderer-skeleton-and-determinism.md)
 for the renderer skeleton decisions and
 [`docs/adr/0006-academic-theme-first-pass.md`](../../docs/adr/0006-academic-theme-first-pass.md)
 for the Academic theme's design choices.

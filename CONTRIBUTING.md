@@ -46,7 +46,7 @@ the [issues backlog](../../issues)). For now:
   editing — pair with `pnpm -r --filter @sosb/<name>` to scope.
 - `pnpm test:e2e` runs the Playwright e2e suite from `./e2e/`. Some specs
   bundle the renderer with esbuild and run it inside a real Chromium
-  page (see [ADR 0003](docs/adr/0003-renderer-skeleton-and-determinism.md))
+  page (see [ADR 0032](docs/adr/0032-renderer-skeleton-and-determinism.md))
   to verify Node-vs-browser parity.
 - `pnpm -r --filter @sosb/<name> run build` builds one package in
   isolation.
@@ -157,7 +157,7 @@ All scripts run from the repo root.
 - Tests assert observable behaviour (renderer output, schema validation
   verdicts, IO round-trips) — not internal call patterns. See
   `docs/PRD.md` "Testing Decisions" for the canonical rules and
-  [ADR 0003](docs/adr/0003-renderer-skeleton-and-determinism.md) for the
+  [ADR 0032](docs/adr/0032-renderer-skeleton-and-determinism.md) for the
   golden-file framework.
 - Most packages are testable in the default Node Vitest environment without
   a DOM. Editor packages that need a DOM (`@sosb/editor-app`) opt in via
@@ -176,7 +176,7 @@ Themes live in `@sosb/themes` and are wired into the renderer via the
 `themeId` argument to `renderSite()`. The architectural decisions that govern
 themes — tokens-as-CSS-custom-properties on `:root`, layout-only theme CSS,
 no raw hex/rgb outside `:root`, deterministic emission order — are recorded
-in [ADR 0003 (renderer skeleton and determinism)](docs/adr/0003-renderer-skeleton-and-determinism.md).
+in [ADR 0032 (renderer skeleton and determinism)](docs/adr/0032-renderer-skeleton-and-determinism.md).
 Read that ADR first; theme additions land per-issue (Academic = #47, the
 others = #28–#31).
 
@@ -326,7 +326,7 @@ hero image) and emits a `dist/_lighthouse-budget.json` audit report. CI
 upgrades budget warnings to hard errors via `errorOnBudget: true`. See
 [`docs/performance-budgets.md`](docs/performance-budgets.md) for the
 budgets, how to read the report, and how to debug a violation; see
-[ADR 0005](docs/adr/0005-lighthouse-budget-verification.md) for the
+[ADR 0033](docs/adr/0033-lighthouse-budget-verification.md) for the
 implementation rationale.
 
 ## Translations

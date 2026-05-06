@@ -1,4 +1,4 @@
-# 0006 — `valueList` block, curated icons, and the generic `BlockForm`
+# 0035 — `valueList` block, curated icons, and the generic `BlockForm`
 
 - **Status:** Accepted
 - **Date:** 2026-05-05

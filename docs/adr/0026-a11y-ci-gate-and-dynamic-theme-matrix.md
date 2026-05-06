@@ -20,7 +20,7 @@ additive to the existing four-job CI (#2) rather than restructuring it.
 
 The PRD is silent on the specific axe rule set and on whether to use
 `@axe-core/playwright`, the standalone `axe-core` browser bundle, or
-jsdom-level checks. ADR 0003 (renderer skeleton) wired a small
+jsdom-level checks. ADR 0032 (renderer skeleton) wired a small
 jsdom-level axe-core test for the hero-only sample, but that layer cannot
 exercise color-contrast or layout-derived rules.
 

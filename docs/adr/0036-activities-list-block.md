@@ -1,4 +1,4 @@
-# 0006 — activitiesList block
+# 0036 — activitiesList block
 
 - **Status:** Accepted
 - **Date:** 2026-05-05

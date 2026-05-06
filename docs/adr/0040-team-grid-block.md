@@ -1,4 +1,4 @@
-# 0006 — teamGrid block: schema, renderer, AssetRef integration
+# 0040 — teamGrid block: schema, renderer, AssetRef integration
 
 - **Status:** Accepted
 - **Date:** 2026-05-05

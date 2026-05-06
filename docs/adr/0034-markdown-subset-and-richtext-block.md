@@ -1,4 +1,4 @@
-# 0006 — Markdown subset, custom parser, and richText block
+# 0034 — Markdown subset, custom parser, and richText block
 
 - **Status:** Accepted
 - **Date:** 2026-05-05

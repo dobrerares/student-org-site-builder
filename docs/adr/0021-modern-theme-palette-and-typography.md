@@ -34,7 +34,7 @@ The PRD pins the relevant constraints (PRD § Renderer & themes):
 - HISTORIPOL (an ovidius.ro student org) is the canonical reference user
   whose Romanian content drives every theme's diacritic test.
 
-ADR 0003 (renderer skeleton, #46) further pins:
+ADR 0032 (renderer skeleton, #46) further pins:
 
 - Themes plug in by id: `themeCssFor(themeId)` in
   `packages/renderer/src/index.tsx` returns the active theme's layout-only

@@ -1,4 +1,4 @@
-# 0006 — contactCard: mailto anti-harvest and map-embed privacy
+# 0037 — contactCard: mailto anti-harvest and map-embed privacy
 
 - **Status:** Accepted
 - **Date:** 2026-05-05

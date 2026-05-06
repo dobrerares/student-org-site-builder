@@ -1,4 +1,4 @@
-# 0003 — Renderer skeleton, tokens emission, and Node-vs-browser parity
+# 0032 — Renderer skeleton, tokens emission, and Node-vs-browser parity
 
 - **Status:** Accepted
 - **Date:** 2026-05-05

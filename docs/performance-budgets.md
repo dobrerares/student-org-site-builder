@@ -8,7 +8,7 @@ to debug a violation.
 
 The numbers and rationale come from the [v1 PRD](./PRD.md) Performance
 quality commitment. The implementation is described in
-[ADR 0005](./adr/0005-lighthouse-budget-verification.md).
+[ADR 0033](./adr/0033-lighthouse-budget-verification.md).
 
 ## The budgets
 
@@ -191,4 +191,4 @@ Common failure modes:
 - Materialise script: `scripts/build-lighthouse-fixture.mjs`
 - Lighthouse config: `lighthouserc.json`
 - CI workflow: `.github/workflows/ci.yml` (the `lighthouse` job)
-- Decision record: `docs/adr/0005-lighthouse-budget-verification.md`
+- Decision record: `docs/adr/0033-lighthouse-budget-verification.md`

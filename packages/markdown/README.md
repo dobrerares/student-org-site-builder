@@ -52,5 +52,5 @@ import { markdownToHtml, sanitizeUrl, escapeText, escapeAttr } from "@sosb/markd
   future blocks (e.g. CTA banner) that take URL fields.
 - `escapeText(value)` / `escapeAttr(value)` — entity-encoding helpers.
 
-See `docs/adr/0006-markdown-subset-and-richtext-block.md` for the
+See `docs/adr/0034-markdown-subset-and-richtext-block.md` for the
 design decisions. Tracking issue: #9.

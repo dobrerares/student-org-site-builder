@@ -1,4 +1,4 @@
-# 0007 — Wizard state machine and progress persistence
+# 0041 — Wizard state machine and progress persistence
 
 - **Status:** Accepted
 - **Date:** 2026-05-05

@@ -1,4 +1,4 @@
-# 0007 — customHTML sanitization (DOMPurify, danger-mode opt-in)
+# 0038 — customHTML sanitization (DOMPurify, danger-mode opt-in)
 
 - **Status:** Accepted
 - **Date:** 2026-05-05
