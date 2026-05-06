@@ -16,7 +16,6 @@
 import { build as esbuild } from "esbuild";
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { tmpdir } from "node:os";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -29,8 +28,19 @@ const outDir = resolve(process.cwd(), process.argv[2] ?? "lighthouse-dist");
 // here (NOT "browser") because this script runs in Node CI; the bundle is
 // thrown away after one use, so we don't need to re-verify browser-purity
 // (the test suite already does that on every PR).
+//
+// Bundle output lives under packages/renderer/node_modules/.cache (NOT
+// os.tmpdir()) so Node's bare-specifier resolution can walk up and find
+// `jsdom` (marked external below) via the renderer package's symlink.
+// jsdom is only declared in @sosb/renderer's package.json, so pnpm does
+// not hoist it to <repoRoot>/node_modules; it is reachable only from
+// inside packages/renderer's tree. A bundle in os.tmpdir() or the repo
+// root has no jsdom ancestor and external imports would
+// ERR_MODULE_NOT_FOUND at runtime.
 const buildEntryPoint = join(repoRoot, "packages", "build", "src", "index.ts");
-const bundlePath = join(tmpdir(), `sosb-build-bundle-${Date.now()}.mjs`);
+const bundleDir = join(repoRoot, "packages", "renderer", "node_modules", ".cache", "sosb-build");
+mkdirSync(bundleDir, { recursive: true });
+const bundlePath = join(bundleDir, `bundle-${Date.now()}.mjs`);
 await esbuild({
   entryPoints: [buildEntryPoint],
   bundle: true,
@@ -41,6 +51,11 @@ await esbuild({
   jsx: "automatic",
   jsxImportSource: "preact",
   absWorkingDir: repoRoot,
+  // jsdom is a CJS module reached transitively via @sosb/renderer's
+  // sanitize.node.ts entry. esbuild can't statically resolve jsdom's
+  // internal `require(...)` calls and emits a throwing stub. Mark it
+  // external so Node resolves it from node_modules at runtime instead.
+  external: ["jsdom"],
 });
 
 const { build } = await import(pathToFileURL(bundlePath).href);

@@ -4,7 +4,6 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
-import os from "node:os";
 
 /**
  * Per-theme axe-core regression suite (issue #40).
@@ -76,11 +75,31 @@ async function loadFixtureAndBuildModule(): Promise<{
     jsx: "automatic",
     jsxImportSource: "preact",
     absWorkingDir: repoRoot,
+    // jsdom is a CJS module reached transitively via @sosb/renderer's
+    // sanitize.node.ts entry. esbuild can't statically resolve jsdom's
+    // internal `require(...)` calls and emits a throwing stub. Mark it
+    // external so Node resolves it from node_modules at runtime instead.
+    external: ["jsdom"],
   });
   const out = result.outputFiles[0];
   if (out === undefined) throw new Error("esbuild produced no output for a11y spec");
 
-  const tmpDir = path.join(os.tmpdir(), "sosb-a11y-spec");
+  // Bundle output lives under packages/renderer/node_modules/.cache (NOT
+  // os.tmpdir()) so Node's bare-specifier resolution can walk up and find
+  // `jsdom` (marked external above) via the renderer package's symlink.
+  // jsdom is only declared in @sosb/renderer's package.json, so pnpm does
+  // not hoist it to <repoRoot>/node_modules; it is reachable only from
+  // inside packages/renderer's tree. A bundle in os.tmpdir() or the repo
+  // root has no jsdom ancestor and external imports would
+  // ERR_MODULE_NOT_FOUND at runtime.
+  const tmpDir = path.join(
+    repoRoot,
+    "packages",
+    "renderer",
+    "node_modules",
+    ".cache",
+    "sosb-a11y-spec",
+  );
   mkdirSync(tmpDir, { recursive: true });
   const outFile = path.join(tmpDir, `bundle-${process.pid}-${Date.now()}.mjs`);
   writeFileSync(outFile, out.text);

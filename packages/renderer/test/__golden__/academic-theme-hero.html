@@ -85,7 +85,13 @@ em, i, cite { font-style: italic; }
   font-size: var(--type-scale-sm);
   font-style: italic;
   letter-spacing: 0.06em;
-  color: var(--color-accent);
+  /* Use --color-primary (dark, contrast-safe against any background) rather
+     than --color-accent: a user-overridable accent token can easily fall
+     below WCAG AA 4.5:1 for small text, and the editor's contrast warning
+     can't perfectly cover every theme's surface palette. The eyebrow then
+     reads as a tracked-italic uppercase label in the same color as the h1,
+     which actually reinforces the heading block visually. */
+  color: var(--color-primary);
   margin: 0 0 var(--space-sm) 0;
   text-transform: uppercase;
 }

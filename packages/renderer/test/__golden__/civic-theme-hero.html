@@ -66,7 +66,11 @@ a:hover, a:focus-visible {
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--color-accent);
+  /* Use --color-primary (dark, contrast-safe) rather than --color-accent:
+     a user-overridable accent token can easily fall below WCAG AA 4.5:1
+     for small text. Eyebrow then matches the h1 color block, which is
+     the civic theme's already-established headline discipline. */
+  color: var(--color-primary);
   margin: 0 0 var(--space-sm) 0;
 }
 [data-block="hero"] h1 {
