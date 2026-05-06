@@ -56,6 +56,7 @@ import {
   type AutoUpdateSettingsStore,
 } from "./auto-update-settings.js";
 import type { RecentSitesStore } from "./recent-sites.js";
+import { createMainProcessAssetProcessor } from "./asset-processor-main.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -221,8 +222,9 @@ app.whenReady().then(async () => {
   const autoUpdatePath = path.join(userData, "auto-update-settings.json");
   const recentStore = createDiskStore(recentSitesPath);
   const settingsStore = createSettingsDiskStore(autoUpdatePath);
+  const assetProcessor = await createMainProcessAssetProcessor();
 
-  registerIpcHandlers({ ipcMain, dialog, store: recentStore });
+  registerIpcHandlers({ ipcMain, dialog, store: recentStore, assetProcessor });
 
   await createMainWindow();
 

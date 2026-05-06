@@ -10,15 +10,14 @@ import { IpcChannels, IPC_CHANNEL_LIST } from "../src/ipc-channels.js";
  * IPC silently, so a single source of truth + a regression test is the
  * cheapest insurance.
  *
- * The required channels for the Electron-shell scope (#35):
+ * The required channels:
  *
- * - `sosb:open-site-dialog`     native open dialog → returns path or null
- * - `sosb:save-site-dialog`     native save dialog → returns path or null
- * - `sosb:get-recent-sites`     read recent-sites store
- * - `sosb:add-recent-site`      append to recent-sites store
- * - `sosb:clear-recent-sites`   wipe recent-sites store
- *
- * The Sharp / asset-pipeline channels are explicitly out of scope (#37).
+ * - `sosb:open-site-dialog`             native open dialog -> returns path or null
+ * - `sosb:save-site-dialog`             native save dialog -> returns path or null
+ * - `sosb:get-recent-sites`             read recent-sites store
+ * - `sosb:add-recent-site`              append to recent-sites store
+ * - `sosb:clear-recent-sites`           wipe recent-sites store
+ * - `sosb:process-asset-for-variants`   Sharp + responsive variants (#37)
  */
 describe("IPC channel constants", () => {
   test("openSiteDialog channel name", () => {
@@ -41,6 +40,10 @@ describe("IPC channel constants", () => {
     expect(IpcChannels.clearRecentSites).toBe("sosb:clear-recent-sites");
   });
 
+  test("processAssetForVariants channel name", () => {
+    expect(IpcChannels.processAssetForVariants).toBe("sosb:process-asset-for-variants");
+  });
+
   test("IPC_CHANNEL_LIST enumerates every channel exactly once", () => {
     const expected = [
       "sosb:open-site-dialog",
@@ -48,6 +51,7 @@ describe("IPC channel constants", () => {
       "sosb:get-recent-sites",
       "sosb:add-recent-site",
       "sosb:clear-recent-sites",
+      "sosb:process-asset-for-variants",
     ];
     expect(IPC_CHANNEL_LIST.length).toBe(expected.length);
     for (const channel of expected) {

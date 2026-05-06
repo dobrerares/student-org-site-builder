@@ -69,6 +69,10 @@ importers:
       '@sosb/schema':
         specifier: workspace:*
         version: link:../schema
+      esbuild:
+        specifier: ^0.24.0
+        version: 0.24.0
+    optionalDependencies:
       sharp:
         specifier: ^0.34.5
         version: 0.34.5
@@ -183,12 +187,18 @@ importers:
 
   packages/electron-shell:
     dependencies:
+      '@sosb/assets':
+        specifier: workspace:*
+        version: link:../assets
       '@sosb/editor-app':
         specifier: workspace:*
         version: link:../editor-app
       '@sosb/schema':
         specifier: workspace:*
         version: link:../schema
+      '@sosb/vfs':
+        specifier: workspace:*
+        version: link:../vfs
       electron-updater:
         specifier: ^6.6.2
         version: 6.8.3
@@ -3534,7 +3544,8 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
-  '@img/colour@1.1.0': {}
+  '@img/colour@1.1.0':
+    optional: true
 
   '@img/sharp-darwin-arm64@0.34.5':
     optionalDependencies:
@@ -4302,7 +4313,8 @@ snapshots:
 
   delayed-stream@1.0.0: {}
 
-  detect-libc@2.1.2: {}
+  detect-libc@2.1.2:
+    optional: true
 
   detect-node@2.1.0:
     optional: true
@@ -5526,6 +5538,7 @@ snapshots:
       '@img/sharp-win32-arm64': 0.34.5
       '@img/sharp-win32-ia32': 0.34.5
       '@img/sharp-win32-x64': 0.34.5
+    optional: true
 
   shebang-command@2.0.0:
     dependencies:

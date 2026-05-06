@@ -1,12 +1,16 @@
 import { IpcChannels, type SaveSiteDialogOptions } from "./ipc-channels.js";
 import { AutoUpdateChannels } from "./auto-update-channels.js";
 import type { AutoUpdateSettings } from "./auto-update-settings.js";
+import type {
+  ProcessAssetForVariantsRequest,
+  ProcessAssetForVariantsResponse,
+} from "./asset-handlers.js";
 
 /**
  * The shape exposed to the renderer via `contextBridge.exposeInMainWorld`.
  *
  * The renderer accesses it as `window.sosb.<method>(...)`. The preload
- * script doesn't expose `ipcRenderer` directly — the renderer can ONLY
+ * script doesn't expose `ipcRenderer` directly -- the renderer can ONLY
  * call the methods listed here, which is the documented Electron pattern
  * for safe contextBridge surfaces.
  */
@@ -26,6 +30,8 @@ export const PRELOAD_API_METHODS = [
   "getAutoUpdateSettings",
   "setAutoUpdateSettings",
   "onUpdateEvent",
+  // From #37 — Electron Sharp asset pipeline.
+  "processAssetForVariants",
 ] as const;
 
 export type PreloadApiMethod = (typeof PRELOAD_API_METHODS)[number];
@@ -70,6 +76,19 @@ export interface PreloadApi {
    * function. The renderer can use this to update banner UI live.
    */
   onUpdateEvent(channel: string, listener: UpdateEventListener): () => void;
+  /**
+   * Asset pipeline (#37): main-process Sharp produces canonical bytes
+   * and responsive variants from renderer-supplied image bytes.
+   *
+   * The renderer NEVER passes a path -- only bytes. This keeps the
+   * Sharp pipeline behind a hard validation boundary: the IPC handler
+   * verifies the declared mime is in the image allowlist, the payload
+   * is under the hard size cap, the variant widths are positive, and
+   * the alt is non-empty BEFORE Sharp ever touches the bytes.
+   */
+  processAssetForVariants(
+    request: ProcessAssetForVariantsRequest,
+  ): Promise<ProcessAssetForVariantsResponse>;
 }
 
 /**
@@ -123,5 +142,10 @@ export function buildPreloadApi(ipcRenderer: IpcRendererLike): PreloadApi {
         ipcRenderer.removeListener?.(channel, wrapped);
       };
     },
+    processAssetForVariants: async (request) =>
+      (await ipcRenderer.invoke(
+        IpcChannels.processAssetForVariants,
+        request,
+      )) as ProcessAssetForVariantsResponse,
   };
 }

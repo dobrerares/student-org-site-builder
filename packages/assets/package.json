@@ -14,8 +14,11 @@
   "dependencies": {
     "@sosb/vfs": "workspace:*"
   },
+  "optionalDependencies": {
+    "sharp": "^0.34.5"
+  },
   "devDependencies": {
     "@sosb/schema": "workspace:*",
-    "sharp": "^0.34.5"
+    "esbuild": "^0.24.0"
   }
 }
