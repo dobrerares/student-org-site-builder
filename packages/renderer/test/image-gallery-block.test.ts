@@ -72,9 +72,7 @@ describe("renderSite — imageGallery block (structural)", () => {
   test("uses lazy loading for gallery images (PRD performance budget)", () => {
     const html = renderSite(fixture, "stub");
     // every gallery image carries loading="lazy"
-    const imgs = [
-      ...html.matchAll(/<img[^>]*src="assets\/[^"]+"[^>]*>/g),
-    ].map((m) => m[0]);
+    const imgs = [...html.matchAll(/<img[^>]*src="assets\/[^"]+"[^>]*>/g)].map((m) => m[0]);
     expect(imgs.length).toBeGreaterThan(0);
     for (const img of imgs) {
       expect(img).toMatch(/loading="lazy"/);

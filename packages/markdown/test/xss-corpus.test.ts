@@ -93,11 +93,17 @@ const CORPUS: ReadonlyArray<XssVector> = [
   { name: "object tag", input: '<object data="evil.swf"></object>' },
   { name: "embed tag", input: '<embed src="evil.swf">' },
   { name: "style tag", input: '<style>body{background:url("javascript:x()")}</style>' },
-  { name: "meta refresh redirect", input: '<meta http-equiv="refresh" content="0;url=javascript:x()">' },
+  {
+    name: "meta refresh redirect",
+    input: '<meta http-equiv="refresh" content="0;url=javascript:x()">',
+  },
   { name: "form injection", input: '<form action="evil.com"><input name="x"></form>' },
   { name: "anchor with onclick handler", input: '<a href="#" onclick="x()">click</a>' },
   { name: "double-encoded js link", input: "[click](&amp;javascript:x())" },
-  { name: "html comment with conditional script", input: "<!--[if IE]><script>x()</script><![endif]-->" },
+  {
+    name: "html comment with conditional script",
+    input: "<!--[if IE]><script>x()</script><![endif]-->",
+  },
   { name: "img tag injection", input: '<img src="x" alt="y">' },
   { name: "br tag injection", input: "<br>" },
   { name: "hr tag injection", input: "<hr>" },
@@ -111,7 +117,10 @@ const CORPUS: ReadonlyArray<XssVector> = [
   { name: "broken closing tag", input: "</script>" },
   { name: "html entity encoding for tag bracket", input: "&lt;script&gt;x()&lt;/script&gt;" },
   { name: "markdown link with embedded brackets", input: "[text [nested]](http://example.com)" },
-  { name: "raw script with markdown link inside", input: "<script>[click](http://example.com)</script>" },
+  {
+    name: "raw script with markdown link inside",
+    input: "<script>[click](http://example.com)</script>",
+  },
 ];
 
 describe("markdownToHtml — XSS corpus", () => {

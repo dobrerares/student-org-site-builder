@@ -6,10 +6,7 @@
  * Its only job is to attach the renderer to `window` under a stable global
  * so the test can call it from `page.evaluate()`.
  */
-import {
-  FAQ_ACCORDION_SCRIPT_SOURCE,
-  renderSite,
-} from "../packages/renderer/src/index.js";
+import { FAQ_ACCORDION_SCRIPT_SOURCE, renderSite } from "../packages/renderer/src/index.js";
 
 declare global {
   interface Window {

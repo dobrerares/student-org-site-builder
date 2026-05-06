@@ -37,10 +37,14 @@ The rendered HTML structure is:
   <blockquote class="quote__text">
     <p>{inline-rendered quote text}</p>
   </blockquote>
-  <figcaption class="quote__attribution">         <!-- only when attribution present -->
-    <img class="quote__photo" .../>               <!-- only when authorImage set -->
-    <cite class="quote__author">{author}</cite>   <!-- only when author set -->
-    <span class="quote__role">{authorRole}</span> <!-- only when authorRole set -->
+  <figcaption class="quote__attribution">
+    <!-- only when attribution present -->
+    <img class="quote__photo" ... />
+    <!-- only when authorImage set -->
+    <cite class="quote__author">{author}</cite>
+    <!-- only when author set -->
+    <span class="quote__role">{authorRole}</span>
+    <!-- only when authorRole set -->
   </figcaption>
 </figure>
 ```
@@ -52,7 +56,7 @@ Why this shape:
   with `<cite>` for the source. This pattern keeps the citation
   programmatically associated with the quote without needing extra ARIA
   (no `aria-labelledby`, no `role="figure"`).
-- `<cite>` per the spec carries the *title of a work* (or, for a
+- `<cite>` per the spec carries the _title of a work_ (or, for a
   pull-quote, the source / speaker). It is the right element for the
   author name; `<span>` is used for the role because the role is
   metadata about the cite, not itself a cited work.
@@ -85,7 +89,7 @@ Alternatives considered:
   source URL.
 - **Skip `<figure>` and put `data-block` on `<blockquote>` with the
   attribution as siblings.** Rejected: the `<blockquote>` would no
-  longer wrap *only* the quoted content (a spec-conformance violation),
+  longer wrap _only_ the quoted content (a spec-conformance violation),
   and the attribution would not be programmatically grouped with the
   quote.
 
@@ -168,7 +172,7 @@ XSS corpus.
   / `authorImageAlt` optional). Registered in `KnownBlockSchemas`.
 - `packages/renderer/src/blocks/quote.tsx` ships the renderer
   component. Wired into `PageShell.renderBlock()` via a new `case
-  "quote"` branch.
+"quote"` branch.
 - `@sosb/markdown` exports `renderInline` as `markdownInlineToHtml`.
   Existing callers (richText, future faq) are unaffected — the change
   is purely additive.

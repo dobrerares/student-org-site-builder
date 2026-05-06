@@ -19,13 +19,7 @@ import { runArchivalBuild } from "../packages/browser-shell/scripts/run-archival
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..");
-const archivalOutDir = path.join(
-  repoRoot,
-  "packages",
-  "browser-shell",
-  "dist",
-  "archival",
-);
+const archivalOutDir = path.join(repoRoot, "packages", "browser-shell", "dist", "archival");
 const archivalHtml = path.join(archivalOutDir, "builder.html");
 
 test.beforeAll(async () => {

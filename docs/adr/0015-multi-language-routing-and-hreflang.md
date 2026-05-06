@@ -122,7 +122,7 @@ Rejected alternatives:
 
 The renderer emits relative-path hreflang alternates so the
 preview-iframe and the no-`siteUrl` build path render correctly. When
-`siteUrl` *is* set, the build pipeline strips the relative alternates
+`siteUrl` _is_ set, the build pipeline strips the relative alternates
 from the renderer's HTML and re-emits absolute ones (Google's i18n SEO
 docs recommend absolute URLs in production hreflang).
 
@@ -190,7 +190,7 @@ existing schema-parse pass:
    ("untranslated counterparts in declared bilingual pages" → warning).
 
 The renderer + build pipeline trust the validator's shape, so they only
-have to handle the *graceful* missing-counterpart case (warning, not
+have to handle the _graceful_ missing-counterpart case (warning, not
 error): render the switcher with a language-home fallback, emit the
 hreflang for that language pointing at the language home.
 
@@ -203,7 +203,7 @@ The pages-list panel (#23) gains:
   language with the native name as a heading. Single-language sites
   render the flat list unchanged from #23.
 - **Per-row missing-translation indicator** — a small `<span
-  data-testid="missing-translation-indicator">` listing the languages
+data-testid="missing-translation-indicator">` listing the languages
   the page has no counterpart for. AC: "Editor 'missing translation'
   indicator visible per page".
 - **Per-row "Add <Native Name> version" buttons** — one per missing
@@ -291,7 +291,7 @@ byte-identical without any test fixture surgery.
 
 - **RTL layout support** — explicitly out per #24.
 - **Editor UI string translation (RO / EN editor surface)** — owned by
-  #42 (editor i18n). #24 only ships the multi-language *site output*.
+  #42 (editor i18n). #24 only ships the multi-language _site output_.
 - **Per-language schema variation** — schemas are language-agnostic.
 - **Automatic translation (machine translation of content)** —
   explicitly out per #24.

@@ -1,9 +1,5 @@
 import { z } from "zod";
-import {
-  BlockEnvelopeSchema,
-  KnownBlockSchemas,
-  isKnownBlockType,
-} from "./blocks/index.js";
+import { BlockEnvelopeSchema, KnownBlockSchemas, isKnownBlockType } from "./blocks/index.js";
 import { SiteSchema } from "./site.js";
 import { checkSlug } from "./slug.js";
 
@@ -232,9 +228,7 @@ function runSiteRules(site: z.infer<typeof SiteSchema>, result: ValidationResult
     // Quality nudge: bilingual sites should have counterparts everywhere.
     if (site.languages.length >= 2) {
       const localizedKeys = new Set(Object.keys(localized ?? {}));
-      const missing = site.languages.filter(
-        (lng) => lng !== page.lang && !localizedKeys.has(lng),
-      );
+      const missing = site.languages.filter((lng) => lng !== page.lang && !localizedKeys.has(lng));
       if (missing.length > 0) {
         result.warnings.push({
           severity: "warning",

@@ -101,9 +101,7 @@ describe("addLanguageVersion", () => {
           navLabel: "Other",
           navOrder: 1,
           showInNav: true,
-          blocks: [
-            { id: "blk_other", type: "hero", version: 1, data: { title: "Other" } },
-          ],
+          blocks: [{ id: "blk_other", type: "hero", version: 1, data: { title: "Other" } }],
         },
       ],
     } as unknown as Site;

@@ -44,12 +44,7 @@ export function ActivitiesList(props: { block: ActivitiesListBlock }): preact.JS
         {intro !== undefined && <p class="activities-list__intro">{intro}</p>}
         <ul class="activities-list__items" role="list">
           {items.map((item, idx) => (
-            <ActivityItemView
-              key={`${id}__item_${idx}`}
-              parentId={id}
-              index={idx}
-              item={item}
-            />
+            <ActivityItemView key={`${id}__item_${idx}`} parentId={id} index={idx} item={item} />
           ))}
         </ul>
       </div>
@@ -93,9 +88,7 @@ function ActivityItemView(props: ActivityItemViewProps): preact.JSX.Element {
             {badge}
           </span>
         )}
-        {description !== undefined && (
-          <p class="activities-list__description">{description}</p>
-        )}
+        {description !== undefined && <p class="activities-list__description">{description}</p>}
         {link !== undefined && (
           <ActivityLinkView itemId={itemId} itemTitle={item.title} link={link} />
         )}

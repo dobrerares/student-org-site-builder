@@ -46,9 +46,7 @@ describe("EditorApp validation wiring", () => {
     const { container } = render(<EditorApp initial={structuredClone(tieredSite)} />);
     expect(container.querySelector('[data-testid="site-health-panel"]')).toBeNull();
 
-    const toggle = container.querySelector<HTMLElement>(
-      '[data-testid="health-footer-toggle"]',
-    );
+    const toggle = container.querySelector<HTMLElement>('[data-testid="health-footer-toggle"]');
     expect(toggle).not.toBeNull();
     fireEvent.click(toggle!);
 
@@ -57,17 +55,13 @@ describe("EditorApp validation wiring", () => {
 
   test("clicking an issue in the panel focuses the corresponding form field", async () => {
     const { container } = render(<EditorApp initial={structuredClone(tieredSite)} />);
-    const toggle = container.querySelector<HTMLElement>(
-      '[data-testid="health-footer-toggle"]',
-    );
+    const toggle = container.querySelector<HTMLElement>('[data-testid="health-footer-toggle"]');
     fireEvent.click(toggle!);
 
     // Pick a row whose path lands on a real spine-form input. The fixture's
     // missing-org-email warning ("org.email") maps cleanly to the
     // `[data-field="org.email"]` input the spine form emits.
-    const orgEmailRow = container.querySelector<HTMLElement>(
-      '[data-issue][data-path="org.email"]',
-    );
+    const orgEmailRow = container.querySelector<HTMLElement>('[data-issue][data-path="org.email"]');
     expect(orgEmailRow).not.toBeNull();
     fireEvent.click(orgEmailRow!);
 
@@ -120,9 +114,7 @@ describe("EditorApp pre-export gate", () => {
     );
     expect(confirm!.disabled).toBe(true);
 
-    const input = dialog!.querySelector<HTMLInputElement>(
-      '[data-testid="export-confirm-input"]',
-    );
+    const input = dialog!.querySelector<HTMLInputElement>('[data-testid="export-confirm-input"]');
     fireEvent.input(input!, { target: { value: "EXPORT" } });
     expect(confirm!.disabled).toBe(false);
     fireEvent.click(confirm!);
@@ -151,9 +143,7 @@ describe("EditorApp pre-export gate", () => {
     fireEvent.click(exportBtn!);
 
     const dialog = container.querySelector('[data-testid="export-confirm-dialog"]');
-    const cancel = dialog!.querySelector<HTMLButtonElement>(
-      '[data-testid="export-cancel-button"]',
-    );
+    const cancel = dialog!.querySelector<HTMLButtonElement>('[data-testid="export-cancel-button"]');
     fireEvent.click(cancel!);
 
     // Dialog closes; no export.

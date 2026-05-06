@@ -50,12 +50,7 @@ export type {
 } from "./processor.js";
 export { detectMime, isSupportedMime } from "./mime.js";
 export type { SupportedMime } from "./mime.js";
-export type {
-  AssetMetadata,
-  AssetRef,
-  AssetUploadInput,
-  AssetVariantDescriptor,
-} from "./types.js";
+export type { AssetMetadata, AssetRef, AssetUploadInput, AssetVariantDescriptor } from "./types.js";
 export { deleteAsset, readAssetMetadata, uploadAsset } from "./pipeline.js";
 export type { UploadOptions } from "./pipeline.js";
 

@@ -27,9 +27,7 @@ describe("Site Health panel — grouped rendering", () => {
 
   test("renders three distinct severity groups (error, warning, info)", () => {
     const result = validate(site);
-    const { container } = render(
-      <SiteHealthPanel result={result} onJump={() => undefined} />,
-    );
+    const { container } = render(<SiteHealthPanel result={result} onJump={() => undefined} />);
 
     expect(container.querySelector('[data-severity-group="error"]')).not.toBeNull();
     expect(container.querySelector('[data-severity-group="warning"]')).not.toBeNull();
@@ -38,9 +36,7 @@ describe("Site Health panel — grouped rendering", () => {
 
   test("emits one `data-issue` row per issue across all tiers", () => {
     const result = validate(site);
-    const { container } = render(
-      <SiteHealthPanel result={result} onJump={() => undefined} />,
-    );
+    const { container } = render(<SiteHealthPanel result={result} onJump={() => undefined} />);
 
     const total = result.errors.length + result.warnings.length + result.info.length;
     const rows = container.querySelectorAll("[data-issue]");
@@ -49,9 +45,7 @@ describe("Site Health panel — grouped rendering", () => {
 
   test("each issue row exposes its severity and dotted path", () => {
     const result = validate(site);
-    const { container } = render(
-      <SiteHealthPanel result={result} onJump={() => undefined} />,
-    );
+    const { container } = render(<SiteHealthPanel result={result} onJump={() => undefined} />);
 
     const firstError = result.errors[0];
     if (firstError === undefined) throw new Error("fixture should produce an error");
@@ -64,9 +58,7 @@ describe("Site Health panel — grouped rendering", () => {
 
   test("each issue row carries the human-readable message", () => {
     const result = validate(site);
-    const { container } = render(
-      <SiteHealthPanel result={result} onJump={() => undefined} />,
-    );
+    const { container } = render(<SiteHealthPanel result={result} onJump={() => undefined} />);
 
     const firstWarning = result.warnings[0];
     if (firstWarning === undefined) throw new Error("fixture should produce a warning");
@@ -82,9 +74,7 @@ describe("Site Health panel — grouped rendering", () => {
       info: [],
       ok: true,
     };
-    const { container } = render(
-      <SiteHealthPanel result={empty} onJump={() => undefined} />,
-    );
+    const { container } = render(<SiteHealthPanel result={empty} onJump={() => undefined} />);
     expect(container.textContent ?? "").toMatch(/no issues|all clear|clean/i);
   });
 });
@@ -126,9 +116,7 @@ describe("Site Health panel — click-to-jump", () => {
 
   test("issue rows are buttons (keyboard-activable)", () => {
     const result = validate(site);
-    const { container } = render(
-      <SiteHealthPanel result={result} onJump={() => undefined} />,
-    );
+    const { container } = render(<SiteHealthPanel result={result} onJump={() => undefined} />);
     const rows = container.querySelectorAll("[data-issue]");
     for (const row of Array.from(rows)) {
       // Either a real button or an element with role="button" + tabindex.

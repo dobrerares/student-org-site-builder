@@ -49,16 +49,8 @@ export interface PagesListProps {
 }
 
 export function PagesList(props: PagesListProps): JSX.Element {
-  const {
-    site,
-    activeIndex,
-    onSelect,
-    onAdd,
-    onClone,
-    onDelete,
-    onMove,
-    onAddLanguageVersion,
-  } = props;
+  const { site, activeIndex, onSelect, onAdd, onClone, onDelete, onMove, onAddLanguageVersion } =
+    props;
   const [newSlug, setNewSlug] = useState("");
   const [addError, setAddError] = useState<string | null>(null);
   const [confirmIndex, setConfirmIndex] = useState<number | null>(null);
@@ -121,12 +113,7 @@ export function PagesList(props: PagesListProps): JSX.Element {
         data-index={idx}
         data-active={isActive}
       >
-        <button
-          type="button"
-          data-action="select"
-          data-index={idx}
-          onClick={() => onSelect(idx)}
-        >
+        <button type="button" data-action="select" data-index={idx} onClick={() => onSelect(idx)}>
           <span data-field="navLabel">{page.navLabel}</span>
           <span data-field="slug">/{page.slug}</span>
           <span data-field="lang">[{page.lang}]</span>

@@ -219,7 +219,7 @@ The previous PR (#35) declared the IPC channel registry as the single
 source of truth. We add exactly one channel:
 
 ```ts
-processAssetForVariants: "sosb:process-asset-for-variants"
+processAssetForVariants: "sosb:process-asset-for-variants";
 ```
 
 It's added to `IpcChannels`, `IPC_CHANNEL_LIST`, `PRELOAD_API_METHODS`,

@@ -32,9 +32,7 @@ describe("renderSite — faq block (structural)", () => {
 
   test("places the question text inside <summary>", () => {
     const html = renderSite(fixture, "stub");
-    expect(html).toMatch(
-      /<summary[^>]*>[\s\S]*?Cine poate să se înscrie\?[\s\S]*?<\/summary>/,
-    );
+    expect(html).toMatch(/<summary[^>]*>[\s\S]*?Cine poate să se înscrie\?[\s\S]*?<\/summary>/);
     expect(html).toMatch(/<summary[^>]*>[\s\S]*?Care sunt etapele\?[\s\S]*?<\/summary>/);
     expect(html).toMatch(/<summary[^>]*>[\s\S]*?Există costuri\?[\s\S]*?<\/summary>/);
   });
@@ -88,11 +86,12 @@ describe("renderSite — faq block (structural)", () => {
 
   test("never emits non-whitelist HTML elements from faq markdown answers", () => {
     const malicious = JSON.parse(JSON.stringify(fixture)) as Site;
-    (malicious.pages[0]!.blocks[0]!.data as { items: { question: string; answer: string }[] }).items = [
+    (
+      malicious.pages[0]!.blocks[0]!.data as { items: { question: string; answer: string }[] }
+    ).items = [
       {
         question: "Hostile?",
-        answer:
-          "<script>x()</script>\n\n[click](javascript:x())\n\n<img src=x onerror=x()>",
+        answer: "<script>x()</script>\n\n[click](javascript:x())\n\n<img src=x onerror=x()>",
       },
     ];
     const html = renderSite(malicious, "stub");

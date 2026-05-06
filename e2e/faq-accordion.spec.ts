@@ -86,40 +86,42 @@ test("FAQ accordion: clicking a summary toggles its details element open/closed"
   const itemCount = await page.locator(".faq__item").count();
   expect(itemCount).toBe(3);
 
-  const firstOpenInitial = await page.locator(".faq__item").nth(0).evaluate(
-    (el) => (el as HTMLDetailsElement).open,
-  );
+  const firstOpenInitial = await page
+    .locator(".faq__item")
+    .nth(0)
+    .evaluate((el) => (el as HTMLDetailsElement).open);
   expect(firstOpenInitial).toBe(true);
 
-  const secondOpenInitial = await page.locator(".faq__item").nth(1).evaluate(
-    (el) => (el as HTMLDetailsElement).open,
-  );
+  const secondOpenInitial = await page
+    .locator(".faq__item")
+    .nth(1)
+    .evaluate((el) => (el as HTMLDetailsElement).open);
   expect(secondOpenInitial).toBe(false);
 
   // Click the second summary; the details should open.
   await page.locator(".faq__item").nth(1).locator("summary").click();
   await page.waitForFunction(
-    () =>
-      (document.querySelectorAll(".faq__item")[1] as HTMLDetailsElement).open === true,
+    () => (document.querySelectorAll(".faq__item")[1] as HTMLDetailsElement).open === true,
     null,
     { timeout: 1000 },
   );
-  const secondOpenAfter = await page.locator(".faq__item").nth(1).evaluate(
-    (el) => (el as HTMLDetailsElement).open,
-  );
+  const secondOpenAfter = await page
+    .locator(".faq__item")
+    .nth(1)
+    .evaluate((el) => (el as HTMLDetailsElement).open);
   expect(secondOpenAfter).toBe(true);
 
   // The first item starts open; click it to close.
   await page.locator(".faq__item").nth(0).locator("summary").click();
   await page.waitForFunction(
-    () =>
-      (document.querySelectorAll(".faq__item")[0] as HTMLDetailsElement).open === false,
+    () => (document.querySelectorAll(".faq__item")[0] as HTMLDetailsElement).open === false,
     null,
     { timeout: 1000 },
   );
-  const firstOpenAfter = await page.locator(".faq__item").nth(0).evaluate(
-    (el) => (el as HTMLDetailsElement).open,
-  );
+  const firstOpenAfter = await page
+    .locator(".faq__item")
+    .nth(0)
+    .evaluate((el) => (el as HTMLDetailsElement).open);
   expect(firstOpenAfter).toBe(false);
 });
 
@@ -142,9 +144,7 @@ test("FAQ accordion: each item carries the data-faq-enhanced sentinel after scri
 
   const sentinels = await page
     .locator(".faq__item")
-    .evaluateAll((els) =>
-      els.map((el) => (el as HTMLElement).getAttribute("data-faq-enhanced")),
-    );
+    .evaluateAll((els) => els.map((el) => (el as HTMLElement).getAttribute("data-faq-enhanced")));
   expect(sentinels).toEqual(["1", "1", "1"]);
 
   // Re-inject the script; sentinel should remain "1" and click should still
@@ -152,16 +152,13 @@ test("FAQ accordion: each item carries the data-faq-enhanced sentinel after scri
   await page.addScriptTag({ content: scriptSource });
   const sentinelsAgain = await page
     .locator(".faq__item")
-    .evaluateAll((els) =>
-      els.map((el) => (el as HTMLElement).getAttribute("data-faq-enhanced")),
-    );
+    .evaluateAll((els) => els.map((el) => (el as HTMLElement).getAttribute("data-faq-enhanced")));
   expect(sentinelsAgain).toEqual(["1", "1", "1"]);
 
   // Click still toggles after re-injection.
   await page.locator(".faq__item").nth(2).locator("summary").click();
   await page.waitForFunction(
-    () =>
-      (document.querySelectorAll(".faq__item")[2] as HTMLDetailsElement).open === true,
+    () => (document.querySelectorAll(".faq__item")[2] as HTMLDetailsElement).open === true,
     null,
     { timeout: 1000 },
   );
@@ -188,8 +185,7 @@ test("FAQ accordion: keyboard activation (Enter/Space on summary) toggles", asyn
   await secondSummary.focus();
   await page.keyboard.press("Enter");
   await page.waitForFunction(
-    () =>
-      (document.querySelectorAll(".faq__item")[1] as HTMLDetailsElement).open === true,
+    () => (document.querySelectorAll(".faq__item")[1] as HTMLDetailsElement).open === true,
     null,
     { timeout: 1000 },
   );

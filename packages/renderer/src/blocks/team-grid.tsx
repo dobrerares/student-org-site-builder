@@ -99,9 +99,7 @@ function TeamGroup(props: {
 }): preact.JSX.Element {
   const { group, blockId, style } = props;
   const groupId =
-    group.key !== null
-      ? `${blockId}__group-${slugify(group.key)}`
-      : `${blockId}__group-flat`;
+    group.key !== null ? `${blockId}__group-${slugify(group.key)}` : `${blockId}__group-flat`;
 
   return (
     <div

@@ -24,11 +24,7 @@ import {
   EDITORIAL_THEME_TOKENS,
 } from "./themes/editorial.js";
 import { CIVIC_THEME_BASELINE_TOKENS, CIVIC_THEME_CSS, CIVIC_THEME_ID } from "./themes/civic.js";
-import {
-  ACADEMIC_THEME_CSS,
-  ACADEMIC_THEME_ID,
-  ACADEMIC_THEME_TOKENS,
-} from "./themes/academic.js";
+import { ACADEMIC_THEME_CSS, ACADEMIC_THEME_ID, ACADEMIC_THEME_TOKENS } from "./themes/academic.js";
 
 export interface RenderOptions {
   /**
@@ -148,7 +144,4 @@ export {
 export type { HreflangEntry, LanguageSwitcherEntry } from "./routing.js";
 export { EMBED_LAZY_LOAD_SCRIPT } from "./blocks/embed-lazy-loader.js";
 export { resolveEmbed } from "./blocks/embed.js";
-export {
-  FAQ_ACCORDION_SCRIPT_SOURCE,
-  FAQ_ENHANCED_ATTR,
-} from "./blocks/faq.script.js";
+export { FAQ_ACCORDION_SCRIPT_SOURCE, FAQ_ENHANCED_ATTR } from "./blocks/faq.script.js";

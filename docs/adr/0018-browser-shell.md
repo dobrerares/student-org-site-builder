@@ -44,7 +44,7 @@ This ADR records those choices.
   `navigator.serviceWorker.register()` and converts the lifecycle events
   into a single `onUpdateAvailable` callback.
 - `buildArchival({ html, assets })` — pure function that inlines `<script
-  src>` / `<link rel="stylesheet" href>` / `<img src>` references against
+src>` / `<link rel="stylesheet" href>` / `<img src>` references against
   an asset map.
 
 The split keeps each sub-module independently testable in vitest's node
@@ -84,7 +84,7 @@ zip export). Stale-while-revalidate keeps the editor instantly available
 offline while still propagating fixes once the user comes back online.
 
 The "new version available" toast (PRD's "Versiune nouă disponibilă")
-is driven by the lifecycle event that fires when a *new* SW reaches the
+is driven by the lifecycle event that fires when a _new_ SW reaches the
 `installed` state behind an existing controller. The page-side helper
 `registerServiceWorker(opts).onUpdateAvailable` exposes that exact moment
 as a single callback, so the host UI does not have to reason about
@@ -160,7 +160,7 @@ package stays storage-API-agnostic.
 
 OPFS is **not** in this driver. Three reasons:
 
-- The PRD pins OPFS as the *primary* with IndexedDB as the *fallback*.
+- The PRD pins OPFS as the _primary_ with IndexedDB as the _fallback_.
   Shipping a single driver in #38 lets us validate the caller-chosen-driver
   pattern end-to-end without two parallel implementations to maintain.
 - OPFS requires a different fakery for tests (no equivalent of
@@ -211,8 +211,8 @@ already accept that trade-off in `@sosb/build` and `@sosb/zip`; the
 archival build slots into the same pattern.
 
 The persistent VFS choice (IndexedDB-only in v1) is the conservative
-conservative pick. The PRD lists OPFS as the *primary* and IndexedDB as
-the *fallback*; shipping the fallback first means every browser sees the
+conservative pick. The PRD lists OPFS as the _primary_ and IndexedDB as
+the _fallback_; shipping the fallback first means every browser sees the
 editor persist its state, even on platforms where OPFS isn't available
 yet (Safari at the time of writing). When OPFS lands as a sibling driver,
 existing users transparently benefit (the host shell prefers OPFS, falls

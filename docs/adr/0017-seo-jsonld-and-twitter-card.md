@@ -20,12 +20,12 @@ Card tags, canonical URLs, hreflang in head and sitemap, and a
 sitemap-aware `robots.txt`. The PRD does **not** pin:
 
 - where JSON-LD generation lives (renderer? build pipeline?),
-- the JSON-LD blob *order* in the rendered HTML,
+- the JSON-LD blob _order_ in the rendered HTML,
 - how the build degrades when no `siteUrl` is configured (skip JSON-LD?
   emit relative URLs?),
-- the contract for *unknown* / *future* block types — the formal block
+- the contract for _unknown_ / _future_ block types — the formal block
   schemas for `teamGrid`, `eventList`, `faq`, etc., land in #9-#22, but
-  #39 asks for JSON-LD that *anticipates* those shapes today,
+  #39 asks for JSON-LD that _anticipates_ those shapes today,
 - where Twitter Card tags live (renderer head? build overlay?),
 - a `<lastmod>` strategy for sitemap entries.
 
@@ -51,7 +51,7 @@ Reasons to keep JSON-LD out of the renderer:
   `(siteData, themeId, opts)`. Pulling `siteUrl` into the renderer would
   widen the determinism surface. The current split keeps the renderer
   unchanged for any given site.
-- Block-level JSON-LD (`Person`, `Event`, `FAQPage`) reads a *future*
+- Block-level JSON-LD (`Person`, `Event`, `FAQPage`) reads a _future_
   schema shape today (`teamGrid`, `eventList`, `faq` block schemas land
   in #9-#22). Letting the build read the loose `BlockEnvelope.data` lets
   us emit JSON-LD before those blocks have formal renderers, without
@@ -61,7 +61,7 @@ Reasons we did not split JSON-LD into its own package:
 
 - It's a thin module (one file). A new workspace package would carry a
   `package.json`, two `tsconfig`s, and a workspace dep on `@sosb/schema`
-  + `@sosb/renderer` for the same code that fits in `@sosb/build`.
+  - `@sosb/renderer` for the same code that fits in `@sosb/build`.
 - The build pipeline already owns the sitemap, robots.txt, and
   per-page-canonical overlay — JSON-LD is the same kind of static-site
   metadata, and grouping the SEO surface together keeps callers from
@@ -219,7 +219,7 @@ decision. When #9-#22 land formal `teamGrid` / `eventList` / `faq`
 schemas, they will need to keep `data.members[]` / `data.events[]` /
 `data.items[]` as their top-level array names and the field names
 documented in `json-ld.ts`. If those issues choose different field names,
-they update `json-ld.ts` in the same PR — but the *envelope* contract
+they update `json-ld.ts` in the same PR — but the _envelope_ contract
 (typed as `BlockEnvelope` with loose `data`) doesn't change.
 
 ## Consequences

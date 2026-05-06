@@ -29,10 +29,7 @@ export function pathToDotted(path: readonly (string | number)[]): string {
  * an element. Returns `null` when nothing matches (e.g. issue points at a
  * site-spine field the renderer doesn't surface).
  */
-export function findIssueTarget(
-  root: ParentNode,
-  issue: IssueLike,
-): HTMLElement | null {
+export function findIssueTarget(root: ParentNode, issue: IssueLike): HTMLElement | null {
   for (let depth = issue.path.length; depth > 0; depth--) {
     const dotted = pathToDotted(issue.path.slice(0, depth));
     const escaped = cssEscape(dotted);

@@ -43,15 +43,15 @@ This ADR records those choices.
 
 The block emits a `<details>` per item, with the question text inside
 `<summary>` and the markdown-rendered answer inside a sibling `<div
-class="faq__answer">`. The accordion's *functionality* — expand,
+class="faq__answer">`. The accordion's _functionality_ — expand,
 collapse, keyboard activation, screen-reader announcement of expanded
 state — comes for free from the browser's built-in handling of these
 elements.
 
 A small (~750 B minified) vanilla-JS module
 (`packages/renderer/src/blocks/faq.script.ts`) is exported as a string
-constant `FAQ_ACCORDION_SCRIPT_SOURCE`. The module is a *progressive
-enhancement* that:
+constant `FAQ_ACCORDION_SCRIPT_SOURCE`. The module is a _progressive
+enhancement_ that:
 
 - Animates the open/close transition with a CSS height animation.
 - Respects `prefers-reduced-motion: reduce` — under reduced motion the
@@ -68,7 +68,7 @@ until then, the constant is exported from `@sosb/renderer` for callers
 Rejected alternatives:
 
 - **Custom ARIA-tabs / disclosure widget** (a `<button
-  aria-expanded>` toggling a sibling `<div role="region">`). Equivalent
+aria-expanded>` toggling a sibling `<div role="region">`). Equivalent
   semantics in theory, but requires every block's JS to manually wire
   up keyboard handlers, focus management, and `aria-expanded`
   state. Native `<details>` does all of that without code.
@@ -86,10 +86,12 @@ Rejected alternatives:
 FaqDataSchema = z.looseObject({
   title: z.string().optional(),
   firstOpen: z.boolean().optional(),
-  items: z.array(z.looseObject({
-    question: z.string().min(1),
-    answer: z.string(),
-  })),
+  items: z.array(
+    z.looseObject({
+      question: z.string().min(1),
+      answer: z.string(),
+    }),
+  ),
 });
 ```
 
@@ -151,7 +153,7 @@ pattern:
   optional `aria-labelledby` pointing at the title's `<h2>` when
   present.
 - Inner `<div class="faq__inner">` with the optional `<h2
-  class="faq__title">`, then `<div class="faq__list">` containing one
+class="faq__title">`, then `<div class="faq__list">` containing one
   `<details class="faq__item">` per item.
 - The component is consumed by `PageShell.renderBlock()` via a switch
   on `block.type`.
@@ -237,7 +239,7 @@ re-run any custom widget hydration.
   per the issue triage ("schema.org `FAQPage` structured-data markup
   — that belongs to the SEO ticket #39"). The schema does not block
   that addition; #39 will read the rendered DOM (`<section
-  data-block="faq">`) and emit the JSON-LD from the same source data.
+data-block="faq">`) and emit the JSON-LD from the same source data.
 - **Nested categories / hierarchical FAQs**. Rejected: explicit
   out-of-scope per the issue triage.
 - **Search/filter UI within the FAQ**. Rejected: explicit

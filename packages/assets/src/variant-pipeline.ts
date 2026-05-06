@@ -30,12 +30,7 @@ import {
   WEBP_VARIANT_QUALITY,
 } from "./processor.js";
 import { AssetError } from "./errors.js";
-import type {
-  AssetMetadata,
-  AssetRef,
-  AssetUploadInput,
-  AssetVariantDescriptor,
-} from "./types.js";
+import type { AssetMetadata, AssetRef, AssetUploadInput, AssetVariantDescriptor } from "./types.js";
 
 const enc = new TextEncoder();
 const dec = new TextDecoder();
@@ -205,8 +200,7 @@ export function buildSrcset(variants: readonly AssetVariantDescriptor[]): string
  * Sensible default for `<img sizes>` when emitting a responsive image
  * with the PRD-pinned 400/800/1600 widths.
  */
-export const DEFAULT_RESPONSIVE_SIZES =
-  "(max-width: 480px) 400px, (max-width: 960px) 800px, 100vw";
+export const DEFAULT_RESPONSIVE_SIZES = "(max-width: 480px) 400px, (max-width: 960px) 800px, 100vw";
 
 // ---------------------------------------------------------------------------
 // Helpers

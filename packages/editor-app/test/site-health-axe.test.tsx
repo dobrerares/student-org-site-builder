@@ -38,17 +38,13 @@ describe("Site Health surfaces — axe accessibility", () => {
 
   test("Site Health panel has zero axe violations", async () => {
     const result = validate(site);
-    const { container } = render(
-      <SiteHealthPanel result={result} onJump={() => undefined} />,
-    );
+    const { container } = render(<SiteHealthPanel result={result} onJump={() => undefined} />);
     await axeCheck(container);
   });
 
   test("Health footer has zero axe violations", async () => {
     const result = validate(site);
-    const { container } = render(
-      <HealthFooter result={result} onToggle={() => undefined} />,
-    );
+    const { container } = render(<HealthFooter result={result} onToggle={() => undefined} />);
     await axeCheck(container);
   });
 

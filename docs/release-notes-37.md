@@ -87,12 +87,12 @@ Public API:
 
 ```ts
 import {
-  uploadAsset,                  // browser: single output
-  uploadAssetWithVariants,      // Electron: canonical + variants
-  CanvasImageProcessor,         // browser default
-  createSharpImageProcessor,    // Electron default
-  getDefaultProcessor,          // picks the right one for the runtime
-  buildSrcset,                  // formats <img srcset> from variants
-  DEFAULT_RESPONSIVE_SIZES,     // sensible default <img sizes>
+  uploadAsset, // browser: single output
+  uploadAssetWithVariants, // Electron: canonical + variants
+  CanvasImageProcessor, // browser default
+  createSharpImageProcessor, // Electron default
+  getDefaultProcessor, // picks the right one for the runtime
+  buildSrcset, // formats <img srcset> from variants
+  DEFAULT_RESPONSIVE_SIZES, // sensible default <img sizes>
 } from "@sosb/assets";
 ```

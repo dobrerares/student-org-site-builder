@@ -49,7 +49,11 @@ describe("uploadAssetWithVariants — JPEG photo", () => {
     const ref = await uploadAssetWithVariants(
       { kind: "bytes", bytes: fixture.bytes, name: "photo.jpg", alt: "Team photo" },
       vfs,
-      { processor, variantWidths: [...RESPONSIVE_VARIANT_WIDTHS], variantQuality: WEBP_VARIANT_QUALITY },
+      {
+        processor,
+        variantWidths: [...RESPONSIVE_VARIANT_WIDTHS],
+        variantQuality: WEBP_VARIANT_QUALITY,
+      },
     );
 
     // The ref carries the variants list.
@@ -173,11 +177,9 @@ describe("uploadAsset (single-output, browser-equivalent) coexists", () => {
     const bytes = new TextEncoder().encode(SVG_SOURCE);
 
     // The single-output upload is unchanged from #8.
-    const ref = await uploadAsset(
-      { kind: "bytes", bytes, name: "logo.svg", alt: "Logo" },
-      vfs,
-      { processor },
-    );
+    const ref = await uploadAsset({ kind: "bytes", bytes, name: "logo.svg", alt: "Logo" }, vfs, {
+      processor,
+    });
 
     expect(ref.alt).toBe("Logo");
     expect(ref.mime).toBe("image/svg+xml");

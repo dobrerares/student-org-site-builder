@@ -19,10 +19,7 @@
  */
 
 import * as fs from "node:fs/promises";
-import {
-  existsSync,
-  mkdirSync,
-} from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import * as path from "node:path";
 
 import type { Vfs } from "./vfs.js";
@@ -123,9 +120,7 @@ export class FsDriver implements Vfs {
    */
   #resolveInside(vfsPath: string): string {
     const hostPath = path.resolve(this.#rootDir, vfsPath);
-    const rootWithSep = this.#rootDir.endsWith(path.sep)
-      ? this.#rootDir
-      : this.#rootDir + path.sep;
+    const rootWithSep = this.#rootDir.endsWith(path.sep) ? this.#rootDir : this.#rootDir + path.sep;
     if (hostPath !== this.#rootDir && !hostPath.startsWith(rootWithSep)) {
       throw new VfsInvalidPathError(vfsPath, "path resolves outside the FS driver root");
     }

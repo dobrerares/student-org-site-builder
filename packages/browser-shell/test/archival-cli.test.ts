@@ -20,28 +20,25 @@ const pkgRoot = path.resolve(__dirname, "..");
 const outPath = path.join(pkgRoot, "dist", "archival", "builder.html");
 
 describe("runArchivalBuild end-to-end", () => {
-  test(
-    "produces dist/archival/builder.html ≤ 3MB with no external local script refs",
-    async () => {
-      await runArchivalBuild({ outDir: path.join(pkgRoot, "dist", "archival") });
+  test("produces dist/archival/builder.html ≤ 3MB with no external local script refs", async () => {
+    await runArchivalBuild({ outDir: path.join(pkgRoot, "dist", "archival") });
 
-      expect(existsSync(outPath)).toBe(true);
-      const stat = statSync(outPath);
-      expect(stat.size).toBeGreaterThan(0);
-      expect(stat.size).toBeLessThanOrEqual(3 * 1024 * 1024);
+    expect(existsSync(outPath)).toBe(true);
+    const stat = statSync(outPath);
+    expect(stat.size).toBeGreaterThan(0);
+    expect(stat.size).toBeLessThanOrEqual(3 * 1024 * 1024);
 
-      const html = readFileSync(outPath, "utf8");
-      expect(html.startsWith("<!doctype html>") || html.startsWith("<!DOCTYPE html>")).toBe(true);
-      expect(html).toContain("</html>");
+    const html = readFileSync(outPath, "utf8");
+    expect(html.startsWith("<!doctype html>") || html.startsWith("<!DOCTYPE html>")).toBe(true);
+    expect(html).toContain("</html>");
 
-      // No external `src=` for local paths. We allow `data:` URIs, and
-      // we allow https:// (cross-origin refs are not auto-inlined).
-      const localScriptRef = /<script[^>]+\bsrc=["'](?!data:|https?:|\/\/)[^"']+["']/i;
-      expect(html).not.toMatch(localScriptRef);
+    // No external `src=` for local paths. We allow `data:` URIs, and
+    // we allow https:// (cross-origin refs are not auto-inlined).
+    const localScriptRef = /<script[^>]+\bsrc=["'](?!data:|https?:|\/\/)[^"']+["']/i;
+    expect(html).not.toMatch(localScriptRef);
 
-      const localStylesheetRef = /<link[^>]+rel=["']?stylesheet[^>]*href=["'](?!data:|https?:|\/\/)[^"']+["']/i;
-      expect(html).not.toMatch(localStylesheetRef);
-    },
-    180_000,
-  );
+    const localStylesheetRef =
+      /<link[^>]+rel=["']?stylesheet[^>]*href=["'](?!data:|https?:|\/\/)[^"']+["']/i;
+    expect(html).not.toMatch(localStylesheetRef);
+  }, 180_000);
 });

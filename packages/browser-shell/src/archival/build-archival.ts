@@ -62,10 +62,7 @@ export function buildArchival(input: ArchivalInput): ArchivalOutput {
  * asset's text spliced in. Preserves the script tag's other attributes
  * (notably `type="module"`).
  */
-function inlineScripts(
-  html: string,
-  assets: ReadonlyMap<string, string | Uint8Array>,
-): string {
+function inlineScripts(html: string, assets: ReadonlyMap<string, string | Uint8Array>): string {
   const pattern = /<script\b([^>]*?)\s+src=(["'])([^"']+)\2([^>]*)>\s*<\/script>/gi;
   return html.replace(pattern, (match, before: string, _q: string, src: string, after: string) => {
     if (isExternalUrl(src)) return match;
@@ -83,10 +80,7 @@ function inlineScripts(
  * `<link rel="stylesheet" href="..."/>` → `<style>...</style>`. Preserves
  * a `media` attribute if present.
  */
-function inlineStylesheets(
-  html: string,
-  assets: ReadonlyMap<string, string | Uint8Array>,
-): string {
+function inlineStylesheets(html: string, assets: ReadonlyMap<string, string | Uint8Array>): string {
   const pattern = /<link\b([^>]*?)\s*\/?>(?!\s*<\/link>)/gi;
   return html.replace(pattern, (match, attrsRaw: string) => {
     const attrs = attrsRaw;
@@ -110,10 +104,7 @@ function inlineStylesheets(
  * The mime type is sniffed from the path extension; unknown extensions
  * fall back to `application/octet-stream`.
  */
-function inlineImages(
-  html: string,
-  assets: ReadonlyMap<string, string | Uint8Array>,
-): string {
+function inlineImages(html: string, assets: ReadonlyMap<string, string | Uint8Array>): string {
   const pattern = /<img\b([^>]*?)\s+src=(["'])([^"']+)\2([^>]*?)\/?>/gi;
   return html.replace(pattern, (match, before: string, _q: string, src: string, after: string) => {
     if (isExternalUrl(src)) return match;

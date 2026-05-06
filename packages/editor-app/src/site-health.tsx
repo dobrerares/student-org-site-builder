@@ -49,8 +49,7 @@ const GROUP_LABEL: Record<"error" | "warning" | "info", string> = {
 };
 
 export function SiteHealthPanel({ result, onJump }: SiteHealthPanelProps): JSX.Element {
-  const totalIssues =
-    result.errors.length + result.warnings.length + result.info.length;
+  const totalIssues = result.errors.length + result.warnings.length + result.info.length;
 
   return (
     <section data-testid="site-health-panel" aria-label="Site health">
@@ -110,10 +109,7 @@ function IssueRow({ severity, issue, onJump }: IssueRowProps): JSX.Element {
       onClick={() => onJump(issue)}
     >
       <span data-issue-message>{issue.message}</span>
-      <span data-issue-path>
-        {" "}
-        {dotted === "" ? "(site)" : dotted}
-      </span>
+      <span data-issue-path> {dotted === "" ? "(site)" : dotted}</span>
     </button>
   );
 }

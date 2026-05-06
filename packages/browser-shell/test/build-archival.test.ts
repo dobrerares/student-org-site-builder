@@ -25,9 +25,7 @@ describe("buildArchival", () => {
       html:
         '<!doctype html><html><head><script src="/app.js"></script></head>' +
         "<body></body></html>",
-      assets: new Map<string, string | Uint8Array>([
-        ["/app.js", "console.log('hello');"],
-      ]),
+      assets: new Map<string, string | Uint8Array>([["/app.js", "console.log('hello');"]]),
     });
     expect(out.html).not.toMatch(/<script[^>]+src=/);
     expect(out.html).toContain("console.log('hello')");
@@ -38,9 +36,7 @@ describe("buildArchival", () => {
       html:
         '<!doctype html><html><head><link rel="stylesheet" href="/app.css"/></head>' +
         "<body></body></html>",
-      assets: new Map<string, string | Uint8Array>([
-        ["/app.css", ".body { color: red; }"],
-      ]),
+      assets: new Map<string, string | Uint8Array>([["/app.css", ".body { color: red; }"]]),
     });
     expect(out.html).not.toMatch(/<link[^>]+rel=["']?stylesheet/);
     expect(out.html).toContain("<style>.body { color: red; }</style>");
@@ -49,9 +45,9 @@ describe("buildArchival", () => {
   test("preserves cross-origin script and stylesheet refs (cannot be inlined safely from a build)", () => {
     const out = buildArchival({
       html:
-        '<!doctype html><html><head>' +
+        "<!doctype html><html><head>" +
         '<script src="https://cdn.example.org/foo.js"></script>' +
-        '</head><body></body></html>',
+        "</head><body></body></html>",
       assets: new Map<string, string | Uint8Array>(),
     });
     // Cross-origin (https://...) refs should NOT be touched — we have no
@@ -73,9 +69,7 @@ describe("buildArchival", () => {
       html:
         '<!doctype html><html><head><script src="./bundle.js"></script></head>' +
         "<body></body></html>",
-      assets: new Map<string, string | Uint8Array>([
-        ["./bundle.js", "var x = 1;"],
-      ]),
+      assets: new Map<string, string | Uint8Array>([["./bundle.js", "var x = 1;"]]),
     });
     expect(out.html).toContain("var x = 1;");
     expect(out.html).not.toMatch(/<script[^>]+src=["']\.\/bundle\.js/);
@@ -86,9 +80,7 @@ describe("buildArchival", () => {
       html:
         '<!doctype html><html><head><script type="module" src="/app.js"></script></head>' +
         "<body></body></html>",
-      assets: new Map<string, string | Uint8Array>([
-        ["/app.js", "export const x = 1;"],
-      ]),
+      assets: new Map<string, string | Uint8Array>([["/app.js", "export const x = 1;"]]),
     });
     expect(out.html).toMatch(/<script[^>]*type=["']module["']/);
     expect(out.html).toContain("export const x = 1;");
@@ -111,8 +103,7 @@ describe("buildArchival", () => {
   test("inlines binary assets referenced via <img src=> as base64 data URIs", () => {
     const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
     const out = buildArchival({
-      html:
-        '<!doctype html><html><body><img src="/logo.png" alt="logo"/></body></html>',
+      html: '<!doctype html><html><body><img src="/logo.png" alt="logo"/></body></html>',
       assets: new Map<string, string | Uint8Array>([["/logo.png", png]]),
     });
     expect(out.html).toMatch(/data:image\/png;base64,/);

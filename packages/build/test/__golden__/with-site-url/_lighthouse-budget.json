@@ -7,17 +7,17 @@
         "html": {
           "status": "pass",
           "limitBytes": 51200,
-          "bytes": 12884
+          "bytes": 22686
         },
         "css": {
           "status": "pass",
           "limitBytes": 15360,
-          "bytes": 1946
+          "bytes": 3135
         },
         "js": {
           "status": "pass",
           "limitBytes": 10240,
-          "bytes": 0
+          "bytes": 163
         },
         "hero": {
           "status": "skipped",

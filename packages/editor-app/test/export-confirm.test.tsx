@@ -62,9 +62,7 @@ describe("Export confirmation dialog — error gate", () => {
     expect(calls.length).toBe(0);
 
     // Type the gate phrase.
-    const input = container.querySelector<HTMLInputElement>(
-      '[data-testid="export-confirm-input"]',
-    );
+    const input = container.querySelector<HTMLInputElement>('[data-testid="export-confirm-input"]');
     expect(input).not.toBeNull();
     fireEvent.input(input!, { target: { value: "EXPORT" } });
     expect(confirm!.disabled).toBe(false);
@@ -76,7 +74,11 @@ describe("Export confirmation dialog — error gate", () => {
   test("with errors, lists every error in the dialog body", () => {
     const result = buildResult(3, 0, 0);
     const { container } = render(
-      <ExportConfirmDialog result={result} onConfirm={() => undefined} onCancel={() => undefined} />,
+      <ExportConfirmDialog
+        result={result}
+        onConfirm={() => undefined}
+        onCancel={() => undefined}
+      />,
     );
     const issueRows = container.querySelectorAll('[data-issue][data-severity="error"]');
     expect(issueRows.length).toBe(3);
@@ -126,9 +128,7 @@ describe("Export confirmation dialog — warning-only path", () => {
     expect(confirm!.disabled).toBe(false);
 
     // No type-to-confirm input is rendered when only warnings are present.
-    const input = container.querySelector<HTMLInputElement>(
-      '[data-testid="export-confirm-input"]',
-    );
+    const input = container.querySelector<HTMLInputElement>('[data-testid="export-confirm-input"]');
     expect(input).toBeNull();
 
     fireEvent.click(confirm!);
@@ -138,7 +138,11 @@ describe("Export confirmation dialog — warning-only path", () => {
   test("with warnings only, lists every warning in the dialog body", () => {
     const result = buildResult(0, 5, 0);
     const { container } = render(
-      <ExportConfirmDialog result={result} onConfirm={() => undefined} onCancel={() => undefined} />,
+      <ExportConfirmDialog
+        result={result}
+        onConfirm={() => undefined}
+        onCancel={() => undefined}
+      />,
     );
     const rows = container.querySelectorAll('[data-issue][data-severity="warning"]');
     expect(rows.length).toBe(5);

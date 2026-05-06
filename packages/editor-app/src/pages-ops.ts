@@ -122,9 +122,7 @@ export function movePage(site: Site, index: number, direction: "up" | "down"): S
 export function missingTranslationLanguages(site: Site, page: Page): string[] {
   if (site.languages.length < 2) return [];
   const localizedKeys = new Set(Object.keys(page.localizedAs ?? {}));
-  return site.languages.filter(
-    (lang) => lang !== page.lang && !localizedKeys.has(lang),
-  );
+  return site.languages.filter((lang) => lang !== page.lang && !localizedKeys.has(lang));
 }
 
 /**

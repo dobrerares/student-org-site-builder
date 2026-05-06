@@ -68,8 +68,7 @@ export function renderInline(text: string): string {
       if (link !== null) {
         const safeUrl = sanitizeUrl(link.url);
         if (safeUrl !== null) {
-          out +=
-            '<a href="' + escapeAttr(safeUrl) + '">' + renderInline(link.text) + "</a>";
+          out += '<a href="' + escapeAttr(safeUrl) + '">' + renderInline(link.text) + "</a>";
         } else {
           // Unsafe URL — preserve the link text but drop the href.
           out += renderInline(link.text);

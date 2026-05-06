@@ -64,7 +64,7 @@ push us to accept empty alt at parse time:
 
 1. A stale zip from a previous editor version may have empty alts; the
    parse-time hard-fail would block users from opening their own data.
-2. ADR 0004 enforces non-empty alt at the *upload* boundary
+2. ADR 0004 enforces non-empty alt at the _upload_ boundary
    (`AssetError("asset.alt.missing")`), so the only way an empty alt
    reaches the schema is via stale data — exactly the case where we want
    a non-blocking nudge, not an error.

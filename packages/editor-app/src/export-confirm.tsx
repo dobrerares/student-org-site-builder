@@ -83,11 +83,7 @@ export function ExportConfirmDialog({
       ) : null}
 
       <div data-testid="export-confirm-actions">
-        <button
-          type="button"
-          data-testid="export-cancel-button"
-          onClick={() => onCancel()}
-        >
+        <button type="button" data-testid="export-cancel-button" onClick={() => onCancel()}>
           {hasErrors ? "Fix first" : "Cancel"}
         </button>
         <button

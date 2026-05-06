@@ -1,4 +1,4 @@
-<!doctype html><html lang="ro"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Stub site — activities (list)</title><meta name="description" content="A minimal site fixture exercising the list layout."/><meta property="og:title" content="Stub site — activities (list)"/><meta property="og:description" content="A minimal site fixture exercising the list layout."/><meta property="og:type" content="website"/><style>:root {
+<!doctype html><html lang="ro"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Stub site — activities (list)</title><meta name="description" content="A minimal site fixture exercising the list layout."/><meta property="og:title" content="Stub site — activities (list)"/><meta property="og:description" content="A minimal site fixture exercising the list layout."/><meta property="og:type" content="website"/><meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Stub site — activities (list)"/><meta name="twitter:description" content="A minimal site fixture exercising the list layout."/><style>:root {
   --space-xs: 0.25rem;
   --space-sm: 0.5rem;
   --space-md: 1rem;
@@ -14,6 +14,25 @@
   --color-fg: #1a1a1a;
   --color-bg: #ffffff;
   --color-muted: #5c5c5c;
+  --color-primary: #1a2440;
+  --color-bg: #f7f1e3;
+  --color-fg: #2a2418;
+  --color-accent: #a67c2e;
+  --color-muted: #6b5f4a;
+  --font-headline: "Iowan Old Style", "Charter", "Charis SIL", Georgia, "Palatino Linotype", Palatino, serif;
+  --font-body: "Iowan Old Style", "Charter", "Charis SIL", Georgia, "Palatino Linotype", Palatino, serif;
+  --type-scale-base: 1rem;
+  --type-scale-sm: 0.8rem;
+  --type-scale-lg: 1.25rem;
+  --type-scale-xl: 1.5625rem;
+  --type-scale-2xl: 1.953rem;
+  --type-scale-3xl: 2.441rem;
+  --leading-body: 1.65;
+  --leading-display: 1.15;
+  --measure-body: 70ch;
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
   --color-primary: #1f3a5f;
   --color-accent: #c08a3e;
 }
@@ -23,27 +42,66 @@ body {
   background: var(--color-bg);
   color: var(--color-fg);
   font-family: var(--font-body);
-  line-height: 1.5;
+  font-size: var(--type-scale-base);
+  line-height: var(--leading-body);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 main { display: block; }
+
+/* Headings — serif display, tighter line-height, slightly tracked. */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-headline);
+  line-height: var(--leading-display);
+  color: var(--color-primary);
+  margin: 0 0 var(--space-md) 0;
+  font-weight: 600;
+}
+h1 { font-size: var(--type-scale-3xl); letter-spacing: -0.005em; }
+h2 { font-size: var(--type-scale-2xl); }
+h3 { font-size: var(--type-scale-xl); }
+h4 { font-size: var(--type-scale-lg); }
+h5, h6 { font-size: var(--type-scale-base); }
+
+/* Paragraph rhythm and the academic measure. */
+p {
+  margin: 0 0 var(--space-md) 0;
+  max-width: var(--measure-body);
+}
+
+/* Italic emphasis — the academic register prefers italics over bold. */
+em, i, cite { font-style: italic; }
+
+/* Hero — page-opening composition. */
 [data-block="hero"] {
   padding: var(--space-xl) var(--space-md);
+  border-bottom: 1px solid var(--color-accent);
+}
+[data-block="hero"] .hero__inner {
+  max-width: 70ch;
+  margin: 0 auto;
 }
 [data-block="hero"] .hero__eyebrow {
-  font-size: 0.875rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-muted);
+  font-size: var(--type-scale-sm);
+  font-style: italic;
+  letter-spacing: 0.06em;
+  color: var(--color-accent);
   margin: 0 0 var(--space-sm) 0;
+  text-transform: uppercase;
 }
 [data-block="hero"] h1 {
   font-family: var(--font-headline);
-  margin: 0 0 var(--space-md) 0;
+  font-size: var(--type-scale-3xl);
+  line-height: var(--leading-display);
   color: var(--color-primary);
+  margin: 0 0 var(--space-md) 0;
 }
 [data-block="hero"] .hero__subtitle {
   margin: 0 0 var(--space-md) 0;
   color: var(--color-fg);
+  font-size: var(--type-scale-lg);
+  line-height: var(--leading-body);
+  max-width: var(--measure-body);
 }
 [data-block="hero"] .hero__media {
   margin-top: var(--space-md);
@@ -54,400 +112,4 @@ main { display: block; }
   display: block;
   max-width: 100%;
   height: auto;
-}
-[data-block="ctaBanner"] {
-  padding: var(--space-xl) var(--space-md);
-  background: var(--color-primary);
-  color: var(--color-bg);
-}
-[data-block="ctaBanner"] .ctaBanner__inner {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-lg);
-  flex-wrap: wrap;
-}
-[data-block="ctaBanner"] .ctaBanner__copy {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-[data-block="ctaBanner"] .ctaBanner__title {
-  font-family: var(--font-headline);
-  margin: 0 0 var(--space-sm) 0;
-  color: var(--color-bg);
-}
-[data-block="ctaBanner"] .ctaBanner__subtitle {
-  margin: 0;
-  color: var(--color-bg);
-}
-[data-block="ctaBanner"] .ctaBanner__actions {
-  flex: 0 0 auto;
-}
-[data-block="ctaBanner"] .ctaBanner__media {
-  flex: 1 1 100%;
-  margin-top: var(--space-md);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-[data-block="ctaBanner"] .ctaBanner__media img {
-  display: block;
-  max-width: 100%;
-  height: auto;
-}
-[data-block="ctaBanner"] .ctaBanner__button {
-  display: inline-block;
-  padding: var(--space-sm) var(--space-md);
-  border-radius: var(--radius-sm);
-  text-decoration: none;
-  font-family: var(--font-body);
-  font-weight: 600;
-}
-[data-block="ctaBanner"] .ctaBanner__button--primary {
-  background: var(--color-accent);
-  color: var(--color-fg);
-  border: 2px solid var(--color-accent);
-}
-[data-block="ctaBanner"] .ctaBanner__button--secondary {
-  background: transparent;
-  color: var(--color-bg);
-  border: 2px solid var(--color-bg);
-}
-[data-block="ctaBanner"].ctaBanner--solid {
-  background: var(--color-primary);
-}
-@media (max-width: 640px) {
-  [data-block="ctaBanner"] .ctaBanner__inner {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  [data-block="ctaBanner"] .ctaBanner__actions {
-    width: 100%;
-  }
-  [data-block="ctaBanner"] .ctaBanner__button {
-    display: block;
-    text-align: center;
-  }
-}
-[data-block="valueList"] {
-  padding: var(--space-xl) var(--space-md);
-}
-[data-block="valueList"] .value-list__title {
-  font-family: var(--font-headline);
-  margin: 0 0 var(--space-sm) 0;
-  color: var(--color-primary);
-}
-[data-block="valueList"] .value-list__intro {
-  margin: 0 0 var(--space-md) 0;
-  color: var(--color-muted);
-}
-[data-block="valueList"] .value-list__items {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: var(--space-md);
-}
-[data-block="valueList"][data-layout="grid"][data-columns="1"] .value-list__items {
-  grid-template-columns: 1fr;
-}
-[data-block="valueList"][data-layout="grid"][data-columns="2"] .value-list__items {
-  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-}
-[data-block="valueList"][data-layout="grid"][data-columns="3"] .value-list__items {
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-}
-[data-block="valueList"][data-layout="grid"][data-columns="4"] .value-list__items {
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
-}
-[data-block="valueList"][data-layout="list"] .value-list__items {
-  grid-template-columns: 1fr;
-}
-[data-block="valueList"] .value-list__item {
-  display: block;
-}
-[data-block="valueList"] .value-list__icon {
-  display: inline-flex;
-  width: 2rem;
-  height: 2rem;
-  margin-bottom: var(--space-sm);
-  color: var(--color-accent);
-}
-[data-block="valueList"] .value-list__icon svg {
-  width: 100%;
-  height: 100%;
-}
-[data-block="valueList"] .value-list__label {
-  font-family: var(--font-headline);
-  margin: 0 0 var(--space-xs) 0;
-  color: var(--color-primary);
-}
-[data-block="valueList"] .value-list__description {
-  margin: 0;
-  color: var(--color-fg);
-}
-@media (max-width: 600px) {
-  [data-block="valueList"] .value-list__items {
-    grid-template-columns: 1fr;
-  }
-}
-[data-block="contactCard"] {
-  padding: var(--space-xl) var(--space-md);
-}
-[data-block="contactCard"] .contact-card__heading {
-  font-family: var(--font-headline);
-  margin: 0 0 var(--space-md) 0;
-  color: var(--color-primary);
-}
-[data-block="contactCard"] .contact-card__address {
-  font-style: normal;
-  margin: 0 0 var(--space-sm) 0;
-  color: var(--color-fg);
-}
-[data-block="contactCard"] .contact-card__email-row,
-[data-block="contactCard"] .contact-card__phone-row {
-  margin: 0 0 var(--space-sm) 0;
-}
-[data-block="contactCard"] .contact-card__socials {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  gap: var(--space-sm);
-  flex-wrap: wrap;
-}
-[data-block="contactCard"] .contact-card__map {
-  margin-top: var(--space-md);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-[data-block="contactCard"] .contact-card__map iframe {
-  display: block;
-  width: 100%;
-  min-height: 300px;
-  border: 0;
-}
-[data-block="contactCard"] .contact-card__map-notice {
-  margin: 0 0 var(--space-sm) 0;
-  font-size: 0.875rem;
-  color: var(--color-muted);
-}
-[data-block="embed"] {
-  margin: var(--space-lg) 0;
-  padding: 0;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  background: var(--color-muted);
-}
-[data-block="embed"].embed--lazy {
-  width: 100%;
-  position: relative;
-}
-[data-block="embed"] iframe {
-  border: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-[data-block="embed"] .embed__placeholder {
-  width: 100%;
-  height: 100%;
-  background: var(--color-muted);
-}
-[data-block="embed"].embed--blockquote {
-  background: var(--color-bg);
-  border: 1px solid var(--color-muted);
-  padding: var(--space-md);
-}
-[data-block="embed"] .embed__title {
-  margin: 0 0 var(--space-sm) 0;
-  font-family: var(--font-headline);
-  color: var(--color-primary);
-}
-[data-block="embed"] .embed__link a {
-  color: var(--color-accent);
-  text-decoration: underline;
-}
-[data-block="activitiesList"] {
-  padding: var(--space-xl) var(--space-md);
-}
-[data-block="activitiesList"] .activities-list__title {
-  font-family: var(--font-headline);
-  margin: 0 0 var(--space-md) 0;
-  color: var(--color-primary);
-}
-[data-block="activitiesList"] .activities-list__intro {
-  margin: 0 0 var(--space-lg) 0;
-  color: var(--color-fg);
-}
-[data-block="activitiesList"] .activities-list__items {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: var(--space-md);
-}
-[data-block="activitiesList"][data-layout="cards"] .activities-list__items {
-  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-}
-[data-block="activitiesList"][data-layout="list"] .activities-list__items {
-  grid-template-columns: 1fr;
-}
-[data-block="activitiesList"][data-layout="alternating"] .activities-list__items {
-  grid-template-columns: 1fr;
-}
-[data-block="activitiesList"][data-layout="alternating"] .activities-list__item:nth-child(even) {
-  direction: rtl;
-}
-[data-block="activitiesList"][data-layout="alternating"] .activities-list__item:nth-child(even) .activities-list__body {
-  direction: ltr;
-}
-[data-block="activitiesList"] .activities-list__item {
-  display: grid;
-  gap: var(--space-sm);
-  background: var(--color-bg);
-  border-radius: var(--radius-md);
-  padding: var(--space-md);
-}
-[data-block="activitiesList"] .activities-list__media {
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-}
-[data-block="activitiesList"] .activities-list__media img {
-  display: block;
-  max-width: 100%;
-  height: auto;
-}
-[data-block="activitiesList"] .activities-list__item-title {
-  font-family: var(--font-headline);
-  margin: 0;
-  color: var(--color-primary);
-}
-[data-block="activitiesList"] .activities-list__description {
-  margin: 0;
-  color: var(--color-fg);
-}
-[data-block="activitiesList"] .activities-list__badge {
-  display: inline-block;
-  padding: var(--space-xs) var(--space-sm);
-  border-radius: var(--radius-lg);
-  background: var(--color-accent);
-  color: var(--color-bg);
-  font-size: 0.75rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-[data-block="activitiesList"] .activities-list__cta {
-  color: var(--color-primary);
-  text-decoration: underline;
-  font-family: var(--font-body);
-}
-[data-block="activitiesList"] .activities-list__cta-chevron {
-  display: inline-block;
-}
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-[data-block="teamGrid"] {
-  padding: var(--space-xl) var(--space-md);
-}
-[data-block="teamGrid"] .team-grid__title {
-  font-family: var(--font-headline);
-  margin: 0 0 var(--space-md) 0;
-  color: var(--color-primary);
-}
-[data-block="teamGrid"] .team-grid__intro {
-  margin: 0 0 var(--space-lg) 0;
-  color: var(--color-fg);
-}
-[data-block="teamGrid"] .team-grid__group {
-  margin-bottom: var(--space-lg);
-}
-[data-block="teamGrid"] .team-grid__group-heading {
-  font-family: var(--font-headline);
-  margin: 0 0 var(--space-md) 0;
-  color: var(--color-primary);
-}
-[data-block="teamGrid"] .team-grid__list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(var(--team-grid-columns, 3), 1fr);
-  gap: var(--space-md);
-}
-[data-block="teamGrid"] .team-person {
-  margin: 0;
-}
-[data-block="teamGrid"] .team-person__figure {
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-}
-[data-block="teamGrid"] .team-person__photo {
-  display: block;
-  width: 100%;
-  height: auto;
-  border-radius: var(--radius-md);
-  object-fit: cover;
-}
-[data-block="teamGrid"] .team-person__avatar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  border-radius: var(--radius-md);
-  background: var(--color-accent);
-  color: var(--color-bg);
-  font-family: var(--font-headline);
-  font-size: 2rem;
-  font-weight: 700;
-}
-[data-block="teamGrid"] .team-person__caption {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-}
-[data-block="teamGrid"] .team-person__name {
-  margin: 0;
-  font-family: var(--font-headline);
-  color: var(--color-primary);
-  font-weight: 700;
-}
-[data-block="teamGrid"] .team-person__role {
-  margin: 0;
-  color: var(--color-muted);
-}
-[data-block="teamGrid"] .team-person__bio {
-  margin: 0;
-  color: var(--color-fg);
-}
-[data-block="teamGrid"] .team-person__socials {
-  list-style: none;
-  margin: var(--space-xs) 0 0 0;
-  padding: 0;
-  display: flex;
-  gap: var(--space-sm);
-}
-[data-block="teamGrid"] .team-person__social {
-  display: inline-block;
-  width: 1.25rem;
-  height: 1.25rem;
-  border-radius: var(--radius-sm);
-  background: var(--color-muted);
-}
-@media (max-width: 640px) {
-  [data-block="teamGrid"] .team-grid__list {
-    grid-template-columns: 1fr;
-  }
 }</style></head><body><main><section data-block="activitiesList" data-block-id="blk_act_list" data-layout="list" aria-labelledby="blk_act_list__title"><div class="activities-list__inner"><h2 id="blk_act_list__title" class="activities-list__title">Activitățile noastre</h2><ul class="activities-list__items" role="list"><li class="activities-list__item" data-item-index="0"><div class="activities-list__body"><h3 id="blk_act_list__item_0__title" class="activities-list__item-title">Mentorat</h3><p class="activities-list__description">Sesiuni 1:1 cu seniori.</p></div></li><li class="activities-list__item" data-item-index="1"><div class="activities-list__body"><h3 id="blk_act_list__item_1__title" class="activities-list__item-title">Conferințe</h3><p class="activities-list__description">Vorbitori invitați.</p><a href="/conferinte" class="activities-list__cta" data-cta="implicit" aria-label="Conferințe" aria-describedby="blk_act_list__item_1__title"><span class="activities-list__cta-chevron" aria-hidden="true">→</span></a></div></li></ul></div></section></main></body></html>

@@ -74,10 +74,7 @@ test.describe("imageGallery lightbox — real-browser behaviour", () => {
     await expect(page.locator("[data-sosb-lightbox]")).toBeVisible();
     const dialogImg = page.locator("[data-sosb-lightbox] img");
     await expect(dialogImg).toHaveAttribute("src", "assets/8e3a7f9b1c0d2e4f.jpg");
-    await expect(dialogImg).toHaveAttribute(
-      "alt",
-      "Studenți la o conferință de toamnă",
-    );
+    await expect(dialogImg).toHaveAttribute("alt", "Studenți la o conferință de toamnă");
   });
 
   test("Escape closes the dialog and returns focus to the trigger", async ({ page }) => {
@@ -103,19 +100,13 @@ test.describe("imageGallery lightbox — real-browser behaviour", () => {
 
     await page.locator("[data-sosb-lightbox-open]").first().click();
     const dialogImg = page.locator("[data-sosb-lightbox] img");
-    await expect(dialogImg).toHaveAttribute(
-      "alt",
-      "Studenți la o conferință de toamnă",
-    );
+    await expect(dialogImg).toHaveAttribute("alt", "Studenți la o conferință de toamnă");
 
     await page.keyboard.press("ArrowRight");
     await expect(dialogImg).toHaveAttribute("alt", "Diacritic test: ăîâșț");
 
     await page.keyboard.press("ArrowRight");
-    await expect(dialogImg).toHaveAttribute(
-      "alt",
-      "Studenți la o conferință de toamnă",
-    );
+    await expect(dialogImg).toHaveAttribute("alt", "Studenți la o conferință de toamnă");
   });
 
   test("axe-core scan of the open lightbox produces zero violations", async ({ page }) => {

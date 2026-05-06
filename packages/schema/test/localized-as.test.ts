@@ -30,11 +30,9 @@ describe("validate - localizedAs cross-references", () => {
     broken.pages[0]!.localizedAs = { fr: "accueil" };
     const result = validate(broken);
     expect(result.ok).toBe(false);
-    expect(
-      result.errors.some(
-        (i) => i.code === "site.page.localizedAs.unknownLanguage",
-      ),
-    ).toBe(true);
+    expect(result.errors.some((i) => i.code === "site.page.localizedAs.unknownLanguage")).toBe(
+      true,
+    );
   });
 
   test("rejects localizedAs slugs that do not exist for that language", () => {
@@ -44,11 +42,9 @@ describe("validate - localizedAs cross-references", () => {
     broken.pages[0]!.localizedAs = { en: "does-not-exist" };
     const result = validate(broken);
     expect(result.ok).toBe(false);
-    expect(
-      result.errors.some(
-        (i) => i.code === "site.page.localizedAs.unknownCounterpart",
-      ),
-    ).toBe(true);
+    expect(result.errors.some((i) => i.code === "site.page.localizedAs.unknownCounterpart")).toBe(
+      true,
+    );
   });
 
   test("rejects localizedAs that lists the page's own language (self-reference)", () => {
@@ -58,18 +54,14 @@ describe("validate - localizedAs cross-references", () => {
     broken.pages[0]!.localizedAs = { ro: broken.pages[0]!.slug };
     const result = validate(broken);
     expect(result.ok).toBe(false);
-    expect(
-      result.errors.some((i) => i.code === "site.page.localizedAs.selfReference"),
-    ).toBe(true);
+    expect(result.errors.some((i) => i.code === "site.page.localizedAs.selfReference")).toBe(true);
   });
 
   test("warns when a bilingual site has pages with no counterpart in some declared language", () => {
     const result = validate(historipol);
-    expect(
-      result.warnings.some(
-        (i) => i.code === "site.page.localizedAs.missingCounterpart",
-      ),
-    ).toBe(true);
+    expect(result.warnings.some((i) => i.code === "site.page.localizedAs.missingCounterpart")).toBe(
+      true,
+    );
   });
 
   test("does not warn for single-language sites missing counterparts", () => {
@@ -85,10 +77,8 @@ describe("validate - localizedAs cross-references", () => {
         }),
     };
     const result = validate(single);
-    expect(
-      result.warnings.some(
-        (i) => i.code === "site.page.localizedAs.missingCounterpart",
-      ),
-    ).toBe(false);
+    expect(result.warnings.some((i) => i.code === "site.page.localizedAs.missingCounterpart")).toBe(
+      false,
+    );
   });
 });

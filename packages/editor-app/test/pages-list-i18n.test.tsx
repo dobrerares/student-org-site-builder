@@ -150,14 +150,10 @@ describe("PagesList - multi-language indicators", () => {
 
   test("monolingual site: no language group headings, no missing-translation indicator", () => {
     const { container } = renderWith(makeMonolingualSite());
-    expect(
-      container.querySelectorAll('[data-testid="pages-list-language-group"]').length,
-    ).toBe(0);
-    expect(
-      container.querySelectorAll('[data-testid="missing-translation-indicator"]').length,
-    ).toBe(0);
-    expect(
-      container.querySelectorAll('[data-action="add-language-version"]').length,
-    ).toBe(0);
+    expect(container.querySelectorAll('[data-testid="pages-list-language-group"]').length).toBe(0);
+    expect(container.querySelectorAll('[data-testid="missing-translation-indicator"]').length).toBe(
+      0,
+    );
+    expect(container.querySelectorAll('[data-action="add-language-version"]').length).toBe(0);
   });
 });

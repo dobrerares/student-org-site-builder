@@ -60,9 +60,7 @@ function FaqItemRow(props: {
   // Boolean attribute handling: Preact emits `open` only when the value is
   // truthy. Passing `false` removes the attribute, which is the standard
   // closed state for `<details>`.
-  const detailsProps = open
-    ? ({ open: true } as const)
-    : ({} as Record<string, never>);
+  const detailsProps = open ? ({ open: true } as const) : ({} as Record<string, never>);
 
   return (
     <details class="faq__item" id={itemId} {...detailsProps}>

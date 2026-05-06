@@ -71,11 +71,9 @@ describe("activitiesList × asset pipeline integration", () => {
     const fixture = await makePngWithAlpha(400, 300);
     // uploadAsset rejects empty alt.
     await expect(
-      uploadAsset(
-        { kind: "bytes", bytes: fixture.bytes, name: "team.png", alt: "" },
-        vfs,
-        { processor },
-      ),
+      uploadAsset({ kind: "bytes", bytes: fixture.bytes, name: "team.png", alt: "" }, vfs, {
+        processor,
+      }),
     ).rejects.toMatchObject({ code: "asset.alt.missing" });
 
     // And the schema rejects an empty alt on the AssetRef shape too — the

@@ -292,10 +292,7 @@ export function PageShell(props: { site: Site; page: Page; css: string }): preac
         )}
         {needsLightbox && <LightboxScaffold />}
         {needsLightbox && (
-          <script
-            data-sosb-lightbox-script
-            dangerouslySetInnerHTML={{ __html: LIGHTBOX_SCRIPT }}
-          />
+          <script data-sosb-lightbox-script dangerouslySetInnerHTML={{ __html: LIGHTBOX_SCRIPT }} />
         )}
         {hasEventList && (
           <script
@@ -340,11 +337,7 @@ function LightboxScaffold(): preact.JSX.Element {
         </button>
         <figure class="sosb-lightbox__figure">
           <img data-sosb-lightbox-img src="" alt="" />
-          <figcaption
-            data-sosb-lightbox-caption
-            class="sosb-lightbox__caption"
-            hidden
-          />
+          <figcaption data-sosb-lightbox-caption class="sosb-lightbox__caption" hidden />
         </figure>
         <button
           type="button"

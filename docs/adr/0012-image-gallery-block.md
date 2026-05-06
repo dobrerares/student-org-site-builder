@@ -145,7 +145,7 @@ without relying on visible text.
 Two layers cover the AC:
 
 - **vitest + jsdom** (`packages/renderer/test/image-gallery-accessibility
-  .test.ts`) — both closed and open states. Colour-contrast is disabled
+.test.ts`) — both closed and open states. Colour-contrast is disabled
   (jsdom doesn't compute styles); structural rules — alt text presence,
   dialog role, modal state, button name, label association — are all
   exercised here.
@@ -154,7 +154,7 @@ Two layers cover the AC:
   catches anything jsdom misses (real layout, real focus visibility),
   same approach the renderer-parity spec already uses. axe-core is
   resolved via `require.resolve("axe-core/axe.min.js", { paths: [<
-  renderer-package> ] })` because it is a renderer-side dep, not a root
+renderer-package> ] })` because it is a renderer-side dep, not a root
   workspace dep.
 
 ### Test fixture and golden file
@@ -206,8 +206,7 @@ parity test passing.
 
 The pre-minified payload also makes the byte-budget AC trivially
 verifiable: the test reads the inline script content out of the rendered
-HTML, encodes it with `TextEncoder`, and asserts the byte length under
-3072. No tooling involved.
+HTML, encodes it with `TextEncoder`, and asserts the byte length under 3072. No tooling involved.
 
 ### Why `data-sosb-` prefix on every attribute?
 
@@ -233,7 +232,7 @@ The refinement closes that gap.
   second block was added.
 - `zodIssuesToErrors` was widened to `ZodSafeParseResult<unknown>` so it
   accepts the union return type from `KnownBlockSchemas[block.type]
-  .safeParse(data)` without per-call casts.
+.safeParse(data)` without per-call casts.
 - `migrateBlock` registers `imageGallery: 1`. Future imageGallery schema
   bumps land in #26 and add to `BLOCK_MIGRATIONS`.
 - The stub theme picks up `imageGallery` and `[data-sosb-lightbox]`

@@ -445,9 +445,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
         </div>
       )}
 
-      {panelOpen ? (
-        <SiteHealthPanel result={validationResult} onJump={handleJump} />
-      ) : null}
+      {panelOpen ? <SiteHealthPanel result={validationResult} onJump={handleJump} /> : null}
 
       <HealthFooter
         result={validationResult}

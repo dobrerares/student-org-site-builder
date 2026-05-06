@@ -55,9 +55,7 @@ const DEFAULT_PREFIX = "sosb";
  * Build the worker source. Output is deterministic across calls with the
  * same options so the host can hash it for an integrity check.
  */
-export function buildServiceWorkerScript(
-  options: ServiceWorkerScriptOptions,
-): string {
+export function buildServiceWorkerScript(options: ServiceWorkerScriptOptions): string {
   const prefix = options.cacheNamePrefix ?? DEFAULT_PREFIX;
   const version = options.version;
   const cacheName = `${prefix}-${version}`;

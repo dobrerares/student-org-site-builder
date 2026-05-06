@@ -71,9 +71,7 @@ export function homePageIndex(site: Site): number {
  * in the language at all, returns `-1` so callers can branch.
  */
 export function languageHomeIndex(site: Site, lang: string): number {
-  const navZero = site.pages.findIndex(
-    (p) => p.lang === lang && p.navOrder === 0,
-  );
+  const navZero = site.pages.findIndex((p) => p.lang === lang && p.navOrder === 0);
   if (navZero !== -1) return navZero;
   const anyPage = site.pages.findIndex((p) => p.lang === lang);
   return anyPage;
@@ -193,10 +191,7 @@ export interface LanguageSwitcherEntry {
  * Returns `[]` for single-language sites — the renderer uses that to skip
  * emitting the switcher entirely.
  */
-export function languageSwitcherEntriesFor(
-  site: Site,
-  activePage: Page,
-): LanguageSwitcherEntry[] {
+export function languageSwitcherEntriesFor(site: Site, activePage: Page): LanguageSwitcherEntry[] {
   if (site.languages.length < 2) return [];
   const localized = activePage.localizedAs ?? {};
   return site.languages.map((lang) => {
@@ -210,9 +205,7 @@ export function languageSwitcherEntriesFor(
     }
     const counterpartSlug = localized[lang];
     if (counterpartSlug !== undefined) {
-      const counterpart = site.pages.find(
-        (p) => p.lang === lang && p.slug === counterpartSlug,
-      );
+      const counterpart = site.pages.find((p) => p.lang === lang && p.slug === counterpartSlug);
       if (counterpart !== undefined) {
         return {
           lang,
@@ -266,9 +259,7 @@ export function hreflangEntriesFor(site: Site, activePage: Page): HreflangEntry[
     }
     const counterpartSlug = localized[lang];
     if (counterpartSlug !== undefined) {
-      const counterpart = site.pages.find(
-        (p) => p.lang === lang && p.slug === counterpartSlug,
-      );
+      const counterpart = site.pages.find((p) => p.lang === lang && p.slug === counterpartSlug);
       if (counterpart !== undefined) {
         return { hreflang: lang, href: pagePath(site, counterpart) };
       }

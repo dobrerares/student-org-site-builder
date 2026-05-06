@@ -41,12 +41,7 @@ export const MAX_ASSET_PAYLOAD_BYTES = 50 * 1024 * 1024;
  * enforces this check BEFORE the bytes reach Sharp -- a malformed mime
  * is rejected as a security posture, not a Sharp error.
  */
-const ALLOWED_MIMES: readonly string[] = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/svg+xml",
-];
+const ALLOWED_MIMES: readonly string[] = ["image/jpeg", "image/png", "image/webp", "image/svg+xml"];
 
 export interface ProcessAssetForVariantsRequest {
   readonly bytes: Uint8Array;
@@ -142,10 +137,7 @@ function validateRequest(request: ProcessAssetForVariantsRequest): void {
 
   // bytes (size cap)
   if (!(request.bytes instanceof Uint8Array)) {
-    throw new AssetIpcError(
-      "ipc.asset.payload.tooLarge",
-      "bytes must be a Uint8Array",
-    );
+    throw new AssetIpcError("ipc.asset.payload.tooLarge", "bytes must be a Uint8Array");
   }
   if (request.bytes.byteLength > MAX_ASSET_PAYLOAD_BYTES) {
     throw new AssetIpcError(

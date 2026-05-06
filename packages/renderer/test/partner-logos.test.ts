@@ -68,9 +68,7 @@ describe("renderSite — partnerLogos block (structural)", () => {
 
   test("partners with a URL wrap the logo in an anchor with aria-label = name", () => {
     const html = renderSite(fixture, "stub");
-    expect(html).toMatch(
-      /<a[^>]*href="https:\/\/acme\.example\.com"[^>]*aria-label="Acme Corp"/,
-    );
+    expect(html).toMatch(/<a[^>]*href="https:\/\/acme\.example\.com"[^>]*aria-label="Acme Corp"/);
     expect(html).toMatch(
       /<a[^>]*href="https:\/\/gamma\.example\.org"[^>]*aria-label="Gamma Foundation"/,
     );
@@ -78,8 +76,7 @@ describe("renderSite — partnerLogos block (structural)", () => {
 
   test("anchored partners use rel noopener on outbound links (security baseline)", () => {
     const html = renderSite(fixture, "stub");
-    const anchorMatch =
-      /<a[^>]*href="https:\/\/acme\.example\.com"[^>]*>/.exec(html);
+    const anchorMatch = /<a[^>]*href="https:\/\/acme\.example\.com"[^>]*>/.exec(html);
     expect(anchorMatch).not.toBeNull();
     if (anchorMatch !== null) {
       expect(anchorMatch[0]).toMatch(/rel="[^"]*noopener[^"]*"/);

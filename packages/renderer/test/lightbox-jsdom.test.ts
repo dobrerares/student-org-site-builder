@@ -63,9 +63,7 @@ describe("lightbox jsdom — open/close behaviour", () => {
     // Closed by default.
     expect(dialog!.hasAttribute("hidden")).toBe(true);
 
-    const triggers = document.querySelectorAll<HTMLButtonElement>(
-      "[data-sosb-lightbox-open]",
-    );
+    const triggers = document.querySelectorAll<HTMLButtonElement>("[data-sosb-lightbox-open]");
     expect(triggers.length).toBeGreaterThanOrEqual(2);
 
     triggers[0]!.click();
@@ -73,12 +71,8 @@ describe("lightbox jsdom — open/close behaviour", () => {
 
     const dialogImg = dialog!.querySelector<HTMLImageElement>("img");
     expect(dialogImg).not.toBeNull();
-    expect(dialogImg!.getAttribute("src")).toBe(
-      "assets/8e3a7f9b1c0d2e4f.jpg",
-    );
-    expect(dialogImg!.getAttribute("alt")).toBe(
-      "Studenți la o conferință de toamnă",
-    );
+    expect(dialogImg!.getAttribute("src")).toBe("assets/8e3a7f9b1c0d2e4f.jpg");
+    expect(dialogImg!.getAttribute("alt")).toBe("Studenți la o conferință de toamnă");
   });
 
   test("Escape key closes the dialog and returns focus to the trigger", () => {
@@ -86,9 +80,7 @@ describe("lightbox jsdom — open/close behaviour", () => {
     loadPage(html);
 
     const dialog = document.querySelector<HTMLElement>("[data-sosb-lightbox]")!;
-    const triggers = document.querySelectorAll<HTMLButtonElement>(
-      "[data-sosb-lightbox-open]",
-    );
+    const triggers = document.querySelectorAll<HTMLButtonElement>("[data-sosb-lightbox-open]");
     const firstTrigger = triggers[0]!;
     firstTrigger.focus();
     firstTrigger.click();
@@ -107,14 +99,10 @@ describe("lightbox jsdom — open/close behaviour", () => {
     loadPage(html);
 
     const dialog = document.querySelector<HTMLElement>("[data-sosb-lightbox]")!;
-    document
-      .querySelectorAll<HTMLButtonElement>("[data-sosb-lightbox-open]")[0]!
-      .click();
+    document.querySelectorAll<HTMLButtonElement>("[data-sosb-lightbox-open]")[0]!.click();
     expect(dialog.hasAttribute("hidden")).toBe(false);
 
-    const closeBtn = dialog.querySelector<HTMLButtonElement>(
-      "[data-sosb-lightbox-close]",
-    );
+    const closeBtn = dialog.querySelector<HTMLButtonElement>("[data-sosb-lightbox-close]");
     expect(closeBtn).not.toBeNull();
     closeBtn!.click();
     expect(dialog.hasAttribute("hidden")).toBe(true);
@@ -131,9 +119,7 @@ describe("lightbox jsdom — keyboard navigation", () => {
     loadPage(html);
 
     const dialog = document.querySelector<HTMLElement>("[data-sosb-lightbox]")!;
-    const triggers = document.querySelectorAll<HTMLButtonElement>(
-      "[data-sosb-lightbox-open]",
-    );
+    const triggers = document.querySelectorAll<HTMLButtonElement>("[data-sosb-lightbox-open]");
     triggers[0]!.click();
 
     let img = dialog.querySelector<HTMLImageElement>("img")!;
@@ -154,9 +140,7 @@ describe("lightbox jsdom — keyboard navigation", () => {
     loadPage(html);
 
     const dialog = document.querySelector<HTMLElement>("[data-sosb-lightbox]")!;
-    document
-      .querySelectorAll<HTMLButtonElement>("[data-sosb-lightbox-open]")[0]!
-      .click();
+    document.querySelectorAll<HTMLButtonElement>("[data-sosb-lightbox-open]")[0]!.click();
 
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true }));
     const img = dialog.querySelector<HTMLImageElement>("img")!;
@@ -175,9 +159,7 @@ describe("lightbox jsdom — focus trap", () => {
     loadPage(html);
 
     const dialog = document.querySelector<HTMLElement>("[data-sosb-lightbox]")!;
-    document
-      .querySelectorAll<HTMLButtonElement>("[data-sosb-lightbox-open]")[0]!
-      .click();
+    document.querySelectorAll<HTMLButtonElement>("[data-sosb-lightbox-open]")[0]!.click();
 
     const focusable = Array.from(
       dialog.querySelectorAll<HTMLElement>(
@@ -222,8 +204,7 @@ describe("lightbox jsdom — ARIA shape", () => {
     expect(dialog.getAttribute("role")).toBe("dialog");
     expect(dialog.getAttribute("aria-modal")).toBe("true");
     // Either aria-label or aria-labelledby is set.
-    const labelled =
-      dialog.hasAttribute("aria-label") || dialog.hasAttribute("aria-labelledby");
+    const labelled = dialog.hasAttribute("aria-label") || dialog.hasAttribute("aria-labelledby");
     expect(labelled).toBe(true);
   });
 
@@ -231,13 +212,10 @@ describe("lightbox jsdom — ARIA shape", () => {
     const html = renderSite(fixture, "stub");
     loadPage(html);
 
-    const triggers = document.querySelectorAll<HTMLButtonElement>(
-      "[data-sosb-lightbox-open]",
-    );
+    const triggers = document.querySelectorAll<HTMLButtonElement>("[data-sosb-lightbox-open]");
     // Each trigger has an accessible label (button text or aria-label).
     for (const t of triggers) {
-      const labelled =
-        (t.textContent ?? "").trim().length > 0 || t.hasAttribute("aria-label");
+      const labelled = (t.textContent ?? "").trim().length > 0 || t.hasAttribute("aria-label");
       expect(labelled).toBe(true);
     }
   });

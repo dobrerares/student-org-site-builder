@@ -3,11 +3,7 @@ import { describe, expect, test } from "vitest";
 import { JSDOM } from "jsdom";
 import type { Site } from "@sosb/schema";
 import faqOnly from "./fixtures/faq-only.json" with { type: "json" };
-import {
-  FAQ_ACCORDION_SCRIPT_SOURCE,
-  FAQ_ENHANCED_ATTR,
-  renderSite,
-} from "../src/index.js";
+import { FAQ_ACCORDION_SCRIPT_SOURCE, FAQ_ENHANCED_ATTR, renderSite } from "../src/index.js";
 
 const fixture = faqOnly as unknown as Site;
 

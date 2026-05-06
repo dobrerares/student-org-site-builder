@@ -36,8 +36,7 @@ describe("renderSite — richText block (structural)", () => {
   test("never emits non-whitelist HTML elements from richText markdown", () => {
     const malicious = JSON.parse(JSON.stringify(fixture)) as Site;
     malicious.pages[0]!.blocks[0]!.data = {
-      markdown:
-        "<script>x()</script>\n\n[click](javascript:x())\n\n<img src=x onerror=x()>",
+      markdown: "<script>x()</script>\n\n[click](javascript:x())\n\n<img src=x onerror=x()>",
     };
     const html = renderSite(malicious, "stub");
     expect(html).not.toMatch(/<script[^>]*>/i);

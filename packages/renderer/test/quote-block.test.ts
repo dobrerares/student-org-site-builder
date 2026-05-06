@@ -95,8 +95,7 @@ describe("renderSite — quote block (structural)", () => {
 
   test("ignores unknown extra fields on quote data (forward-compat)", () => {
     const withExtra = JSON.parse(JSON.stringify(fixture)) as Site;
-    (withExtra.pages[0]!.blocks[0]!.data as Record<string, unknown>).decorativeMark =
-      "ornament";
+    (withExtra.pages[0]!.blocks[0]!.data as Record<string, unknown>).decorativeMark = "ornament";
     const html = renderSite(withExtra, "stub");
     expect(html).toContain("Maria Popescu");
   });

@@ -68,11 +68,7 @@ export async function registerServiceWorker(
   options: ServiceWorkerRegistrationOptions,
 ): Promise<ServiceWorkerHandle> {
   const navigator = options.navigator ?? globalThis.navigator;
-  if (
-    navigator === undefined ||
-    navigator === null ||
-    !("serviceWorker" in navigator)
-  ) {
+  if (navigator === undefined || navigator === null || !("serviceWorker" in navigator)) {
     throw new Error(
       "registerServiceWorker: navigator.serviceWorker is unavailable. " +
         "The host must run inside a Window context with the Service Worker API.",
@@ -82,10 +78,7 @@ export async function registerServiceWorker(
   const registerOptions: { scope?: string } = {};
   if (options.scope !== undefined) registerOptions.scope = options.scope;
 
-  const registration = await navigator.serviceWorker.register(
-    options.scriptUrl,
-    registerOptions,
-  );
+  const registration = await navigator.serviceWorker.register(options.scriptUrl, registerOptions);
 
   const onUpdateAvailable = options.onUpdateAvailable;
   if (onUpdateAvailable !== undefined) {

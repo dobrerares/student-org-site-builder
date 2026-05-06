@@ -74,11 +74,7 @@ export type {
   ActivityItem,
   ActivityLink,
 } from "./activities-list.js";
-export {
-  TeamGridBlockSchema,
-  TeamGridDataSchema,
-  TEAM_GRID_BLOCK_VERSION,
-} from "./team-grid.js";
+export { TeamGridBlockSchema, TeamGridDataSchema, TEAM_GRID_BLOCK_VERSION } from "./team-grid.js";
 export type {
   TeamGridBlock,
   TeamGridData,
@@ -86,20 +82,11 @@ export type {
   TeamGridPersonPhoto,
   TeamGridSocialLink,
 } from "./team-grid.js";
-export {
-  RichTextBlockSchema,
-  RichTextDataSchema,
-  RICH_TEXT_BLOCK_VERSION,
-} from "./rich-text.js";
+export { RichTextBlockSchema, RichTextDataSchema, RICH_TEXT_BLOCK_VERSION } from "./rich-text.js";
 export type { RichTextBlock, RichTextData } from "./rich-text.js";
 export { QuoteBlockSchema, QuoteDataSchema, QUOTE_BLOCK_VERSION } from "./quote.js";
 export type { QuoteBlock, QuoteData } from "./quote.js";
-export {
-  FaqBlockSchema,
-  FaqDataSchema,
-  FaqItemSchema,
-  FAQ_BLOCK_VERSION,
-} from "./faq.js";
+export { FaqBlockSchema, FaqDataSchema, FaqItemSchema, FAQ_BLOCK_VERSION } from "./faq.js";
 export type { FaqBlock, FaqData, FaqItem } from "./faq.js";
 export {
   AssetRefSchema,

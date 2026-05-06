@@ -141,10 +141,7 @@ export class IndexedDbDriver implements Vfs {
     return this.#runTx("readwrite", work);
   }
 
-  #runTx<T>(
-    mode: IDBTransactionMode,
-    work: (store: IDBObjectStore) => IDBRequest<T>,
-  ): Promise<T> {
+  #runTx<T>(mode: IDBTransactionMode, work: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
     return new Promise<T>((resolve, reject) => {
       const tx = this.#db.transaction(this.#storeName, mode);
       const store = tx.objectStore(this.#storeName);

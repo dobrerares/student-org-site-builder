@@ -52,9 +52,7 @@ describe("imageGallery axe-core — open lightbox state", () => {
     loadPage(html);
 
     // Open the lightbox before scanning.
-    const trigger = document.querySelector<HTMLButtonElement>(
-      "[data-sosb-lightbox-open]",
-    );
+    const trigger = document.querySelector<HTMLButtonElement>("[data-sosb-lightbox-open]");
     if (trigger === null) throw new Error("expected a lightbox trigger");
     trigger.click();
 

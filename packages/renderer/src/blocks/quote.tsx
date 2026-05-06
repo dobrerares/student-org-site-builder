@@ -49,7 +49,8 @@ import { markdownInlineToHtml } from "@sosb/markdown";
 export function Quote(props: { block: QuoteBlock }): preact.JSX.Element {
   const { id, data } = props.block;
   const text = typeof data.text === "string" ? data.text : "";
-  const author = typeof data.author === "string" && data.author.length > 0 ? data.author : undefined;
+  const author =
+    typeof data.author === "string" && data.author.length > 0 ? data.author : undefined;
   const authorRole =
     typeof data.authorRole === "string" && data.authorRole.length > 0 ? data.authorRole : undefined;
   const authorImage =

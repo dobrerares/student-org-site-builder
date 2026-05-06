@@ -62,9 +62,8 @@ describe("renderSite — activitiesList block (structural)", () => {
   test("never emits an empty alt on a rendered <img> in this block", () => {
     for (const fixture of [cards, list, alternating]) {
       const html = renderSite(fixture, "stub");
-      const sectionMatch = /<section[^>]*data-block="activitiesList"[^>]*>([\s\S]*?)<\/section>/.exec(
-        html,
-      );
+      const sectionMatch =
+        /<section[^>]*data-block="activitiesList"[^>]*>([\s\S]*?)<\/section>/.exec(html);
       if (sectionMatch === null) continue;
       const inner = sectionMatch[1] ?? "";
       const altRegex = /<img[^>]*\salt="([^"]*)"/g;

@@ -80,7 +80,7 @@ The output may contain only these elements:
 - `<h2>`, `<h3>`, `<h4>` — `## `, `### `, `#### ` headings
 - `<blockquote>` (containing a `<p>`) — `> ` blocks
 
-Everything else — `<h1>`, `<h5>`, `<h6>`, code fences (```` ``` ````),
+Everything else — `<h1>`, `<h5>`, `<h6>`, code fences (` ``` `),
 tables, images, footnotes, definition lists, raw HTML, comments — falls
 through to escaped paragraph text or is dropped.
 
@@ -133,7 +133,7 @@ in the output regardless of context. Attribute values pass through
 
 The only `<…>` substrings in the output are the tags the renderer
 chose to emit. The renderer's test framework (`isOutputSafe` in the XSS
-corpus tests) extracts those *real* tags and verifies each is on the
+corpus tests) extracts those _real_ tags and verifies each is on the
 whitelist with safe attributes — that is the load-bearing assertion.
 
 ### richText block follows the hero pattern

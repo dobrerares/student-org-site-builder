@@ -7,12 +7,12 @@ Tracking issue: #38. ADR 0008 records the design.
 
 ## What's inside
 
-| Sub-module | Responsibility |
-|------------|----------------|
-| `IndexedDbDriver` / `openIndexedDbDriver(opts)` | Persistent `Vfs` driver. Composes with `createEditorState({ vfs })` so the editor's auto-save survives reloads. |
-| `buildServiceWorkerScript(opts)` | Pure function that emits the worker source as a string. Hosts write the result to `/sw.js`. |
-| `registerServiceWorker(opts)` | Page-side helper. Fires `onUpdateAvailable()` when a new SW is installed behind an active controller — that's the cue to show the "Versiune nouă disponibilă" toast. Returns `applyUpdate()` for the user-triggered reload. |
-| `buildArchival({ html, assets })` | Pure transformation: inline a virtual asset map into a single self-contained HTML. |
+| Sub-module                                      | Responsibility                                                                                                                                                                                                              |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `IndexedDbDriver` / `openIndexedDbDriver(opts)` | Persistent `Vfs` driver. Composes with `createEditorState({ vfs })` so the editor's auto-save survives reloads.                                                                                                             |
+| `buildServiceWorkerScript(opts)`                | Pure function that emits the worker source as a string. Hosts write the result to `/sw.js`.                                                                                                                                 |
+| `registerServiceWorker(opts)`                   | Page-side helper. Fires `onUpdateAvailable()` when a new SW is installed behind an active controller — that's the cue to show the "Versiune nouă disponibilă" toast. Returns `applyUpdate()` for the user-triggered reload. |
+| `buildArchival({ html, assets })`               | Pure transformation: inline a virtual asset map into a single self-contained HTML.                                                                                                                                          |
 
 ## Service worker caching
 

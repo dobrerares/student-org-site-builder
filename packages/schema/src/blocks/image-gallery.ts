@@ -27,12 +27,7 @@ import { z } from "zod";
  * the v1 forward-compatibility contract shared with the hero block (#3).
  */
 
-const SupportedMimeSchema = z.enum([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/svg+xml",
-]);
+const SupportedMimeSchema = z.enum(["image/jpeg", "image/png", "image/webp", "image/svg+xml"]);
 
 /**
  * Mirrors `AssetRef` from `@sosb/assets` without taking a runtime dep.
