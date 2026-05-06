@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "org": {
+    "name": "Stub Org",
+    "tagline": "A fixture for renderer tests"
+  },
+  "theme": {
+    "id": "modern"
+  },
+  "defaultLanguage": "ro",
+  "languages": ["ro"],
+  "pages": [
+    {
+      "slug": "acasa",
+      "lang": "ro",
+      "navLabel": "Acasă",
+      "navOrder": 0,
+      "showInNav": true,
+      "seo": {
+        "title": "Stub site — home",
+        "description": "A minimal site for renderer tests."
+      },
+      "blocks": [
+        {
+          "id": "blk_home_hero",
+          "type": "hero",
+          "version": 1,
+          "data": {
+            "eyebrow": "Bun venit",
+            "title": "Stub Org",
+            "subtitle": "A fixture for renderer tests",
+            "backgroundImage": "assets/hero.jpg",
+            "backgroundAlt": "Studenți la o conferință"
+          }
+        }
+      ]
+    }
+  ]
+}

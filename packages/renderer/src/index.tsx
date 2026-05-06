@@ -17,6 +17,7 @@ import { PageShell } from "./page-shell.js";
 import { emitTokenRoot } from "./tokens.js";
 import { STUB_THEME_CSS, STUB_THEME_ID } from "./themes/stub.js";
 import { MINIMAL_THEME_CSS, MINIMAL_THEME_ID } from "./themes/minimal.js";
+import { MODERN_THEME_CSS, MODERN_THEME_ID } from "./themes/modern.js";
 
 export interface RenderOptions {
   /**
@@ -37,8 +38,10 @@ export interface RenderOptions {
  *
  * @param data    Validated site data. Callers should run `@sosb/schema`'s
  *                `validate(data)` first; this function trusts the shape.
- * @param themeId Theme to render under. Today only `"stub"` is implemented;
- *                future themes (#28-#31, #47) register additional ids.
+ * @param themeId Theme to render under. Today `"stub"` (the renderer's
+ *                layout-only sentinel) and `"modern"` (the curated theme
+ *                from #28) are registered; future themes (#29-#31, #47)
+ *                register additional ids.
  * @param opts    Optional page selection.
  * @returns       A complete HTML document beginning with `<!doctype html>`.
  */
@@ -65,15 +68,17 @@ function composeCss(site: Site, themeId: string): string {
 function themeCssFor(themeId: string): string {
   if (themeId === STUB_THEME_ID) return STUB_THEME_CSS;
   if (themeId === MINIMAL_THEME_ID) return MINIMAL_THEME_CSS;
+  if (themeId === MODERN_THEME_ID) return MODERN_THEME_CSS;
   // Unknown / future themes fall back to the stub layout. This keeps the
   // renderer functional even before the themes package lands its full set
-  // (#28-#30, #47). The themes package will register itself by id when it
+  // (#29, #30, #47). The themes package will register itself by id when it
   // arrives.
   return STUB_THEME_CSS;
 }
 
 export { STUB_THEME_ID } from "./themes/stub.js";
 export { MINIMAL_THEME_ID } from "./themes/minimal.js";
+export { MODERN_THEME_ID } from "./themes/modern.js";
 export {
   homePageIndex,
   homePagePathForLanguage,
