@@ -25,6 +25,13 @@
  * - Re-run `validate()` on every snapshot change so the panel + footer
  *   stay current.
  *
+ * i18n:
+ *
+ * - Every user-visible string is looked up via `useTranslator()` (#42).
+ * - The optional `translator` prop overrides the default (English) and
+ *   makes the wider host shell's locale choice flow through. It is wrapped
+ *   in `<I18nProvider>` so descendant components see the same translator.
+ *
  * NOTE: this component intentionally has no module-level effects. It only
  * looks at `window.innerWidth` inside its own effect, which keeps it
  * trivially renderable in a vitest jsdom environment AND in SSR.
@@ -33,6 +40,13 @@ import type { JSX } from "preact";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import type { Site, ValidationIssue, ValidationResult } from "@sosb/schema";
 import { SiteSchema, validate } from "@sosb/schema";
+import {
+  createTranslator,
+  enCatalog,
+  roCatalog,
+  DEFAULT_LOCALE,
+  type Translator,
+} from "@sosb/i18n";
 
 import { fieldsFromSchema } from "./form-generator.js";
 import { SpineForm, applyPatch } from "./spine-form.js";
@@ -56,6 +70,8 @@ import { SiteHealthPanel } from "./site-health.js";
 import { HealthFooter } from "./health-footer.js";
 import { ExportConfirmDialog } from "./export-confirm.js";
 import { navigateToIssue } from "./issue-navigate.js";
+import { I18nProvider, useTranslator } from "./i18n-context.js";
+import { LocaleToggle } from "./locale-toggle.js";
 
 const MOBILE_BREAKPOINT_PX = 768;
 
@@ -68,11 +84,40 @@ export interface EditorAppProps {
   readonly onExport?: (siteData: Site) => void;
   /** Optional — fired when the user clicks the Reset button. */
   readonly onReset?: () => void;
+  /**
+   * Optional translator. The host shell builds this once (with the user's
+   * detected / persisted locale) and passes it in; descendants pick it up
+   * via the i18n context. Falls back to a fresh English translator when
+   * omitted, which keeps existing call sites and tests working unchanged.
+   */
+  readonly translator?: Translator;
 }
 
 type TabName = "editor" | "preview";
 
 export function EditorApp(props: EditorAppProps): JSX.Element {
+  const translatorRef = useRef<Translator>();
+  if (translatorRef.current === undefined) {
+    translatorRef.current =
+      props.translator ??
+      createTranslator({
+        catalogs: { en: enCatalog, ro: roCatalog },
+        defaultLocale: DEFAULT_LOCALE,
+        locale: DEFAULT_LOCALE,
+      });
+  }
+  const translator = props.translator ?? translatorRef.current;
+
+  return (
+    <I18nProvider value={translator}>
+      <EditorAppInner {...props} />
+    </I18nProvider>
+  );
+}
+
+function EditorAppInner(props: EditorAppProps): JSX.Element {
+  const t = useTranslator();
+
   const stateRef = useRef<EditorState>();
   if (stateRef.current === undefined) {
     stateRef.current = createEditorState({ initial: props.initial });
@@ -316,7 +361,7 @@ export function EditorApp(props: EditorAppProps): JSX.Element {
   }
 
   const editorPane = (
-    <section data-testid="editor-pane">
+    <section data-testid="editor-pane" aria-label={t("pane.editor.label")}>
       <PagesList
         site={snapshot}
         activeIndex={safeActivePageIndex}
@@ -337,15 +382,16 @@ export function EditorApp(props: EditorAppProps): JSX.Element {
           onAddBlock={() => setPickerOpen(true)}
         />
       ) : null}
+      <LocaleToggle />
     </section>
   );
 
   const previewSrcdoc = iframeSrcdoc(snapshot, snapshot.theme.id, safeActivePageIndex);
   const previewPane = (
-    <section data-testid="preview-pane">
+    <section data-testid="preview-pane" aria-label={t("pane.preview.label")}>
       <iframe
         ref={iframeRef}
-        title="Site preview"
+        title={t("pane.preview.label")}
         srcdoc={previewSrcdoc}
         sandbox="allow-same-origin"
       />
@@ -379,7 +425,7 @@ export function EditorApp(props: EditorAppProps): JSX.Element {
               data-active={activeTab === "editor"}
               onClick={() => setActiveTab("editor")}
             >
-              Editor
+              {t("tabs.editor")}
             </button>
             <button
               type="button"
@@ -387,7 +433,7 @@ export function EditorApp(props: EditorAppProps): JSX.Element {
               data-active={activeTab === "preview"}
               onClick={() => setActiveTab("preview")}
             >
-              Preview
+              {t("tabs.preview")}
             </button>
           </div>
           {activeTab === "editor" ? editorPane : previewPane}
@@ -437,16 +483,17 @@ interface TopBarProps {
 }
 
 function TopBar(props: TopBarProps): JSX.Element {
+  const t = useTranslator();
   return (
     <header data-testid="top-bar">
       <button type="button" data-action="import" onClick={props.onImport}>
-        Import
+        {t("topbar.import")}
       </button>
       <button type="button" data-action="export" onClick={props.onExport}>
-        Export
+        {t("topbar.export")}
       </button>
       <button type="button" data-action="reset" onClick={props.onReset}>
-        Reset
+        {t("topbar.reset")}
       </button>
       <button
         type="button"

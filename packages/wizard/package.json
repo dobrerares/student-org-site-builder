@@ -14,6 +14,7 @@
   "dependencies": {
     "@sosb/schema": "workspace:*",
     "@sosb/vfs": "workspace:*",
+    "@sosb/i18n": "workspace:*",
     "preact": "^10.29.1"
   },
   "devDependencies": {

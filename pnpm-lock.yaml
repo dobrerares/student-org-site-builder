@@ -128,6 +128,9 @@ importers:
       '@sosb/editor-state':
         specifier: workspace:*
         version: link:../editor-state
+      '@sosb/i18n':
+        specifier: workspace:*
+        version: link:../i18n
       '@sosb/preview-bridge':
         specifier: workspace:*
         version: link:../preview-bridge
@@ -191,7 +194,11 @@ importers:
         specifier: ^26.0.0
         version: 26.8.1(electron-builder-squirrel-windows@26.8.1)
 
-  packages/i18n: {}
+  packages/i18n:
+    dependencies:
+      '@sosb/vfs':
+        specifier: workspace:*
+        version: link:../vfs
 
   packages/markdown: {}
 
@@ -258,6 +265,9 @@ importers:
 
   packages/wizard:
     dependencies:
+      '@sosb/i18n':
+        specifier: workspace:*
+        version: link:../i18n
       '@sosb/schema':
         specifier: workspace:*
         version: link:../schema

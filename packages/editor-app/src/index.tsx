@@ -3,14 +3,16 @@
  *
  * Tracking issue: #7. ADR 0005 records the design.
  * Validation surfaces: #25. ADR 0008 records the design.
+ * i18n integration: #42. ADR 0028 records the design.
  *
  * Public surface (v1):
  *
- * - `<EditorApp initial={site} onImport onExport onReset />` — the top-level
- *   component. Two-pane layout at ≥768px, tabs at <768px. Form is generated
- *   from the `SiteSchema` via `fieldsFromSchema`. Preview iframe re-uses
- *   `@sosb/renderer` (no duplicate code path). Site Health panel + health
- *   footer + pre-export confirmation are wired in by default.
+ * - `<EditorApp initial={site} translator? onImport onExport onReset />` — the
+ *   top-level component. Two-pane layout at ≥768px, tabs at <768px. Form is
+ *   generated from the `SiteSchema` via `fieldsFromSchema`. Preview iframe
+ *   re-uses `@sosb/renderer` (no duplicate code path). Site Health panel +
+ *   health footer + pre-export confirmation are wired in by default. Localised
+ *   via the `translator` prop (or a default English translator when omitted).
  * - `fieldsFromSchema(schema)` — produces the field tree the form renderer
  *   walks. Exported so other surfaces (block forms in #9-#22, validation
  *   summaries) can re-use the same introspection.
@@ -23,6 +25,13 @@
  * - `navigateToIssue(root, issue)` — pure helper that scrolls + focuses
  *   the spine-form input matching the issue path; exported so consumers
  *   that build alternative panels can reuse the navigation behaviour.
+ * - `<LocaleToggle />` — the editor-settings locale switcher. Reads / writes
+ *   the active locale on the surrounding translator context.
+ * - `useTranslator()` — Preact hook the editor and downstream block forms
+ *   use to translate user-visible strings.
+ * - `<I18nProvider value={translator}>` — the context provider; useful when
+ *   composing the editor inside a larger host (browser shell, Electron
+ *   shell) that wants a single translator across multiple panes.
  */
 
 export { EditorApp, type EditorAppProps } from "./editor-app.js";
@@ -50,3 +59,5 @@ export {
   type BlockCategory,
 } from "./block-catalog.js";
 export { defaultBlockFor } from "./block-defaults.js";
+export { LocaleToggle } from "./locale-toggle.js";
+export { I18nProvider, useTranslator } from "./i18n-context.js";

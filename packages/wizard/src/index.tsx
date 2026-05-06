@@ -52,3 +52,13 @@ export {
   saveWizardProgress,
   clearWizardProgress,
 } from "./persistence.js";
+
+// i18n contract (#42) — step ids and the catalog-key mapping the wizard
+// UI uses to translate per-step titles and the back/next/skip/finish
+// action labels. ADR 0028 records the design.
+export {
+  WIZARD_STEPS,
+  WIZARD_STEP_TITLE_KEY,
+  WIZARD_ACTION_KEYS,
+  type WizardStepId,
+} from "./steps.js";
