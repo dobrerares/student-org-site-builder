@@ -22,6 +22,7 @@ import {
   formatBudgetViolations,
   type BudgetReport,
 } from "./budget.js";
+import { jsonLdBlobsForPage, renderJsonLdScripts } from "./json-ld.js";
 
 export {
   BUDGET_LIMITS,
@@ -101,10 +102,7 @@ export function build(site: Site, options: BuildOptions = {}): DistFolder {
   // deterministic and the home page (when it is at index 0) is first.
   site.pages.forEach((page, idx) => {
     const renderedHtml = renderSite(site, themeId, { pageIndex: idx });
-    let html =
-      siteUrl === undefined
-        ? renderedHtml
-        : injectSeoMeta(renderedHtml, site, page, siteUrl);
+    let html = injectSeoMeta(renderedHtml, site, page, siteUrl);
     if (options._testInjectExtraCss !== undefined && options._testInjectExtraCss.length > 0) {
       html = injectExtraInlineCss(html, options._testInjectExtraCss);
     }
@@ -196,60 +194,88 @@ function pageHeroBackgroundImage(page: Page): string | undefined {
 }
 
 /**
- * Inject canonical / og:url / og:image / hreflang absolutes into the
- * renderer's emitted `<head>`.
+ * Inject the build-pipeline SEO overlay into the renderer's emitted `<head>`.
  *
- * Strategy: locate the closing `</head>` tag and insert the additional meta
- * tags immediately before it. The renderer already emits relative-path
- * hreflang alternates; when a `siteUrl` is set, we rewrite those to
- * absolute URLs (Google's i18n SEO docs explicitly recommend absolute
- * hrefs for hreflang).
+ * Always emitted (even without a `siteUrl`):
+ *   - JSON-LD `<script type="application/ld+json">` blobs:
+ *     Organization, optional Person/Event/FAQPage per block type,
+ *     BreadcrumbList on non-home pages of multi-page sites.
+ *
+ * Conditional on `siteUrl` being set:
+ *   - `<link rel="canonical">` pointing at the page's own `pagePath`,
+ *   - `<meta property="og:url">` matching canonical,
+ *   - `<meta property="og:image">` (when first hero has `backgroundImage`),
+ *   - `twitter:image` rewritten from relative to absolute,
+ *   - hreflang `<link rel="alternate">` absolutised from the renderer's
+ *     relative form.
+ *
+ * Strategy: locate the closing `</head>` tag and insert the additional
+ * tags immediately before it; relative hreflang and relative twitter:image
+ * are stripped/rewritten via regex so we don't double-emit.
  *
  * Emits in a deterministic order so repeat calls produce byte-identical
- * output: relative hreflang alternates are stripped, then we insert
- * canonical → og:url → og:image → absolute hreflang alternates. Each
- * page's canonical points at its own `pagePath` so multi-page sites get
- * correct per-page canonicals.
+ * output: canonical → og:url → og:image → absolute hreflang alternates →
+ * JSON-LD scripts.
  */
-function injectSeoMeta(html: string, site: Site, page: Page, siteUrl: string): string {
-  const path = pagePath(site, page);
-  const canonical = `${siteUrl}${path}`;
-  const heroImage = pageHeroBackgroundImage(page);
-  const ogImage = heroImage === undefined ? undefined : absolutise(siteUrl, heroImage);
-
+function injectSeoMeta(
+  html: string,
+  site: Site,
+  page: Page,
+  siteUrl: string | undefined,
+): string {
+  let working = html;
   const tags: string[] = [];
-  tags.push(`<link rel="canonical" href="${escapeAttr(canonical)}"/>`);
-  tags.push(`<meta property="og:url" content="${escapeAttr(canonical)}"/>`);
-  if (ogImage !== undefined) {
-    tags.push(`<meta property="og:image" content="${escapeAttr(ogImage)}"/>`);
-  }
-  // hreflang alternates absolutised against the siteUrl. The renderer
-  // already emits the relative-path version; we rewrite to absolutes by
-  // re-emitting from the same data source (no string parsing of the
-  // renderer's output) and stripping the relative versions below.
-  const hreflangs = hreflangEntriesFor(site, page);
-  for (const entry of hreflangs) {
-    const absoluteHref = `${siteUrl}${entry.href}`;
-    tags.push(
-      `<link rel="alternate" hreflang="${escapeAttr(entry.hreflang)}" href="${escapeAttr(absoluteHref)}"/>`,
-    );
+
+  if (siteUrl !== undefined) {
+    const path = pagePath(site, page);
+    const canonical = `${siteUrl}${path}`;
+    const heroImage = pageHeroBackgroundImage(page);
+    const ogImage = heroImage === undefined ? undefined : absolutise(siteUrl, heroImage);
+    tags.push(`<link rel="canonical" href="${escapeAttr(canonical)}"/>`);
+    tags.push(`<meta property="og:url" content="${escapeAttr(canonical)}"/>`);
+    if (ogImage !== undefined) {
+      tags.push(`<meta property="og:image" content="${escapeAttr(ogImage)}"/>`);
+    }
+    // hreflang alternates absolutised against the siteUrl. The renderer
+    // already emits the relative-path version; we rewrite to absolutes by
+    // re-emitting from the same data source and stripping the relative
+    // ones from the renderer's HTML below.
+    const hreflangs = hreflangEntriesFor(site, page);
+    for (const entry of hreflangs) {
+      const absoluteHref = `${siteUrl}${entry.href}`;
+      tags.push(
+        `<link rel="alternate" hreflang="${escapeAttr(entry.hreflang)}" href="${escapeAttr(absoluteHref)}"/>`,
+      );
+    }
+
+    // Strip the renderer's relative-path hreflang alternates so the
+    // absolutes we just emitted are the only ones in the document.
+    const relativeHreflangPattern = /<link rel="alternate" hreflang="[^"]+" href="[^"]*"\s*\/>/g;
+    working = working.replace(relativeHreflangPattern, "");
+
+    // Rewrite the renderer's relative twitter:image to an absolute URL when
+    // siteUrl is set — parity with og:image.
+    if (heroImage !== undefined) {
+      const twitterImagePattern = /<meta name="twitter:image" content="([^"]*)"\s*\/>/;
+      working = working.replace(twitterImagePattern, (_match, value: string) => {
+        return `<meta name="twitter:image" content="${escapeAttr(absolutise(siteUrl, value))}"/>`;
+      });
+    }
   }
 
-  // Strip the renderer's relative-path hreflang alternates so the absolutes
-  // we just emitted are the only ones in the document. The renderer's
-  // output uses Preact's self-closing form `<link ... />` (with a space
-  // before the slash); we match liberally to survive small DOM changes.
-  const relativeHreflangPattern = /<link rel="alternate" hreflang="[^"]+" href="[^"]*"\s*\/>/g;
-  const stripped = html.replace(relativeHreflangPattern, "");
+  // JSON-LD applies in every build (even with no `siteUrl`, so the user
+  // gets a previewable structured-data set before they pick a host).
+  const jsonLd = renderJsonLdScripts(jsonLdBlobsForPage(site, page, siteUrl));
 
-  const overlay = tags.join("");
-  const headCloseIdx = stripped.indexOf("</head>");
+  const overlay = `${tags.join("")}${jsonLd}`;
+  if (overlay.length === 0) return working;
+  const headCloseIdx = working.indexOf("</head>");
   if (headCloseIdx === -1) {
     // The renderer always emits `<head>...</head>`. If that contract ever
     // changes, the parity tests catch it before we ship — but be defensive.
-    return stripped;
+    return working;
   }
-  return `${stripped.slice(0, headCloseIdx)}${overlay}${stripped.slice(headCloseIdx)}`;
+  return `${working.slice(0, headCloseIdx)}${overlay}${working.slice(headCloseIdx)}`;
 }
 
 /**
