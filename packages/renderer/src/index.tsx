@@ -110,6 +110,24 @@ function themeBaselineTokensFor(themeId: string): ReadonlyArray<readonly [string
   return [];
 }
 
+/**
+ * Registry of theme ids known to the renderer.
+ *
+ * Includes every theme registered in this module: the stub layout sentinel
+ * plus the production themes (#28-#31 / #47). The accessibility regression
+ * matrix in `e2e/a11y.spec.ts` iterates this list, so the per-theme CI gate
+ * expands automatically as themes merge to main — no test edits needed per
+ * theme. ADR 0026 records the dynamic-matrix design.
+ */
+export const KNOWN_THEME_IDS: readonly string[] = [
+  STUB_THEME_ID,
+  MINIMAL_THEME_ID,
+  MODERN_THEME_ID,
+  EDITORIAL_THEME_ID,
+  CIVIC_THEME_ID,
+  ACADEMIC_THEME_ID,
+];
+
 export { STUB_THEME_ID } from "./themes/stub.js";
 export { MINIMAL_THEME_ID } from "./themes/minimal.js";
 export { MODERN_THEME_ID } from "./themes/modern.js";

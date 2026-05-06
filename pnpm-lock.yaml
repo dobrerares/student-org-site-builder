@@ -26,6 +26,9 @@ importers:
       '@types/node':
         specifier: 20.17.10
         version: 20.17.10
+      axe-core:
+        specifier: 4.11.4
+        version: 4.11.4
       esbuild:
         specifier: 0.24.0
         version: 0.24.0

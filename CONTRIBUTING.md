@@ -30,7 +30,9 @@ pnpm build
 ```
 
 A clean clone walks through `install -> typecheck -> lint -> test -> build`
-without manual fixups. CI runs the same four checks on every PR against `main`.
+without manual fixups. CI runs the same checks on every PR against `main`,
+plus the per-theme accessibility regression suite (`pnpm exec playwright
+test e2e/a11y.spec.ts`) — see [Accessibility commitment](#accessibility-commitment).
 
 ## Running locally
 
@@ -62,7 +64,7 @@ This is a **pnpm workspace monorepo**. All implementation code lives under
 |-- .github/
 |   |-- ISSUE_TEMPLATE/   # Bug / feature / theme-or-block proposal
 |   |-- PULL_REQUEST_TEMPLATE.md
-|   `-- workflows/        # CI: typecheck, lint, test, build
+|   `-- workflows/        # CI: typecheck, lint, test, build, a11y
 |-- docs/
 |   |-- PRD.md            # v1 product specification (source of truth)
 |   |-- adr/              # Architecture Decision Records
@@ -303,7 +305,7 @@ Conventions:
 
 ## Continuous integration
 
-`.github/workflows/ci.yml` runs five jobs on every PR against `main`:
+`.github/workflows/ci.yml` runs six jobs on every PR against `main`:
 
 1. **Typecheck** — `pnpm typecheck`
 2. **Lint** — `pnpm lint` and `pnpm format:check`
@@ -312,8 +314,10 @@ Conventions:
 5. **Lighthouse** — runs after Build. Materialises a representative built
    fixture and audits it; asserts 95+ on Performance, Accessibility, Best
    Practices, and SEO.
+6. **A11y** — `pnpm exec playwright test e2e/a11y.spec.ts` (see
+   [Accessibility commitment](#accessibility-commitment) below).
 
-All five must pass before a PR is mergeable.
+All six must pass before a PR is mergeable.
 
 ## Performance budgets
 
@@ -379,6 +383,84 @@ should pick the house-style one.
 
 Site-author content (the org's own page text) is owned by the editor's
 schema, not by `@sosb/i18n`.
+
+## Accessibility commitment
+
+The project's accessibility bar is **WCAG 2.2 Level AA**. This is enforced as
+a zero-tolerance CI gate: any axe-core violation on the per-theme regression
+fixture fails the build.
+
+### What the gate exercises
+
+`e2e/a11y.spec.ts` iterates every theme registered in `@sosb/renderer`'s
+`KNOWN_THEME_IDS` array. For each theme it:
+
+1. Generates a deterministic fixture site via
+   [`generateA11yFixture`](./packages/renderer/test/a11y-fixture.ts) covering
+   Romanian diacritics (Ă/Â/Î/Ș/Ț + lowercase forms), long Romanian copy
+   that exercises line-wrapping in every theme's hero, and a multi-language
+   switcher (RO ⇄ EN with reciprocal `localizedAs` links).
+2. Runs `@sosb/build` to produce `index.html`.
+3. Mounts the page in headless Chromium and runs axe-core inside the page.
+4. Asserts that `violations.length === 0`.
+
+The matrix is **dynamic** — when theme PRs (#28-#31, #47) add their ids to
+`KNOWN_THEME_IDS`, the suite picks them up automatically with no edits to
+the spec.
+
+### Axe-core rule set
+
+The suite runs axe-core with `runOnly: { type: "tag", values: [...] }` and
+the following tags, which together cover the WCAG 2.2 AA commitment plus
+high-signal semantic rules:
+
+| Tag             | What it covers                                                |
+| --------------- | ------------------------------------------------------------- |
+| `wcag2a`        | WCAG 2.0 Level A success criteria                             |
+| `wcag2aa`       | WCAG 2.0 Level AA success criteria                            |
+| `wcag21a`       | WCAG 2.1 Level A additions                                    |
+| `wcag21aa`      | WCAG 2.1 Level AA additions                                   |
+| `wcag22aa`      | WCAG 2.2 Level AA additions (target size, focus-not-obscured) |
+| `best-practice` | Non-WCAG semantic rules (`landmark-one-main`, `region`, etc.) |
+
+`experimental` rules are deliberately excluded — they would cause CI flakes
+before stabilising upstream. ADR 0026 records the rationale.
+
+### How to fix a violation
+
+1. Run the suite locally: `pnpm exec playwright test e2e/a11y.spec.ts`. The
+   failure output names the rule, the impact, the failing target selector,
+   and a `helpUrl` linking to the rule's documentation on
+   [deque.com/axe](https://dequeuniversity.com/rules/axe).
+2. Reproduce against a single theme by temporarily narrowing
+   `KNOWN_THEME_IDS` in the spec, or run with
+   `pnpm exec playwright test e2e/a11y.spec.ts --headed --trace=on` for a
+   visual debug.
+3. Fix at the **renderer or theme layer**, not the test layer. The fixture
+   is intentionally loud and content-rich — if a fix requires tailoring the
+   fixture, it almost certainly indicates a real a11y bug.
+4. Common rule families:
+   - `image-alt` — every image needs meaningful `alt` text. Decorative
+     images use `alt=""`. The schema makes alt text mandatory for all
+     image-bearing blocks.
+   - `landmark-*` — pages must have exactly one `<main>` landmark; section
+     landmarks must be unique-named.
+   - `color-contrast` — token combinations must hit 4.5:1 (normal text) or
+     3:1 (large text). Theme PRs validate this against axe directly.
+   - `target-size` (WCAG 2.2) — all interactive targets must be at least
+     24x24 CSS pixels.
+   - `region` — every visible content must live inside a landmark.
+
+### Out of scope for the automated gate
+
+- **Manual screen-reader testing** — covered by the Academic theme review
+  (#47) and per-theme PRs.
+- **Color-contrast remediation beyond AA** — AAA is non-binding.
+- **Runtime / production analytics** — there is no telemetry.
+- **Per-block a11y features** — those land in the per-block PRs (#9-#22).
+
+When in doubt, file an issue with the `accessibility` label rather than
+relaxing a rule in the suite.
 
 ## Filing issues
 
