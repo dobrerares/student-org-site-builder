@@ -18,6 +18,11 @@ import { emitTokenRoot } from "./tokens.js";
 import { STUB_THEME_CSS, STUB_THEME_ID } from "./themes/stub.js";
 import { MINIMAL_THEME_CSS, MINIMAL_THEME_ID } from "./themes/minimal.js";
 import { MODERN_THEME_CSS, MODERN_THEME_ID } from "./themes/modern.js";
+import {
+  EDITORIAL_THEME_CSS,
+  EDITORIAL_THEME_ID,
+  EDITORIAL_THEME_TOKENS,
+} from "./themes/editorial.js";
 
 export interface RenderOptions {
   /**
@@ -60,25 +65,34 @@ export function renderSite(data: Site, themeId: string, opts?: RenderOptions): s
 }
 
 function composeCss(site: Site, themeId: string): string {
-  const root = emitTokenRoot(site);
+  const root = emitTokenRoot(site, themeDefaultsFor(themeId));
   const themeCss = themeCssFor(themeId);
   return `${root}\n${themeCss}`;
 }
 
 function themeCssFor(themeId: string): string {
+  if (themeId === EDITORIAL_THEME_ID) return EDITORIAL_THEME_CSS;
   if (themeId === STUB_THEME_ID) return STUB_THEME_CSS;
   if (themeId === MINIMAL_THEME_ID) return MINIMAL_THEME_CSS;
   if (themeId === MODERN_THEME_ID) return MODERN_THEME_CSS;
   // Unknown / future themes fall back to the stub layout. This keeps the
   // renderer functional even before the themes package lands its full set
-  // (#29, #30, #47). The themes package will register itself by id when it
+  // (#30, #47). The themes package will register itself by id when it
   // arrives.
   return STUB_THEME_CSS;
+}
+
+function themeDefaultsFor(themeId: string): Readonly<Record<string, string>> | undefined {
+  if (themeId === EDITORIAL_THEME_ID) return EDITORIAL_THEME_TOKENS;
+  // The stub theme deliberately ships no curated defaults — it leans on the
+  // baseline values in `tokens.ts` so framework tests stay anchored.
+  return undefined;
 }
 
 export { STUB_THEME_ID } from "./themes/stub.js";
 export { MINIMAL_THEME_ID } from "./themes/minimal.js";
 export { MODERN_THEME_ID } from "./themes/modern.js";
+export { EDITORIAL_THEME_ID } from "./themes/editorial.js";
 export {
   homePageIndex,
   homePagePathForLanguage,
