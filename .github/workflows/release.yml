@@ -1,5 +1,5 @@
-# Release workflow — builds + publishes per-platform installers when a
-# version tag (`v*`) is pushed.
+# Release workflow — on a `v*` tag push, builds + publishes per-platform
+# installers and deploys the hosted browser editor to Cloudflare Pages.
 #
 # Triggers
 # --------
@@ -37,6 +37,38 @@
 # `mac.identity: null` line in `electron-builder.config.cjs` makes the
 # unsigned build explicit. Users open the app via right-click → Open on
 # first launch.
+#
+# Browser editor deploy
+# ---------------------
+# The hosted browser editor (`@sosb/browser-shell`) publishes via two
+# paths on the same `v*` tag, so desktop and browser users always run the
+# same release:
+#
+#   1. The single-file archival HTML is attached as an asset on the
+#      GitHub Release (offline-friendly: officers can save the `.html`
+#      and open it from anywhere, even from a USB stick).
+#   2. The same HTML deploys to Cloudflare Pages so non-technical users
+#      can hit a stable URL without downloading anything.
+#
+# The deploy job has `needs: build`, so a failure on any platform
+# installer aborts both browser-publication paths and leaves the previous
+# release live. The attach step runs before the CF deploy: if CF fails,
+# the archival HTML is still preserved on the GitHub Release as a
+# fallback distribution channel.
+#
+# We use `cloudflare/wrangler-action@v3` (not the deprecated
+# `cloudflare/pages-action`) so the same `wrangler pages deploy` command
+# works locally and in CI. `--branch=main` routes the upload to the
+# project's production deployment; CF Pages treats any other branch label
+# as a preview. The CF project's configured production branch must match.
+#
+# Required repository secrets:
+#   - CLOUDFLARE_API_TOKEN  (token with Account → Pages → Edit permission)
+#   - CLOUDFLARE_ACCOUNT_ID (visible in the Cloudflare dashboard sidebar)
+#
+# One-time setup: create a Pages project in the Cloudflare dashboard whose
+# slug matches `--project-name` below (currently `student-org-site-builder`).
+# Rename the slug here if your CF project uses a different one.
 
 name: Release
 
@@ -89,12 +121,60 @@ jobs:
       - name: Build workspace
         run: pnpm build
 
+      # `pnpm --filter @sosb/electron-shell exec` scopes execution to the
+      # package that owns the `electron-builder` devDep — pnpm workspaces
+      # are isolated by default, so the binary isn't on PATH from root.
+      # cwd becomes `packages/electron-shell/`, so the `--config` path is
+      # relative to that package.
       - name: Package + publish (electron-builder)
         if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.dryRun != 'true' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm exec electron-builder --config packages/electron-shell/electron-builder.config.cjs --publish always
+        run: pnpm --filter @sosb/electron-shell exec electron-builder --config electron-builder.config.cjs --publish always
 
       - name: Package only (dry run)
         if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dryRun == 'true' }}
-        run: pnpm exec electron-builder --config packages/electron-shell/electron-builder.config.cjs --publish never
+        run: pnpm --filter @sosb/electron-shell exec electron-builder --config electron-builder.config.cjs --publish never
+
+  deploy-browser:
+    name: Publish browser editor (Releases + Cloudflare Pages)
+    runs-on: ubuntu-latest
+    needs: build
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.dryRun != 'true' }}
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      # Node 22 (not 20 like the build matrix): Wrangler 4 — used by
+      # `cloudflare/wrangler-action@v3` to talk to Cloudflare Pages —
+      # requires Node ≥ 22. The desktop build matrix stays on Node 20
+      # because that's the project's documented engine requirement and
+      # what's validated across Linux/macOS/Windows.
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Enable Corepack (pnpm)
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build archival HTML (hosted browser editor)
+        run: pnpm --filter @sosb/browser-shell build:archival
+
+      - name: Attach archival HTML to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: packages/browser-shell/dist/archival/builder.html
+
+      - name: Publish to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: >-
+            pages deploy packages/browser-shell/dist/archival
+            --project-name=student-org-site-builder
+            --branch=main
