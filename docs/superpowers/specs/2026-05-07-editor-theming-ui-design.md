@@ -68,12 +68,15 @@ packages/themes/src/registry.ts            (NEW)
 
 packages/themes/src/index.ts               (MODIFIED — add registry exports)
 
-packages/renderer/src/themes/<theme>.ts    (MODIFIED, 5 files)
-  - per-theme `*_THEME_TOKENS` objects move into registry's `tokenDefaults`
-  - renderer imports the descriptor and reads `.tokenDefaults`
-  - CSS modules unchanged
-  - net behavior unchanged: `themeCssFor(themeId)` and the per-theme defaults
-    flow exactly as today, just sourced from one place
+packages/renderer/src/themes/<theme>.ts    (UNCHANGED)
+  - The renderer keeps owning its per-theme constants (e.g. `ACADEMIC_THEME_TOKENS`
+    as `[cssProp, value]` array, `EDITORIAL_THEME_TOKENS` as schema-keyed record).
+  - These already include renderer-internal extras (type scale, measures, etc.)
+    that have no place in a cross-package metadata registry.
+  - The registry IMPORTS these constants and derives only the schema-keyed
+    subset (6 tokens) it needs for the editor's `<TokenForm>` placeholders.
+  - Net behavior unchanged: the renderer's `themeCssFor`, `themeDefaultsFor`,
+    and `themeBaselineTokensFor` switches all keep working exactly as today.
 
 packages/wizard/src/steps/identity.tsx     (MODIFIED)
   - delete the local `THEMES` array
@@ -376,11 +379,12 @@ Windows isn't acceptable without the fallback being equivalently nice.
 
 ## Out-of-band: assumptions worth flagging
 
-1. The renderer's per-theme `*_THEME_TOKENS` objects are already read
-   exactly once each (in `themeCssFor`'s switch). Moving them into the
-   registry is mechanical. If any theme reads its own tokens for an
-   internal computation, that's surprising and should be caught in
-   testing.
+1. The renderer's per-theme token constants come in two shapes today:
+   schema-keyed records (`EDITORIAL_THEME_TOKENS`) and raw `[cssProp,
+   value]` arrays with renderer-internal extras (`ACADEMIC_THEME_TOKENS`,
+   `CIVIC_THEME_BASELINE_TOKENS`). The registry derives a schema-keyed
+   subset from whichever shape each theme uses, so both layouts can
+   continue to coexist. The renderer keeps its current switches.
 2. The wizard's existing translation strings for the 5 themes
    (`packages/i18n/...` keys for theme labels and descriptions) are the
    starting point for the registry's `label`/`description` fields. The
@@ -397,9 +401,11 @@ Windows isn't acceptable without the fallback being equivalently nice.
 
 Implementation arrives in dependency order:
 
-1. **Registry first.** `packages/themes/src/registry.ts` + index export +
-   migrate the renderer's per-theme token defaults to read from it.
-   Wizard switches to consume it. (Pure refactor, no UI change.)
+1. **Registry first.** `packages/themes/src/registry.ts` + index export.
+   Registry imports each theme's existing token constants from the
+   renderer and derives the schema-keyed subset it needs. Wizard switches
+   to consume the registry's `label`/`description`. Renderer untouched.
+   (Pure additive change, no UI change yet.)
 2. **Contrast util.** `packages/editor-app/src/contrast.ts` + unit tests.
    (Standalone module, easy to land.)
 3. **`<ThemeEditor>` component.** Build it against the registry; keep it
