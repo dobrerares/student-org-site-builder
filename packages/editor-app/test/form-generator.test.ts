@@ -80,6 +80,59 @@ describe("fieldsFromSchema — composition", () => {
   });
 });
 
+describe("form-generator custom dispatch (ADR 0043)", () => {
+  test("emits a custom node when a path matches a renderer override", () => {
+    const schema = z.object({
+      themeId: z.string().min(1),
+    });
+    const overrides = [{ path: "themeId", renderer: "theme-picker" }];
+    const fields = fieldsFromSchema(schema, { overrides });
+    const node = fields[0]!;
+    expect(node.kind).toBe("custom");
+    if (node.kind === "custom") {
+      expect(node.renderer).toBe("theme-picker");
+    }
+  });
+
+  test("emits a custom node when a schema matches the registry", () => {
+    const InnerSchema = z.object({ hash: z.string(), mime: z.string() });
+    const outer = z.object({ asset: InnerSchema });
+    const fields = fieldsFromSchema(outer, {
+      schemaRenderers: new Map([[InnerSchema, "asset-picker"]]),
+    });
+    // The "asset" field should be a custom node, not an object node.
+    const node = fields[0]!;
+    expect(node.kind).toBe("custom");
+    if (node.kind === "custom") {
+      expect(node.renderer).toBe("asset-picker");
+    }
+  });
+
+  test("passes through default rendering when no override applies", () => {
+    const schema = z.object({ name: z.string() });
+    const fields = fieldsFromSchema(schema, {});
+    const node = fields[0]!;
+    expect(node.kind).toBe("string");
+  });
+
+  test("attaches label override to default nodes", () => {
+    const schema = z.object({ slug: z.string() });
+    const overrides = [{ path: "slug", label: "Page address" }];
+    const fields = fieldsFromSchema(schema, { overrides });
+    const node = fields[0]!;
+    expect(node.kind).toBe("string");
+    expect(node.label).toBe("Page address");
+  });
+
+  test("attaches tier override to default nodes", () => {
+    const schema = z.object({ slug: z.string() });
+    const overrides = [{ path: "slug", tier: "advanced" as const }];
+    const fields = fieldsFromSchema(schema, { overrides });
+    const node = fields[0]!;
+    expect(node.tier).toBe("advanced");
+  });
+});
+
 describe("fieldsFromSchema — site spine integration", () => {
   test("picks up org.name as a required string", () => {
     const fields = fieldsFromSchema(SiteSchema);

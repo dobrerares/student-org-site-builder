@@ -242,6 +242,15 @@ function FieldRenderer({
           </select>
         </label>
       );
+
+    case "custom":
+      // TODO(T4/T11): mount the registered custom widget. The form-generator
+      // emits `"custom"` nodes for both schema-identity dispatch (e.g.,
+      // `AssetRefSchema` → asset-picker) and path-keyed dispatch (e.g.,
+      // `theme.id` → theme-picker). For now we render nothing so the type
+      // checker is satisfied and the existing forms keep working until the
+      // widget-mounting follow-up tasks land.
+      return <span data-field={dottedPath} data-kind="custom" data-renderer={node.renderer} />;
   }
 }
 
