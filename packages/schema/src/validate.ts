@@ -10,17 +10,23 @@ import { checkSlug } from "./slug.js";
  * losing data; closed-set discipline is enforced here as a warning-tier
  * rule (`site.theme.id.unknown`).
  *
- * This list duplicates the `*_THEME_ID` exports in
- * `@sosb/renderer/src/themes/*` because the schema package must not depend
+ * This list duplicates the `KNOWN_THEME_IDS` export in
+ * `@sosb/renderer/src/index.tsx` because the schema package must not depend
  * on the renderer (the dependency direction is renderer → schema). The
  * duplication is intentional and tracked for consolidation in T17 of the
  * 2026-05-11 form-overrides plan (export `ALL_THEME_IDS` from the renderer
  * if it can do so cleanly, otherwise accept the duplication).
  *
+ * The name carries the `_FOR_VALIDATION` suffix to signal "this is what
+ * the validator considers known"; consumers building picker UX should pull
+ * the theme catalog from `@sosb/editor-app` instead. The renderer-side
+ * `KNOWN_THEME_IDS` and this list are kept in sync by a cross-package
+ * drift-guard test in `packages/renderer/test/`.
+ *
  * `stub` is a real registered theme and round-trips successfully; it is
  * hidden from the editor's UI catalog but must NOT trigger the warning.
  */
-const KNOWN_THEME_IDS: readonly string[] = [
+export const KNOWN_THEME_IDS_FOR_VALIDATION: readonly string[] = [
   "academic",
   "civic",
   "editorial",
@@ -319,12 +325,12 @@ function runSiteRules(site: z.infer<typeof SiteSchema>, result: ValidationResult
   // The schema accepts any non-empty string so a future or third-party
   // theme round-trips without data loss; this rule surfaces the
   // closed-set expectation as a quality nudge without blocking publish.
-  if (!KNOWN_THEME_IDS.includes(site.theme.id)) {
+  if (!KNOWN_THEME_IDS_FOR_VALIDATION.includes(site.theme.id)) {
     result.warnings.push({
       severity: "warning",
       path: ["theme", "id"],
       code: "site.theme.id.unknown",
-      message: `Theme id "${site.theme.id}" is not one of the canonical themes (${KNOWN_THEME_IDS.join(", ")}).`,
+      message: `Theme id "${site.theme.id}" is not one of the canonical themes (${KNOWN_THEME_IDS_FOR_VALIDATION.join(", ")}).`,
     });
   }
 }

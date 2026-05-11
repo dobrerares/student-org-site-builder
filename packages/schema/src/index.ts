@@ -152,7 +152,7 @@ export type {
 } from "./blocks/index.js";
 
 // Validation
-export { validate, validateBlock } from "./validate.js";
+export { KNOWN_THEME_IDS_FOR_VALIDATION, validate, validateBlock } from "./validate.js";
 export type { Severity, ValidationIssue, ValidationResult } from "./validate.js";
 
 // Migration
