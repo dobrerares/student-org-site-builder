@@ -1,14 +1,16 @@
 // @vitest-environment jsdom
 /**
  * Tests for the ThemeForm component — the form behind the theme
- * drill-in (ADR 0043). In Phase 1 it only contains the ThemePicker;
- * theme tokens land in Phase 3 (T13-T15).
+ * drill-in (ADR 0043). Phase 3 (this batch) adds the six theme-token
+ * widgets (ColorPicker × 2, FontPicker × 2, NamedValueSelect × 2) on
+ * top of the ThemePicker landed in Phase 1.
  *
  * Per ADR 0044 (no technical field escape hatches) the form must
- * never expose a raw `<input type="text">` for `theme.id`.
+ * never expose a raw `<input type="text">` for `theme.id` or any
+ * token slot — the only entry points are the structural pickers.
  */
 import { afterEach, describe, expect, test } from "vitest";
-import { cleanup, render } from "@testing-library/preact";
+import { cleanup, fireEvent, render } from "@testing-library/preact";
 import type { Site } from "@sosb/schema";
 
 import { ThemeForm } from "../src/theme-form.js";
@@ -39,5 +41,57 @@ describe("ThemeForm", () => {
     const site = { theme: { id: "academic" } } as unknown as Site;
     const { container } = render(<ThemeForm site={site} onChange={() => {}} />);
     expect(container.querySelector('input[type="text"]')).toBeNull();
+  });
+
+  test("ThemeForm renders all six theme-token widgets", () => {
+    const site = { theme: { id: "academic" } };
+    const { container } = render(<ThemeForm site={site as unknown as Site} onChange={() => {}} />);
+    expect(container.querySelectorAll('[data-testid="color-picker"]').length).toBe(2);
+    expect(container.querySelectorAll('[data-testid="font-picker"]').length).toBe(2);
+    expect(container.querySelectorAll('[data-testid="named-value-select"]').length).toBe(2);
+  });
+
+  test("ThemeForm onChange for a color token writes to site.theme.tokens", () => {
+    let next: Site | null = null;
+    const site = { theme: { id: "academic" } };
+    const { container } = render(
+      <ThemeForm site={site as unknown as Site} onChange={(s) => (next = s)} />,
+    );
+    const firstColorInput = container.querySelector('input[type="color"]') as HTMLInputElement;
+    fireEvent.input(firstColorInput, { target: { value: "#ff0000" } });
+    expect(next?.theme.tokens?.colorPrimary).toBe("#ff0000");
+  });
+
+  test("ThemeForm onChange for a font token writes to site.theme.tokens", () => {
+    let next: Site | null = null;
+    const site = { theme: { id: "academic" } };
+    const { container } = render(
+      <ThemeForm site={site as unknown as Site} onChange={(s) => (next = s)} />,
+    );
+    // headline picker is the first font-picker
+    const headlineSelect = container.querySelector(
+      '[data-testid="font-picker"][data-kind="headline"] select',
+    ) as HTMLSelectElement;
+    fireEvent.change(headlineSelect, { target: { value: "Lora" } });
+    expect(next?.theme.tokens?.fontHeadline).toBe("Lora");
+  });
+
+  test("ThemeForm preserves existing tokens when updating a single token", () => {
+    let next: Site | null = null;
+    const site = {
+      theme: {
+        id: "academic",
+        tokens: { colorPrimary: "#111111", fontBody: "Inter" },
+      },
+    };
+    const { container } = render(
+      <ThemeForm site={site as unknown as Site} onChange={(s) => (next = s)} />,
+    );
+    const accentInput = container.querySelectorAll('input[type="color"]')[1] as HTMLInputElement;
+    fireEvent.input(accentInput, { target: { value: "#aa00aa" } });
+    expect(next?.theme.tokens?.colorAccent).toBe("#aa00aa");
+    // Other tokens preserved:
+    expect(next?.theme.tokens?.colorPrimary).toBe("#111111");
+    expect(next?.theme.tokens?.fontBody).toBe("Inter");
   });
 });
