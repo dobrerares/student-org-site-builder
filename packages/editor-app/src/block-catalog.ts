@@ -49,17 +49,92 @@ export interface BlockCatalog {
  * their schema; the fallback path keeps the editor running if a registry
  * entry lacks metadata.
  *
- * The PRD calls out the full v1 block matrix (#9-#22). The metadata for
- * those blocks lands when each block ships; today only `hero` is here.
+ * The PRD calls out the full v1 block matrix (#9-#22). All 15 v1 blocks now
+ * have entries here; future blocks should land their metadata in the same
+ * additive shape (the dialog-fallback path stays as a forward-compat safety
+ * net only).
+ *
+ * Entries are kept sorted alphabetically by key for readability.
  */
 const BLOCK_METADATA: Record<
   string,
   { readonly category: BlockCategory; readonly label: string; readonly description: string }
 > = {
+  activitiesList: {
+    category: "optional",
+    label: "Activities list",
+    description: "Image-bearing list of recurring projects or activities the org runs.",
+  },
+  contactCard: {
+    category: "mandatory",
+    label: "Contact card",
+    description: "Address, email, phone, social links, and optional opt-in map embed.",
+  },
+  ctaBanner: {
+    category: "optional",
+    label: "Call-to-action banner",
+    description: "Headline band with a single primary or secondary action button.",
+  },
+  customHTML: {
+    category: "advanced",
+    label: "Custom HTML",
+    description:
+      "Power-user escape hatch for niche embeds. Sanitised by default; raw mode is opt-in.",
+  },
+  documentDownloads: {
+    category: "optional",
+    label: "Document downloads",
+    description: "List of downloadable documents (PDF, Office, ZIP) with labels and file sizes.",
+  },
+  embed: {
+    category: "advanced",
+    label: "Embed",
+    description: "Lazy-loaded media embed from a closed whitelist of 8 trusted providers.",
+  },
+  eventList: {
+    category: "optional",
+    label: "Event list",
+    description: "Single-occurrence events with dates, locations, and past-event fade behaviour.",
+  },
+  faq: {
+    category: "optional",
+    label: "FAQ",
+    description: "Question/answer accordion for common visitor questions.",
+  },
   hero: {
     category: "mandatory",
     label: "Hero",
     description: "Page-opening title, subtitle, and optional background image.",
+  },
+  imageGallery: {
+    category: "optional",
+    label: "Image gallery",
+    description: "Grid or masonry of images with optional captions and click-to-enlarge lightbox.",
+  },
+  partnerLogos: {
+    category: "optional",
+    label: "Partner logos",
+    description: "Sponsor or partner credit grid with optional outbound links per logo.",
+  },
+  quote: {
+    category: "optional",
+    label: "Quote",
+    description: "Pull-quote with optional author name, role, and photo.",
+  },
+  richText: {
+    category: "optional",
+    label: "Rich text",
+    description: "Markdown prose section using a strict whitelist (headings, lists, links).",
+  },
+  teamGrid: {
+    category: "optional",
+    label: "Team grid",
+    description: "Photo grid of team members with names, roles, optional bios, and social links.",
+  },
+  valueList: {
+    category: "optional",
+    label: "Value list",
+    description: "Org principles with curated icons in a grid or list layout.",
   },
 };
 

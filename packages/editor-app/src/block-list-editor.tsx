@@ -40,6 +40,15 @@ export interface BlockListEditorProps {
   readonly onMove: (from: number, to: number) => void;
   readonly onRemove: (blockId: string) => void;
   readonly onAddBlock: () => void;
+  /**
+   * Optional drill-in callback. When provided, the row's label/title area
+   * becomes a button that fires this callback with the block's id. The
+   * surrounding editor uses it to mount a per-block inspector. Omitting it
+   * keeps the row labels rendered as plain spans (no drill-in affordance),
+   * which is the legacy behaviour for callers that haven't adopted the
+   * drill-in pattern yet.
+   */
+  readonly onSelect?: (blockId: string) => void;
 }
 
 export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
@@ -134,8 +143,23 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
                 <span aria-hidden="true">⋮⋮</span>
               </span>
 
-              <span data-testid="block-row-label">{entry.label}</span>
-              <span data-testid="block-row-title">{blockTitle}</span>
+              {props.onSelect !== undefined ? (
+                <button
+                  type="button"
+                  data-testid="block-row-select"
+                  data-action="select"
+                  aria-label={`Edit ${entry.label}`}
+                  onClick={(): void => props.onSelect?.(block.id)}
+                >
+                  <span data-testid="block-row-label">{entry.label}</span>
+                  <span data-testid="block-row-title">{blockTitle}</span>
+                </button>
+              ) : (
+                <>
+                  <span data-testid="block-row-label">{entry.label}</span>
+                  <span data-testid="block-row-title">{blockTitle}</span>
+                </>
+              )}
 
               <button
                 type="button"

@@ -13,11 +13,32 @@
  * - A pre-export confirmation dialog shown when the user clicks Export
  *   and the current snapshot has any errors or warnings.
  *
+ * Editor pane shape (ADR 0042 — drill-in inspector):
+ *
+ * The editor pane is no longer a flat stack of forms. It has three view
+ * branches gated on a discriminated `DrillMode`:
+ *
+ * - `{ kind: "blocks" }` (default): PagesList, BlockListEditor (rows expose
+ *   a click target that drills in), Site settings affordance, LocaleToggle.
+ * - `{ kind: "block", blockId }`:    PagesList, back-to-blocks, BlockForm
+ *   for the active block, LocaleToggle.
+ * - `{ kind: "settings" }`:          PagesList, back-to-blocks, SpineForm,
+ *   LocaleToggle.
+ *
+ * Drill-in is triggered by clicking a block row's primary affordance or
+ * the Site settings link; drill-out by clicking the back affordance or
+ * pressing Escape. Switching pages while drilled into a block drills you
+ * back out (the previously-active block isn't on the new page).
+ *
  * Editor responsibilities:
  *
  * - Hold an `EditorState` whose initial site is the prop `initial`.
  * - Walk `SiteSchema` once via `fieldsFromSchema` and pass the field tree
  *   to `<SpineForm>`.
+ * - For each known block type, mount `<BlockForm>` against
+ *   `KnownBlockSchemas[type].shape.data`; patches are composed at path
+ *   `["pages", i, "blocks", j, "data", ...]` and routed through the same
+ *   `applyPatch` pipeline the spine form uses.
  * - On every `EditorState.update`, post the new siteData to the iframe via
  *   the preview-bridge. The iframe also receives a `srcdoc` rewrite for
  *   the structural baseline (so the preview is correct from frame 0, even
@@ -38,8 +59,9 @@
  */
 import type { JSX } from "preact";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import type { Site, ValidationIssue, ValidationResult } from "@sosb/schema";
-import { SiteSchema, validate } from "@sosb/schema";
+import type { BlockEnvelope, Site, ValidationIssue, ValidationResult } from "@sosb/schema";
+import { KnownBlockSchemas, SiteSchema, validate } from "@sosb/schema";
+import type { ZodType } from "zod";
 import {
   createTranslator,
   enCatalog,
@@ -58,6 +80,8 @@ import { PagesList } from "./pages-list.js";
 import { addLanguageVersion, addPage, clonePage, deletePage, movePage } from "./pages-ops.js";
 import { AddBlockDialog } from "./add-block-dialog.js";
 import { BlockListEditor } from "./block-list-editor.js";
+import { BlockForm } from "./block-form.js";
+import { buildBlockCatalog } from "./block-catalog.js";
 import { defaultBlockFor } from "./block-defaults.js";
 import { createPreviewHost } from "@sosb/preview-bridge";
 import {
@@ -97,6 +121,25 @@ export interface EditorAppProps {
 }
 
 type TabName = "editor" | "preview";
+
+/**
+ * Discriminated drill state for the editor pane.
+ *
+ * - `{ kind: "blocks" }`         the un-drilled default — pages list, block
+ *                                list, site-settings affordance, locale.
+ * - `{ kind: "block", blockId }` per-block inspector for the active page's
+ *                                block whose id matches.
+ * - `{ kind: "settings" }`       the site-spine inspector (SpineForm).
+ *
+ * The state is intentionally local to the editor pane; the preview pane
+ * and tab strip are unaffected. Switching pages drills you back out (the
+ * previously-active block isn't on the new page) — see the page-switch
+ * effect below.
+ */
+type DrillMode =
+  | { readonly kind: "blocks" }
+  | { readonly kind: "block"; readonly blockId: string }
+  | { readonly kind: "settings" };
 
 export function EditorApp(props: EditorAppProps): JSX.Element {
   const translatorRef = useRef<Translator>();
@@ -145,6 +188,11 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   useEffect(() => state.subscribe(setSnapshot), [state]);
 
   const fields = useMemo(() => fieldsFromSchema(SiteSchema), []);
+  // Block catalog memo — used both by the un-drilled block list (indirectly,
+  // through its own `buildBlockCatalog()` call) and by the inspector
+  // header. Lifted to the top of the component so it lives outside the
+  // conditional render branches.
+  const blockCatalog = useMemo(() => buildBlockCatalog(), []);
 
   // Validation result is recomputed on every snapshot change. `validate()`
   // is pure / cheap — running it inline keeps the panel and footer
@@ -242,6 +290,59 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   // explicitly so they stay un-coupled from index assumptions.
   const activePageSlug = snapshot.pages[safeActivePageIndex]?.slug ?? "";
 
+  // Drill state. Defaults to `blocks` on first mount and resets to it
+  // whenever the user switches pages — the previously-active block isn't
+  // on the new page, so the inspector would dangle. See the
+  // `prevPageRef`-driven effect below.
+  const [drillMode, setDrillMode] = useState<DrillMode>({ kind: "blocks" });
+  const prevPageIndexRef = useRef<number>(safeActivePageIndex);
+  useEffect(() => {
+    if (prevPageIndexRef.current === safeActivePageIndex) return;
+    prevPageIndexRef.current = safeActivePageIndex;
+    // Page switched while drilled into a block — drill back out so the
+    // user lands on the new page's block list instead of staring at a
+    // mounted form whose block is no longer in scope.
+    setDrillMode((current) => (current.kind === "block" ? { kind: "blocks" } : current));
+  }, [safeActivePageIndex]);
+
+  // Escape from a drilled view returns to the un-drilled list. Only the
+  // `block` and `settings` modes consume Escape; the `blocks` (default)
+  // mode lets it bubble normally.
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key !== "Escape") return;
+      setDrillMode((current) => {
+        if (current.kind === "blocks") return current;
+        return { kind: "blocks" };
+      });
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
+
+  // The block currently mounted in the inspector, or null if not in
+  // `block` drill mode (or the id has gone stale after a structural edit).
+  // The lookup is intentionally cheap — block lists are short.
+  const activePage = snapshot.pages[safeActivePageIndex];
+  const activeBlockIndex =
+    drillMode.kind === "block"
+      ? (activePage?.blocks ?? []).findIndex((b) => b.id === drillMode.blockId)
+      : -1;
+  const activeBlock: BlockEnvelope | undefined =
+    drillMode.kind === "block" && activeBlockIndex >= 0
+      ? activePage?.blocks?.[activeBlockIndex]
+      : undefined;
+  // If the user removed the block they were drilled into (via the row's
+  // Remove control on a previous render), fall back to the un-drilled
+  // view rather than rendering an empty inspector.
+  useEffect(() => {
+    if (drillMode.kind === "block" && activeBlock === undefined) {
+      setDrillMode({ kind: "blocks" });
+    }
+  }, [drillMode, activeBlock]);
+
   // Site Health panel disclosure + export-confirm dialog state.
   const [panelOpen, setPanelOpen] = useState<boolean>(false);
   const [exportDialog, setExportDialog] = useState<ValidationResult | null>(null);
@@ -272,6 +373,37 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     // changing the public API. The bounded history capacity keeps memory
     // cost predictable.
     pushHistory(state.getSnapshot());
+  }
+
+  /**
+   * Compose a block-data patch path. The `BlockForm` emits paths *inside*
+   * the block's data (e.g. `["title"]`); we re-root them under the
+   * page-and-block scope: `["pages", pageIndex, "blocks", blockIndex,
+   * "data", ...sub]`. Same `applyPatch` plumbing as the spine form, just
+   * with a longer prefix.
+   */
+  function patchBlockData(
+    pageIndex: number,
+    blockIndex: number,
+    subpath: readonly (string | number)[],
+    value: unknown,
+  ): void {
+    patch(["pages", pageIndex, "blocks", blockIndex, "data", ...subpath], value);
+  }
+
+  /**
+   * Replace an entire array inside a block's data — used by `BlockForm`'s
+   * add/remove/reorder controls (the add-item button, etc.). Goes through
+   * the same patch pipeline so the history stack and validation flow stay
+   * consistent with leaf edits.
+   */
+  function arrayChangeBlockData(
+    pageIndex: number,
+    blockIndex: number,
+    subpath: readonly (string | number)[],
+    next: unknown[],
+  ): void {
+    patch(["pages", pageIndex, "blocks", blockIndex, "data", ...subpath], next);
   }
 
   const [pickerOpen, setPickerOpen] = useState<boolean>(false);
@@ -338,10 +470,52 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     setActivePageIndex(snapshot.pages.length);
   }
 
+  // When a Site Health issue is clicked we may need to drill into the
+  // right inspector before the target field exists in the DOM. The pending
+  // issue is stashed here and consumed by an effect that runs after the
+  // drill state's re-render flushes.
+  const pendingIssueRef = useRef<ValidationIssue | null>(null);
+
   function handleJump(issue: ValidationIssue): void {
-    const root = rootRef.current ?? document;
-    navigateToIssue(root, issue);
+    // Path-shape routing:
+    //   ["pages", N, "blocks", M, "data", ...] → drill into that block.
+    //   anything else (org.*, theme.*, defaultLanguage, pages summary) →
+    //                                            drill into Site settings.
+    const path = issue.path;
+    let nextDrill: DrillMode | null = null;
+    if (
+      path.length >= 5 &&
+      path[0] === "pages" &&
+      typeof path[1] === "number" &&
+      path[2] === "blocks" &&
+      typeof path[3] === "number" &&
+      path[4] === "data"
+    ) {
+      const pageIndex = path[1];
+      const blockIndex = path[3];
+      const targetPage = snapshot.pages[pageIndex];
+      const targetBlock = targetPage?.blocks?.[blockIndex];
+      if (targetBlock !== undefined) {
+        if (pageIndex !== safeActivePageIndex) setActivePageIndex(pageIndex);
+        nextDrill = { kind: "block", blockId: targetBlock.id };
+      }
+    }
+    if (nextDrill === null) nextDrill = { kind: "settings" };
+    setDrillMode(nextDrill);
+    pendingIssueRef.current = issue;
   }
+
+  // After drill mode settles, attempt the deferred navigation. Runs every
+  // render so the queued issue resolves once the corresponding form has
+  // mounted and emitted its `[data-field="..."]` inputs.
+  useEffect(() => {
+    if (pendingIssueRef.current === null) return;
+    const issue = pendingIssueRef.current;
+    const root = rootRef.current ?? document;
+    if (navigateToIssue(root, issue)) {
+      pendingIssueRef.current = null;
+    }
+  });
 
   function handleExportClick(): void {
     const result = validationResult;
@@ -363,28 +537,123 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     setExportDialog(null);
   }
 
+  const pagesListNode = (
+    <PagesList
+      site={snapshot}
+      activeIndex={safeActivePageIndex}
+      onSelect={setActivePageIndex}
+      onAdd={handleAddPage}
+      onClone={handleClonePage}
+      onDelete={handleDeletePage}
+      onMove={handleMovePage}
+      onAddLanguageVersion={handleAddLanguageVersion}
+    />
+  );
+
+  // Back-affordance shared by the two drilled views. Drills out to the
+  // un-drilled `blocks` view, mirroring the Escape keyboard handler.
+  const backToBlocksButton = (
+    <button
+      type="button"
+      data-testid="drill-back"
+      data-action="drill-back"
+      onClick={() => setDrillMode({ kind: "blocks" })}
+    >
+      Back to blocks
+    </button>
+  );
+
+  // The inspector's eyebrow + title use the same catalog as the
+  // BlockListEditor row that drilled in, keeping visual register aligned.
+  let editorPaneBody: JSX.Element;
+  if (drillMode.kind === "settings") {
+    editorPaneBody = (
+      <div data-testid="inspector" data-inspector-mode="settings">
+        {backToBlocksButton}
+        <header data-testid="inspector-header">
+          <span data-testid="inspector-eyebrow">Site</span>
+          <h2>Site settings</h2>
+        </header>
+        <SpineForm fields={fields} site={snapshot} onPatch={patch} />
+      </div>
+    );
+  } else if (drillMode.kind === "block" && activeBlock !== undefined && activeBlockIndex >= 0) {
+    const envelope = KnownBlockSchemas[activeBlock.type as keyof typeof KnownBlockSchemas];
+    // The envelope is `{ id, type, version, data: <DataSchema> }`. The
+    // generic form generator wants the data schema directly so it walks
+    // only the user-editable payload.
+    const dataSchema =
+      envelope !== undefined
+        ? ((envelope as unknown as { shape: { data: ZodType } }).shape.data ?? envelope)
+        : undefined;
+    const entry = blockCatalog.entryFor(activeBlock.type);
+    const blockTitle =
+      typeof (activeBlock.data as { title?: unknown })?.title === "string"
+        ? (activeBlock.data as { title: string }).title
+        : entry.label;
+    editorPaneBody = (
+      <div
+        data-testid="inspector"
+        data-inspector-mode="block"
+        data-block-id={activeBlock.id}
+        data-block-type={activeBlock.type}
+      >
+        {backToBlocksButton}
+        <header data-testid="inspector-header">
+          <span data-testid="inspector-eyebrow">{entry.label}</span>
+          <h2>{blockTitle}</h2>
+        </header>
+        {dataSchema !== undefined ? (
+          <BlockForm
+            schema={dataSchema}
+            data={activeBlock.data}
+            onPatch={(subpath, value) =>
+              patchBlockData(safeActivePageIndex, activeBlockIndex, subpath, value)
+            }
+            onArrayChange={(subpath, next) =>
+              arrayChangeBlockData(safeActivePageIndex, activeBlockIndex, subpath, next)
+            }
+          />
+        ) : (
+          // Unknown block type — surface a soft hint rather than crashing.
+          // Future blocks land in `KnownBlockSchemas` and this branch
+          // disappears for them.
+          <p data-testid="inspector-unknown-type">
+            No editor available for block type "{activeBlock.type}".
+          </p>
+        )}
+      </div>
+    );
+  } else {
+    editorPaneBody = (
+      <>
+        {activePageSlug !== "" ? (
+          <BlockListEditor
+            site={snapshot}
+            pageSlug={activePageSlug}
+            onMove={onMoveBlock}
+            onRemove={onRemoveBlock}
+            onAddBlock={() => setPickerOpen(true)}
+            onSelect={(blockId) => setDrillMode({ kind: "block", blockId })}
+          />
+        ) : null}
+        <button
+          type="button"
+          data-testid="site-settings-link"
+          data-action="drill-settings"
+          onClick={() => setDrillMode({ kind: "settings" })}
+        >
+          <span data-testid="site-settings-link-label">Site settings</span>
+          <span data-testid="site-settings-link-hint">org · theme · languages</span>
+        </button>
+      </>
+    );
+  }
+
   const editorPane = (
     <section data-testid="editor-pane" aria-label={t("pane.editor.label")}>
-      <PagesList
-        site={snapshot}
-        activeIndex={safeActivePageIndex}
-        onSelect={setActivePageIndex}
-        onAdd={handleAddPage}
-        onClone={handleClonePage}
-        onDelete={handleDeletePage}
-        onMove={handleMovePage}
-        onAddLanguageVersion={handleAddLanguageVersion}
-      />
-      <SpineForm fields={fields} site={snapshot} onPatch={patch} />
-      {activePageSlug !== "" ? (
-        <BlockListEditor
-          site={snapshot}
-          pageSlug={activePageSlug}
-          onMove={onMoveBlock}
-          onRemove={onRemoveBlock}
-          onAddBlock={() => setPickerOpen(true)}
-        />
-      ) : null}
+      {pagesListNode}
+      {editorPaneBody}
       <LocaleToggle />
     </section>
   );

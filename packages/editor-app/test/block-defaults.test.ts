@@ -44,4 +44,23 @@ describe("defaultBlockFor", () => {
     expect(block.version).toBe(1);
     expect(block.data).toEqual({});
   });
+
+  /**
+   * Per ADR 0042, every block type in the registry has a `DEFAULT_BUILDERS`
+   * entry that emits schema-valid placeholder data. Each registry key gets
+   * a smoke test asserting the produced envelope passes its schema's parser
+   * — without this loop a regression in any one builder (wrong field name,
+   * stale enum, missing required member) silently lands a block that the
+   * editor surfaces as broken at first edit.
+   */
+  describe("per-type defaults pass each block schema's parser", () => {
+    for (const type of Object.keys(KnownBlockSchemas)) {
+      test(`${type} default round-trips through the schema`, () => {
+        const block = defaultBlockFor(type);
+        expect(block.type).toBe(type);
+        const schema = KnownBlockSchemas[type as keyof typeof KnownBlockSchemas];
+        expect(() => schema.parse(block)).not.toThrow();
+      });
+    }
+  });
 });

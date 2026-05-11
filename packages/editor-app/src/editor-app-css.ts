@@ -505,6 +505,166 @@ body {
 [data-testid="block-row"] > [data-testid="block-move-down"] { grid-column: 4; grid-row: 1 / -1; }
 [data-testid="block-row"] > [data-testid="block-remove"] { grid-column: 5; grid-row: 1 / -1; }
 
+/* Drill-in select button — wraps the row's label/title and acts as the
+ * primary "edit this block" affordance. Sits inside the row's CSS grid
+ * at column 2, spanning both rows; spans inside use a column flex so
+ * label-on-top / title-below stays visually identical to the legacy
+ * non-button layout. Reset typical button chrome so the row reads as a
+ * single text-target rather than a chunky pill. */
+[data-testid="block-row"] > [data-testid="block-row-select"] {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  color: inherit;
+  font: inherit;
+  letter-spacing: 0;
+  border-radius: var(--corner);
+  transition: color var(--transition);
+}
+[data-testid="block-row"] > [data-testid="block-row-select"]:hover:not(:disabled):not([disabled]) {
+  background: transparent;
+  border-color: transparent;
+}
+[data-testid="block-row"] > [data-testid="block-row-select"]:hover [data-testid="block-row-title"] {
+  color: var(--accent);
+}
+[data-testid="block-row"] > [data-testid="block-row-select"] > [data-testid="block-row-label"],
+[data-testid="block-row"] > [data-testid="block-row-select"] > [data-testid="block-row-title"] {
+  /* Inside the select button the spans no longer need their own grid
+   * placement — the button is the grid cell, they stack via flex. */
+  grid-column: auto;
+  grid-row: auto;
+  display: block;
+}
+
+/* ============================================================
+ * 10b. Drill-in inspector (block / site settings)
+ * ============================================================ */
+[data-testid="editor-pane"] [data-testid="inspector"] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+/* Back-to-blocks affordance — left-aligned text button with an arrow.
+ * Borrows the editorial-link feel: small caps, accent-coloured arrow,
+ * no border so it reads as navigation rather than action. */
+[data-testid="editor-pane"] [data-testid="drill-back"] {
+  align-self: flex-start;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: var(--sp-1) 0;
+  color: var(--ink-2);
+  font-family: var(--font-ui);
+  font-size: var(--step--1);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  font-variant: small-caps;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  transition: color var(--transition);
+}
+[data-testid="editor-pane"] [data-testid="drill-back"]:hover:not(:disabled):not([disabled]) {
+  background: transparent;
+  border-color: transparent;
+  color: var(--accent);
+}
+[data-testid="editor-pane"] [data-testid="drill-back"]::before {
+  content: "←";
+  font-family: var(--font-mono);
+  font-size: var(--step-1);
+  color: var(--accent);
+  line-height: 1;
+}
+/* Inspector header — block label + block title above the form. Uses the
+ * same display family + accent tick the section headings get. */
+[data-testid="editor-pane"] [data-testid="inspector-header"] {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: var(--sp-1);
+  border-bottom: 2px solid var(--ink);
+  position: relative;
+}
+[data-testid="editor-pane"] [data-testid="inspector-header"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 24px;
+  height: 2px;
+  background: var(--accent);
+}
+[data-testid="editor-pane"] [data-testid="inspector-header"] [data-testid="inspector-eyebrow"] {
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  font-weight: 500;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+[data-testid="editor-pane"] [data-testid="inspector-header"] h2 {
+  font-family: var(--font-display);
+  font-size: var(--step-2);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+[data-testid="editor-pane"] [data-testid="inspector-header"] h2::after {
+  display: none;
+}
+/* Site-settings affordance — sits between the block list and the locale
+ * toggle in the un-drilled view. Visual register: looks like a row in
+ * its own one-row "list" so it pairs with the BlockList's chrome. */
+[data-testid="editor-pane"] [data-testid="site-settings-link"] {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: var(--corner);
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  color: var(--ink);
+  transition: border-color var(--transition), color var(--transition), background var(--transition);
+}
+[data-testid="editor-pane"] [data-testid="site-settings-link"]:hover:not(:disabled):not([disabled]) {
+  border-color: var(--ink);
+  background: var(--paper);
+  color: var(--accent);
+}
+[data-testid="editor-pane"] [data-testid="site-settings-link"] [data-testid="site-settings-link-label"] {
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: inherit;
+}
+[data-testid="editor-pane"] [data-testid="site-settings-link"] [data-testid="site-settings-link-hint"] {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  color: var(--ink-3);
+}
+[data-testid="editor-pane"] [data-testid="site-settings-link"]:hover [data-testid="site-settings-link-hint"] {
+  color: var(--accent);
+}
+
 /* ============================================================
  * 11. Forms — fieldsets, legends, inputs
  * ============================================================ */

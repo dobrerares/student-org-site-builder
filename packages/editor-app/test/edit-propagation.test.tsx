@@ -52,6 +52,16 @@ describe("edit propagation via the preview bridge", () => {
       }),
     });
 
+    // The site spine (which carries `org.name`) lives behind the
+    // "Site settings" drill-in affordance per ADR 0042. Click it first so
+    // the SpineForm mounts and the `[data-field="org.name"]` input exists
+    // to receive the keystroke.
+    const drillSettings = container.querySelector<HTMLButtonElement>(
+      '[data-testid="site-settings-link"]',
+    );
+    expect(drillSettings).not.toBeNull();
+    fireEvent.click(drillSettings!);
+
     // Find the org-name input. The form generator renders one input per
     // string field, and we tag each by its dotted path (e.g.
     // `field-org.name`).
