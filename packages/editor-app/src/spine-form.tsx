@@ -6,8 +6,10 @@
  * upstream).
  */
 import type { JSX } from "preact";
+import { useState } from "preact/hooks";
 import type { Site } from "@sosb/schema";
 
+import { AdvancedToggle } from "./advanced-toggle.js";
 import type { FieldNode } from "./form-generator.js";
 import { getAtPath, setAtPath } from "./get-set-path.js";
 import { useTranslator } from "./i18n-context.js";
@@ -19,10 +21,21 @@ export interface SpineFormProps {
 }
 
 export function SpineForm({ fields, site, onPatch }: SpineFormProps): JSX.Element {
+  // Per-form local "Show advanced" toggle state (ADR 0043). Each
+  // SpineForm mount owns its own state — no persistence, no
+  // module-level coupling. Default false.
+  const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   return (
     <form data-testid="spine-form" onSubmit={(event) => event.preventDefault()}>
+      <AdvancedToggle value={showAdvanced} onChange={setShowAdvanced} />
       {fields.map((field) => (
-        <FieldRenderer key={field.path.join(".")} node={field} site={site} onPatch={onPatch} />
+        <FieldRenderer
+          key={field.path.join(".")}
+          node={field}
+          site={site}
+          onPatch={onPatch}
+          showAdvanced={showAdvanced}
+        />
       ))}
     </form>
   );
@@ -32,10 +45,34 @@ interface FieldRendererProps {
   readonly node: FieldNode;
   readonly site: Site;
   readonly onPatch: (path: readonly (string | number)[], value: unknown) => void;
+  /**
+   * Toggle state from the parent SpineForm. Advanced fields render
+   * only when `true`; hidden fields drop regardless (ADR 0043).
+   */
+  readonly showAdvanced: boolean;
 }
 
-function FieldRenderer({ node, site, onPatch }: FieldRendererProps): JSX.Element {
+function FieldRenderer({
+  node,
+  site,
+  onPatch,
+  showAdvanced,
+}: FieldRendererProps): JSX.Element | null {
+  // `useTranslator` must run before any conditional return to satisfy
+  // the Rules of Hooks; the tier gate below is a pure return-null
+  // short-circuit that the renderer applies after every hook fires.
   const t = useTranslator();
+
+  // Tier-based visibility filter (ADR 0043). Hidden fields are NEVER
+  // rendered; advanced fields require the toggle to be on. Default-tier
+  // fields fall through to the normal kind switch below.
+  if (node.tier === "hidden") {
+    return null;
+  }
+  if (node.tier === "advanced" && !showAdvanced) {
+    return null;
+  }
+
   const dottedPath = node.path.join(".");
   const value = getAtPath(site, node.path);
 
@@ -45,7 +82,13 @@ function FieldRenderer({ node, site, onPatch }: FieldRendererProps): JSX.Element
         <fieldset data-field={dottedPath} data-kind="object">
           <legend>{node.name}</legend>
           {node.fields.map((child) => (
-            <FieldRenderer key={child.path.join(".")} node={child} site={site} onPatch={onPatch} />
+            <FieldRenderer
+              key={child.path.join(".")}
+              node={child}
+              site={site}
+              onPatch={onPatch}
+              showAdvanced={showAdvanced}
+            />
           ))}
         </fieldset>
       );

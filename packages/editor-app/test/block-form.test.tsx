@@ -5,6 +5,7 @@ import type { AssetRefLike, ImageGalleryData, ValueListData } from "@sosb/schema
 import { ImageGalleryDataSchema, ValueListDataSchema } from "@sosb/schema";
 
 import { BlockForm } from "../src/block-form.js";
+import type { FieldOverride } from "../src/field-metadata.js";
 
 /**
  * BlockForm + valueList: the AC for issue #10 says "editor form supports
@@ -463,5 +464,147 @@ describe("BlockForm — imageGallery wires AssetPicker per image (ADR 0043, T11)
     expect(patches.length).toBe(1);
     expect(patches[0]!.path).toEqual(["images", 1, "asset"]);
     expect(patches[0]!.value).toEqual(uploaded);
+  });
+});
+
+/**
+ * BlockForm + "Show advanced" toggle (ADR 0043, T16).
+ *
+ * The form holds a per-instance `showAdvanced` flag. Fields whose
+ * metadata declares `tier: "advanced"` are hidden until the toggle is
+ * on; `tier: "hidden"` fields are never rendered regardless of toggle
+ * state. The toggle state is per-component-instance: mounting a second
+ * BlockForm starts hidden again, with no module-level coupling.
+ *
+ * Tests drive the integration by injecting ad-hoc `overrides` (rather
+ * than relying on the production `BLOCK_FIELD_METADATA`, which today
+ * carries only `label` rewrites and no tier markers for block fields).
+ */
+describe("BlockForm — Show advanced toggle (ADR 0043, T16)", () => {
+  afterEach(cleanup);
+
+  function makeValueListData(): ValueListData {
+    return {
+      title: "Our values",
+      intro: "Why we exist",
+      items: [{ label: "Curiosity" }],
+      layout: "grid",
+      columns: 3,
+    };
+  }
+
+  function clickAdvancedToggle(container: HTMLElement): void {
+    const checkbox = container.querySelector<HTMLInputElement>(
+      '[data-testid="advanced-toggle"] input[type="checkbox"]',
+    );
+    expect(checkbox, "advanced toggle should be present in BlockForm").not.toBeNull();
+    fireEvent.click(checkbox!);
+  }
+
+  test("hides tier=advanced fields by default (toggle off)", () => {
+    const overrides: readonly FieldOverride[] = [
+      { path: "intro", tier: "advanced" },
+    ];
+    const { container } = render(
+      <BlockForm
+        schema={ValueListDataSchema}
+        data={makeValueListData()}
+        onPatch={() => {}}
+        onArrayChange={() => {}}
+        newItem={newValueListItem}
+        uploader={noopUploader}
+        overrides={overrides}
+      />,
+    );
+
+    // Default-tier fields stay visible.
+    expect(container.querySelector('[data-field="title"]')).not.toBeNull();
+    // Advanced field is hidden by default.
+    expect(container.querySelector('[data-field="intro"]')).toBeNull();
+  });
+
+  test("reveals tier=advanced fields when the toggle is on", () => {
+    const overrides: readonly FieldOverride[] = [
+      { path: "intro", tier: "advanced" },
+    ];
+    const { container } = render(
+      <BlockForm
+        schema={ValueListDataSchema}
+        data={makeValueListData()}
+        onPatch={() => {}}
+        onArrayChange={() => {}}
+        newItem={newValueListItem}
+        uploader={noopUploader}
+        overrides={overrides}
+      />,
+    );
+
+    expect(container.querySelector('[data-field="intro"]')).toBeNull();
+    clickAdvancedToggle(container);
+    expect(container.querySelector('[data-field="intro"]')).not.toBeNull();
+  });
+
+  test("never renders tier=hidden fields regardless of toggle state", () => {
+    const overrides: readonly FieldOverride[] = [
+      { path: "intro", tier: "hidden" },
+    ];
+    const { container } = render(
+      <BlockForm
+        schema={ValueListDataSchema}
+        data={makeValueListData()}
+        onPatch={() => {}}
+        onArrayChange={() => {}}
+        newItem={newValueListItem}
+        uploader={noopUploader}
+        overrides={overrides}
+      />,
+    );
+
+    // Hidden with toggle off…
+    expect(container.querySelector('[data-field="intro"]')).toBeNull();
+    // …and still hidden with toggle on.
+    clickAdvancedToggle(container);
+    expect(container.querySelector('[data-field="intro"]')).toBeNull();
+  });
+
+  test("toggle state is per-instance (separate mounts have independent state)", () => {
+    const overrides: readonly FieldOverride[] = [
+      { path: "intro", tier: "advanced" },
+    ];
+
+    // Render two BlockForms side by side in separate Preact roots so each
+    // mounts its own `useState` cell. If the toggle state leaked across
+    // instances (e.g. module-level), flipping one would flip both.
+    const first = render(
+      <BlockForm
+        schema={ValueListDataSchema}
+        data={makeValueListData()}
+        onPatch={() => {}}
+        onArrayChange={() => {}}
+        newItem={newValueListItem}
+        uploader={noopUploader}
+        overrides={overrides}
+      />,
+    );
+    const second = render(
+      <BlockForm
+        schema={ValueListDataSchema}
+        data={makeValueListData()}
+        onPatch={() => {}}
+        onArrayChange={() => {}}
+        newItem={newValueListItem}
+        uploader={noopUploader}
+        overrides={overrides}
+      />,
+    );
+
+    // Both start with the advanced field hidden.
+    expect(first.container.querySelector('[data-field="intro"]')).toBeNull();
+    expect(second.container.querySelector('[data-field="intro"]')).toBeNull();
+
+    // Toggle the first form on. The second must stay off.
+    clickAdvancedToggle(first.container);
+    expect(first.container.querySelector('[data-field="intro"]')).not.toBeNull();
+    expect(second.container.querySelector('[data-field="intro"]')).toBeNull();
   });
 });

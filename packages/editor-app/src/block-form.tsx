@@ -26,10 +26,13 @@
  * otherwise emit (the failure mode ADR 0044 prohibits).
  */
 import type { JSX } from "preact";
+import { useState } from "preact/hooks";
 import type { ZodType } from "zod";
 import type { AssetRefLike } from "@sosb/schema";
 import { AssetRefSchema } from "@sosb/schema";
 
+import { AdvancedToggle } from "./advanced-toggle.js";
+import type { FieldOverride } from "./field-metadata.js";
 import { fieldsFromSchema, type FieldNode } from "./form-generator.js";
 import { getAtPath } from "./get-set-path.js";
 import { AssetPicker } from "./asset-picker.js";
@@ -72,14 +75,30 @@ export interface BlockFormProps<TData> {
    * failing loud at mount time.
    */
   readonly uploader: (file: File) => Promise<AssetRefLike>;
+  /**
+   * Path-keyed field-metadata overrides for this block type. The walker
+   * attaches `label` and `tier` to the resulting `FieldNode`s; the
+   * renderer reads `tier` to honour the "Show advanced" toggle (ADR
+   * 0043). Optional — a block type with no metadata renders every
+   * field at the default tier.
+   *
+   * Production callers pass `BLOCK_FIELD_METADATA[blockType]`; tests
+   * can inject ad-hoc overrides to exercise tier hiding.
+   */
+  readonly overrides?: readonly FieldOverride[];
 }
 
 export function BlockForm<TData>(props: BlockFormProps<TData>): JSX.Element {
+  // Per-form local "Show advanced" toggle state (ADR 0043). No
+  // persistence; remounting the form starts hidden again.
+  const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const fields = fieldsFromSchema(props.schema, {
     schemaRenderers: ASSET_PICKER_RENDERERS,
+    overrides: props.overrides ?? [],
   });
   return (
     <form data-testid="block-form" onSubmit={(event) => event.preventDefault()}>
+      <AdvancedToggle value={showAdvanced} onChange={setShowAdvanced} />
       {fields.map((field) => (
         <FieldRenderer
           key={field.path.join(".")}
@@ -89,6 +108,7 @@ export function BlockForm<TData>(props: BlockFormProps<TData>): JSX.Element {
           onArrayChange={props.onArrayChange}
           newItem={props.newItem}
           uploader={props.uploader}
+          showAdvanced={showAdvanced}
         />
       ))}
     </form>
@@ -104,6 +124,12 @@ interface FieldRendererProps {
   // `exactOptionalPropertyTypes: true` without creating a missing-key shape.
   readonly newItem: ((arrayPath: readonly (string | number)[]) => unknown) | undefined;
   readonly uploader: (file: File) => Promise<AssetRefLike>;
+  /**
+   * Current state of the parent form's "Show advanced" toggle. `true`
+   * reveals `tier === "advanced"` fields; `false` hides them. Fields
+   * with `tier === "hidden"` are dropped regardless (ADR 0043).
+   */
+  readonly showAdvanced: boolean;
 }
 
 function FieldRenderer({
@@ -113,7 +139,18 @@ function FieldRenderer({
   onArrayChange,
   newItem,
   uploader,
-}: FieldRendererProps): JSX.Element {
+  showAdvanced,
+}: FieldRendererProps): JSX.Element | null {
+  // Tier-based visibility filter (ADR 0043). Hidden fields are NEVER
+  // rendered; advanced fields require the toggle to be on. Default-tier
+  // fields fall through to the normal kind switch below.
+  if (node.tier === "hidden") {
+    return null;
+  }
+  if (node.tier === "advanced" && !showAdvanced) {
+    return null;
+  }
+
   const dottedPath = node.path.join(".");
   const value = getAtPath(data, node.path);
 
@@ -131,6 +168,7 @@ function FieldRenderer({
               onArrayChange={onArrayChange}
               newItem={newItem}
               uploader={uploader}
+              showAdvanced={showAdvanced}
             />
           ))}
         </fieldset>
@@ -183,6 +221,7 @@ function FieldRenderer({
                     onArrayChange={onArrayChange}
                     newItem={newItem}
                     uploader={uploader}
+                    showAdvanced={showAdvanced}
                   />
                   <div class="block-form__item-controls">
                     <button

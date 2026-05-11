@@ -88,6 +88,7 @@ import {
   type Translator,
 } from "@sosb/i18n";
 
+import { BLOCK_FIELD_METADATA, SPINE_FIELD_METADATA } from "./field-metadata.js";
 import { fieldsFromSchema } from "./form-generator.js";
 import { SpineForm, applyPatch } from "./spine-form.js";
 import { ThemeForm } from "./theme-form.js";
@@ -211,7 +212,13 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   const [historyVersion, setHistoryVersion] = useState<number>(0);
   useEffect(() => state.subscribe(setSnapshot), [state]);
 
-  const fields = useMemo(() => fieldsFromSchema(SiteSchema), []);
+  // Pass the spine-field metadata so the walker attaches tier/label
+  // metadata onto each FieldNode. SpineForm reads `node.tier` to honour
+  // the "Show advanced" toggle (ADR 0043).
+  const fields = useMemo(
+    () => fieldsFromSchema(SiteSchema, { overrides: SPINE_FIELD_METADATA }),
+    [],
+  );
   // Block catalog memo — used both by the un-drilled block list (indirectly,
   // through its own `buildBlockCatalog()` call) and by the inspector
   // header. Lifted to the top of the component so it lives outside the
@@ -687,6 +694,9 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
               arrayChangeBlockData(safeActivePageIndex, activeBlockIndex, subpath, next)
             }
             uploader={uploadAssetForPicker}
+            overrides={
+              BLOCK_FIELD_METADATA[activeBlock.type as keyof typeof BLOCK_FIELD_METADATA] ?? []
+            }
           />
         ) : (
           // Unknown block type — surface a soft hint rather than crashing.
