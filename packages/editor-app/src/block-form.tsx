@@ -17,25 +17,30 @@
  * The block form passes a `schemaRenderers` map into `fieldsFromSchema` so
  * that the walker emits a single `"custom"` node — rather than recursing
  * into structural leaves — for shapes whose user-facing UX is a dedicated
- * widget. Today the canonical entry is `AssetRefSchema → "asset-picker"`:
- * every image-bearing block schema (image-gallery, partner-logos)
- * embeds the SAME `AssetRefSchema` instance, so the registry hits via
- * reference equality and the renderer below mounts `<AssetPicker>` at
- * the `images.[k].asset` / `partners.[k].logo` slot — replacing the
- * hash/path/mime/width/height fieldset that the default walker would
- * otherwise emit (the failure mode ADR 0044 prohibits).
+ * widget. Today the canonical entries are:
+ *  - `AssetRefSchema → "asset-picker"`: every image-bearing block schema
+ *    (image-gallery, partner-logos) embeds the SAME `AssetRefSchema`
+ *    instance, so the registry hits via reference equality and the
+ *    renderer below mounts `<AssetPicker>` at the `images.[k].asset` /
+ *    `partners.[k].logo` slot — replacing the hash/path/mime/width/
+ *    height fieldset that the default walker would otherwise emit.
+ *  - `DocumentAssetRefSchema → "document-picker"`: the documentDownloads
+ *    block carries this shape at `files.[k].asset`; the walker mounts
+ *    `<DocumentPicker>` there instead of a hash/path/mime/byteSize
+ *    fieldset (the failure mode ADR 0044 prohibits).
  */
 import type { JSX } from "preact";
 import { useState } from "preact/hooks";
 import type { ZodType } from "zod";
-import type { AssetRefLike } from "@sosb/schema";
-import { AssetRefSchema } from "@sosb/schema";
+import type { AssetRefLike, DocumentAssetRef } from "@sosb/schema";
+import { AssetRefSchema, DocumentAssetRefSchema } from "@sosb/schema";
 
 import { AdvancedToggle } from "./advanced-toggle.js";
 import type { FieldOverride } from "./field-metadata.js";
 import { fieldsFromSchema, type FieldNode } from "./form-generator.js";
 import { getAtPath } from "./get-set-path.js";
 import { AssetPicker } from "./asset-picker.js";
+import { DocumentPicker, type DocumentAssetRefLike } from "./document-picker.js";
 
 /**
  * Schema-identity registry consumed by the form-generator walk.
@@ -43,12 +48,15 @@ import { AssetPicker } from "./asset-picker.js";
  * Module scope is correct here: the map is stable across renders (each
  * entry is a `ZodType` re-export from `@sosb/schema`), so recreating it
  * inside the component would only churn the reference and not the
- * outcome. Reference equality on the value `AssetRefSchema` is the
- * load-bearing property — every image-bearing block schema imports the
- * SAME object, so this single entry dispatches across all of them.
+ * outcome. Reference equality on the value schemas is the load-bearing
+ * property — every image-bearing block schema imports the SAME
+ * `AssetRefSchema` object, and the document-downloads block carries the
+ * SAME `DocumentAssetRefSchema`, so these two entries dispatch across
+ * every embedding without a second walker pass.
  */
-const ASSET_PICKER_RENDERERS: ReadonlyMap<ZodType, string> = new Map<ZodType, string>([
+const MEDIA_PICKER_RENDERERS: ReadonlyMap<ZodType, string> = new Map<ZodType, string>([
   [AssetRefSchema, "asset-picker"],
+  [DocumentAssetRefSchema, "document-picker"],
 ]);
 
 export interface BlockFormProps<TData> {
@@ -76,6 +84,15 @@ export interface BlockFormProps<TData> {
    */
   readonly uploader: (file: File) => Promise<AssetRefLike>;
   /**
+   * Uploader injected into any mounted `<DocumentPicker>` widgets. Same
+   * required-prop posture as `uploader`: the document picker has no
+   * library-reuse path either, so a missing uploader would render a
+   * permanently-broken widget. Tests that don't mount the
+   * `documentDownloads` block can pass a rejecting stub — the picker
+   * only fires the uploader on user interaction.
+   */
+  readonly documentUploader: (file: File) => Promise<DocumentAssetRef>;
+  /**
    * Path-keyed field-metadata overrides for this block type. The walker
    * attaches `label` and `tier` to the resulting `FieldNode`s; the
    * renderer reads `tier` to honour the "Show advanced" toggle (ADR
@@ -93,7 +110,7 @@ export function BlockForm<TData>(props: BlockFormProps<TData>): JSX.Element {
   // persistence; remounting the form starts hidden again.
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const fields = fieldsFromSchema(props.schema, {
-    schemaRenderers: ASSET_PICKER_RENDERERS,
+    schemaRenderers: MEDIA_PICKER_RENDERERS,
     overrides: props.overrides ?? [],
   });
   return (
@@ -108,6 +125,7 @@ export function BlockForm<TData>(props: BlockFormProps<TData>): JSX.Element {
           onArrayChange={props.onArrayChange}
           newItem={props.newItem}
           uploader={props.uploader}
+          documentUploader={props.documentUploader}
           showAdvanced={showAdvanced}
         />
       ))}
@@ -124,6 +142,7 @@ interface FieldRendererProps {
   // `exactOptionalPropertyTypes: true` without creating a missing-key shape.
   readonly newItem: ((arrayPath: readonly (string | number)[]) => unknown) | undefined;
   readonly uploader: (file: File) => Promise<AssetRefLike>;
+  readonly documentUploader: (file: File) => Promise<DocumentAssetRef>;
   /**
    * Current state of the parent form's "Show advanced" toggle. `true`
    * reveals `tier === "advanced"` fields; `false` hides them. Fields
@@ -139,6 +158,7 @@ function FieldRenderer({
   onArrayChange,
   newItem,
   uploader,
+  documentUploader,
   showAdvanced,
 }: FieldRendererProps): JSX.Element | null {
   // Tier-based visibility filter (ADR 0043). Hidden fields are NEVER
@@ -168,6 +188,7 @@ function FieldRenderer({
               onArrayChange={onArrayChange}
               newItem={newItem}
               uploader={uploader}
+              documentUploader={documentUploader}
               showAdvanced={showAdvanced}
             />
           ))}
@@ -221,6 +242,7 @@ function FieldRenderer({
                     onArrayChange={onArrayChange}
                     newItem={newItem}
                     uploader={uploader}
+                    documentUploader={documentUploader}
                     showAdvanced={showAdvanced}
                   />
                   <div class="block-form__item-controls">
@@ -331,18 +353,29 @@ function FieldRenderer({
     case "custom":
       // Dispatch by renderer name. The form-generator emits `"custom"`
       // nodes for both schema-identity dispatch (e.g. `AssetRefSchema` →
-      // "asset-picker") and path-keyed dispatch (e.g. `theme.id` →
-      // "theme-picker"). BlockForm only owns block-data widgets — the
-      // theme-picker is mounted by ThemeForm — so the asset-picker is the
-      // only branch wired here today. Unknown renderer names fall back
-      // to a debug span so a future schema-identity registration that
-      // forgets to add a renderer arm is loud-in-DOM rather than silent.
+      // "asset-picker", `DocumentAssetRefSchema` → "document-picker")
+      // and path-keyed dispatch (e.g. `theme.id` → "theme-picker").
+      // BlockForm only owns block-data widgets — the theme-picker is
+      // mounted by ThemeForm — so the media pickers (asset + document)
+      // are the only branches wired here today. Unknown renderer names
+      // fall back to a debug span so a future schema-identity
+      // registration that forgets to add a renderer arm is loud-in-DOM
+      // rather than silent.
       if (node.renderer === "asset-picker") {
         return (
           <AssetPicker
             value={value as AssetRefLike | undefined}
             onChange={(next) => onPatch(node.path, next)}
             uploader={uploader}
+          />
+        );
+      }
+      if (node.renderer === "document-picker") {
+        return (
+          <DocumentPicker
+            value={value as DocumentAssetRefLike | undefined}
+            onChange={(next) => onPatch(node.path, next)}
+            uploader={documentUploader}
           />
         );
       }

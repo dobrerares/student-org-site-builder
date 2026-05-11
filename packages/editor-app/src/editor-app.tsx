@@ -62,6 +62,7 @@ import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import type {
   AssetRefLike,
   BlockEnvelope,
+  DocumentAssetRef,
   Site,
   ValidationIssue,
   ValidationResult,
@@ -78,6 +79,7 @@ import type { ZodType } from "zod";
 // avoids the Node chain entirely without hiding the dep tree.
 import { CanvasImageProcessor } from "@sosb/assets/src/canvas-processor.js";
 import { uploadAsset } from "@sosb/assets/src/pipeline.js";
+import { uploadDocument } from "@sosb/assets/src/document-pipeline.js";
 import { MemoryDriver } from "@sosb/vfs/memory";
 import type { Vfs } from "@sosb/vfs/vfs";
 import {
@@ -475,6 +477,29 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     return ref as unknown as AssetRefLike;
   }
 
+  /**
+   * Production uploader fed into every mounted `<DocumentPicker>` via
+   * `<BlockForm documentUploader={...}>`. Mirrors `uploadAssetForPicker`
+   * for the document pipeline: wraps `uploadDocument` so the picker
+   * only has to surface a `File`. The `label` is mandatory at upload
+   * time — the document pipeline rejects empty label — and the file
+   * name is a sensible non-empty default the user can revise once the
+   * upload resolves through the editor's `label` field. The shared
+   * `assetVfsRef` is reused; the VFS holds both image and document
+   * bytes side-by-side under `assets/<hash>.<ext>`.
+   */
+  async function uploadDocumentForPicker(file: File): Promise<DocumentAssetRef> {
+    const vfs = assetVfsRef.current!;
+    const ref = await uploadDocument({ kind: "file", file, label: file.name }, vfs);
+    // `@sosb/assets`'s runtime `DocumentRef` interface uses the closed
+    // `SupportedDocumentMime` enum for `mime`; the schema's
+    // `DocumentAssetRef` widens it to `z.string()` for forward-compat.
+    // The values are byte-equivalent; the cast bridges the two parallel
+    // type declarations (ADR 0040: schema can't depend on
+    // `@sosb/assets`).
+    return ref as unknown as DocumentAssetRef;
+  }
+
   const [pickerOpen, setPickerOpen] = useState<boolean>(false);
 
   function onPickBlockType(type: string): void {
@@ -694,6 +719,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
               arrayChangeBlockData(safeActivePageIndex, activeBlockIndex, subpath, next)
             }
             uploader={uploadAssetForPicker}
+            documentUploader={uploadDocumentForPicker}
             overrides={
               BLOCK_FIELD_METADATA[activeBlock.type as keyof typeof BLOCK_FIELD_METADATA] ?? []
             }

@@ -1,8 +1,18 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { render, cleanup, fireEvent } from "@testing-library/preact";
-import type { AssetRefLike, ImageGalleryData, ValueListData } from "@sosb/schema";
-import { ImageGalleryDataSchema, ValueListDataSchema } from "@sosb/schema";
+import type {
+  AssetRefLike,
+  DocumentAssetRef,
+  DocumentDownloadsData,
+  ImageGalleryData,
+  ValueListData,
+} from "@sosb/schema";
+import {
+  DocumentDownloadsDataSchema,
+  ImageGalleryDataSchema,
+  ValueListDataSchema,
+} from "@sosb/schema";
 
 import { BlockForm } from "../src/block-form.js";
 import type { FieldOverride } from "../src/field-metadata.js";
@@ -41,6 +51,16 @@ function noopUploader(): Promise<AssetRefLike> {
   return Promise.reject(new Error("uploader not expected to fire in this test"));
 }
 
+/**
+ * Document-upload counterpart to `noopUploader`. BlockForm also requires
+ * a `documentUploader` prop (consumed by any mounted `<DocumentPicker>`);
+ * tests that don't render a document-bearing schema still need to
+ * satisfy the type. Same rejection posture as the image stub.
+ */
+function noopDocumentUploader(): Promise<DocumentAssetRef> {
+  return Promise.reject(new Error("documentUploader not expected to fire in this test"));
+}
+
 describe("BlockForm — valueList items add/remove/reorder", () => {
   afterEach(cleanup);
 
@@ -63,6 +83,7 @@ describe("BlockForm — valueList items add/remove/reorder", () => {
         onArrayChange={(path, next) => harness.arrayChanges.push({ path, next })}
         newItem={newValueListItem}
         uploader={noopUploader}
+        documentUploader={noopDocumentUploader}
       />,
     );
 
@@ -85,6 +106,7 @@ describe("BlockForm — valueList items add/remove/reorder", () => {
         onArrayChange={(path, next) => harness.arrayChanges.push({ path, next })}
         newItem={newValueListItem}
         uploader={noopUploader}
+        documentUploader={noopDocumentUploader}
       />,
     );
 
@@ -118,6 +140,7 @@ describe("BlockForm — valueList items add/remove/reorder", () => {
         onArrayChange={(path, next) => harness.arrayChanges.push({ path, next })}
         newItem={newValueListItem}
         uploader={noopUploader}
+        documentUploader={noopDocumentUploader}
       />,
     );
 
@@ -147,6 +170,7 @@ describe("BlockForm — valueList items add/remove/reorder", () => {
         onArrayChange={(path, next) => harness.arrayChanges.push({ path, next })}
         newItem={newValueListItem}
         uploader={noopUploader}
+        documentUploader={noopDocumentUploader}
       />,
     );
 
@@ -174,6 +198,7 @@ describe("BlockForm — valueList items add/remove/reorder", () => {
         onArrayChange={(path, next) => harness.arrayChanges.push({ path, next })}
         newItem={newValueListItem}
         uploader={noopUploader}
+        documentUploader={noopDocumentUploader}
       />,
     );
 
@@ -200,6 +225,7 @@ describe("BlockForm — valueList items add/remove/reorder", () => {
         onArrayChange={(path, next) => harness.arrayChanges.push({ path, next })}
         newItem={newValueListItem}
         uploader={noopUploader}
+        documentUploader={noopDocumentUploader}
       />,
     );
 
@@ -223,6 +249,7 @@ describe("BlockForm — valueList items add/remove/reorder", () => {
         onArrayChange={(path, next) => harness.arrayChanges.push({ path, next })}
         newItem={newValueListItem}
         uploader={noopUploader}
+        documentUploader={noopDocumentUploader}
       />,
     );
 
@@ -247,6 +274,7 @@ describe("BlockForm — valueList items add/remove/reorder", () => {
         onArrayChange={(path, next) => harness.arrayChanges.push({ path, next })}
         newItem={newValueListItem}
         uploader={noopUploader}
+        documentUploader={noopDocumentUploader}
       />,
     );
 
@@ -275,6 +303,7 @@ describe("BlockForm — valueList items add/remove/reorder", () => {
         onArrayChange={(path, next) => harness.arrayChanges.push({ path, next })}
         newItem={newValueListItem}
         uploader={noopUploader}
+        documentUploader={noopDocumentUploader}
       />,
     );
 
@@ -300,6 +329,7 @@ describe("BlockForm — valueList items add/remove/reorder", () => {
         onArrayChange={(path, next) => harness.arrayChanges.push({ path, next })}
         newItem={newValueListItem}
         uploader={noopUploader}
+        documentUploader={noopDocumentUploader}
       />,
     );
 
@@ -364,6 +394,7 @@ describe("BlockForm — imageGallery wires AssetPicker per image (ADR 0043, T11)
         onPatch={() => {}}
         onArrayChange={() => {}}
         uploader={uploader}
+        documentUploader={noopDocumentUploader}
       />,
     );
     const pickers = container.querySelectorAll('[data-testid="asset-picker"]');
@@ -379,6 +410,7 @@ describe("BlockForm — imageGallery wires AssetPicker per image (ADR 0043, T11)
         onPatch={() => {}}
         onArrayChange={() => {}}
         uploader={uploader}
+        documentUploader={noopDocumentUploader}
       />,
     );
     // The renderer emits `[data-field="..."]` on every input it owns;
@@ -414,6 +446,7 @@ describe("BlockForm — imageGallery wires AssetPicker per image (ADR 0043, T11)
         onPatch={() => {}}
         onArrayChange={() => {}}
         uploader={uploader}
+        documentUploader={noopDocumentUploader}
       />,
     );
 
@@ -442,6 +475,7 @@ describe("BlockForm — imageGallery wires AssetPicker per image (ADR 0043, T11)
         onPatch={(path, value) => patches.push({ path, value })}
         onArrayChange={() => {}}
         uploader={uploader}
+        documentUploader={noopDocumentUploader}
       />,
     );
 
@@ -513,6 +547,7 @@ describe("BlockForm — Show advanced toggle (ADR 0043, T16)", () => {
         onArrayChange={() => {}}
         newItem={newValueListItem}
         uploader={noopUploader}
+        documentUploader={noopDocumentUploader}
         overrides={overrides}
       />,
     );
@@ -535,6 +570,7 @@ describe("BlockForm — Show advanced toggle (ADR 0043, T16)", () => {
         onArrayChange={() => {}}
         newItem={newValueListItem}
         uploader={noopUploader}
+        documentUploader={noopDocumentUploader}
         overrides={overrides}
       />,
     );
@@ -556,6 +592,7 @@ describe("BlockForm — Show advanced toggle (ADR 0043, T16)", () => {
         onArrayChange={() => {}}
         newItem={newValueListItem}
         uploader={noopUploader}
+        documentUploader={noopDocumentUploader}
         overrides={overrides}
       />,
     );
@@ -583,6 +620,7 @@ describe("BlockForm — Show advanced toggle (ADR 0043, T16)", () => {
         onArrayChange={() => {}}
         newItem={newValueListItem}
         uploader={noopUploader}
+        documentUploader={noopDocumentUploader}
         overrides={overrides}
       />,
     );
@@ -594,6 +632,7 @@ describe("BlockForm — Show advanced toggle (ADR 0043, T16)", () => {
         onArrayChange={() => {}}
         newItem={newValueListItem}
         uploader={noopUploader}
+        documentUploader={noopDocumentUploader}
         overrides={overrides}
       />,
     );
@@ -606,5 +645,154 @@ describe("BlockForm — Show advanced toggle (ADR 0043, T16)", () => {
     clickAdvancedToggle(first.container);
     expect(first.container.querySelector('[data-field="intro"]')).not.toBeNull();
     expect(second.container.querySelector('[data-field="intro"]')).toBeNull();
+  });
+});
+
+/**
+ * BlockForm + documentDownloads wires DocumentPicker per file (ADR 0043, T18).
+ *
+ * Sibling to the imageGallery test block above: the form-generator's
+ * schema-identity registry pairs `DocumentAssetRefSchema` with the
+ * "document-picker" renderer. When BlockForm walks a documentDownloads
+ * data schema, every `files.[k].asset` slot must be rendered by
+ * `<DocumentPicker>` — NOT by a hash/path/mime/byteSize text-input
+ * fieldset. This describe block locks in:
+ *  - one DocumentPicker mounts per files entry,
+ *  - none of the DocumentAssetRef structural leaves (hash, mime, path,
+ *    metadataPath, byteSize) surface as `<input>` controls anywhere in
+ *    the form (ADR 0044).
+ */
+function makeDocumentAsset(suffix: string): DocumentAssetRef {
+  return {
+    hash: `hash-${suffix}`,
+    path: `assets/${suffix}.pdf`,
+    metadataPath: `assets/${suffix}.metadata.json`,
+    mime: "application/pdf",
+    byteSize: 1024 * 128, // 128 KB
+  };
+}
+
+describe("BlockForm — documentDownloads wires DocumentPicker per file (ADR 0043, T18)", () => {
+  afterEach(cleanup);
+
+  function makeDocumentsHarness(): DocumentDownloadsData {
+    return {
+      title: "Documents",
+      layout: "list",
+      files: [
+        { asset: makeDocumentAsset("regulament"), label: "Regulament 2026" },
+        { asset: makeDocumentAsset("statut"), label: "Statut" },
+      ],
+    };
+  }
+
+  test("mounts one DocumentPicker per files entry", () => {
+    const documentUploader = vi.fn<(file: File) => Promise<DocumentAssetRef>>();
+    const data = makeDocumentsHarness();
+    const { container } = render(
+      <BlockForm
+        schema={DocumentDownloadsDataSchema}
+        data={data}
+        onPatch={() => {}}
+        onArrayChange={() => {}}
+        uploader={noopUploader}
+        documentUploader={documentUploader}
+      />,
+    );
+    const pickers = container.querySelectorAll('[data-testid="document-picker"]');
+    expect(pickers.length).toBe(data.files.length);
+  });
+
+  test("does NOT render hash / mime / path / metadataPath / byteSize text inputs anywhere", () => {
+    const documentUploader = vi.fn<(file: File) => Promise<DocumentAssetRef>>();
+    const { container } = render(
+      <BlockForm
+        schema={DocumentDownloadsDataSchema}
+        data={makeDocumentsHarness()}
+        onPatch={() => {}}
+        onArrayChange={() => {}}
+        uploader={noopUploader}
+        documentUploader={documentUploader}
+      />,
+    );
+    // The renderer emits `[data-field="..."]` on every input it owns;
+    // checking each banned leaf catches both nested object recursion
+    // and a path-keyed re-introduction.
+    for (const leaf of ["hash", "mime", "path", "metadataPath", "byteSize"]) {
+      const matches = Array.from(container.querySelectorAll<HTMLElement>(`[data-field]`)).filter(
+        (el) => {
+          const path = el.getAttribute("data-field") ?? "";
+          const last = path.split(".").pop();
+          return last === leaf;
+        },
+      );
+      expect(matches, `expected no <input> for DocumentAssetRef.${leaf}`).toEqual([]);
+    }
+  });
+
+  test("each DocumentPicker reads the DocumentAssetRef at its own indexed path", () => {
+    // The picker's filename derives from the value's `path` (last
+    // segment); confirming both pickers show their own filename
+    // catches a hypothetical 0-indexing bug where both pickers read
+    // [0] (same as the imageGallery thumbnail-src check above).
+    const documentUploader = vi.fn<(file: File) => Promise<DocumentAssetRef>>();
+    const data = makeDocumentsHarness();
+    const { container } = render(
+      <BlockForm
+        schema={DocumentDownloadsDataSchema}
+        data={data}
+        onPatch={() => {}}
+        onArrayChange={() => {}}
+        uploader={noopUploader}
+        documentUploader={documentUploader}
+      />,
+    );
+
+    const filenames = container.querySelectorAll<HTMLElement>(
+      '[data-testid="document-picker-filename"]',
+    );
+    expect(filenames.length).toBe(2);
+    expect(filenames[0]!.textContent).toBe("regulament.pdf");
+    expect(filenames[1]!.textContent).toBe("statut.pdf");
+  });
+
+  test("DocumentPicker.onChange routes through onPatch with the indexed DocumentAssetRef path", async () => {
+    // Upload-driven proof: the picker's onChange wires through to
+    // BlockForm's onPatch with the correct nested path. Picking the
+    // second file ensures a 1-vs-0 indexing bug would be caught.
+    const uploaded: DocumentAssetRef = makeDocumentAsset("uploaded");
+    const documentUploader = vi.fn().mockResolvedValue(uploaded);
+    const patches: { path: readonly (string | number)[]; value: unknown }[] = [];
+    const data = makeDocumentsHarness();
+    const { container } = render(
+      <BlockForm
+        schema={DocumentDownloadsDataSchema}
+        data={data}
+        onPatch={(path, value) => patches.push({ path, value })}
+        onArrayChange={() => {}}
+        uploader={noopUploader}
+        documentUploader={documentUploader}
+      />,
+    );
+
+    const pickers = container.querySelectorAll('[data-testid="document-picker"]');
+    const secondPicker = pickers[1] as HTMLElement;
+    const fileInput = secondPicker.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(fileInput).not.toBeNull();
+
+    const file = new File([new Uint8Array([0x25, 0x50, 0x44, 0x46])], "uploaded.pdf", {
+      type: "application/pdf",
+    });
+    Object.defineProperty(fileInput, "files", { value: [file], configurable: true });
+    fireEvent.change(fileInput);
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(documentUploader).toHaveBeenCalledTimes(1);
+    expect(documentUploader).toHaveBeenCalledWith(file);
+    expect(patches.length).toBe(1);
+    expect(patches[0]!.path).toEqual(["files", 1, "asset"]);
+    expect(patches[0]!.value).toEqual(uploaded);
   });
 });
