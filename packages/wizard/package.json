@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@sosb/schema": "workspace:*",
+    "@sosb/themes": "workspace:*",
     "@sosb/vfs": "workspace:*",
     "@sosb/i18n": "workspace:*",
     "preact": "^10.29.1"

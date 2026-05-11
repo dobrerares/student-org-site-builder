@@ -4,8 +4,16 @@
  *
  * Themes the v1 editor ships, per PRD §"Five themes ship in v1":
  *   academic, modern, editorial, civic, minimal.
+ *
+ * The theme list is read from `buildThemeCatalog()` in `@sosb/themes` so
+ * the wizard, editor theme-picker, and font-picker share one source of
+ * truth for labels/descriptions/fonts (T17 follow-up to ADR 0043). The
+ * catalog returns entries pre-sorted by id; we don't impose a separate
+ * order here.
  */
 import type { JSX } from "preact";
+
+import { buildThemeCatalog } from "@sosb/themes";
 
 import type { IdentityData } from "../state-machine.js";
 
@@ -14,33 +22,7 @@ export interface IdentityStepProps {
   readonly onPatch: (partial: Partial<IdentityData>) => void;
 }
 
-const THEMES: ReadonlyArray<{ id: string; label: string; description: string }> = [
-  {
-    id: "academic",
-    label: "Academic",
-    description: "Serious, scholarly look — think research society or honors program.",
-  },
-  {
-    id: "modern",
-    label: "Modern",
-    description: "Clean, bright, contemporary — fits youth-focused programs.",
-  },
-  {
-    id: "editorial",
-    label: "Editorial",
-    description: "Magazine-style typography for storytelling-heavy orgs.",
-  },
-  {
-    id: "civic",
-    label: "Civic",
-    description: "Civically engaged feel — campaigns, advocacy, community.",
-  },
-  {
-    id: "minimal",
-    label: "Minimal",
-    description: "Quiet, neutral, gets out of your content's way.",
-  },
-];
+const THEMES = buildThemeCatalog().entries;
 
 export function IdentityStep(props: IdentityStepProps): JSX.Element {
   return (

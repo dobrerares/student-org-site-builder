@@ -18,6 +18,7 @@
     "@sosb/preview-bridge": "workspace:*",
     "@sosb/renderer": "workspace:*",
     "@sosb/schema": "workspace:*",
+    "@sosb/themes": "workspace:*",
     "@sosb/vfs": "workspace:*",
     "@sosb/zip": "workspace:*",
     "preact": "^10.29.1",
