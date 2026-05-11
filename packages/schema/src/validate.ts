@@ -4,6 +4,32 @@ import { SiteSchema } from "./site.js";
 import { checkSlug } from "./slug.js";
 
 /**
+ * Canonical theme IDs the renderer ships. Per ADR 0044 Corollary 3 the
+ * site-level `theme.id` schema field stays loose (`z.string().min(1)`) so
+ * future or third-party themes round-trip through this package without
+ * losing data; closed-set discipline is enforced here as a warning-tier
+ * rule (`site.theme.id.unknown`).
+ *
+ * This list duplicates the `*_THEME_ID` exports in
+ * `@sosb/renderer/src/themes/*` because the schema package must not depend
+ * on the renderer (the dependency direction is renderer → schema). The
+ * duplication is intentional and tracked for consolidation in T17 of the
+ * 2026-05-11 form-overrides plan (export `ALL_THEME_IDS` from the renderer
+ * if it can do so cleanly, otherwise accept the duplication).
+ *
+ * `stub` is a real registered theme and round-trips successfully; it is
+ * hidden from the editor's UI catalog but must NOT trigger the warning.
+ */
+const KNOWN_THEME_IDS: readonly string[] = [
+  "academic",
+  "civic",
+  "editorial",
+  "minimal",
+  "modern",
+  "stub",
+];
+
+/**
  * The three severity tiers from the PRD:
  *
  * - `error`   — blocking-on-confirmation. The editor surfaces these
@@ -286,6 +312,19 @@ function runSiteRules(site: z.infer<typeof SiteSchema>, result: ValidationResult
       path: ["org", "email"],
       code: "site.org.email.missing",
       message: "Organisation email is empty. Add a contact address.",
+    });
+  }
+
+  // Warnings: theme.id outside the canonical set (ADR 0044 corollary 3).
+  // The schema accepts any non-empty string so a future or third-party
+  // theme round-trips without data loss; this rule surfaces the
+  // closed-set expectation as a quality nudge without blocking publish.
+  if (!KNOWN_THEME_IDS.includes(site.theme.id)) {
+    result.warnings.push({
+      severity: "warning",
+      path: ["theme", "id"],
+      code: "site.theme.id.unknown",
+      message: `Theme id "${site.theme.id}" is not one of the canonical themes (${KNOWN_THEME_IDS.join(", ")}).`,
     });
   }
 }
