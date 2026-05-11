@@ -12,6 +12,7 @@
     "build": "tsc --build"
   },
   "dependencies": {
+    "@sosb/assets": "workspace:*",
     "@sosb/editor-state": "workspace:*",
     "@sosb/i18n": "workspace:*",
     "@sosb/preview-bridge": "workspace:*",

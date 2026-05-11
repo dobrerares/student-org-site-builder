@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { render, cleanup, fireEvent } from "@testing-library/preact";
-import type { ValueListData } from "@sosb/schema";
-import { ValueListDataSchema } from "@sosb/schema";
+import type { AssetRefLike, ImageGalleryData, ValueListData } from "@sosb/schema";
+import { ImageGalleryDataSchema, ValueListDataSchema } from "@sosb/schema";
 
 import { BlockForm } from "../src/block-form.js";
 
@@ -30,6 +30,16 @@ function newValueListItem(): unknown {
   return { label: "New value" };
 }
 
+/**
+ * Mock uploader for tests that don't exercise the upload path. The BlockForm
+ * now requires an `uploader` prop (consumed by any mounted `<AssetPicker>`).
+ * Tests that don't render an asset-bearing schema still need to satisfy the
+ * type; this fake never resolves to anything useful but never fires either.
+ */
+function noopUploader(): Promise<AssetRefLike> {
+  return Promise.reject(new Error("uploader not expected to fire in this test"));
+}
+
 describe("BlockForm — valueList items add/remove/reorder", () => {
   afterEach(cleanup);
 
@@ -51,6 +61,7 @@ describe("BlockForm — valueList items add/remove/reorder", () => {
         onPatch={(path, value) => harness.patches.push({ path, value })}
         onArrayChange={(path, next) => harness.arrayChanges.push({ path, next })}
         newItem={newValueListItem}
+        uploader={noopUploader}
       />,
     );
 
@@ -72,6 +83,7 @@ describe("BlockForm — valueList items add/remove/reorder", () => {
         onPatch={(path, value) => harness.patches.push({ path, value })}
         onArrayChange={(path, next) => harness.arrayChanges.push({ path, next })}
         newItem={newValueListItem}
+        uploader={noopUploader}
       />,
     );
 
@@ -104,6 +116,7 @@ describe("BlockForm — valueList items add/remove/reorder", () => {
         onPatch={(path, value) => harness.patches.push({ path, value })}
         onArrayChange={(path, next) => harness.arrayChanges.push({ path, next })}
         newItem={newValueListItem}
+        uploader={noopUploader}
       />,
     );
 
@@ -132,6 +145,7 @@ describe("BlockForm — valueList items add/remove/reorder", () => {
         onPatch={(path, value) => harness.patches.push({ path, value })}
         onArrayChange={(path, next) => harness.arrayChanges.push({ path, next })}
         newItem={newValueListItem}
+        uploader={noopUploader}
       />,
     );
 
@@ -158,6 +172,7 @@ describe("BlockForm — valueList items add/remove/reorder", () => {
         onPatch={(path, value) => harness.patches.push({ path, value })}
         onArrayChange={(path, next) => harness.arrayChanges.push({ path, next })}
         newItem={newValueListItem}
+        uploader={noopUploader}
       />,
     );
 
@@ -183,6 +198,7 @@ describe("BlockForm — valueList items add/remove/reorder", () => {
         onPatch={(path, value) => harness.patches.push({ path, value })}
         onArrayChange={(path, next) => harness.arrayChanges.push({ path, next })}
         newItem={newValueListItem}
+        uploader={noopUploader}
       />,
     );
 
@@ -205,6 +221,7 @@ describe("BlockForm — valueList items add/remove/reorder", () => {
         onPatch={(path, value) => harness.patches.push({ path, value })}
         onArrayChange={(path, next) => harness.arrayChanges.push({ path, next })}
         newItem={newValueListItem}
+        uploader={noopUploader}
       />,
     );
 
@@ -228,6 +245,7 @@ describe("BlockForm — valueList items add/remove/reorder", () => {
         onPatch={(path, value) => harness.patches.push({ path, value })}
         onArrayChange={(path, next) => harness.arrayChanges.push({ path, next })}
         newItem={newValueListItem}
+        uploader={noopUploader}
       />,
     );
 
@@ -255,6 +273,7 @@ describe("BlockForm — valueList items add/remove/reorder", () => {
         onPatch={(path, value) => harness.patches.push({ path, value })}
         onArrayChange={(path, next) => harness.arrayChanges.push({ path, next })}
         newItem={newValueListItem}
+        uploader={noopUploader}
       />,
     );
 
@@ -279,6 +298,7 @@ describe("BlockForm — valueList items add/remove/reorder", () => {
         onPatch={(path, value) => harness.patches.push({ path, value })}
         onArrayChange={(path, next) => harness.arrayChanges.push({ path, next })}
         newItem={newValueListItem}
+        uploader={noopUploader}
       />,
     );
 
@@ -290,5 +310,158 @@ describe("BlockForm — valueList items add/remove/reorder", () => {
     expect(optionValues).toContain("");
     expect(optionValues).toContain("users");
     expect(optionValues).toContain("lightbulb");
+  });
+});
+
+/**
+ * BlockForm + imageGallery: schema-identity dispatch (ADR 0043, T11).
+ *
+ * The form-generator's schema-identity registry pairs `AssetRefSchema` with
+ * the "asset-picker" renderer. When BlockForm walks an ImageGallery's data
+ * schema, every `images.[k].asset` slot must be rendered by `<AssetPicker>`
+ * — NOT by a hash/path/mime/etc. text-input fieldset. This describe block
+ * locks in:
+ *  - one AssetPicker mounts per image entry,
+ *  - none of the AssetRef structural leaves (hash, mime, path, metadataPath)
+ *    surface as `<input>` controls anywhere in the form (ADR 0044).
+ */
+function makeGalleryAsset(suffix: string): AssetRefLike {
+  return {
+    hash: `hash-${suffix}`,
+    path: `assets/${suffix}.jpg`,
+    metadataPath: `assets/${suffix}.metadata.json`,
+    mime: "image/jpeg",
+    width: 800,
+    height: 600,
+    alt: `Sample ${suffix}`,
+  };
+}
+
+describe("BlockForm — imageGallery wires AssetPicker per image (ADR 0043, T11)", () => {
+  afterEach(cleanup);
+
+  function makeGalleryHarness(): ImageGalleryData {
+    return {
+      title: "Gallery",
+      layout: "grid",
+      columns: 3,
+      lightbox: true,
+      images: [
+        { asset: makeGalleryAsset("one"), alt: "First photo" },
+        { asset: makeGalleryAsset("two"), alt: "Second photo" },
+      ],
+    };
+  }
+
+  test("mounts one AssetPicker per gallery image", () => {
+    const uploader = vi.fn<(file: File) => Promise<AssetRefLike>>();
+    const data = makeGalleryHarness();
+    const { container } = render(
+      <BlockForm
+        schema={ImageGalleryDataSchema}
+        data={data}
+        onPatch={() => {}}
+        onArrayChange={() => {}}
+        uploader={uploader}
+      />,
+    );
+    const pickers = container.querySelectorAll('[data-testid="asset-picker"]');
+    expect(pickers.length).toBe(data.images.length);
+  });
+
+  test("does NOT render hash / mime / path / metadataPath text inputs anywhere", () => {
+    const uploader = vi.fn<(file: File) => Promise<AssetRefLike>>();
+    const { container } = render(
+      <BlockForm
+        schema={ImageGalleryDataSchema}
+        data={makeGalleryHarness()}
+        onPatch={() => {}}
+        onArrayChange={() => {}}
+        uploader={uploader}
+      />,
+    );
+    // The renderer emits `[data-field="..."]` on every input it owns;
+    // checking each banned leaf catches both nested object recursion and
+    // a path-keyed re-introduction.
+    for (const leaf of ["hash", "mime", "path", "metadataPath", "width", "height"]) {
+      // No `<input>`/`<select>` whose data-field ends in `.<leaf>` or equals
+      // exactly the leaf name. The AssetRef structural leaves would surface
+      // here if the schema-identity dispatch were bypassed.
+      const matches = Array.from(container.querySelectorAll<HTMLElement>(`[data-field]`)).filter(
+        (el) => {
+          const path = el.getAttribute("data-field") ?? "";
+          const last = path.split(".").pop();
+          return last === leaf;
+        },
+      );
+      expect(matches, `expected no <input> for AssetRef.${leaf}`).toEqual([]);
+    }
+  });
+
+  test("each AssetPicker reads the AssetRef at its own indexed path", () => {
+    // Reference-equality short-circuit: confirm both pickers actually point
+    // at the right image's asset by inspecting the rendered thumbnail's src
+    // — getAtPath(data, ["images", k, "asset"]).path round-trips through to
+    // the <img>'s src attribute. If the indexing were wrong (e.g. both
+    // pickers reading [0]), both thumbnails would point at the same file.
+    const uploader = vi.fn<(file: File) => Promise<AssetRefLike>>();
+    const data = makeGalleryHarness();
+    const { container } = render(
+      <BlockForm
+        schema={ImageGalleryDataSchema}
+        data={data}
+        onPatch={() => {}}
+        onArrayChange={() => {}}
+        uploader={uploader}
+      />,
+    );
+
+    const thumbnails = container.querySelectorAll<HTMLImageElement>(
+      '[data-testid="asset-picker-thumbnail"]',
+    );
+    expect(thumbnails.length).toBe(2);
+    expect(thumbnails[0]!.getAttribute("src")).toBe("assets/one.jpg");
+    expect(thumbnails[1]!.getAttribute("src")).toBe("assets/two.jpg");
+  });
+
+  test("AssetPicker.onChange routes through onPatch with the indexed AssetRef path", async () => {
+    // Upload-driven proof that the picker's onChange is wired through to
+    // BlockForm's onPatch with the correct nested path. We pick the second
+    // image so a 1-vs-0 indexing bug would be caught: with patches at
+    // ["images", 1, "asset"] we know we're indexing by item, not by always
+    // hitting slot 0.
+    const uploaded: AssetRefLike = makeGalleryAsset("uploaded");
+    const uploader = vi.fn().mockResolvedValue(uploaded);
+    const patches: { path: readonly (string | number)[]; value: unknown }[] = [];
+    const data = makeGalleryHarness();
+    const { container } = render(
+      <BlockForm
+        schema={ImageGalleryDataSchema}
+        data={data}
+        onPatch={(path, value) => patches.push({ path, value })}
+        onArrayChange={() => {}}
+        uploader={uploader}
+      />,
+    );
+
+    const pickers = container.querySelectorAll('[data-testid="asset-picker"]');
+    const secondPicker = pickers[1] as HTMLElement;
+    const fileInput = secondPicker.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(fileInput).not.toBeNull();
+
+    const file = new File([new Uint8Array([0xff, 0xd8])], "uploaded.jpg", {
+      type: "image/jpeg",
+    });
+    Object.defineProperty(fileInput, "files", { value: [file], configurable: true });
+    fireEvent.change(fileInput);
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(uploader).toHaveBeenCalledTimes(1);
+    expect(uploader).toHaveBeenCalledWith(file);
+    expect(patches.length).toBe(1);
+    expect(patches[0]!.path).toEqual(["images", 1, "asset"]);
+    expect(patches[0]!.value).toEqual(uploaded);
   });
 });

@@ -11,12 +11,42 @@
  * The component is intentionally typed against an arbitrary data shape -
  * it walks the schema via `fieldsFromSchema` and renders generically so
  * future blocks plug in without bespoke editor code.
+ *
+ * Custom widgets via schema-identity dispatch (ADR 0043 / ADR 0044):
+ *
+ * The block form passes a `schemaRenderers` map into `fieldsFromSchema` so
+ * that the walker emits a single `"custom"` node — rather than recursing
+ * into structural leaves — for shapes whose user-facing UX is a dedicated
+ * widget. Today the canonical entry is `AssetRefSchema → "asset-picker"`:
+ * every image-bearing block schema (image-gallery, partner-logos)
+ * embeds the SAME `AssetRefSchema` instance, so the registry hits via
+ * reference equality and the renderer below mounts `<AssetPicker>` at
+ * the `images.[k].asset` / `partners.[k].logo` slot — replacing the
+ * hash/path/mime/width/height fieldset that the default walker would
+ * otherwise emit (the failure mode ADR 0044 prohibits).
  */
 import type { JSX } from "preact";
 import type { ZodType } from "zod";
+import type { AssetRefLike } from "@sosb/schema";
+import { AssetRefSchema } from "@sosb/schema";
 
 import { fieldsFromSchema, type FieldNode } from "./form-generator.js";
 import { getAtPath } from "./get-set-path.js";
+import { AssetPicker } from "./asset-picker.js";
+
+/**
+ * Schema-identity registry consumed by the form-generator walk.
+ *
+ * Module scope is correct here: the map is stable across renders (each
+ * entry is a `ZodType` re-export from `@sosb/schema`), so recreating it
+ * inside the component would only churn the reference and not the
+ * outcome. Reference equality on the value `AssetRefSchema` is the
+ * load-bearing property — every image-bearing block schema imports the
+ * SAME object, so this single entry dispatches across all of them.
+ */
+const ASSET_PICKER_RENDERERS: ReadonlyMap<ZodType, string> = new Map<ZodType, string>([
+  [AssetRefSchema, "asset-picker"],
+]);
 
 export interface BlockFormProps<TData> {
   /** The block's data schema (e.g. `ValueListDataSchema`). */
@@ -33,10 +63,21 @@ export interface BlockFormProps<TData> {
    * loose-object schemas because validation only kicks in at parse time.
    */
   readonly newItem?: (arrayPath: readonly (string | number)[]) => unknown;
+  /**
+   * Uploader injected into any mounted `<AssetPicker>` widgets. The
+   * production wiring (editor-app.tsx) closes over a real VFS + image
+   * processor; tests inject a `vi.fn()` mock. Required — the asset
+   * picker has no library-reuse path (CONTEXT.md), so a missing
+   * uploader would render a permanently-broken widget instead of
+   * failing loud at mount time.
+   */
+  readonly uploader: (file: File) => Promise<AssetRefLike>;
 }
 
 export function BlockForm<TData>(props: BlockFormProps<TData>): JSX.Element {
-  const fields = fieldsFromSchema(props.schema);
+  const fields = fieldsFromSchema(props.schema, {
+    schemaRenderers: ASSET_PICKER_RENDERERS,
+  });
   return (
     <form data-testid="block-form" onSubmit={(event) => event.preventDefault()}>
       {fields.map((field) => (
@@ -47,6 +88,7 @@ export function BlockForm<TData>(props: BlockFormProps<TData>): JSX.Element {
           onPatch={props.onPatch}
           onArrayChange={props.onArrayChange}
           newItem={props.newItem}
+          uploader={props.uploader}
         />
       ))}
     </form>
@@ -61,6 +103,7 @@ interface FieldRendererProps {
   // `undefined` is explicit so we can forward an optional prop under
   // `exactOptionalPropertyTypes: true` without creating a missing-key shape.
   readonly newItem: ((arrayPath: readonly (string | number)[]) => unknown) | undefined;
+  readonly uploader: (file: File) => Promise<AssetRefLike>;
 }
 
 function FieldRenderer({
@@ -69,6 +112,7 @@ function FieldRenderer({
   onPatch,
   onArrayChange,
   newItem,
+  uploader,
 }: FieldRendererProps): JSX.Element {
   const dottedPath = node.path.join(".");
   const value = getAtPath(data, node.path);
@@ -86,6 +130,7 @@ function FieldRenderer({
               onPatch={onPatch}
               onArrayChange={onArrayChange}
               newItem={newItem}
+              uploader={uploader}
             />
           ))}
         </fieldset>
@@ -137,6 +182,7 @@ function FieldRenderer({
                     onPatch={onPatch}
                     onArrayChange={onArrayChange}
                     newItem={newItem}
+                    uploader={uploader}
                   />
                   <div class="block-form__item-controls">
                     <button
@@ -244,12 +290,23 @@ function FieldRenderer({
       );
 
     case "custom":
-      // TODO(T4/T11): mount the registered custom widget. The form-generator
-      // emits `"custom"` nodes for both schema-identity dispatch (e.g.,
-      // `AssetRefSchema` → asset-picker) and path-keyed dispatch (e.g.,
-      // `theme.id` → theme-picker). For now we render nothing so the type
-      // checker is satisfied and the existing forms keep working until the
-      // widget-mounting follow-up tasks land.
+      // Dispatch by renderer name. The form-generator emits `"custom"`
+      // nodes for both schema-identity dispatch (e.g. `AssetRefSchema` →
+      // "asset-picker") and path-keyed dispatch (e.g. `theme.id` →
+      // "theme-picker"). BlockForm only owns block-data widgets — the
+      // theme-picker is mounted by ThemeForm — so the asset-picker is the
+      // only branch wired here today. Unknown renderer names fall back
+      // to a debug span so a future schema-identity registration that
+      // forgets to add a renderer arm is loud-in-DOM rather than silent.
+      if (node.renderer === "asset-picker") {
+        return (
+          <AssetPicker
+            value={value as AssetRefLike | undefined}
+            onChange={(next) => onPatch(node.path, next)}
+            uploader={uploader}
+          />
+        );
+      }
       return <span data-field={dottedPath} data-kind="custom" data-renderer={node.renderer} />;
   }
 }

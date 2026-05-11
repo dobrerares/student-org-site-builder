@@ -9,6 +9,8 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./memory": "./src/memory.ts",
+    "./vfs": "./src/vfs.ts",
     "./test-conformance": "./src/test-conformance.ts"
   },
   "scripts": {

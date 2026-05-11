@@ -135,6 +135,9 @@ importers:
 
   packages/editor-app:
     dependencies:
+      '@sosb/assets':
+        specifier: workspace:*
+        version: link:../assets
       '@sosb/editor-state':
         specifier: workspace:*
         version: link:../editor-state

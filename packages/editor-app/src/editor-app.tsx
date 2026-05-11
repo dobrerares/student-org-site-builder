@@ -59,9 +59,27 @@
  */
 import type { JSX } from "preact";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import type { BlockEnvelope, Site, ValidationIssue, ValidationResult } from "@sosb/schema";
+import type {
+  AssetRefLike,
+  BlockEnvelope,
+  Site,
+  ValidationIssue,
+  ValidationResult,
+} from "@sosb/schema";
 import { KnownBlockSchemas, SiteSchema, validate } from "@sosb/schema";
 import type { ZodType } from "zod";
+// Import browser-safe subpaths directly. `@sosb/assets`'s package
+// `index.ts` re-exports `createSharpImageProcessor` (a Node-only,
+// sharp-backed processor) which transitively reaches `node:fs`,
+// `node:child_process` and friends — esbuild's eager static analyser
+// chokes on that when bundling for the archival browser build.
+// Similarly, `@sosb/vfs`'s `index.ts` re-exports `FsDriver`, which
+// imports `node:fs`. Bundling from each module's deep entrypoints
+// avoids the Node chain entirely without hiding the dep tree.
+import { CanvasImageProcessor } from "@sosb/assets/src/canvas-processor.js";
+import { uploadAsset } from "@sosb/assets/src/pipeline.js";
+import { MemoryDriver } from "@sosb/vfs/memory";
+import type { Vfs } from "@sosb/vfs/vfs";
 import {
   createTranslator,
   enCatalog,
@@ -412,6 +430,44 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     patch(["pages", pageIndex, "blocks", blockIndex, "data", ...subpath], next);
   }
 
+  // Asset pipeline plumbing — a stable in-memory VFS plus the shared
+  // Canvas-based `ImageProcessor` (exported as an object singleton, not
+  // a class) so every `<AssetPicker>` in every `<BlockForm>` writes
+  // through the same store. The browser shell will lift this to a
+  // persistent driver (IndexedDB, #35) by passing the VFS in as a prop
+  // in a later round; today's MemoryDriver pairs with the ephemeral SPA
+  // session and the round-trip zip export path already handles
+  // persistence-by-zip.
+  const assetVfsRef = useRef<Vfs>();
+  if (assetVfsRef.current === undefined) {
+    assetVfsRef.current = new MemoryDriver();
+  }
+
+  /**
+   * Production uploader fed into every mounted `<AssetPicker>` via
+   * `<BlockForm uploader={...}>`. Wraps `uploadAsset` so the picker only
+   * has to surface a `File`. The `alt` field is mandatory at upload time
+   * — the asset pipeline rejects empty alt — and the file name is a
+   * sensible non-empty default the user can revise once the upload
+   * resolves. Once we drill in to per-image alt editing (later issue),
+   * the picker can thread the existing AssetRef's alt back through
+   * `uploader` so re-uploads preserve it; the public callback shape
+   * stays `(file) => Promise<AssetRefLike>`.
+   */
+  async function uploadAssetForPicker(file: File): Promise<AssetRefLike> {
+    const vfs = assetVfsRef.current!;
+    const ref = await uploadAsset({ kind: "file", file, alt: file.name }, vfs, {
+      processor: CanvasImageProcessor,
+    });
+    // `@sosb/assets`'s runtime `AssetRef` interface is structurally a
+    // subset of `@sosb/schema`'s `z.looseObject`-derived `AssetRefLike`
+    // (the latter has an `[x: string]: unknown` index signature for
+    // forward-compat). The values are byte-equivalent; the cast bridges
+    // the two parallel type declarations (ADR 0040: schema can't depend
+    // on `@sosb/assets`).
+    return ref as unknown as AssetRefLike;
+  }
+
   const [pickerOpen, setPickerOpen] = useState<boolean>(false);
 
   function onPickBlockType(type: string): void {
@@ -630,6 +686,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
             onArrayChange={(subpath, next) =>
               arrayChangeBlockData(safeActivePageIndex, activeBlockIndex, subpath, next)
             }
+            uploader={uploadAssetForPicker}
           />
         ) : (
           // Unknown block type — surface a soft hint rather than crashing.
