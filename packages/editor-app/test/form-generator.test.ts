@@ -78,6 +78,40 @@ describe("fieldsFromSchema — composition", () => {
       expect(langs.element.kind).toBe("string");
     }
   });
+
+  test("SpineForm walk skips the theme sub-tree", () => {
+    // Per ADR 0043 and CONTEXT.md's revised Site spine, `theme` is owned by
+    // ThemeForm and must not be rendered by the SpineForm walk. Mirrors the
+    // existing `blocks` carve-out (which keeps BlockForm authority intact).
+    const schema = z.object({
+      org: z.object({ name: z.string() }),
+      theme: z.object({ id: z.string() }),
+    });
+    const fields = fieldsFromSchema(schema, {});
+    const fieldNames = fields.map((f) => f.name);
+    expect(fieldNames).toContain("org");
+    expect(fieldNames).not.toContain("theme");
+  });
+
+  test("a nested theme key inside an unrelated path is NOT carved out", () => {
+    // The carve-out is at the top-level walk only. Block data schemas (or any
+    // other nested object) might legitimately have a `theme` field; we must
+    // not silently drop it.
+    const schema = z.object({
+      pages: z.array(
+        z.object({
+          theme: z.string(),
+        }),
+      ),
+    });
+    const fields = fieldsFromSchema(schema, {});
+    const pages = fields.find((f) => f.name === "pages");
+    expect(pages?.kind).toBe("array");
+    if (pages?.kind === "array" && pages.element.kind === "object") {
+      const nestedNames = pages.element.fields.map((f) => f.name);
+      expect(nestedNames).toContain("theme");
+    }
+  });
 });
 
 describe("form-generator custom dispatch (ADR 0043)", () => {
@@ -148,9 +182,13 @@ describe("fieldsFromSchema — site spine integration", () => {
     expect(email?.optional).toBe(true);
   });
 
-  test("picks up theme.id, defaultLanguage, and languages array", () => {
+  test("picks up defaultLanguage and languages array, and carves theme out", () => {
+    // Per ADR 0043 and CONTEXT.md, the SpineForm walk excludes the `theme`
+    // sub-tree — it's owned by ThemeForm. `defaultLanguage` and `languages`
+    // remain in the spine. (Previously this test asserted theme.id was a
+    // string; updated to reflect the carve-out contract.)
     const fields = fieldsFromSchema(SiteSchema);
-    expect(byPath(fields, ["theme", "id"])?.kind).toBe("string");
+    expect(byPath(fields, ["theme"])).toBeUndefined();
     expect(byPath(fields, ["defaultLanguage"])?.kind).toBe("string");
     const langs = byPath(fields, ["languages"]);
     expect(langs?.kind).toBe("array");

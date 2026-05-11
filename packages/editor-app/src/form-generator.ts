@@ -238,7 +238,16 @@ export function fieldsFromSchema(
     }
   }
 
-  return Object.entries(introspect.shape).map(([name, child]) => nodeFor(name, child, [name]));
+  // Top-level carve-out: `theme` is owned by ThemeForm (ADR 0043, CONTEXT.md
+  // "Site spine: everything except pages[].blocks and theme"). We filter here
+  // at the entry-point rather than inside `nodeFor`'s `case "object":` because
+  // the carve is intentionally top-level-only — nested objects (e.g. block
+  // data) may legitimately have a `theme` field and must not be silently
+  // dropped. The `blocks` carve-out lives inside `nodeFor` and remains
+  // universal-by-coincidence (only one `blocks` field exists in the spine).
+  return Object.entries(introspect.shape)
+    .filter(([name]) => name !== "theme")
+    .map(([name, child]) => nodeFor(name, child, [name]));
 }
 
 /**
