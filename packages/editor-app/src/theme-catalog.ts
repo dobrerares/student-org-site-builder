@@ -1,9 +1,19 @@
 /**
- * Theme catalog — drives the theme picker. Mirrors `block-catalog.ts`
- * (ADR 0019): a side metadata table that maps renderer-registered
- * theme ids to user-facing labels, descriptions, and per-theme curated
- * font lists. The `stub` theme id is deliberately omitted per
- * CONTEXT.md.
+ * Theme catalog — drives the theme picker. Side metadata table mapping
+ * renderer-registered theme ids to user-facing labels, descriptions,
+ * and per-theme curated font lists.
+ *
+ * Mirrors `block-catalog.ts` (ADR 0019) for the catalog shape. Exists
+ * because of ADR 0043 (form-override architecture): the theme picker
+ * is the canonical structural override that replaces what would
+ * otherwise be a raw `theme.id` text input — see also ADR 0044 (no
+ * technical field escape hatches).
+ *
+ * The `stub` theme id is deliberately omitted per CONTEXT.md's "Theme
+ * catalog" entry: stub is a renderer-test fixture, not a user-facing
+ * theme. Unknown ids fall back to a humanised label + empty font lists
+ * so a theme that lands in the renderer before its catalog entry
+ * still renders.
  */
 
 export interface ThemeFonts {
@@ -67,7 +77,12 @@ const THEME_METADATA: Record<string, Omit<ThemeCatalogEntry, "id">> = {
 };
 
 function humanise(id: string): string {
-  const spaced = id.replace(/([a-z0-9])([A-Z])/g, "$1 $2").toLowerCase();
+  if (id.length === 0) return id;
+  const spaced = id
+    // insert a space between a lowercase/digit and an uppercase letter
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    // collapse runs of uppercase preserved as e.g. "HTML" into "Html"
+    .toLowerCase();
   return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }
 
