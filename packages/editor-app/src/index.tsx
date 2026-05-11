@@ -75,3 +75,4 @@ export {
   isElectronShellAvailable,
   type SosbUpdateSurface,
 } from "./sosb-update-bridge.js";
+export { EDITOR_APP_CSS } from "./editor-app-css.js";

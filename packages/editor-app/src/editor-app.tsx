@@ -51,6 +51,9 @@ import {
 import { fieldsFromSchema } from "./form-generator.js";
 import { SpineForm, applyPatch } from "./spine-form.js";
 import { iframeSrcdoc } from "./iframe-srcdoc.js";
+// Side-effect import: registers the editor-app stylesheet on `document.head`
+// once, before any component renders. Guarded for SSR / non-DOM tooling.
+import "./editor-app-css.js";
 import { PagesList } from "./pages-list.js";
 import { addLanguageVersion, addPage, clonePage, deletePage, movePage } from "./pages-ops.js";
 import { AddBlockDialog } from "./add-block-dialog.js";
