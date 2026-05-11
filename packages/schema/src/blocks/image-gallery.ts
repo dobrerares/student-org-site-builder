@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { AssetRefSchema } from "./asset-ref.js";
+
+export { AssetRefSchema };
 
 /**
  * imageGallery block — semantic image grid with optional vanilla-JS lightbox.
@@ -27,23 +30,12 @@ import { z } from "zod";
  * the v1 forward-compatibility contract shared with the hero block (#3).
  */
 
-const SupportedMimeSchema = z.enum(["image/jpeg", "image/png", "image/webp", "image/svg+xml"]);
-
 /**
- * Mirrors `AssetRef` from `@sosb/assets` without taking a runtime dep.
- * The schema package is the lowest-level workspace and importing the
- * assets package would invert the dependency direction.
+ * The image-gallery block embeds `AssetRefSchema` from `./asset-ref.ts`.
+ * That declaration is the canonical AssetRef shape; the editor's
+ * schema-identity dispatch (ADR 0043) relies on every image-bearing block
+ * importing the SAME ZodType reference — never redeclaring locally.
  */
-export const AssetRefSchema = z.looseObject({
-  hash: z.string().min(1),
-  path: z.string().min(1),
-  metadataPath: z.string().min(1),
-  mime: SupportedMimeSchema,
-  width: z.number().int().nonnegative(),
-  height: z.number().int().nonnegative(),
-  alt: z.string(),
-});
-
 export const GalleryImageSchema = z.looseObject({
   asset: AssetRefSchema,
   caption: z.string().optional(),

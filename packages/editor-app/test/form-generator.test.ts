@@ -225,16 +225,13 @@ describe("form-generator schema-identity dispatch — block data integration", (
   });
 
   test("ImageGalleryDataSchema: images[].asset dispatches to asset-picker", () => {
-    // Canonical T9 case from the plan. NB: `image-gallery.ts` declares its
-    // OWN local `AssetRefSchema` (separate ZodType reference from the one
-    // re-exported by the package barrel — that one originates in
-    // `partner-logos.ts`). Reference-equality dispatch is therefore keyed
-    // on the LOCAL AssetRef, which we pluck out of the schema tree to
-    // avoid relying on a deep import path the package doesn't publish.
-    const galleryAssetRef = extractGalleryAssetRefSchema();
-
+    // Canonical T9 case from the plan. After the AssetRef consolidation
+    // refactor (`packages/schema/src/blocks/asset-ref.ts`), every
+    // image-bearing block schema embeds the SAME `AssetRefSchema` Zod
+    // object, so dispatch via reference equality on the public symbol
+    // works identically for image-gallery and partner-logos.
     const fields = fieldsFromSchema(ImageGalleryDataSchema, {
-      schemaRenderers: new Map<ZodType, string>([[galleryAssetRef, "asset-picker"]]),
+      schemaRenderers: new Map<ZodType, string>([[AssetRefSchema, "asset-picker"]]),
     });
 
     const images = fields.find((f) => f.name === "images");
@@ -367,25 +364,3 @@ function findAllByName(root: FieldNode, name: string): FieldNode[] {
   return matches;
 }
 
-/**
- * The `AssetRefSchema` referenced inside `ImageGalleryDataSchema.images[].asset`
- * is a separate Zod object from the one re-exported by `@sosb/schema`
- * (which originates in `partner-logos.ts`). The package doesn't publish a
- * deep import for `image-gallery.ts`, so we recover the local reference by
- * walking the schema tree. This is sufficient for the T9 integration test:
- * the editor will register dispatch entries by the schema reference it
- * actually finds embedded in production schemas at boot time.
- */
-function extractGalleryAssetRefSchema(): ZodType {
-  const introspect = ImageGalleryDataSchema as unknown as {
-    shape: Record<string, { def: { element?: { shape?: Record<string, ZodType> } } }>;
-  };
-  const galleryImage = introspect.shape.images?.def.element;
-  const asset = galleryImage?.shape?.asset;
-  if (asset === undefined) {
-    throw new Error(
-      "extractGalleryAssetRefSchema: ImageGalleryDataSchema.images[].asset not found — schema shape changed",
-    );
-  }
-  return asset;
-}

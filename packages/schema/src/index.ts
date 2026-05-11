@@ -91,6 +91,7 @@ export {
   ActivityLinkSchema,
 } from "./blocks/index.js";
 export type {
+  AssetRef,
   AssetRefValue,
   AssetRefLike,
   BlockEnvelope,

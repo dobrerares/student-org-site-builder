@@ -88,8 +88,9 @@ export { QuoteBlockSchema, QuoteDataSchema, QUOTE_BLOCK_VERSION } from "./quote.
 export type { QuoteBlock, QuoteData } from "./quote.js";
 export { FaqBlockSchema, FaqDataSchema, FaqItemSchema, FAQ_BLOCK_VERSION } from "./faq.js";
 export type { FaqBlock, FaqData, FaqItem } from "./faq.js";
+export { AssetRefSchema } from "./asset-ref.js";
+export type { AssetRef } from "./asset-ref.js";
 export {
-  AssetRefSchema,
   PARTNER_LOGOS_BLOCK_VERSION,
   PartnerLogosBlockSchema,
   PartnerLogosDataSchema,
