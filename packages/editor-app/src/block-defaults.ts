@@ -58,11 +58,14 @@ interface DefaultBuilder {
  * Entries are kept sorted alphabetically by key for readability.
  *
  * Asset-bearing blocks (documentDownloads, imageGallery, partnerLogos)
- * carry placeholder `AssetRef`-shaped objects whose `path` strings point
- * at non-existent files. The schema only validates structure (non-empty
- * strings, non-negative numbers), so the parse succeeds; the renderer
- * surfaces a broken-image affordance until the user replaces the
- * placeholder via the editor's asset picker.
+ * ship with an EMPTY items array (`images: []`, `partners: []`,
+ * `files: []`). Per ADR 0044 Corollary 2 (no fake pipeline metadata in
+ * snapshots) and T19 of the 2026-05-11 form-overrides plan, the previous
+ * approach of seeding a placeholder `AssetRef`-shaped object with a
+ * fabricated `hash: "placeholder"` is removed: the asset/document picker
+ * (T10/T18) now owns the empty state, so a freshly-added block lets the
+ * user pick "Add item" → "Add image/document" through the picker UI
+ * without any fake metadata ever entering the data snapshot.
  */
 const DEFAULT_BUILDERS: Record<string, DefaultBuilder> = {
   activitiesList: {
@@ -109,21 +112,12 @@ const DEFAULT_BUILDERS: Record<string, DefaultBuilder> = {
     data: () => ({
       title: "Documents",
       layout: "list",
-      // Schema requires `files.length >= 1`. The asset reference is a
-      // schema-valid placeholder pointing at a non-existent file; the
-      // user replaces it via the editor's asset picker.
-      files: [
-        {
-          asset: {
-            hash: "placeholder",
-            path: "assets/placeholder-document.pdf",
-            metadataPath: "assets/placeholder-document.metadata.json",
-            mime: "application/pdf",
-            byteSize: 1,
-          },
-          label: "Document label",
-        },
-      ],
+      // Per ADR 0044 Corollary 2: ship an empty files array — the
+      // document picker (T18) owns the empty state. The user adds files
+      // through the BlockForm's array editor; each entry's `asset` slot
+      // dispatches to `<DocumentPicker>` for upload, with no fabricated
+      // metadata in the snapshot in the meantime.
+      files: [],
     }),
   },
   embed: {
@@ -170,46 +164,24 @@ const DEFAULT_BUILDERS: Record<string, DefaultBuilder> = {
       layout: "grid",
       columns: 3,
       lightbox: true,
-      // Schema-valid placeholder image; user replaces via the editor's
-      // asset picker. `alt` is mandatory non-empty at the block level.
-      images: [
-        {
-          asset: {
-            hash: "placeholder",
-            path: "assets/placeholder-image.jpg",
-            metadataPath: "assets/placeholder-image.metadata.json",
-            mime: "image/jpeg",
-            width: 1600,
-            height: 1067,
-            alt: "Placeholder image",
-          },
-          alt: "Placeholder image",
-        },
-      ],
+      // Per ADR 0044 Corollary 2: ship an empty images array — the asset
+      // picker (T10) owns the empty state. The user adds images through
+      // the BlockForm's array editor; each entry's `asset` slot
+      // dispatches to `<AssetPicker>` for upload, with no fabricated
+      // metadata in the snapshot in the meantime.
+      images: [],
     }),
   },
   partnerLogos: {
     version: PARTNER_LOGOS_BLOCK_VERSION,
     data: () => ({
       title: "Partners",
-      // Schema requires `partners.length >= 1`. Placeholder logo is an
-      // SVG-shaped AssetRef; SVG is the only supported MIME that may
-      // legitimately have zero intrinsic dimensions, so the placeholder
-      // is realistic for an SVG logo upload.
-      partners: [
-        {
-          name: "Partner name",
-          logo: {
-            hash: "placeholder",
-            path: "assets/placeholder-logo.svg",
-            metadataPath: "assets/placeholder-logo.metadata.json",
-            mime: "image/svg+xml",
-            width: 320,
-            height: 120,
-            alt: "Partner logo",
-          },
-        },
-      ],
+      // Per ADR 0044 Corollary 2: ship an empty partners array — the
+      // asset picker (T10) owns the empty state. The user adds partners
+      // through the BlockForm's array editor; each entry's `logo` slot
+      // dispatches to `<AssetPicker>` for upload, with no fabricated
+      // metadata in the snapshot in the meantime.
+      partners: [],
     }),
   },
   quote: {

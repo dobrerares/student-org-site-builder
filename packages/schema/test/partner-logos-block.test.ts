@@ -283,7 +283,7 @@ describe("partnerLogos block schema", () => {
     }
   });
 
-  test("rejects a partnerLogos block with an empty partners array", () => {
+  test("accepts a partnerLogos block with an empty partners array (T19, ADR 0044)", () => {
     const block = {
       id: "blk_partners_11",
       type: "partnerLogos",
@@ -292,7 +292,13 @@ describe("partnerLogos block schema", () => {
         partners: [],
       },
     };
-    // An empty grid is meaningless; the validator should treat it as a structural error.
-    expect(PartnerLogosBlockSchema.safeParse(block).success).toBe(false);
+    // Per ADR 0044 Corollary 2 and T19 of the form-overrides plan: a
+    // freshly-added partnerLogos block ships with `partners: []` rather
+    // than a fabricated placeholder logo. The schema must accept the
+    // empty array so the default round-trips through `safeParse`; the
+    // empty state's UX is owned by the AssetPicker / BlockForm array
+    // editor. A future validate-rules pass may surface a `warning` for
+    // empty grids; that's a separate concern.
+    expect(PartnerLogosBlockSchema.safeParse(block).success).toBe(true);
   });
 });

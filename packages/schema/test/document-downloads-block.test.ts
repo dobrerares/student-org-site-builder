@@ -72,10 +72,17 @@ describe("documentDownloads block schema", () => {
     expect(DocumentDownloadsBlockSchema.safeParse(bad).success).toBe(false);
   });
 
-  test("rejects a block with an empty files array (must list at least one file)", () => {
+  test("accepts a block with an empty files array (T19, ADR 0044)", () => {
+    // Per ADR 0044 Corollary 2 and T19 of the form-overrides plan: a
+    // freshly-added documentDownloads block ships with `files: []`
+    // rather than a fabricated placeholder document. The schema must
+    // accept the empty array so the default round-trips through
+    // `safeParse`; the empty state's UX is owned by the DocumentPicker /
+    // BlockForm array editor. A future validate-rules pass may surface a
+    // `warning` for empty downloads blocks; that's a separate concern.
     const block = structuredClone(minimalBlock());
     block.data.files = [];
-    expect(DocumentDownloadsBlockSchema.safeParse(block).success).toBe(false);
+    expect(DocumentDownloadsBlockSchema.safeParse(block).success).toBe(true);
   });
 
   test("rejects a file entry with an empty label", () => {

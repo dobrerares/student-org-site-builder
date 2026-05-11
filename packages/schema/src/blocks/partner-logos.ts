@@ -38,7 +38,24 @@ const PartnerSchema = z.looseObject({
 
 export const PartnerLogosDataSchema = z.looseObject({
   title: z.string().optional(),
-  partners: z.array(PartnerSchema).min(1),
+  /**
+   * The partners array MAY be empty.
+   *
+   * Earlier the array carried `.min(1)` to reject "meaningless" empty
+   * grids. The form-overrides plan (T19, 2026-05-11) loosens this so a
+   * freshly-added `partnerLogos` block can ship with `partners: []`
+   * instead of a fabricated placeholder logo carrying
+   * `hash: "placeholder"` — ADR 0044 Corollary 2 prohibits fake pipeline
+   * metadata in snapshots. The editor's AssetPicker (T10) and the
+   * BlockForm's array editor own the empty-state UX, so the user adds
+   * partners one at a time through the picker without ever seeing a
+   * synthetic AssetRef.
+   *
+   * The renderer iterates `partners` via `.map()` and renders an empty
+   * `<ul>` for the empty case (no crash). A future validate-rules pass
+   * may surface a `warning` for empty grids; that is out of scope here.
+   */
+  partners: z.array(PartnerSchema),
 });
 
 export const PartnerLogosBlockSchema = z.looseObject({

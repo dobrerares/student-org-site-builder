@@ -48,7 +48,25 @@ export const DocumentDownloadsDataSchema = z.looseObject({
   title: z.string().optional(),
   intro: z.string().optional(),
   layout: DocumentDownloadsLayoutSchema.optional(),
-  files: z.array(DocumentDownloadFileSchema).min(1),
+  /**
+   * The files array MAY be empty.
+   *
+   * Earlier the array carried `.min(1)` to reject blocks with no files.
+   * The form-overrides plan (T19, 2026-05-11) loosens this so a
+   * freshly-added `documentDownloads` block can ship with `files: []`
+   * instead of a fabricated placeholder document carrying
+   * `hash: "placeholder"` — ADR 0044 Corollary 2 prohibits fake pipeline
+   * metadata in snapshots. The editor's DocumentPicker (T18) and the
+   * BlockForm's array editor own the empty-state UX, so the user adds
+   * files one at a time through the picker without ever seeing a
+   * synthetic DocumentAssetRef.
+   *
+   * The renderer iterates `files` via `.map()` and renders an empty
+   * `<ul>` for the empty case (no crash). A future validate-rules pass
+   * may surface a `warning` for empty downloads blocks; that is out of
+   * scope here.
+   */
+  files: z.array(DocumentDownloadFileSchema),
 });
 
 export const DocumentDownloadsBlockSchema = z.looseObject({
