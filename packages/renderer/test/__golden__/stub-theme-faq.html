@@ -807,5 +807,48 @@ main { display: block; }
 }
 [data-block="event-list"] [data-event-id].is-past {
   opacity: 0.55;
+}
+[data-site-nav] {
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--color-muted);
+}
+[data-site-nav] ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+[data-site-nav] a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-family: var(--font-headline);
+}
+[data-site-nav] a:hover {
+  text-decoration: underline;
+}
+[data-site-nav] a[data-active="true"] {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+[data-language-switcher] {
+  padding: var(--space-sm) var(--space-md);
+}
+[data-language-switcher] ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: var(--space-sm);
+}
+[data-language-switcher] a {
+  color: var(--color-muted);
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+[data-language-switcher] a[data-active="true"] {
+  color: var(--color-fg);
+  font-weight: 600;
 }</style></head><body><main><section data-block="faq" data-block-id="blk_faq_main" aria-labelledby="blk_faq_main__title"><div class="faq__inner"><h2 id="blk_faq_main__title" class="faq__title">Întrebări frecvente</h2><div class="faq__list"><details class="faq__item" id="blk_faq_main__item-0" open><summary class="faq__question">Cine poate să se înscrie?</summary><div class="faq__answer"><p>Orice <strong>student</strong> al universității. Vezi <a href="https://anosr.ro/reg">regulamentul</a>.</p></div></details><details class="faq__item" id="blk_faq_main__item-1"><summary class="faq__question">Care sunt etapele?</summary><div class="faq__answer"><p>Etapele sunt:</p>
 <ul><li>Trimite email</li><li>Așteaptă răspuns</li><li>Vino la întâlnire</li></ul></div></details><details class="faq__item" id="blk_faq_main__item-2"><summary class="faq__question">Există costuri?</summary><div class="faq__answer"><p>Nu, <em>participarea</em> este gratuită.</p></div></details></div></div></section></main></body></html>

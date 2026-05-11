@@ -807,4 +807,47 @@ main { display: block; }
 }
 [data-block="event-list"] [data-event-id].is-past {
   opacity: 0.55;
+}
+[data-site-nav] {
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--color-muted);
+}
+[data-site-nav] ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+[data-site-nav] a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-family: var(--font-headline);
+}
+[data-site-nav] a:hover {
+  text-decoration: underline;
+}
+[data-site-nav] a[data-active="true"] {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+[data-language-switcher] {
+  padding: var(--space-sm) var(--space-md);
+}
+[data-language-switcher] ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: var(--space-sm);
+}
+[data-language-switcher] a {
+  color: var(--color-muted);
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+[data-language-switcher] a[data-active="true"] {
+  color: var(--color-fg);
+  font-weight: 600;
 }</style></head><body><main><section data-block="teamGrid" data-block-id="blk_team_main" class="team-grid" aria-labelledby="blk_team_main__title"><div class="team-grid__inner"><h2 id="blk_team_main__title" class="team-grid__title">Echipa noastră</h2><p class="team-grid__intro">Cei care fac HISTORIPOL să funcționeze.</p><div class="team-grid__group" data-team-group aria-labelledby="blk_team_main__group-conducere__heading"><h3 id="blk_team_main__group-conducere__heading" class="team-grid__group-heading">Conducere</h3><ul class="team-grid__list" style="--team-grid-columns: 3;"><li class="team-person" data-person-card><figure class="team-person__figure"><img class="team-person__photo" src="assets/a1b2c3d4e5f60718.jpg" alt="Portret Ana Popescu" width="600" height="600" loading="lazy"/><figcaption class="team-person__caption"><p class="team-person__name">Ana Popescu</p><p class="team-person__role">Președinte</p><p class="team-person__bio">Studentă în anul III, Istorie.</p><ul class="team-person__socials"><li class="team-person__socials-item"><a class="team-person__social team-person__social--linkedin" href="https://linkedin.com/in/ana" data-platform="linkedin" rel="noopener noreferrer"><span class="visually-hidden">linkedin</span></a></li><li class="team-person__socials-item"><a class="team-person__social team-person__social--email" href="mailto:ana@historipol.ro" data-platform="email" rel="noopener noreferrer"><span class="visually-hidden">email</span></a></li></ul></figcaption></figure></li><li class="team-person" data-person-card><figure class="team-person__figure"><span class="team-person__avatar" aria-hidden="true">M</span><figcaption class="team-person__caption"><p class="team-person__name">Mihai Ionescu</p><p class="team-person__role">Vicepreședinte</p><ul class="team-person__socials"><li class="team-person__socials-item"><a class="team-person__social team-person__social--instagram" href="https://instagram.com/mihai" data-platform="instagram" rel="noopener noreferrer"><span class="visually-hidden">instagram</span></a></li></ul></figcaption></figure></li></ul></div><div class="team-grid__group" data-team-group aria-labelledby="blk_team_main__group-comunicare__heading"><h3 id="blk_team_main__group-comunicare__heading" class="team-grid__group-heading">Comunicare</h3><ul class="team-grid__list" style="--team-grid-columns: 3;"><li class="team-person" data-person-card><figure class="team-person__figure"><img class="team-person__photo" src="assets/b2c3d4e5f6071829.jpg" alt="Portret Elena Dumitru" width="600" height="600" loading="lazy"/><figcaption class="team-person__caption"><p class="team-person__name">Elena Dumitru</p><p class="team-person__role">Director Comunicare</p></figcaption></figure></li><li class="team-person" data-person-card><figure class="team-person__figure"><span class="team-person__avatar" aria-hidden="true">R</span><figcaption class="team-person__caption"><p class="team-person__name">Radu Stan</p><p class="team-person__role">Social Media</p></figcaption></figure></li></ul></div><div class="team-grid__group" data-team-group aria-labelledby="blk_team_main__group-evenimente__heading"><h3 id="blk_team_main__group-evenimente__heading" class="team-grid__group-heading">Evenimente</h3><ul class="team-grid__list" style="--team-grid-columns: 3;"><li class="team-person" data-person-card><figure class="team-person__figure"><span class="team-person__avatar" aria-hidden="true">I</span><figcaption class="team-person__caption"><p class="team-person__name">Ioana Marin</p><p class="team-person__role">Director Evenimente</p><p class="team-person__bio">Coordonator workshop-uri.</p></figcaption></figure></li><li class="team-person" data-person-card><figure class="team-person__figure"><span class="team-person__avatar" aria-hidden="true">V</span><figcaption class="team-person__caption"><p class="team-person__name">Vlad Petrescu</p><p class="team-person__role">Logistică</p></figcaption></figure></li><li class="team-person" data-person-card><figure class="team-person__figure"><span class="team-person__avatar" aria-hidden="true">S</span><figcaption class="team-person__caption"><p class="team-person__name">Sofia Anton</p><p class="team-person__role">Voluntar Senior</p></figcaption></figure></li></ul></div><div class="team-grid__group" data-team-group aria-labelledby="blk_team_main__group-finan-e__heading"><h3 id="blk_team_main__group-finan-e__heading" class="team-grid__group-heading">Finanțe</h3><ul class="team-grid__list" style="--team-grid-columns: 3;"><li class="team-person" data-person-card><figure class="team-person__figure"><span class="team-person__avatar" aria-hidden="true">G</span><figcaption class="team-person__caption"><p class="team-person__name">George Manea</p><p class="team-person__role">Director Finanțe</p><ul class="team-person__socials"><li class="team-person__socials-item"><a class="team-person__social team-person__social--email" href="mailto:george@historipol.ro" data-platform="email" rel="noopener noreferrer"><span class="visually-hidden">email</span></a></li></ul></figcaption></figure></li><li class="team-person" data-person-card><figure class="team-person__figure"><span class="team-person__avatar" aria-hidden="true">C</span><figcaption class="team-person__caption"><p class="team-person__name">Cristina Ene</p><p class="team-person__role">Trezorier</p></figcaption></figure></li></ul></div></div></section></main></body></html>

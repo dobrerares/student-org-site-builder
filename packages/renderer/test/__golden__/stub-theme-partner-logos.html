@@ -807,4 +807,47 @@ main { display: block; }
 }
 [data-block="event-list"] [data-event-id].is-past {
   opacity: 0.55;
+}
+[data-site-nav] {
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--color-muted);
+}
+[data-site-nav] ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+[data-site-nav] a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-family: var(--font-headline);
+}
+[data-site-nav] a:hover {
+  text-decoration: underline;
+}
+[data-site-nav] a[data-active="true"] {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+[data-language-switcher] {
+  padding: var(--space-sm) var(--space-md);
+}
+[data-language-switcher] ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: var(--space-sm);
+}
+[data-language-switcher] a {
+  color: var(--color-muted);
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+[data-language-switcher] a[data-active="true"] {
+  color: var(--color-fg);
+  font-weight: 600;
 }</style></head><body><main><section data-block="partnerLogos" data-block-id="blk_partners_main" aria-labelledby="blk_partners_main__title"><div class="partner-logos__inner"><h2 id="blk_partners_main__title" class="partner-logos__title">Partenerii noștri</h2><ul class="partner-logos__grid"><li class="partner-logos__item"><a class="partner-logos__link" href="https://acme.example.com" aria-label="Acme Corp" rel="noopener noreferrer" target="_blank"><img class="partner-logos__logo" src="assets/8e3a7f.png" alt="Acme Corp logo" loading="lazy" width="320" height="120"/></a></li><li class="partner-logos__item"><img class="partner-logos__logo" src="assets/4a91d2.svg" alt="Beta University crest" loading="lazy" width="400" height="100"/></li><li class="partner-logos__item"><a class="partner-logos__link" href="https://gamma.example.org" aria-label="Gamma Foundation" rel="noopener noreferrer" target="_blank"><img class="partner-logos__logo" src="assets/c0ffee.webp" alt="Gamma Foundation wordmark" loading="lazy" width="300" height="100"/></a></li></ul></div></section></main></body></html>

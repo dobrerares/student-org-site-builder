@@ -807,4 +807,47 @@ main { display: block; }
 }
 [data-block="event-list"] [data-event-id].is-past {
   opacity: 0.55;
+}
+[data-site-nav] {
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--color-muted);
+}
+[data-site-nav] ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+[data-site-nav] a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-family: var(--font-headline);
+}
+[data-site-nav] a:hover {
+  text-decoration: underline;
+}
+[data-site-nav] a[data-active="true"] {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+[data-language-switcher] {
+  padding: var(--space-sm) var(--space-md);
+}
+[data-language-switcher] ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: var(--space-sm);
+}
+[data-language-switcher] a {
+  color: var(--color-muted);
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+[data-language-switcher] a[data-active="true"] {
+  color: var(--color-fg);
+  font-weight: 600;
 }</style></head><body><main><section data-block="hero" data-block-id="blk_home_hero" aria-labelledby="blk_home_hero__title"><div class="hero__inner"><p class="hero__eyebrow">Bun venit</p><h1 id="blk_home_hero__title" class="hero__title">Stub Org</h1><p class="hero__subtitle">A fixture for renderer tests</p><div class="hero__media"><img src="assets/hero.jpg" alt="Studenți la o conferință" loading="lazy"/></div></div></section></main></body></html>

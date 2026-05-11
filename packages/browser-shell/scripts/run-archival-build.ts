@@ -16,14 +16,20 @@
  *      shell.
  *   4. Write `dist/archival/builder.html`.
  *
- * The default mount fixture is the editor's minimal site; production CLIs
- * can override with `MOUNT_DATA_JSON` / `--data` if a future need arises.
+ * The default mount seed is the curated HISTORIPOL Academic demo
+ * (`asociatiaStudenteascaDemoData` from `@sosb/themes`), per ADR 0024 and
+ * ADR 0042. Callers can override by passing either an in-memory site object
+ * (`initialSiteData`) or a path to a JSON fixture (`initialSitePath`); the
+ * minimal one-hero fixture under `test/fixtures/` is preserved for tests
+ * that want the degenerate case.
  */
 
 import { build as esbuild } from "esbuild";
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+
+import { asociatiaStudenteascaDemoData } from "@sosb/themes";
 
 import { buildArchival } from "../src/archival/build-archival.js";
 
@@ -58,8 +64,20 @@ export interface RunArchivalBuildOptions {
   /** Where to write `builder.html`. Defaults to `<pkg>/dist/archival/`. */
   readonly outDir?: string;
   /**
+   * In-memory site object used to seed the editor on first launch inside
+   * the archival HTML. Takes precedence over `initialSitePath`. When
+   * neither is provided, the curated HISTORIPOL Academic demo
+   * (`asociatiaStudenteascaDemoData` from `@sosb/themes`) is used — see
+   * ADR 0024 and ADR 0042.
+   */
+  readonly initialSiteData?: Record<string, unknown>;
+  /**
    * Path to a JSON site fixture used to seed the editor on first launch
-   * inside the archival HTML. Defaults to the package's bundled minimal site.
+   * inside the archival HTML. Used only when `initialSiteData` is not
+   * provided. Preserved for backward compatibility and for tests that want
+   * the degenerate `test/fixtures/minimal-site.json` seed; the default
+   * (when both this and `initialSiteData` are omitted) is the curated
+   * demo, not this fixture.
    */
   readonly initialSitePath?: string;
 }
@@ -68,10 +86,22 @@ export async function runArchivalBuild(
   options: RunArchivalBuildOptions = {},
 ): Promise<{ outPath: string; bytes: number }> {
   const outDir = options.outDir ?? path.join(pkgRoot, "dist", "archival");
-  const initialSitePath =
-    options.initialSitePath ?? path.join(pkgRoot, "test", "fixtures", "minimal-site.json");
 
-  const initialSite = JSON.parse(readFileSync(initialSitePath, "utf8")) as Record<string, unknown>;
+  // Default-resolution order for the editor's first-launch seed:
+  //   1. explicit `initialSiteData` (in-memory, no I/O),
+  //   2. explicit `initialSitePath` (JSON file on disk),
+  //   3. bundled curated HISTORIPOL Academic demo from `@sosb/themes`.
+  let initialSite: Record<string, unknown>;
+  if (options.initialSiteData !== undefined) {
+    initialSite = options.initialSiteData;
+  } else if (options.initialSitePath !== undefined) {
+    initialSite = JSON.parse(readFileSync(options.initialSitePath, "utf8")) as Record<
+      string,
+      unknown
+    >;
+  } else {
+    initialSite = asociatiaStudenteascaDemoData as unknown as Record<string, unknown>;
+  }
 
   // (1) Bundle the archival entry. The entry imports `<EditorApp>` and
   //     mounts it into `#root` with the embedded initial site.

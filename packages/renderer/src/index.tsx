@@ -73,16 +73,32 @@ function composeCss(site: Site, themeId: string): string {
   return `${root}\n${themeCss}`;
 }
 
+/**
+ * Compose theme CSS as `STUB_THEME_CSS` (layout baseline covering every
+ * registered block type) plus the active theme's curated overlay (palette,
+ * typography, hero composition). Later wins per the CSS cascade, so the
+ * theme overrides stub where they overlap and adds rules where stub doesn't.
+ *
+ * The stub-as-baseline composition was the original design intent — see the
+ * comment at the top of `activities-list-golden.test.ts`, which described
+ * the test stack as "until #47 substitutes the CSS for `themeId === academic`,
+ * the renderer falls back to the stub theme". Production themes (#28-#31, #47)
+ * shipped curated overlays expecting to extend stub, but the original
+ * implementation of this function returned only the theme's CSS — leaving
+ * any block the theme didn't curate (most of them, since each theme styles
+ * 1-3 blocks) rendering with no theme CSS at all. This composition closes
+ * that gap.
+ *
+ * The stub theme itself returns just stub CSS (no double-emit).
+ * Unknown / future themes fall back to stub-only.
+ */
 function themeCssFor(themeId: string): string {
-  if (themeId === EDITORIAL_THEME_ID) return EDITORIAL_THEME_CSS;
-  if (themeId === CIVIC_THEME_ID) return CIVIC_THEME_CSS;
-  if (themeId === ACADEMIC_THEME_ID) return ACADEMIC_THEME_CSS;
   if (themeId === STUB_THEME_ID) return STUB_THEME_CSS;
-  if (themeId === MINIMAL_THEME_ID) return MINIMAL_THEME_CSS;
-  if (themeId === MODERN_THEME_ID) return MODERN_THEME_CSS;
-  // Unknown / future themes fall back to the stub layout. This keeps the
-  // renderer functional even before the themes package lands its full set
-  // (#31). The themes package will register itself by id when it arrives.
+  if (themeId === EDITORIAL_THEME_ID) return `${STUB_THEME_CSS}\n${EDITORIAL_THEME_CSS}`;
+  if (themeId === CIVIC_THEME_ID) return `${STUB_THEME_CSS}\n${CIVIC_THEME_CSS}`;
+  if (themeId === ACADEMIC_THEME_ID) return `${STUB_THEME_CSS}\n${ACADEMIC_THEME_CSS}`;
+  if (themeId === MINIMAL_THEME_ID) return `${STUB_THEME_CSS}\n${MINIMAL_THEME_CSS}`;
+  if (themeId === MODERN_THEME_ID) return `${STUB_THEME_CSS}\n${MODERN_THEME_CSS}`;
   return STUB_THEME_CSS;
 }
 

@@ -807,4 +807,47 @@ main { display: block; }
 }
 [data-block="event-list"] [data-event-id].is-past {
   opacity: 0.55;
+}
+[data-site-nav] {
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--color-muted);
+}
+[data-site-nav] ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+[data-site-nav] a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-family: var(--font-headline);
+}
+[data-site-nav] a:hover {
+  text-decoration: underline;
+}
+[data-site-nav] a[data-active="true"] {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+[data-language-switcher] {
+  padding: var(--space-sm) var(--space-md);
+}
+[data-language-switcher] ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: var(--space-sm);
+}
+[data-language-switcher] a {
+  color: var(--color-muted);
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+[data-language-switcher] a[data-active="true"] {
+  color: var(--color-fg);
+  font-weight: 600;
 }</style></head><body><main><section data-block="hero" data-block-id="blk_home_hero" aria-labelledby="blk_home_hero__title"><div class="hero__inner"><h1 id="blk_home_hero__title" class="hero__title">Documente publice</h1><p class="hero__subtitle">Materialele oficiale ale organizației.</p></div></section><section data-block="documentDownloads" data-block-id="blk_documents" data-layout="list" aria-labelledby="blk_documents__title"><div class="document-downloads__inner"><h2 id="blk_documents__title" class="document-downloads__title">Materiale descărcabile</h2><p class="document-downloads__intro">Documentele oficiale ale asociației pot fi descărcate aici.</p><ul class="document-downloads__list"><li class="document-downloads__item document-downloads__item--list"><a class="document-downloads__link" href="assets/8e3a7f9b1c0d2e4f.pdf" download aria-label="Regulament intern, PDF, 180 KB"><span class="document-downloads__label">Regulament intern</span><span class="document-downloads__meta"><span class="document-downloads__type">PDF</span> · <span class="document-downloads__size">180 KB</span></span></a><p class="document-downloads__description">Regulamentul anual al organizației, ediția 2026.</p></li><li class="document-downloads__item document-downloads__item--list"><a class="document-downloads__link" href="assets/1234abcd5678ef90.docx" download aria-label="Statut, DOCX, 25 KB"><span class="document-downloads__label">Statut</span><span class="document-downloads__meta"><span class="document-downloads__type">DOCX</span> · <span class="document-downloads__size">25 KB</span></span></a></li><li class="document-downloads__item document-downloads__item--list"><a class="document-downloads__link" href="assets/fedcba9876543210.csv" download aria-label="Membri 2026, CSV, 4 KB"><span class="document-downloads__label">Membri 2026</span><span class="document-downloads__meta"><span class="document-downloads__type">CSV</span> · <span class="document-downloads__size">4 KB</span></span></a><p class="document-downloads__description">Lista publică a membrilor activi.</p></li></ul></div></section></main></body></html>

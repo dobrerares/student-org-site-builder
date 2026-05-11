@@ -807,4 +807,47 @@ main { display: block; }
 }
 [data-block="event-list"] [data-event-id].is-past {
   opacity: 0.55;
+}
+[data-site-nav] {
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--color-muted);
+}
+[data-site-nav] ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+[data-site-nav] a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-family: var(--font-headline);
+}
+[data-site-nav] a:hover {
+  text-decoration: underline;
+}
+[data-site-nav] a[data-active="true"] {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+[data-language-switcher] {
+  padding: var(--space-sm) var(--space-md);
+}
+[data-language-switcher] ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: var(--space-sm);
+}
+[data-language-switcher] a {
+  color: var(--color-muted);
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+[data-language-switcher] a[data-active="true"] {
+  color: var(--color-fg);
+  font-weight: 600;
 }</style></head><body><main><section data-block="contactCard" data-block-id="blk_contact_with_map" aria-labelledby="blk_contact_with_map__heading" class="contact-card"><div class="contact-card__inner"><h2 id="blk_contact_with_map__heading" class="contact-card__heading">Contact</h2><address class="contact-card__address">Strada Universității 1, Constanța 900527</address><p class="contact-card__email-row"><a href="#" class="contact-card__email" data-contact-email data-contact-local="Y29udGFjdA==" data-contact-domain="ZXhhbXBsZS5vcmc=" aria-label="Reveal contact email and open mail composer" rel="noopener noreferrer"><span aria-hidden="true">[ click to reveal email ]</span></a><noscript><span class="contact-card__email-fallback">&#99;&#111;&#110;&#116;&#97;&#99;&#116;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#111;&#114;&#103;</span></noscript></p><div class="contact-card__map" data-map-provider="osm"><iframe src="https://www.openstreetmap.org/export/embed.html?bbox=28.6333,44.1683,28.6433,44.1783&amp;layer=mapnik&amp;marker=44.1733,28.6383" loading="lazy" title="Map showing the organisation's location (OpenStreetMap)" referrerpolicy="no-referrer"></iframe></div></div><script data-contact-reveal>(function(){var els=document.querySelectorAll("[data-contact-email]");for(var i=0;i<els.length;i++){(function(el){function reveal(){var l=el.getAttribute("data-contact-local");var d=el.getAttribute("data-contact-domain");if(!l||!d)return;var addr=atob(l)+String.fromCharCode(64)+atob(d);el.setAttribute("href","mailto:"+addr);el.textContent=addr;el.removeAttribute("data-contact-local");el.removeAttribute("data-contact-domain");}el.addEventListener("click",reveal,{once:true});el.addEventListener("focus",reveal,{once:true});el.addEventListener("pointerover",reveal,{once:true});})(els[i]);}})();</script></section></main></body></html>

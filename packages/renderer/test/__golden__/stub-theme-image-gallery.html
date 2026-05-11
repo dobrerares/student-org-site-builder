@@ -807,4 +807,47 @@ main { display: block; }
 }
 [data-block="event-list"] [data-event-id].is-past {
   opacity: 0.55;
+}
+[data-site-nav] {
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--color-muted);
+}
+[data-site-nav] ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+[data-site-nav] a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-family: var(--font-headline);
+}
+[data-site-nav] a:hover {
+  text-decoration: underline;
+}
+[data-site-nav] a[data-active="true"] {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+[data-language-switcher] {
+  padding: var(--space-sm) var(--space-md);
+}
+[data-language-switcher] ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: var(--space-sm);
+}
+[data-language-switcher] a {
+  color: var(--color-muted);
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+[data-language-switcher] a[data-active="true"] {
+  color: var(--color-fg);
+  font-weight: 600;
 }</style></head><body><main><section data-block="imageGallery" data-block-id="blk_gallery_home" data-layout="grid" aria-labelledby="blk_gallery_home__title" style="--gallery-columns: 3"><h2 id="blk_gallery_home__title" class="image-gallery__title">Galerie evenimente</h2><ul class="image-gallery__grid" role="list"><li class="image-gallery__item"><figure id="blk_gallery_home__fig_0" class="image-gallery__figure"><button type="button" class="image-gallery__trigger" data-sosb-lightbox-open="true" data-gallery="blk_gallery_home" data-index="0" data-src="assets/8e3a7f9b1c0d2e4f.jpg" data-alt="Studenți la o conferință de toamnă" data-caption="Conferința de toamnă" aria-label="Open image 1: Conferința de toamnă" aria-describedby="blk_gallery_home__fig_0__cap"><img src="assets/8e3a7f9b1c0d2e4f.jpg" alt="Studenți la o conferință de toamnă" width="1600" height="1067" loading="lazy" decoding="async"/></button><figcaption id="blk_gallery_home__fig_0__cap" class="image-gallery__caption">Conferința de toamnă</figcaption></figure></li><li class="image-gallery__item"><figure id="blk_gallery_home__fig_1" class="image-gallery__figure"><button type="button" class="image-gallery__trigger" data-sosb-lightbox-open="true" data-gallery="blk_gallery_home" data-index="1" data-src="assets/4b2c1d8a3e5f6071.png" data-alt="Diacritic test: ăîâșț" data-caption aria-label="Open image 2"><img src="assets/4b2c1d8a3e5f6071.png" alt="Diacritic test: ăîâșț" width="1200" height="800" loading="lazy" decoding="async"/></button></figure></li></ul></section></main><div data-sosb-lightbox="true" role="dialog" aria-modal="true" aria-label="Image preview" hidden tabindex="-1"><div class="sosb-lightbox__backdrop"></div><div class="sosb-lightbox__panel"><button type="button" class="sosb-lightbox__btn sosb-lightbox__btn--prev" data-sosb-lightbox-prev="true" aria-label="Previous image">‹</button><figure class="sosb-lightbox__figure"><img data-sosb-lightbox-img="true" src alt/><figcaption data-sosb-lightbox-caption="true" class="sosb-lightbox__caption" hidden></figcaption></figure><button type="button" class="sosb-lightbox__btn sosb-lightbox__btn--next" data-sosb-lightbox-next="true" aria-label="Next image">›</button><button type="button" class="sosb-lightbox__btn sosb-lightbox__btn--close" data-sosb-lightbox-close="true" aria-label="Close image preview">×</button></div></div><script data-sosb-lightbox-script="true">(function(){document.addEventListener("DOMContentLoaded",function(){var d=document.querySelector("[data-sosb-lightbox]");if(!d)return;var i=d.querySelector("[data-sosb-lightbox-img]"),c=d.querySelector("[data-sosb-lightbox-caption]"),p=d.querySelector("[data-sosb-lightbox-prev]"),n=d.querySelector("[data-sosb-lightbox-next]"),x=d.querySelector("[data-sosb-lightbox-close]");if(!i)return;var T=document.querySelectorAll("[data-sosb-lightbox-open]"),B={};T.forEach(function(t){var g=t.getAttribute("data-gallery")||"";(B[g]=B[g]||[]).push(t)});Object.keys(B).forEach(function(g){B[g].sort(function(a,b){return Number(a.getAttribute("data-index"))-Number(b.getAttribute("data-index"))})});var C=null,K=null;function P(t){i.setAttribute("src",t.getAttribute("data-src")||"");i.setAttribute("alt",t.getAttribute("data-alt")||"");var v=t.getAttribute("data-caption")||"";if(c){c.textContent=v;if(v)c.removeAttribute("hidden");else c.setAttribute("hidden","")}}function F(){var f=d.querySelectorAll("button,[href],input,select,textarea,[tabindex]:not([tabindex='-1'])");if(f.length)f[0].focus()}function O(t){C=t;P(t);d.removeAttribute("hidden");d.setAttribute("data-open","");K=function(e){if(e.key==="Escape"){e.preventDefault();X();return}if(e.key==="ArrowRight"){e.preventDefault();S(1);return}if(e.key==="ArrowLeft"){e.preventDefault();S(-1);return}if(e.key==="Tab")R(e)};document.addEventListener("keydown",K,true);F()}function X(){var r=C;C=null;d.setAttribute("hidden","");d.removeAttribute("data-open");if(K)document.removeEventListener("keydown",K,true);K=null;if(r&&typeof r.focus==="function")r.focus()}function S(D){if(!C)return;var g=C.getAttribute("data-gallery")||"",a=B[g]||[];if(!a.length)return;var k=a.indexOf(C);k=(k+D+a.length)%a.length;C=a[k];P(C)}function R(e){var f=d.querySelectorAll("button,[href],input,select,textarea,[tabindex]:not([tabindex='-1'])");if(!f.length)return;var u=f[0],w=f[f.length-1],z=document.activeElement;if(e.shiftKey){if(z===u||!d.contains(z)){e.preventDefault();w.focus()}}else{if(z===w){e.preventDefault();u.focus()}}}T.forEach(function(t){t.addEventListener("click",function(e){e.preventDefault();O(t)})});if(x)x.addEventListener("click",function(){X()});if(p)p.addEventListener("click",function(){S(-1)});if(n)n.addEventListener("click",function(){S(1)});d.addEventListener("click",function(e){if(e.target===d)X()})})})();</script></body></html>

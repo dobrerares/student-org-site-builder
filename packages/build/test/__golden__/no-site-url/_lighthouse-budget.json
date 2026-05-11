@@ -7,12 +7,12 @@
         "html": {
           "status": "pass",
           "limitBytes": 51200,
-          "bytes": 22442
+          "bytes": 23330
         },
         "css": {
           "status": "pass",
           "limitBytes": 15360,
-          "bytes": 3135
+          "bytes": 3251
         },
         "js": {
           "status": "pass",

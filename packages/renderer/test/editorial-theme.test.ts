@@ -93,9 +93,14 @@ describe("editorial theme — layout-only CSS contract", () => {
     const html = renderSite(fixture, EDITORIAL_THEME_ID);
     // The 1.333 ratio gives h1 ≈ 3.157rem; we just assert it is meaningfully
     // larger than 2rem so the contract isn't accidentally flattened later.
-    const heroH1Match = html.match(/\[data-block="hero"\]\s+h1\s*\{([\s\S]*?)\}/);
-    expect(heroH1Match).not.toBeNull();
-    const fs = heroH1Match![1]!.match(/font-size:\s*([0-9.]+)rem/);
+    // Stub baseline + editorial overlay both emit `[data-block="hero"] h1 {…}`
+    // rules; the cascade-winning rule is the last one (editorial's). Match
+    // all and inspect the final one so this test reflects what the browser
+    // would compute, not just whichever rule appeared first.
+    const heroH1Matches = [...html.matchAll(/\[data-block="hero"\]\s+h1\s*\{([\s\S]*?)\}/g)];
+    expect(heroH1Matches.length).toBeGreaterThan(0);
+    const last = heroH1Matches[heroH1Matches.length - 1]!;
+    const fs = last[1]!.match(/font-size:\s*([0-9.]+)rem/);
     expect(fs).not.toBeNull();
     expect(Number.parseFloat(fs![1]!)).toBeGreaterThanOrEqual(2.5);
   });

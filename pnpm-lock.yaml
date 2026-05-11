@@ -94,6 +94,9 @@ importers:
       '@sosb/schema':
         specifier: workspace:*
         version: link:../schema
+      '@sosb/themes':
+        specifier: workspace:*
+        version: link:../themes
       '@sosb/vfs':
         specifier: workspace:*
         version: link:../vfs
