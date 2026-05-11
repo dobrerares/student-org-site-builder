@@ -183,5 +183,8 @@ enum value`) and the editor can localise by `code`. Skip the extra
 - A dedicated `BlockEditor` panel that ties `BlockForm` into the
   editor-app's site-data state and preview bridge — that is the editor's
   block-CRUD issue (not yet broken out from the parent #1 epic).
+  **Update (2026-05-11):** the deferred wiring landed under ADR 0042,
+  alongside the BLOCK_METADATA + DEFAULT_BUILDERS backfill that ADR 0008
+  anticipated as per-block additive PRs.
 - Markdown rendering inside `description` — explicitly out of scope per
   the issue's triage comment.
