@@ -55,6 +55,15 @@ import { z } from "zod";
  *    mime, divergent alt rules). Kept distinct because each block's
  *    validation surface tunes the alt strictness to that block's
  *    placeholder / stale-data tolerance.
+ *
+ * Future work (not addressed in this PR): `hero.backgroundImage` and
+ * `quote.authorImage` are still typed as `z.string().optional()`
+ * (path-only references with sibling `*Alt` text fields). Converting them
+ * to AssetRef-shaped objects would carry the same upload-pipeline
+ * benefits (dedup, dimensions, mime, alt-on-the-asset) as every other
+ * image-bearing block, but the change requires a v1→v2 data migration
+ * for existing sites and is intentionally out of scope for the
+ * form-overrides-and-pickers feature branch. Tracked as a follow-up.
  */
 
 const AssetMimeSchema = z.enum(["image/jpeg", "image/png", "image/webp", "image/svg+xml"]);

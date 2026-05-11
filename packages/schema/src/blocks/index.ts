@@ -74,7 +74,12 @@ export type {
   ActivityItem,
   ActivityLink,
 } from "./activities-list.js";
-export { TeamGridBlockSchema, TeamGridDataSchema, TEAM_GRID_BLOCK_VERSION } from "./team-grid.js";
+export {
+  PersonPhotoSchema,
+  TeamGridBlockSchema,
+  TeamGridDataSchema,
+  TEAM_GRID_BLOCK_VERSION,
+} from "./team-grid.js";
 export type {
   TeamGridBlock,
   TeamGridData,

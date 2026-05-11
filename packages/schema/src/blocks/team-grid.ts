@@ -22,7 +22,15 @@ const SocialLinkSchema = z.looseObject({
   url: z.string().min(1),
 });
 
-const PersonPhotoSchema = z.looseObject({
+/**
+ * Exported so the editor's form-generator (ADR 0043 schema-identity
+ * dispatch) can register this reference-distinct AssetRef-shaped object
+ * with the `"asset-picker"` renderer. Without the re-export the editor
+ * would fall through to the default object walker and render
+ * hash/path/mime/width/height as raw text inputs — the failure mode ADR
+ * 0044 prohibits.
+ */
+export const PersonPhotoSchema = z.looseObject({
   /** SHA-256 prefix — the content-address of the asset. */
   hash: z.string().min(1),
   /** VFS path of the asset bytes (e.g. `assets/8e3a7f9b1c0d2e4f.jpg`). */

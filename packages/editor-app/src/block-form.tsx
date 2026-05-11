@@ -24,6 +24,18 @@
  *    renderer below mounts `<AssetPicker>` at the `images.[k].asset` /
  *    `partners.[k].logo` slot — replacing the hash/path/mime/width/
  *    height fieldset that the default walker would otherwise emit.
+ *  - `CtaBannerAssetRefSchema → "asset-picker"`,
+ *    `PersonPhotoSchema → "asset-picker"`,
+ *    `ActivityImageRefSchema → "asset-picker"`: three reference-distinct
+ *    but structurally compatible AssetRef-shaped schemas live alongside
+ *    the canonical `AssetRefSchema` (see asset-ref.ts's "Distinct shapes"
+ *    docblock for why they aren't consolidated — each tunes `alt`/`mime`
+ *    strictness to its block's tolerance for stale data). Each needs its
+ *    own registry entry because reference equality is the dispatch key.
+ *    The asset pipeline's `uploadAsset` result satisfies all three
+ *    (non-empty `alt` from `file.name`, non-negative integer dimensions,
+ *    populated `mime`), so a single shared `<AssetPicker>` renderer
+ *    serves every entry at runtime.
  *  - `DocumentAssetRefSchema → "document-picker"`: the documentDownloads
  *    block carries this shape at `files.[k].asset`; the walker mounts
  *    `<DocumentPicker>` there instead of a hash/path/mime/byteSize
@@ -33,7 +45,13 @@ import type { JSX } from "preact";
 import { useState } from "preact/hooks";
 import type { ZodType } from "zod";
 import type { AssetRefLike, DocumentAssetRef } from "@sosb/schema";
-import { AssetRefSchema, DocumentAssetRefSchema } from "@sosb/schema";
+import {
+  ActivityImageRefSchema,
+  AssetRefSchema,
+  CtaBannerAssetRefSchema,
+  DocumentAssetRefSchema,
+  PersonPhotoSchema,
+} from "@sosb/schema";
 
 import { AdvancedToggle } from "./advanced-toggle.js";
 import type { FieldOverride } from "./field-metadata.js";
@@ -51,11 +69,26 @@ import { DocumentPicker, type DocumentAssetRefLike } from "./document-picker.js"
  * outcome. Reference equality on the value schemas is the load-bearing
  * property — every image-bearing block schema imports the SAME
  * `AssetRefSchema` object, and the document-downloads block carries the
- * SAME `DocumentAssetRefSchema`, so these two entries dispatch across
- * every embedding without a second walker pass.
+ * SAME `DocumentAssetRefSchema`, so these entries dispatch across every
+ * embedding without a second walker pass.
+ *
+ * Four AssetRef-shaped schemas dispatch to `"asset-picker"`:
+ *   - `AssetRefSchema` — image-gallery, partner-logos (canonical).
+ *   - `CtaBannerAssetRefSchema` — ctaBanner.backgroundImage.
+ *   - `PersonPhotoSchema` — teamGrid.people[].photo.
+ *   - `ActivityImageRefSchema` — activitiesList.items[].image.
+ *
+ * Each is a reference-distinct ZodObject (see
+ * `packages/schema/src/blocks/asset-ref.ts` for the "intentionally not
+ * consolidated" rationale — divergent `alt`/`mime` rules per block).
+ * They share the same UX (upload + preview + alt-edit), so the renderer
+ * arm below (`node.renderer === "asset-picker"`) is shared.
  */
 const MEDIA_PICKER_RENDERERS: ReadonlyMap<ZodType, string> = new Map<ZodType, string>([
   [AssetRefSchema, "asset-picker"],
+  [CtaBannerAssetRefSchema, "asset-picker"],
+  [PersonPhotoSchema, "asset-picker"],
+  [ActivityImageRefSchema, "asset-picker"],
   [DocumentAssetRefSchema, "document-picker"],
 ]);
 

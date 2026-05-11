@@ -524,11 +524,14 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
       break;
     }
     case "documentDownloads": {
-      // No quality nudges in v1. The schema's `min(1)` on files and on
-      // every label is enforced at parse-time as errors; the upload
-      // pipeline (#21) enforces label / size / mime at upload time. If
-      // future user-research surfaces nudges (missing description on a
-      // doc, etc.) they land here.
+      // No quality nudges in v1. The schema previously enforced
+      // `min(1)` on the files array; T19 (ADR 0044 Corollary 2) relaxed
+      // this so a freshly-added documentDownloads block can start with
+      // zero files (the DocumentPicker owns the empty-state UX). Every
+      // individual file's `label` is still parse-time enforced as
+      // non-empty, and the upload pipeline (#21) enforces label / size
+      // / mime at upload time. A future warning-tier rule for "this
+      // block has no content" would land here.
       break;
     }
     case "eventList": {

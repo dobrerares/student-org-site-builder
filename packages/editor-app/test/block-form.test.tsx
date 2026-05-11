@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { render, cleanup, fireEvent } from "@testing-library/preact";
+import type { ZodType } from "zod";
 import type {
   AssetRefLike,
   DocumentAssetRef,
@@ -9,8 +10,12 @@ import type {
   ValueListData,
 } from "@sosb/schema";
 import {
+  ActivitiesListDataSchema,
+  CtaBannerDataSchema,
   DocumentDownloadsDataSchema,
   ImageGalleryDataSchema,
+  PartnerLogosDataSchema,
+  TeamGridDataSchema,
   ValueListDataSchema,
 } from "@sosb/schema";
 
@@ -795,4 +800,208 @@ describe("BlockForm — documentDownloads wires DocumentPicker per file (ADR 004
     expect(patches[0]!.path).toEqual(["files", 1, "asset"]);
     expect(patches[0]!.value).toEqual(uploaded);
   });
+});
+
+/**
+ * Structural guard for the schema-identity dispatch (ADR 0044 done-criterion
+ * #1): for every block type whose data schema embeds an AssetRef-shaped
+ * sub-schema, BlockForm MUST mount the asset-picker / document-picker
+ * widget instead of recursing into the structural leaves
+ * (hash/path/metadataPath/mime/width/height/byteSize).
+ *
+ * Three AssetRef-shaped sub-schemas were initially missed by the dispatch
+ * map (ctaBanner's `CtaBannerAssetRefSchema`, teamGrid's
+ * `PersonPhotoSchema`, activitiesList's `ActivityImageRefSchema`) because
+ * they are reference-distinct from the canonical `AssetRefSchema` —
+ * intentionally so, since each tunes `alt`/`mime` strictness to its
+ * block's tolerance for stale data (see asset-ref.ts's "Distinct shapes"
+ * docblock). The earlier reviewer's recommendation was to ship a guard
+ * that iterates EVERY asset-bearing block so a future addition can't
+ * silently regress. That guard lives here.
+ *
+ * The list MUST include every block type whose data schema embeds an
+ * AssetRef-shaped sub-schema. Adding a new such block requires (a) a
+ * dispatch entry in `block-form.tsx`'s `MEDIA_PICKER_RENDERERS` and (b)
+ * a row here.
+ */
+describe("BlockForm — asset-picker dispatch covers every AssetRef-bearing block (ADR 0044)", () => {
+  afterEach(cleanup);
+
+  /**
+   * Structural leaves that the default object walker would emit as raw
+   * `<input>` controls if the schema-identity dispatch missed. Each of
+   * these has an `<input type="text" data-field="…">` (or `type="number"`
+   * for the numeric ones) in the failure mode — checking for any
+   * `data-field` whose last segment matches catches the regression
+   * whether it surfaces at the top level (`hash`) or deep inside an
+   * array item (`partners.0.logo.hash`).
+   *
+   * `byteSize` is DocumentAssetRef-specific; the rest live on image
+   * AssetRefs. The combined set covers both pickers in one sweep.
+   */
+  const ASSET_LEAF_FIELDS = [
+    "hash",
+    "path",
+    "metadataPath",
+    "mime",
+    "width",
+    "height",
+    "byteSize",
+  ] as const;
+
+  function makeImageAsset(suffix: string): AssetRefLike {
+    return {
+      hash: `hash-${suffix}`,
+      path: `assets/${suffix}.jpg`,
+      metadataPath: `assets/${suffix}.metadata.json`,
+      mime: "image/jpeg",
+      width: 800,
+      height: 600,
+      alt: `Sample ${suffix}`,
+    };
+  }
+
+  function makeDocAsset(suffix: string): DocumentAssetRef {
+    return {
+      hash: `hash-${suffix}`,
+      path: `assets/${suffix}.pdf`,
+      metadataPath: `assets/${suffix}.metadata.json`,
+      mime: "application/pdf",
+      byteSize: 1024,
+    };
+  }
+
+  interface BlockCase {
+    readonly type: string;
+    readonly schema: ZodType;
+    readonly data: unknown;
+  }
+
+  /**
+   * One row per asset-bearing block type. `data` must satisfy the
+   * matching schema (so the form renders without hitting an unparseable
+   * branch) AND must POPULATE every AssetRef slot — an unpopulated
+   * optional slot is fine for dispatch purposes (the picker still
+   * mounts) but populating one yields a strictly more rigorous test:
+   * the underlying `value` is the AssetRef object, and a regression to
+   * the default-object walker would surface its leaves with concrete
+   * (non-empty) values.
+   */
+  const cases: readonly BlockCase[] = [
+    {
+      type: "imageGallery",
+      schema: ImageGalleryDataSchema,
+      data: {
+        title: "Gallery",
+        layout: "grid",
+        columns: 3,
+        lightbox: true,
+        images: [{ asset: makeImageAsset("ig"), alt: "First photo" }],
+      },
+    },
+    {
+      type: "partnerLogos",
+      schema: PartnerLogosDataSchema,
+      data: {
+        title: "Partners",
+        partners: [{ name: "Partner A", logo: makeImageAsset("pl") }],
+      },
+    },
+    {
+      type: "documentDownloads",
+      schema: DocumentDownloadsDataSchema,
+      data: {
+        title: "Documents",
+        layout: "list",
+        files: [{ asset: makeDocAsset("dd"), label: "Regulament" }],
+      },
+    },
+    {
+      type: "ctaBanner",
+      schema: CtaBannerDataSchema,
+      data: {
+        title: "Call to action",
+        subtitle: "Supporting copy.",
+        button: { label: "Go", url: "/", style: "primary" },
+        backgroundImage: makeImageAsset("cb"),
+      },
+    },
+    {
+      type: "teamGrid",
+      schema: TeamGridDataSchema,
+      data: {
+        title: "Team",
+        columns: 3,
+        people: [{ name: "Person", role: "Role", photo: makeImageAsset("tg") }],
+      },
+    },
+    {
+      type: "activitiesList",
+      schema: ActivitiesListDataSchema,
+      data: {
+        title: "Activities",
+        layout: "cards",
+        items: [{ title: "Activity", image: makeImageAsset("al") }],
+      },
+    },
+  ];
+
+  for (const blockCase of cases) {
+    test(`${blockCase.type}: no raw inputs for AssetRef structural leaves`, () => {
+      const { container } = render(
+        <BlockForm
+          schema={blockCase.schema}
+          data={blockCase.data}
+          onPatch={() => {}}
+          onArrayChange={() => {}}
+          uploader={noopUploader}
+          documentUploader={noopDocumentUploader}
+        />,
+      );
+
+      // The renderer emits `[data-field="..."]` on every `<input>`/
+      // `<select>` it owns. The path is dotted, so the last segment is
+      // the leaf name. If the schema-identity dispatch missed, every
+      // structural leaf would have its own input here. Checking the
+      // suffix catches both top-level slots (`backgroundImage.hash`)
+      // and nested-in-array slots (`partners.0.logo.hash`).
+      for (const leaf of ASSET_LEAF_FIELDS) {
+        const matches = Array.from(
+          container.querySelectorAll<HTMLElement>("[data-field]"),
+        ).filter((el) => {
+          const path = el.getAttribute("data-field") ?? "";
+          const last = path.split(".").pop();
+          return last === leaf;
+        });
+        expect(
+          matches,
+          `${blockCase.type} surfaced a raw input for AssetRef leaf "${leaf}" (schema-identity dispatch missed?)`,
+        ).toEqual([]);
+      }
+    });
+
+    test(`${blockCase.type}: at least one asset/document picker mounts`, () => {
+      const { container } = render(
+        <BlockForm
+          schema={blockCase.schema}
+          data={blockCase.data}
+          onPatch={() => {}}
+          onArrayChange={() => {}}
+          uploader={noopUploader}
+          documentUploader={noopDocumentUploader}
+        />,
+      );
+      const assetPickers = container.querySelectorAll('[data-testid="asset-picker"]');
+      const docPickers = container.querySelectorAll('[data-testid="document-picker"]');
+      // documentDownloads dispatches to document-picker; the rest go to
+      // asset-picker. Either count satisfies the "a media picker mounts"
+      // assertion — what we're really catching is the case where NO
+      // picker mounted because the dispatch missed and the form
+      // recursed into the structural leaves instead.
+      expect(
+        assetPickers.length + docPickers.length,
+        `${blockCase.type} should mount at least one media picker`,
+      ).toBeGreaterThan(0);
+    });
+  }
 });

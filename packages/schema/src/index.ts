@@ -61,6 +61,7 @@ export {
   ImageGalleryBlockSchema,
   ImageGalleryDataSchema,
   KnownBlockSchemas,
+  PersonPhotoSchema,
   QUOTE_BLOCK_VERSION,
   QuoteBlockSchema,
   QuoteDataSchema,
