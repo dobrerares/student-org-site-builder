@@ -8,6 +8,10 @@
  * (`@sosb/assets`'s `uploadAsset`), and the editor MUST NOT render a
  * text/number input that pretends otherwise.
  *
+ * Per ADR 0044 Corollary 1 (round-trip is zero re-upload): when a value
+ * is supplied to this picker (post-import), the path resolves and the
+ * thumbnail renders WITHOUT triggering an upload.
+ *
  * Three rendered states:
  *
  *  1. `value` set, image bytes resolve → an `<img>` thumbnail.
@@ -44,6 +48,14 @@ export function AssetPicker(props: AssetPickerProps): JSX.Element {
   // Keyed on the `hash` of the value so swapping in a fresh AssetRef
   // (after a re-upload) resets the error state automatically.
   const [errorHash, setErrorHash] = useState<string | null>(null);
+  // Surface uploader failures (network down, server error, corrupted
+  // bytes) above the state-specific UI — per ADR 0044's "never lose
+  // user intent silently" spirit, a rejected upload MUST show feedback.
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  // In-flight token guards against rapid-fire uploads where the earlier
+  // promise resolves AFTER the later one. Only the most recent token
+  // wins; superseded resolutions are silently dropped.
+  const uploadTokenRef = useRef(0);
 
   const triggerFilePicker = (): void => {
     fileInputRef.current?.click();
@@ -55,12 +67,21 @@ export function AssetPicker(props: AssetPickerProps): JSX.Element {
     const input = event.currentTarget;
     const file = input.files?.[0];
     if (file === undefined) return;
-    const next = await props.uploader(file);
     // Clear the input so picking the same filename twice still fires
     // onChange — otherwise the second selection is a no-op.
     input.value = "";
-    setErrorHash(null);
-    props.onChange(next);
+
+    const token = ++uploadTokenRef.current;
+    setUploadError(null);
+    try {
+      const next = await props.uploader(file);
+      if (token !== uploadTokenRef.current) return; // superseded
+      setErrorHash(null);
+      props.onChange(next);
+    } catch (err) {
+      if (token !== uploadTokenRef.current) return; // superseded
+      setUploadError(err instanceof Error ? err.message : "Upload failed");
+    }
   };
 
   const hasValue = props.value !== undefined;
@@ -68,6 +89,16 @@ export function AssetPicker(props: AssetPickerProps): JSX.Element {
 
   return (
     <div data-testid="asset-picker">
+      {uploadError !== null ? (
+        <p
+          data-testid="asset-picker-error"
+          role="alert"
+          data-error-message={uploadError}
+        >
+          Upload failed: {uploadError}. Please try again.
+        </p>
+      ) : null}
+
       {hasValue && !imageErrored ? (
         <img
           data-testid="asset-picker-thumbnail"

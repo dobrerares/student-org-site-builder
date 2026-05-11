@@ -139,6 +139,84 @@ describe("AssetPicker", () => {
     expect(onChange).toHaveBeenCalledWith(uploaded);
   });
 
+  test("renders an upload error banner when the uploader rejects", async () => {
+    const failingUploader = vi.fn().mockRejectedValue(new Error("network down"));
+    const { container } = render(
+      <AssetPicker value={undefined} onChange={() => {}} uploader={failingUploader} />,
+    );
+    const addBtn = container.querySelector('[data-testid="asset-picker-add"]') as HTMLElement;
+    addBtn.click();
+    const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+    const fakeFile = new File(["x"], "x.jpg", { type: "image/jpeg" });
+    Object.defineProperty(fileInput, "files", { value: [fakeFile], writable: false });
+    fireEvent.change(fileInput);
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const errorBanner = container.querySelector('[data-testid="asset-picker-error"]');
+    expect(errorBanner).not.toBeNull();
+    expect(errorBanner?.getAttribute("data-error-message")).toContain("network down");
+  });
+
+  test("ignores a stale upload that resolves after a newer one", async () => {
+    let resolveA!: (v: AssetRefLike) => void;
+    const aPromise = new Promise<AssetRefLike>((r) => (resolveA = r));
+    const bRef: AssetRefLike = {
+      hash: "B",
+      mime: "image/jpeg",
+      path: "/vfs/B.jpg",
+      metadataPath: "/vfs/B.json",
+      width: 100,
+      height: 100,
+      alt: "B",
+    };
+    const aRef: AssetRefLike = {
+      hash: "A",
+      mime: "image/jpeg",
+      path: "/vfs/A.jpg",
+      metadataPath: "/vfs/A.json",
+      width: 100,
+      height: 100,
+      alt: "A",
+    };
+
+    let callCount = 0;
+    const uploader = vi.fn().mockImplementation(() => {
+      callCount += 1;
+      if (callCount === 1) return aPromise;
+      return Promise.resolve(bRef);
+    });
+
+    const received: AssetRefLike[] = [];
+    const { container } = render(
+      <AssetPicker value={undefined} onChange={(v) => received.push(v)} uploader={uploader} />,
+    );
+
+    const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+    const trigger = (name: string): void => {
+      const file = new File(["x"], name, { type: "image/jpeg" });
+      Object.defineProperty(fileInput, "files", {
+        value: [file],
+        writable: false,
+        configurable: true,
+      });
+      fireEvent.change(fileInput);
+    };
+
+    trigger("A.jpg");
+    trigger("B.jpg");
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    resolveA(aRef);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(received).toEqual([bRef]);
+  });
+
   test("ADR 0044: NO code path renders any <input> other than <input type='file'>", () => {
     // Render every state in turn and assert the invariant each time.
     const uploader = async (): Promise<AssetRefLike> => freshAsset();
