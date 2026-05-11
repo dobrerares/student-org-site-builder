@@ -223,6 +223,44 @@ describe("EditorApp drill-in inspector", () => {
     expect(container.querySelector('[data-testid="block-list"]')).not.toBeNull();
   });
 
+  test("clicking the Theme affordance drills into the ThemeForm", () => {
+    const { container } = render(<EditorApp initial={structuredClone(baseSite)} />);
+
+    const themeLink = container.querySelector<HTMLButtonElement>(
+      '[data-testid="drill-in-theme"]',
+    );
+    expect(themeLink).not.toBeNull();
+
+    fireEvent.click(themeLink!);
+
+    const inspector = container.querySelector('[data-testid="inspector"]');
+    expect(inspector).not.toBeNull();
+    expect(inspector?.getAttribute("data-inspector-mode")).toBe("theme");
+    expect(container.querySelector('[data-testid="theme-form"]')).not.toBeNull();
+
+    // Block list hidden while drilled into theme.
+    expect(container.querySelector('[data-testid="block-list"]')).toBeNull();
+    // Pages list stays.
+    expect(container.querySelector('[data-testid="pages-list"]')).not.toBeNull();
+  });
+
+  test("the back-to-blocks button drills out of the theme inspector", () => {
+    const { container } = render(<EditorApp initial={structuredClone(baseSite)} />);
+
+    fireEvent.click(
+      container.querySelector<HTMLButtonElement>('[data-testid="drill-in-theme"]')!,
+    );
+    expect(container.querySelector('[data-testid="theme-form"]')).not.toBeNull();
+
+    const back = container.querySelector<HTMLButtonElement>('[data-testid="drill-back"]');
+    expect(back).not.toBeNull();
+    fireEvent.click(back!);
+
+    expect(container.querySelector('[data-testid="theme-form"]')).toBeNull();
+    expect(container.querySelector('[data-testid="block-list"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="drill-in-theme"]')).not.toBeNull();
+  });
+
   test("switching pages while drilled into a block drills back out to the new page's block list", () => {
     const { container } = render(<EditorApp initial={siteWithMultiplePagesAndBlocks()} />);
 

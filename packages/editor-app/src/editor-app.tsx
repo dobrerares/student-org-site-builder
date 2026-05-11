@@ -72,6 +72,7 @@ import {
 
 import { fieldsFromSchema } from "./form-generator.js";
 import { SpineForm, applyPatch } from "./spine-form.js";
+import { ThemeForm } from "./theme-form.js";
 import { iframeSrcdoc } from "./iframe-srcdoc.js";
 // Side-effect import: registers the editor-app stylesheet on `document.head`
 // once, before any component renders. Guarded for SSR / non-DOM tooling.
@@ -130,16 +131,21 @@ type TabName = "editor" | "preview";
  * - `{ kind: "block", blockId }` per-block inspector for the active page's
  *                                block whose id matches.
  * - `{ kind: "settings" }`       the site-spine inspector (SpineForm).
+ * - `{ kind: "theme" }`          the theme inspector (ThemeForm) —
+ *                                ADR 0042 / ADR 0043: theme id picker
+ *                                (Phase 1) and tokens (Phase 3).
  *
  * The state is intentionally local to the editor pane; the preview pane
  * and tab strip are unaffected. Switching pages drills you back out (the
  * previously-active block isn't on the new page) — see the page-switch
- * effect below.
+ * effect below. Site-level inspectors (`settings`, `theme`) stay drilled
+ * on page switch.
  */
 type DrillMode =
   | { readonly kind: "blocks" }
   | { readonly kind: "block"; readonly blockId: string }
-  | { readonly kind: "settings" };
+  | { readonly kind: "settings" }
+  | { readonly kind: "theme" };
 
 export function EditorApp(props: EditorAppProps): JSX.Element {
   const translatorRef = useRef<Translator>();
@@ -577,6 +583,17 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
         <SpineForm fields={fields} site={snapshot} onPatch={patch} />
       </div>
     );
+  } else if (drillMode.kind === "theme") {
+    editorPaneBody = (
+      <div data-testid="inspector" data-inspector-mode="theme">
+        {backToBlocksButton}
+        <header data-testid="inspector-header">
+          <span data-testid="inspector-eyebrow">Site</span>
+          <h2>Theme</h2>
+        </header>
+        <ThemeForm site={snapshot} onChange={applySite} />
+      </div>
+    );
   } else if (drillMode.kind === "block" && activeBlock !== undefined && activeBlockIndex >= 0) {
     const envelope = KnownBlockSchemas[activeBlock.type as keyof typeof KnownBlockSchemas];
     // The envelope is `{ id, type, version, data: <DataSchema> }`. The
@@ -645,6 +662,15 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
         >
           <span data-testid="site-settings-link-label">Site settings</span>
           <span data-testid="site-settings-link-hint">org · theme · languages</span>
+        </button>
+        <button
+          type="button"
+          data-testid="drill-in-theme"
+          data-action="drill-theme"
+          onClick={() => setDrillMode({ kind: "theme" })}
+        >
+          <span data-testid="drill-in-theme-label">Theme</span>
+          <span data-testid="drill-in-theme-hint">visual treatment</span>
         </button>
       </>
     );

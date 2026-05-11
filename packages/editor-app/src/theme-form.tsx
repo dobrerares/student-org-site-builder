@@ -16,6 +16,13 @@
  * No raw `<input type="text">` for `theme.id` appears here per
  * ADR 0044 (no technical field escape hatches); the ThemePicker
  * is the only entry point for changing the theme id.
+ *
+ * The form intentionally has no internal heading or prefatory
+ * paragraph: it is mounted exclusively inside EditorApp's
+ * drill-in inspector, which renders its own
+ * `<header data-testid="inspector-header">` with eyebrow + `<h2>`.
+ * Re-stating "Theme" inside this form would compete with the
+ * inspector chrome (T7 review).
  */
 import type { JSX } from "preact";
 import type { Site } from "@sosb/schema";
@@ -37,8 +44,6 @@ export function ThemeForm(props: ThemeFormProps): JSX.Element {
 
   return (
     <div data-testid="theme-form">
-      <h2>Theme</h2>
-      <p>Choose a visual treatment for the site.</p>
       <ThemePicker value={props.site.theme.id} onChange={handleThemeChange} />
     </div>
   );
