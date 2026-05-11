@@ -1,6 +1,12 @@
 import { describe, expect, test } from "vitest";
+import type { ZodType } from "zod";
 import { z } from "zod";
-import { SiteSchema } from "@sosb/schema";
+import {
+  AssetRefSchema,
+  ImageGalleryDataSchema,
+  PartnerLogosDataSchema,
+  SiteSchema,
+} from "@sosb/schema";
 
 import { fieldsFromSchema, type FieldNode } from "../src/form-generator.js";
 
@@ -167,6 +173,109 @@ describe("form-generator custom dispatch (ADR 0043)", () => {
   });
 });
 
+describe("form-generator schema-identity dispatch — block data integration", () => {
+  // T9 (ADR 0043). The T3 tests above use ad-hoc schemas to prove the
+  // `schemaRenderers` map dispatches by reference equality. T9 wires the
+  // same mechanism through a REAL block-data schema from `@sosb/schema`
+  // and asserts that, when AssetRefSchema is registered to "asset-picker",
+  // the nested asset slot becomes a single custom node — the walker does
+  // NOT recurse into the AssetRef's hash/path/mime/etc. leaves.
+  //
+  // The asset slot must short-circuit BEFORE the default object branch
+  // would have emitted a fieldset of text inputs (the very UX failure
+  // mode ADR 0044 prohibits and the asset picker exists to replace).
+
+  test("PartnerLogosDataSchema: partners[].logo dispatches to asset-picker", () => {
+    // Canonical integration: PartnerLogosDataSchema.partners[].logo references
+    // the same `AssetRefSchema` object that `@sosb/schema` re-exports, so
+    // dispatch is via reference equality on the public symbol.
+    const fields = fieldsFromSchema(PartnerLogosDataSchema, {
+      schemaRenderers: new Map<ZodType, string>([[AssetRefSchema, "asset-picker"]]),
+    });
+
+    const partners = fields.find((f) => f.name === "partners");
+    expect(partners?.kind).toBe("array");
+    if (partners?.kind !== "array") return;
+
+    const partnerElement = partners.element;
+    expect(partnerElement.kind).toBe("object");
+    if (partnerElement.kind !== "object") return;
+
+    const logo = partnerElement.fields.find((f) => f.name === "logo");
+    expect(logo).toBeDefined();
+    expect(logo?.kind).toBe("custom");
+    if (logo?.kind !== "custom") return;
+    expect(logo.renderer).toBe("asset-picker");
+    expect(logo.path).toEqual(["partners", "[]", "logo"]);
+
+    // Critical: the AssetRef's structural leaves must NOT appear anywhere in
+    // the produced tree. If they did, the walker would have recursed past
+    // the dispatch point and the editor would render the very text-input
+    // fieldset the picker is meant to replace.
+    const partnerLogosTree: FieldNode = {
+      kind: "object",
+      name: "<root>",
+      path: [],
+      optional: false,
+      fields,
+    };
+    for (const leaf of ["hash", "path", "metadataPath", "mime", "width", "height"] as const) {
+      expect(findAllByName(partnerLogosTree, leaf)).toEqual([]);
+    }
+  });
+
+  test("ImageGalleryDataSchema: images[].asset dispatches to asset-picker", () => {
+    // Canonical T9 case from the plan. NB: `image-gallery.ts` declares its
+    // OWN local `AssetRefSchema` (separate ZodType reference from the one
+    // re-exported by the package barrel — that one originates in
+    // `partner-logos.ts`). Reference-equality dispatch is therefore keyed
+    // on the LOCAL AssetRef, which we pluck out of the schema tree to
+    // avoid relying on a deep import path the package doesn't publish.
+    const galleryAssetRef = extractGalleryAssetRefSchema();
+
+    const fields = fieldsFromSchema(ImageGalleryDataSchema, {
+      schemaRenderers: new Map<ZodType, string>([[galleryAssetRef, "asset-picker"]]),
+    });
+
+    const images = fields.find((f) => f.name === "images");
+    expect(images?.kind).toBe("array");
+    if (images?.kind !== "array") return;
+
+    const imageElement = images.element;
+    expect(imageElement.kind).toBe("object");
+    if (imageElement.kind !== "object") return;
+
+    const asset = imageElement.fields.find((f) => f.name === "asset");
+    expect(asset).toBeDefined();
+    expect(asset?.kind).toBe("custom");
+    if (asset?.kind !== "custom") return;
+    expect(asset.renderer).toBe("asset-picker");
+    expect(asset.path).toEqual(["images", "[]", "asset"]);
+
+    // The other GalleryImage fields (alt, caption) must still walk normally
+    // — the short-circuit applies to `asset` only, not the whole element.
+    const alt = imageElement.fields.find((f) => f.name === "alt");
+    expect(alt?.kind).toBe("string");
+
+    // AssetRef leaves (hash/path/metadataPath/mime/width/height) must be
+    // absent from the output: the walker is supposed to short-circuit on
+    // the AssetRef identity BEFORE recursing into its fields.
+    const imageGalleryTree: FieldNode = {
+      kind: "object",
+      name: "<root>",
+      path: [],
+      optional: false,
+      fields,
+    };
+    for (const leaf of ["hash", "metadataPath", "mime", "width", "height"] as const) {
+      expect(findAllByName(imageGalleryTree, leaf)).toEqual([]);
+    }
+    // `path` is a leaf inside AssetRef AND nowhere else in this schema, so
+    // its absence is a direct proof the asset short-circuited.
+    expect(findAllByName(imageGalleryTree, "path")).toEqual([]);
+  });
+});
+
 describe("fieldsFromSchema — site spine integration", () => {
   test("picks up org.name as a required string", () => {
     const fields = fieldsFromSchema(SiteSchema);
@@ -240,4 +349,43 @@ function collectKinds(node: FieldNode, name: string): FieldNode[] {
   }
   walk(node);
   return matches;
+}
+
+/**
+ * Collect every node anywhere in the tree whose `name` matches. Used by the
+ * T9 integration tests to assert that AssetRef leaves (hash/mime/path/...)
+ * never appear after a schema-identity short-circuit.
+ */
+function findAllByName(root: FieldNode, name: string): FieldNode[] {
+  const matches: FieldNode[] = [];
+  function walk(n: FieldNode): void {
+    if (n.name === name) matches.push(n);
+    if (n.kind === "object") n.fields.forEach(walk);
+    if (n.kind === "array") walk(n.element);
+  }
+  walk(root);
+  return matches;
+}
+
+/**
+ * The `AssetRefSchema` referenced inside `ImageGalleryDataSchema.images[].asset`
+ * is a separate Zod object from the one re-exported by `@sosb/schema`
+ * (which originates in `partner-logos.ts`). The package doesn't publish a
+ * deep import for `image-gallery.ts`, so we recover the local reference by
+ * walking the schema tree. This is sufficient for the T9 integration test:
+ * the editor will register dispatch entries by the schema reference it
+ * actually finds embedded in production schemas at boot time.
+ */
+function extractGalleryAssetRefSchema(): ZodType {
+  const introspect = ImageGalleryDataSchema as unknown as {
+    shape: Record<string, { def: { element?: { shape?: Record<string, ZodType> } } }>;
+  };
+  const galleryImage = introspect.shape.images?.def.element;
+  const asset = galleryImage?.shape?.asset;
+  if (asset === undefined) {
+    throw new Error(
+      "extractGalleryAssetRefSchema: ImageGalleryDataSchema.images[].asset not found — schema shape changed",
+    );
+  }
+  return asset;
 }
