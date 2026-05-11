@@ -10,10 +10,19 @@
  *
  * Per ADR 0044 (no technical field escape hatches) this component must
  * never fall back to a raw `<input type="text">` — even if the current
- * value is not in the catalog. In that case we render the 5 catalog
- * entries with none marked active; the unknown value is preserved by
- * the parent form and the user can pick any cataloged theme to move
- * forward.
+ * value is not in the catalog. In that case we render a status note
+ * showing the humanised current value (so the user understands why
+ * none of the cataloged options is selected) and the 5 catalog entries
+ * with none marked active; the unknown value is preserved by the parent
+ * form and the user can pick any cataloged theme to move forward.
+ *
+ * Markup choice: native `<input type="radio">` wrapped in a `<label>`,
+ * matching the prior art in `packages/wizard/src/steps/identity.tsx`.
+ * Native radios with a shared `name` form a radiogroup and get arrow-key
+ * cycling, focus management, and `:checked` semantics for free — none
+ * of which `<button role="radio">` provides. The outer
+ * `<div role="radiogroup">` is kept for layout + a labelled wrapper
+ * (the `aria-label="Theme"` gives assistive tech a group label).
  */
 import type { JSX } from "preact";
 
@@ -24,34 +33,50 @@ export interface ThemePickerProps {
   readonly onChange: (id: string) => void;
 }
 
+// Stable per-page radio-group name. Only one ThemePicker mounts on a
+// page (T6), so a hardcoded name is sufficient and avoids the noise of
+// `useId()`.
+const RADIO_GROUP_NAME = "theme-picker";
+
 export function ThemePicker(props: ThemePickerProps): JSX.Element {
   const catalog = buildThemeCatalog();
+  const isKnown = catalog.entries.some((e) => e.id === props.value);
 
   return (
-    <div
-      data-testid="theme-picker"
-      role="radiogroup"
-      aria-label="Theme"
-    >
-      {catalog.entries.map((entry) => {
-        const isActive = entry.id === props.value;
-        return (
-          <button
-            key={entry.id}
-            type="button"
-            role="radio"
-            aria-checked={isActive}
-            aria-pressed={isActive}
-            data-theme-option
-            data-theme-id={entry.id}
-            data-active={isActive ? "true" : "false"}
-            onClick={() => props.onChange(entry.id)}
-          >
-            <strong data-theme-option-label>{entry.label}</strong>
-            <span data-theme-option-description>{entry.description}</span>
-          </button>
-        );
-      })}
+    <div data-theme-picker-root>
+      {!isKnown && (
+        <p data-theme-current-unknown role="status">
+          Current theme: <code>{catalog.entryFor(props.value).label}</code>{" "}
+          — not in the picker. Choose a theme below to switch.
+        </p>
+      )}
+      <div
+        data-testid="theme-picker"
+        role="radiogroup"
+        aria-label="Theme"
+      >
+        {catalog.entries.map((entry) => {
+          const isActive = entry.id === props.value;
+          return (
+            <label
+              key={entry.id}
+              data-theme-option
+              data-theme-id={entry.id}
+              data-active={isActive ? "true" : "false"}
+            >
+              <input
+                type="radio"
+                name={RADIO_GROUP_NAME}
+                value={entry.id}
+                checked={isActive}
+                onChange={() => props.onChange(entry.id)}
+              />
+              <span data-theme-option-label>{entry.label}</span>
+              <span data-theme-option-description>{entry.description}</span>
+            </label>
+          );
+        })}
+      </div>
     </div>
   );
 }
