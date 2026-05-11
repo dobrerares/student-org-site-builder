@@ -36,8 +36,39 @@ describe("field-metadata", () => {
     expect(result).toBeUndefined();
   });
 
-  test("BLOCK_FIELD_METADATA carries per-block-type entries", () => {
-    // At minimum, the alt-text label rewrite applies to multiple block types.
-    expect(BLOCK_FIELD_METADATA).toBeTypeOf("object");
+  test("BLOCK_FIELD_METADATA relabels every alt-bearing block's alt field", () => {
+    const ALT_BEARING_BLOCKS = [
+      "hero",
+      "quote",
+      "imageGallery",
+      "teamGrid",
+      "partnerLogos",
+      "ctaBanner",
+    ] as const;
+    for (const blockType of ALT_BEARING_BLOCKS) {
+      const entries = BLOCK_FIELD_METADATA[blockType];
+      expect(entries, `${blockType} should have a metadata entry`).toBeDefined();
+      const altEntry = entries?.find(
+        (e) => e.path.toLowerCase().endsWith("alt") || e.path.toLowerCase().endsWith("alt.alt"),
+      );
+      expect(
+        altEntry?.label,
+        `${blockType} alt-text label should be relabelled`,
+      ).toBe("Image description (for screen readers)");
+    }
+  });
+
+  test("every entry in both tables uses the canonical dotted path format", () => {
+    // Format: a segment, then any number of (.segment | .[]) groups.
+    // Catches typos like "pages[].slug" (missing dot) or "pages.0.slug"
+    // (concrete index instead of wildcard) at module-load time.
+    const PATH_RE = /^[a-zA-Z][a-zA-Z0-9]*(?:\.(?:\[\]|[a-zA-Z][a-zA-Z0-9]*))*$/;
+    const allEntries = [
+      ...SPINE_FIELD_METADATA,
+      ...Object.values(BLOCK_FIELD_METADATA).flat(),
+    ];
+    for (const entry of allEntries) {
+      expect(entry.path, `bad path: ${entry.path}`).toMatch(PATH_RE);
+    }
   });
 });

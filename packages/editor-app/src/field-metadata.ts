@@ -10,7 +10,15 @@
  * what to show, what to hide, and which custom widget to mount for a
  * given leaf field. Unknown paths get the form-generator's default —
  * same drift-resistant fallback discipline as `block-catalog.ts`.
+ *
+ * `readonly` modifiers on the interface and array types prevent
+ * accidental mutation through the typed exports. The tables are not
+ * frozen at runtime (mirroring `block-catalog.ts`'s posture); a
+ * determined caller via `as any` could mutate, but doing so is a
+ * convention violation, not a bug.
  */
+
+import { KnownBlockSchemas } from "@sosb/schema";
 
 export type FieldTier = "default" | "advanced" | "hidden";
 
@@ -42,7 +50,9 @@ export const SPINE_FIELD_METADATA: readonly FieldOverride[] = [
   { path: "org.shortName", label: "Display name (used in nav)" },
 ];
 
-export const BLOCK_FIELD_METADATA: Record<string, readonly FieldOverride[]> = {
+export const BLOCK_FIELD_METADATA: Partial<
+  Record<keyof typeof KnownBlockSchemas, readonly FieldOverride[]>
+> = {
   // Alt text relabel applies wherever a block has a user-editable alt.
   hero: [
     { path: "backgroundAlt", label: "Image description (for screen readers)" },
