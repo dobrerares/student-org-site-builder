@@ -3,10 +3,11 @@
  *
  * In v1, the editor renders the preview HTML directly on the host side via
  * `renderPreviewHtml(...)` (which is `renderSite(...)`) and writes the
- * complete document into the iframe via `srcdoc`. The iframe contains no
- * runtime JavaScript — it's the same static HTML that the build pipeline
- * would produce. This keeps the AC "iframe preview reuses the renderer
- * code" trivially true: there is no separate iframe bundler.
+ * complete document into the iframe via `srcdoc`. The iframe runs the
+ * renderer-emitted inline scripts (lightbox, event-list, embed-loader,
+ * preview-nav) — same renderer output as the build pipeline, plus the
+ * preview-only nav-click interceptor that routes link clicks back to the
+ * host via the preview-bridge envelope.
  *
  * Subsequent edits update the iframe by re-writing its `srcdoc` (and a
  * `postMessage` envelope is also dispatched, so future iframe-side
@@ -18,9 +19,8 @@ import type { Site } from "@sosb/schema";
 import { renderPreviewHtml } from "./preview-html.js";
 
 export function iframeSrcdoc(site: Site, themeId: string, pageIndex?: number): string {
-  return renderPreviewHtml(
-    site,
-    themeId,
-    typeof pageIndex === "number" ? { pageIndex } : undefined,
-  );
+  return renderPreviewHtml(site, themeId, {
+    mode: "preview",
+    ...(typeof pageIndex === "number" ? { pageIndex } : {}),
+  });
 }

@@ -40,6 +40,28 @@ export interface AssetPickerProps {
   readonly onChange: (next: AssetRefLike) => void;
   /** Required: how this picker writes to the VFS. Injected so tests can mock. */
   readonly uploader: (file: File) => Promise<AssetRefLike>;
+  /**
+   * Optional: resolve an AssetRef to a URL the browser can actually fetch.
+   *
+   * The canonical `value.path` is a VFS path of the form
+   * `assets/<hash>.<ext>` — it's what the exported zip carries, what the
+   * renderer reads, what survives round-trip. The browser cannot fetch
+   * that path through HTTP (no server backs it in the editor session),
+   * so for the `<img>` thumbnail we need a separate display channel:
+   * a blob URL minted by the host that owns the VFS.
+   *
+   * When omitted, the picker falls back to `value.path` — preserves
+   * back-compat with unit-test fixtures that hand-construct AssetRefs
+   * with `data:` URL paths, and with the round-trip-zero-reuploads e2e
+   * fixture that uses the same trick.
+   *
+   * Returns `undefined` when the host has no display URL for this
+   * AssetRef (e.g. it was never uploaded in this session and the host
+   * has not pre-populated a URL for it). In that case the picker also
+   * falls back to `value.path` — best-effort — and the existing
+   * `onError`-driven MISSING state surfaces if that fetch fails too.
+   */
+  readonly displayUrlFor?: ((ref: AssetRefLike) => string | undefined) | undefined;
 }
 
 export function AssetPicker(props: AssetPickerProps): JSX.Element {
@@ -102,7 +124,12 @@ export function AssetPicker(props: AssetPickerProps): JSX.Element {
       {hasValue && !imageErrored ? (
         <img
           data-testid="asset-picker-thumbnail"
-          src={props.value!.path}
+          // Prefer the host-provided display URL (typically `blob:...` for
+          // freshly-uploaded assets, or a `data:` URL in test fixtures);
+          // fall back to `value.path` for the legacy/external-URL case.
+          // If neither resolves, the `onError` handler below switches to
+          // MISSING state.
+          src={props.displayUrlFor?.(props.value!) ?? props.value!.path}
           alt={props.value!.alt}
           onError={() => setErrorHash(props.value!.hash)}
         />

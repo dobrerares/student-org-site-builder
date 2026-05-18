@@ -76,6 +76,23 @@ describe("preview-bridge protocol", () => {
     expect(err).toEqual({ type: "error", message: "boom" });
   });
 
+  test("decodePreviewMessage round-trips a navigate event", () => {
+    const nav = decodePreviewMessage(
+      encodePreviewMessage({ type: "navigate", path: "/about/" }),
+    );
+    expect(nav).toEqual({ type: "navigate", path: "/about/" });
+  });
+
+  test("decodePreviewMessage rejects a navigate event with a missing path", () => {
+    expect(
+      decodePreviewMessage({
+        channel: "sosb:preview",
+        version: 1,
+        payload: { type: "navigate" },
+      }),
+    ).toBeNull();
+  });
+
   test("decodePreviewMessage rejects malformed payloads", () => {
     expect(decodePreviewMessage(undefined)).toBeNull();
     expect(decodePreviewMessage({})).toBeNull();

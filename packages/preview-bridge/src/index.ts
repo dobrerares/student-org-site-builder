@@ -8,7 +8,10 @@
  *   The iframe re-renders by calling `renderSite(...)` on the new payload.
  * - Iframe → Host: `{ type: "ready" }` once the iframe's bootstrapper has
  *   wired up its message listener; `{ type: "error", message }` if a render
- *   throws.
+ *   throws; `{ type: "navigate", path }` when a user clicks a nav or
+ *   language-switcher link inside the preview iframe (the host swaps
+ *   `activePageIndex` instead of letting the iframe navigate to a URL the
+ *   editor's origin doesn't serve).
  *
  * Every message is wrapped in an envelope `{ channel, version, payload }`.
  * Decoders reject envelopes from a different channel (so the editor doesn't
@@ -34,7 +37,8 @@ export type HostMessage = {
 
 export type PreviewMessage =
   | { readonly type: "ready" }
-  | { readonly type: "error"; readonly message: string };
+  | { readonly type: "error"; readonly message: string }
+  | { readonly type: "navigate"; readonly path: string };
 
 /** The wire envelope. */
 export interface BridgeEnvelope<T> {
@@ -84,6 +88,11 @@ export function decodePreviewMessage(raw: unknown): PreviewMessage | null {
     const errorPayload = payload as { type: "error"; message?: unknown };
     if (typeof errorPayload.message !== "string") return null;
     return { type: "error", message: errorPayload.message };
+  }
+  if (payload.type === "navigate") {
+    const navPayload = payload as { type: "navigate"; path?: unknown };
+    if (typeof navPayload.path !== "string" || navPayload.path.length === 0) return null;
+    return { type: "navigate", path: navPayload.path };
   }
   return null;
 }

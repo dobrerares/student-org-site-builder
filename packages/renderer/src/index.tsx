@@ -33,6 +33,18 @@ export interface RenderOptions {
    * editor preview also picks a single page at a time.
    */
   readonly pageIndex?: number;
+  /**
+   * Render target. Defaults to `"deploy"` — built static sites never carry
+   * preview-only behaviour. When set to `"preview"`, the renderer emits a
+   * small inline nav-click interceptor (see `preview-nav-script.ts`) so the
+   * editor's `srcdoc` iframe can route nav clicks back to the host instead
+   * of navigating to a 404 on the editor's own origin.
+   *
+   * Same code path; one option controls the preview-only delta. ADR 0005's
+   * "no duplicate renderer code path" invariant is preserved — the editor's
+   * `iframeSrcdoc` passes this option through `renderPreviewHtml`.
+   */
+  readonly mode?: "deploy" | "preview";
 }
 
 /**
@@ -62,8 +74,9 @@ export function renderSite(data: Site, themeId: string, opts?: RenderOptions): s
     );
   }
 
+  const mode = opts?.mode ?? "deploy";
   const css = composeCss(data, themeId);
-  const body = render(<PageShell site={data} page={page} css={css} />);
+  const body = render(<PageShell site={data} page={page} css={css} mode={mode} />);
   return `<!doctype html>${body}`;
 }
 

@@ -452,6 +452,55 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     assetVfsRef.current = new MemoryDriver();
   }
 
+  // Display-URL cache for the picker thumbnails.
+  //
+  // Why this exists: the canonical `AssetRef.path` written by the asset
+  // pipeline is a VFS path of the form `assets/<hash>.<ext>` — the
+  // exported zip carries it, the renderer reads it, the round-trip is
+  // built on it. The browser, however, cannot fetch that path through
+  // HTTP in the live editor (no server backs the MemoryDriver), so a
+  // raw `<img src={ref.path}>` 404s and the picker bounces into its
+  // MISSING state.
+  //
+  // Fix: when we upload bytes, mint a `blob:` URL pointing at those
+  // bytes and cache it keyed by content hash. The picker reads the
+  // cache through the `displayUrlFor` prop and uses the blob URL for
+  // its `<img src>` while leaving the canonical AssetRef.path
+  // untouched in the snapshot. This preserves export/round-trip
+  // semantics while making thumbnails actually load.
+  //
+  // Keying by HASH (not by path) is deliberate: content identity is
+  // what dedupes — if the same bytes get uploaded twice they hash to
+  // the same value and reuse the same blob URL. This mirrors the
+  // pipeline's own dedup property (same bytes → same path).
+  //
+  // Scope: this cache covers UPLOADS in the current session. The
+  // import path (loading bytes from a freshly-imported zip) is a
+  // separate gap — populating the cache on import lives in a
+  // follow-up tied to the import flow itself.
+  const displayUrlCacheRef = useRef<Map<string, string>>();
+  if (displayUrlCacheRef.current === undefined) {
+    displayUrlCacheRef.current = new Map();
+  }
+  // Revoke all minted blob URLs on unmount so we don't leak object-URL
+  // entries past the editor's lifetime. `URL.revokeObjectURL` is a
+  // no-op for non-blob URLs, but we guard anyway since the cache is
+  // strictly blob-only at the moment.
+  useEffect(() => {
+    return () => {
+      const cache = displayUrlCacheRef.current;
+      if (cache === undefined) return;
+      for (const url of cache.values()) {
+        if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+      }
+      cache.clear();
+    };
+  }, []);
+
+  function displayUrlForAsset(ref: AssetRefLike): string | undefined {
+    return displayUrlCacheRef.current!.get(ref.hash);
+  }
+
   /**
    * Production uploader fed into every mounted `<AssetPicker>` via
    * `<BlockForm uploader={...}>`. Wraps `uploadAsset` so the picker only
@@ -468,6 +517,19 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     const ref = await uploadAsset({ kind: "file", file, alt: file.name }, vfs, {
       processor: CanvasImageProcessor,
     });
+    // Mint a display URL for the picker's thumbnail. Reads the freshly-
+    // written bytes back out of the VFS (rather than reusing the input
+    // file blob) so the cache reflects what was actually stored —
+    // matters for raster uploads, which the pipeline re-encodes (a
+    // 12MB JPEG → a re-encoded smaller WebP). Skipped if a URL for
+    // this hash is already cached (re-uploading identical bytes hits
+    // the dedup path and we already have a usable URL).
+    const cache = displayUrlCacheRef.current!;
+    if (!cache.has(ref.hash)) {
+      const bytes = await vfs.read(ref.path);
+      const blob = new Blob([new Uint8Array(bytes)], { type: ref.mime });
+      cache.set(ref.hash, URL.createObjectURL(blob));
+    }
     // `@sosb/assets`'s runtime `AssetRef` interface is structurally a
     // subset of `@sosb/schema`'s `z.looseObject`-derived `AssetRefLike`
     // (the latter has an `[x: string]: unknown` index signature for
@@ -720,6 +782,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
             }
             uploader={uploadAssetForPicker}
             documentUploader={uploadDocumentForPicker}
+            displayUrlFor={displayUrlForAsset}
             overrides={
               BLOCK_FIELD_METADATA[activeBlock.type as keyof typeof BLOCK_FIELD_METADATA] ?? []
             }

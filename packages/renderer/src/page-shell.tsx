@@ -44,6 +44,7 @@ import {
   navPagesFor,
   pagePath,
 } from "./routing.js";
+import { PREVIEW_NAV_SCRIPT, PREVIEW_NAV_SCRIPT_MARKER } from "./preview-nav-script.js";
 
 /**
  * The page shell.
@@ -181,8 +182,13 @@ function pageHasEventList(page: Page): boolean {
   return page.blocks.some((b) => b.type === "eventList");
 }
 
-export function PageShell(props: { site: Site; page: Page; css: string }): preact.JSX.Element {
-  const { site, page, css } = props;
+export function PageShell(props: {
+  site: Site;
+  page: Page;
+  css: string;
+  mode?: "deploy" | "preview";
+}): preact.JSX.Element {
+  const { site, page, css, mode = "deploy" } = props;
   const title = pageTitle(site, page);
   const description = pageDescription(site, page);
   const ogImage = pageOgImage(page);
@@ -194,6 +200,11 @@ export function PageShell(props: { site: Site; page: Page; css: string }): preac
   const hasEventList = pageHasEventList(page);
   const switcherEntries = languageSwitcherEntriesFor(site, page);
   const hreflangs = hreflangEntriesFor(site, page);
+  // Only emit the preview-mode click interceptor when there is actually
+  // intra-site navigation to intercept (multi-page nav or language switcher).
+  // Single-page sites in preview don't need the script at all.
+  const needsPreviewNavScript =
+    mode === "preview" && (navPages.length > 1 || switcherEntries.length > 0);
 
   return (
     <html lang={page.lang}>
@@ -298,6 +309,12 @@ export function PageShell(props: { site: Site; page: Page; css: string }): preac
           <script
             data-sosb="event-list-past-fade"
             dangerouslySetInnerHTML={{ __html: EVENT_LIST_PAST_FADE_SCRIPT }}
+          />
+        )}
+        {needsPreviewNavScript && (
+          <script
+            {...{ [PREVIEW_NAV_SCRIPT_MARKER]: "" }}
+            dangerouslySetInnerHTML={{ __html: PREVIEW_NAV_SCRIPT }}
           />
         )}
       </body>

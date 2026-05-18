@@ -126,6 +126,14 @@ export interface BlockFormProps<TData> {
    */
   readonly documentUploader: (file: File) => Promise<DocumentAssetRef>;
   /**
+   * Optional display-URL resolver threaded down into every mounted
+   * `<AssetPicker>`. See `AssetPickerProps.displayUrlFor` for the
+   * contract. Production callers (editor-app.tsx) populate this from
+   * a hash-keyed blob-URL cache filled on upload; unit tests can omit
+   * it and the picker falls back to `value.path`.
+   */
+  readonly displayUrlFor?: (ref: AssetRefLike) => string | undefined;
+  /**
    * Path-keyed field-metadata overrides for this block type. The walker
    * attaches `label` and `tier` to the resulting `FieldNode`s; the
    * renderer reads `tier` to honour the "Show advanced" toggle (ADR
@@ -159,6 +167,7 @@ export function BlockForm<TData>(props: BlockFormProps<TData>): JSX.Element {
           newItem={props.newItem}
           uploader={props.uploader}
           documentUploader={props.documentUploader}
+          displayUrlFor={props.displayUrlFor}
           showAdvanced={showAdvanced}
         />
       ))}
@@ -176,6 +185,8 @@ interface FieldRendererProps {
   readonly newItem: ((arrayPath: readonly (string | number)[]) => unknown) | undefined;
   readonly uploader: (file: File) => Promise<AssetRefLike>;
   readonly documentUploader: (file: File) => Promise<DocumentAssetRef>;
+  // `undefined` explicit again (exactOptionalPropertyTypes).
+  readonly displayUrlFor: ((ref: AssetRefLike) => string | undefined) | undefined;
   /**
    * Current state of the parent form's "Show advanced" toggle. `true`
    * reveals `tier === "advanced"` fields; `false` hides them. Fields
@@ -192,6 +203,7 @@ function FieldRenderer({
   newItem,
   uploader,
   documentUploader,
+  displayUrlFor,
   showAdvanced,
 }: FieldRendererProps): JSX.Element | null {
   // Tier-based visibility filter (ADR 0043). Hidden fields are NEVER
@@ -222,6 +234,7 @@ function FieldRenderer({
               newItem={newItem}
               uploader={uploader}
               documentUploader={documentUploader}
+              displayUrlFor={displayUrlFor}
               showAdvanced={showAdvanced}
             />
           ))}
@@ -276,6 +289,7 @@ function FieldRenderer({
                     newItem={newItem}
                     uploader={uploader}
                     documentUploader={documentUploader}
+                    displayUrlFor={displayUrlFor}
                     showAdvanced={showAdvanced}
                   />
                   <div class="block-form__item-controls">
@@ -400,6 +414,7 @@ function FieldRenderer({
             value={value as AssetRefLike | undefined}
             onChange={(next) => onPatch(node.path, next)}
             uploader={uploader}
+            displayUrlFor={displayUrlFor}
           />
         );
       }
