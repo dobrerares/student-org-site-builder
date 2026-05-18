@@ -105,10 +105,16 @@ function pageOgImage(page: Page): string | undefined {
   if (firstBlock === undefined) return undefined;
   if (firstBlock.type !== "hero") return undefined;
   const data = firstBlock.data as { backgroundImage?: unknown };
-  if (typeof data.backgroundImage !== "string" || data.backgroundImage.length === 0) {
-    return undefined;
-  }
-  return data.backgroundImage;
+  const path =
+    typeof data.backgroundImage === "object" &&
+    data.backgroundImage !== null &&
+    typeof (data.backgroundImage as { path?: unknown }).path === "string"
+      ? (data.backgroundImage as { path: string }).path
+      : typeof data.backgroundImage === "string"
+        ? data.backgroundImage
+        : undefined;
+  if (path === undefined || path.length === 0) return undefined;
+  return path;
 }
 
 function renderBlock(block: BlockEnvelope): preact.JSX.Element | null {

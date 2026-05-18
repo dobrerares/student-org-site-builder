@@ -1,6 +1,16 @@
 import { describe, expect, test } from "vitest";
 import { QuoteBlockSchema, validateBlock } from "../src/index.js";
 
+const sampleAuthorImage = {
+  hash: "andrei01",
+  path: "assets/andrei01.jpg",
+  metadataPath: "assets/andrei01.metadata.json",
+  mime: "image/jpeg" as const,
+  width: 400,
+  height: 400,
+  alt: "Andrei zâmbind",
+};
+
 describe("quote block schema", () => {
   test("validates a well-formed quote block (text only)", () => {
     const block = {
@@ -36,7 +46,7 @@ describe("quote block schema", () => {
       data: {
         text: "A meaningful testimonial.",
         author: "Andrei Ionescu",
-        authorImage: "assets/andrei.jpg",
+        authorImage: sampleAuthorImage,
         authorImageAlt: "Andrei zâmbind",
       },
     };
@@ -134,7 +144,7 @@ describe("quote block schema", () => {
       version: 1,
       data: {
         text: "Hello",
-        authorImage: "assets/p.jpg",
+        authorImage: { ...sampleAuthorImage, alt: "Portrait" },
       },
     };
     const result = validateBlock(block);
@@ -151,7 +161,7 @@ describe("quote block schema", () => {
       version: 1,
       data: {
         text: "Hello",
-        authorImage: "assets/p.jpg",
+        authorImage: { ...sampleAuthorImage, alt: "A descriptive alt" },
         authorImageAlt: "A descriptive alt",
       },
     };
@@ -179,7 +189,13 @@ describe("quote block schema", () => {
         text: "Am construit ceva *real* împreună — o experiență **transformatoare**.",
         author: "Maria Popescu",
         authorRole: "Alumni, promoția 2023",
-        authorImage: "assets/maria.jpg",
+        authorImage: {
+          ...sampleAuthorImage,
+          hash: "maria01",
+          path: "assets/maria01.jpg",
+          metadataPath: "assets/maria01.metadata.json",
+          alt: "Maria în timpul absolvirii",
+        },
         authorImageAlt: "Maria în timpul absolvirii",
       },
     };

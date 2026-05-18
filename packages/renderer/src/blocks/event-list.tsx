@@ -1,6 +1,7 @@
 /** @jsxImportSource preact */
 import type { EventEntry, EventListBlock, EventPastBehavior, EventSortBy } from "@sosb/schema";
 import { DEFAULT_EVENT_SORT, DEFAULT_PAST_BEHAVIOR } from "@sosb/schema";
+import { assetRefAlt, assetRefPath } from "../asset-ref-path.js";
 
 /**
  * eventList renderer — structural HTML.
@@ -65,7 +66,9 @@ function readEventField(entry: unknown, key: string): string | undefined {
 function EventCard(props: { entry: EventEntry }): preact.JSX.Element {
   const { entry } = props;
   const description = readEventField(entry, "description");
-  const image = readEventField(entry, "image");
+  const image = assetRefPath(entry.image);
+  const imageAlt =
+    readEventField(entry, "imageAlt") ?? (image !== undefined ? assetRefAlt(entry.image) : "");
   const location = readEventField(entry, "location");
   const url = readEventField(entry, "url");
   const endsAt = readEventField(entry, "endsAt");
@@ -86,7 +89,7 @@ function EventCard(props: { entry: EventEntry }): preact.JSX.Element {
       {description !== undefined && <p class="event-list__item-description">{description}</p>}
       {image !== undefined && (
         <div class="event-list__item-media">
-          <img src={image} alt="" loading="lazy" />
+          <img src={image} alt={imageAlt} loading="lazy" />
         </div>
       )}
       {url !== undefined && (

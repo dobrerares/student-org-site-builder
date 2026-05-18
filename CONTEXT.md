@@ -167,26 +167,45 @@ form-generator's default. The corollary precedent (ADR 0002 §
 Rationale) is established: UI-adjacent concerns layer on top of the
 schema, never inside it.
 
-**Asset picker** (planned):
+**Asset picker**:
 The UI affordance that replaces the auto-generated nested fieldset for
-an `AssetRef` (or `DocumentRef`) field with a single picker widget
-(upload + thumbnail + an alt input). Form-generator dispatches on
-schema identity — when it sees `AssetRefSchema` / `DocumentRefSchema`,
-it renders the picker instead of recursing into the sub-tree. The
-picker writes a complete `AssetRef` back into the snapshot using
-`@sosb/assets`' existing `uploadAsset` / `uploadDocument`. The
-auto-generated text inputs for `hash`, `mime`, `path`, `metadataPath`,
-`width`, `height`, `byteSize` go away entirely. **v1 is upload-only**:
-no asset-library reuse panel; the asset pipeline's hash-based dedup
-keeps the zip from doubling in size if the same file is uploaded
-twice. **Round-trip invariant**: exporting a site and re-importing it
-requires **zero re-uploads** — on import, the picker reads referenced
-`AssetRef`s from the VFS (assets travel with the zip per ADR 0003) and
-shows thumbnails directly. If an asset is missing from the imported
-zip, the empty state is a "missing asset" affordance — never a raw
-hash text input as a fallback.
+an `AssetRef` field with a single image widget: upload (hidden file
+input), thumbnail when loaded, **Replace image** when a value exists,
+and **Remove image** on optional slots. It does **not** embed the alt
+editor — alt stays on a separate sibling field (see **Sibling alt**).
+Form-generator dispatches on schema identity — when it sees
+`AssetRefSchema` (or a reference-distinct AssetRef-shaped schema), it
+renders the picker instead of recursing into the sub-tree. Mounted in
+**BlockForm** for block data and in **SpineForm** for `org.logo`.
+Writes a complete `AssetRef` via `@sosb/assets`'s `uploadAsset`. **v1
+is upload-only**: no asset-library reuse panel; hash-based dedup keeps
+the zip from doubling when the same file is uploaded twice. **Round-trip
+invariant**: export → import shows thumbnails with zero re-uploads; a
+missing byte shows the "missing asset" affordance — never hash/path text
+inputs (ADR 0044). The onboarding **wizard** does not mount pickers;
+image upload is editor-only.
 _Avoid_: file picker, image picker, asset chooser, file input — these
 all collapse onto the same widget.
+
+**Document picker**:
+The document counterpart to the asset picker — same upload-only
+posture, **Replace document** when set, no asset-library panel. Used
+for `DocumentAssetRef` fields (e.g. document-downloads). Not for raster
+images.
+_Avoid_: file picker (use **Asset picker** or **Document picker**).
+
+**Sibling alt**:
+A block- or spine-level string field that carries the user-facing
+"Image description (for screen readers)" for an image slot whose bytes
+live in a neighbouring `AssetRef`. Examples: `backgroundAlt` beside
+hero `backgroundImage`, `authorImageAlt` beside quote `authorImage`,
+`imageAlt` beside event-list `image`, `logoAlt` beside `org.logo`.
+The editor shows the sibling, not `AssetRef.alt` as its own input.
+**Dual-write rule**: any edit to the sibling and any upload/replace
+also writes the same string to `AssetRef.alt`; clearing an optional
+image clears both. Gallery/team/CTA blocks that keep alt on the ref or
+on a parallel path follow the same rule for their documented paths.
+_Avoid_: alt field, accessibility text (too vague).
 
 **Theme picker** (planned):
 The UI affordance that replaces the auto-generated `<input>` for the
@@ -299,12 +318,14 @@ pre-export confirm dialog.
   and "the seed Site loaded on first launch". Resolved: prefer **theme
   defaults** for the former and **seed** or **template** for the latter.
 - **"Alt text"** has two homes in the schema (`AssetRef.alt` and
-  block-level alt fields like `GalleryImage.alt`, `Hero.backgroundAlt`,
-  `Quote.authorImageAlt`, `TeamPerson.photo.alt`). Resolved: the
-  **block-level alt is the canonical user-facing surface**; `AssetRef.alt`
-  is populated from the block-level alt on upload and is never shown in
-  the editor as an independent input. The schema continues to model both
-  fields (forward-compat: other consumers — a future API, scripts —
-  retain their freedom), but the editor's UI commits to a single
-  contextual alt per usage site. Labelled in the UI as "Image description
-  (for screen readers)", not "alt".
+  block-level alt fields). Resolved: the **Sibling alt** is the
+  canonical user-facing surface; `AssetRef.alt` is kept in sync via the
+  **dual-write rule** and is what export/JSON-LD/readers use on the ref.
+  Blocks that expose only nested alt (e.g. gallery `images[].alt`,
+  CTA `backgroundImage.alt`) use the same dual-write pattern for that
+  path. UI label: "Image description (for screen readers)", not "alt".
+- **String image paths** (`hero.backgroundImage` as `z.string()`, etc.)
+  were a pre-AssetRef shortcut. Resolved: every image slot in scope —
+  blocks and `org.logo` — is an `AssetRef`; in-repo fixtures are updated
+  in the same change. No `migrateSite` / `migrateBlock` steps; block
+  envelope `version` stays at 1.

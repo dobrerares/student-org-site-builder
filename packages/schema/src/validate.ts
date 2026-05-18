@@ -311,6 +311,17 @@ function runSiteRules(site: z.infer<typeof SiteSchema>, result: ValidationResult
     });
   });
 
+  // Warning: org logo without sibling logoAlt (accessibility nudge, mirrors hero).
+  if (site.org.logo && !site.org.logoAlt) {
+    result.warnings.push({
+      severity: "warning",
+      path: ["org", "logoAlt"],
+      code: "site.org.logoAlt.missing",
+      message:
+        "Organisation logo is set but has no alt text. Add alt text for screen-reader users.",
+    });
+  }
+
   // Warnings: missing org email is a quality nudge per the PRD.
   if (!site.org.email || site.org.email.trim().length === 0) {
     result.warnings.push({
@@ -535,11 +546,16 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
       break;
     }
     case "eventList": {
-      // No quality nudges defined for v1. The schema-level checks (ISO 8601
-      // with offset, non-empty title/id, closed enums) are the entire
-      // contract. Future warnings (e.g. missing image alt on individual
-      // events, "all events are in the past — consider hiding the block")
-      // can layer on without changing this signature.
+      block.data.events.forEach((event, idx) => {
+        if (event.image && !event.imageAlt) {
+          result.warnings.push({
+            severity: "warning",
+            path: ["data", "events", idx, "imageAlt"],
+            code: "block.eventList.event.imageAlt.missing",
+            message: `Event "${event.title}" has an image but no alt text. Add alt text for screen-reader users.`,
+          });
+        }
+      });
       break;
     }
     default: {

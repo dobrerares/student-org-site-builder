@@ -47,7 +47,15 @@ describe("build — validation gate (AC #6)", () => {
     const firstBlock = homePage.blocks[0];
     if (firstBlock === undefined) throw new Error("fixture must have a block");
     if (firstBlock.type === "hero") {
-      (firstBlock.data as { backgroundImage?: string }).backgroundImage = "assets/x.jpg";
+      (firstBlock.data as { backgroundImage?: unknown }).backgroundImage = {
+        hash: "x",
+        path: "assets/x.jpg",
+        metadataPath: "assets/x.metadata.json",
+        mime: "image/jpeg",
+        width: 1,
+        height: 1,
+        alt: "x",
+      };
       // backgroundAlt remains undefined → triggers warning.
     }
 
@@ -61,7 +69,15 @@ describe("build — validation gate (AC #6)", () => {
     const firstBlock = homePage.blocks[0];
     if (firstBlock === undefined) throw new Error("fixture must have a block");
     if (firstBlock.type === "hero") {
-      (firstBlock.data as { backgroundImage?: string }).backgroundImage = "assets/x.jpg";
+      (firstBlock.data as { backgroundImage?: unknown }).backgroundImage = {
+        hash: "x",
+        path: "assets/x.jpg",
+        metadataPath: "assets/x.metadata.json",
+        mime: "image/jpeg",
+        width: 1,
+        height: 1,
+        alt: "x",
+      };
     }
 
     const reporter = vi.fn();

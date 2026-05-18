@@ -103,8 +103,16 @@ function organizationBlob(org: Org, siteUrl: string | undefined): JsonLdBlob {
   } else {
     blob.url = "/";
   }
-  if (typeof org.logo === "string" && org.logo.length > 0) {
-    blob.logo = absolutiseUrl(siteUrl, org.logo);
+  const logoPath =
+    typeof org.logo === "object" &&
+    org.logo !== null &&
+    typeof (org.logo as { path?: unknown }).path === "string"
+      ? (org.logo as { path: string }).path
+      : typeof org.logo === "string"
+        ? org.logo
+        : undefined;
+  if (logoPath !== undefined && logoPath.length > 0) {
+    blob.logo = absolutiseUrl(siteUrl, logoPath);
   }
   if (typeof org.tagline === "string" && org.tagline.length > 0) {
     blob.description = org.tagline;
@@ -200,8 +208,16 @@ function eventBlobsFromEventList(
         name: e.location,
       };
     }
-    if (typeof e.image === "string" && e.image.length > 0) {
-      blob.image = absolutiseUrl(siteUrl, e.image);
+    const eventImagePath =
+      typeof e.image === "object" &&
+      e.image !== null &&
+      typeof (e.image as { path?: unknown }).path === "string"
+        ? (e.image as { path: string }).path
+        : typeof e.image === "string"
+          ? e.image
+          : undefined;
+    if (eventImagePath !== undefined && eventImagePath.length > 0) {
+      blob.image = absolutiseUrl(siteUrl, eventImagePath);
     }
     if (typeof e.description === "string" && e.description.length > 0) {
       blob.description = e.description;

@@ -1,6 +1,7 @@
 /** @jsxImportSource preact */
 import type { QuoteBlock } from "@sosb/schema";
 import { markdownInlineToHtml } from "@sosb/markdown";
+import { assetRefAlt, assetRefPath } from "../asset-ref-path.js";
 
 /**
  * Quote block — pull-quote with attribution.
@@ -53,11 +54,11 @@ export function Quote(props: { block: QuoteBlock }): preact.JSX.Element {
     typeof data.author === "string" && data.author.length > 0 ? data.author : undefined;
   const authorRole =
     typeof data.authorRole === "string" && data.authorRole.length > 0 ? data.authorRole : undefined;
-  const authorImage =
-    typeof data.authorImage === "string" && data.authorImage.length > 0
-      ? data.authorImage
-      : undefined;
-  const authorImageAlt = typeof data.authorImageAlt === "string" ? data.authorImageAlt : "";
+  const authorImage = assetRefPath(data.authorImage);
+  const authorImageAlt =
+    typeof data.authorImageAlt === "string" && data.authorImageAlt.length > 0
+      ? data.authorImageAlt
+      : assetRefAlt(data.authorImage);
 
   const inlineHtml = markdownInlineToHtml(text);
   const hasAttribution =

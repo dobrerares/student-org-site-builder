@@ -12,7 +12,9 @@
     }
   },
   "defaultLanguage": "ro",
-  "languages": ["ro"],
+  "languages": [
+    "ro"
+  ],
   "pages": [
     {
       "slug": "evenimente",
@@ -39,10 +41,19 @@
                 "id": "ev_2025_winter",
                 "title": "Atelier de paleografie",
                 "description": "Hands-on cu surse de arhivă.",
-                "image": "assets/atelier.jpg",
+                "image": {
+                  "hash": "atelier",
+                  "path": "assets/atelier.jpg",
+                  "metadataPath": "assets/atelier.metadata.json",
+                  "mime": "image/jpeg",
+                  "width": 1600,
+                  "height": 1067,
+                  "alt": "Atelier hands-on"
+                },
                 "startsAt": "2025-12-10T18:00:00+02:00",
                 "endsAt": "2025-12-10T20:00:00+02:00",
-                "location": "Sala 3.4"
+                "location": "Sala 3.4",
+                "imageAlt": "Atelier hands-on"
               },
               {
                 "id": "ev_2026_spring",

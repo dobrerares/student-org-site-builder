@@ -33,7 +33,15 @@
             "eyebrow": "Bun venit",
             "title": "Asociația Stub",
             "subtitle": "Un fixture pentru testele build pipeline",
-            "backgroundImage": "assets/hero.jpg",
+            "backgroundImage": {
+                      "hash": "hero",
+                      "path": "assets/hero.jpg",
+                      "metadataPath": "assets/hero.metadata.json",
+                      "mime": "image/jpeg",
+                      "width": 1600,
+                      "height": 1067,
+                      "alt": "Studenți la o conferință"
+            },
             "backgroundAlt": "Studenți la o conferință"
           }
         }

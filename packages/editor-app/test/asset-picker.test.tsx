@@ -48,6 +48,22 @@ function nonFileInputs(root: ParentNode): Element[] {
 describe("AssetPicker", () => {
   afterEach(() => cleanup());
 
+  test("with a value, renders Replace image and optional Remove when onClear is set", () => {
+    const onClear = vi.fn();
+    const { container } = render(
+      <AssetPicker
+        value={SAMPLE_ASSET}
+        onChange={() => {}}
+        onClear={onClear}
+        uploader={async () => SAMPLE_ASSET}
+      />,
+    );
+    expect(container.querySelector('[data-testid="asset-picker-replace"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="asset-picker-remove"]')).not.toBeNull();
+    fireEvent.click(container.querySelector('[data-testid="asset-picker-remove"]')!);
+    expect(onClear).toHaveBeenCalledTimes(1);
+  });
+
   test("with a value, renders a thumbnail <img src={value.path}> and no text inputs", () => {
     const { container } = render(
       <AssetPicker

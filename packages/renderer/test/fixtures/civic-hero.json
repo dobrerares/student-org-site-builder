@@ -29,7 +29,15 @@
             "eyebrow": "Constanța · Fondată în 2024",
             "title": "Învățăm din istorie. Construim politică.",
             "subtitle": "Asociația Studențească HISTORIPOL adună studenți de la Universitatea „Ovidius” într-o comunitate civică, academică și deschisă oricui vrea să înțeleagă cum se face cetățenia.",
-            "backgroundImage": "assets/hero.jpg",
+            "backgroundImage": {
+                      "hash": "hero",
+                      "path": "assets/hero.jpg",
+                      "metadataPath": "assets/hero.metadata.json",
+                      "mime": "image/jpeg",
+                      "width": 1600,
+                      "height": 1067,
+                      "alt": "Studenți participând la o dezbatere academică"
+            },
             "backgroundAlt": "Studenți participând la o dezbatere academică"
           }
         }

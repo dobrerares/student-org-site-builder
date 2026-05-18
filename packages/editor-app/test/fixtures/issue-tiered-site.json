@@ -13,7 +13,9 @@
     }
   },
   "defaultLanguage": "ro",
-  "languages": ["ro"],
+  "languages": [
+    "ro"
+  ],
   "pages": [
     {
       "slug": "acasa",
@@ -28,7 +30,15 @@
           "version": 1,
           "data": {
             "title": "Tiered Org",
-            "backgroundImage": "assets/hero.jpg"
+            "backgroundImage": {
+              "hash": "hero",
+              "path": "assets/hero.jpg",
+              "metadataPath": "assets/hero.metadata.json",
+              "mime": "image/jpeg",
+              "width": 1600,
+              "height": 1067,
+              "alt": "Hero"
+            }
           }
         }
       ]

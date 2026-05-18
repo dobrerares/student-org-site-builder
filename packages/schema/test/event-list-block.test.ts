@@ -1,5 +1,11 @@
 import { describe, expect, test } from "vitest";
 import { EventListBlockSchema, validateBlock } from "../src/index.js";
+import { historipolHeroBgRef } from "./fixtures/asset-refs.js";
+
+const sampleEventImage = {
+  ...historipolHeroBgRef,
+  alt: "Atelier de paleografie",
+};
 
 /**
  * eventList block schema tests.
@@ -65,7 +71,8 @@ describe("eventList block schema", () => {
             id: "ev_01",
             title: "Atelier de paleografie",
             description: "Un atelier hands-on cu surse de arhivă.",
-            image: "assets/4a91d2.jpg",
+            image: sampleEventImage,
+            imageAlt: "Atelier de paleografie",
             startsAt: "2026-06-15T18:00:00+03:00",
             endsAt: "2026-06-15T20:00:00+03:00",
             location: "Sala 3.4",
@@ -261,7 +268,8 @@ describe("eventList block schema", () => {
             id: "ev_01",
             title: "Conferință",
             startsAt: "2026-09-01T16:00:00+03:00",
-            image: "assets/4a91d2.jpg",
+            image: sampleEventImage,
+            imageAlt: "Atelier de paleografie",
           },
         ],
       },
@@ -287,6 +295,28 @@ describe("eventList block schema", () => {
       const data = parsed.data.data as Record<string, unknown>;
       expect(data.futureField).toBe("preserved");
     }
+  });
+
+  test("validateBlock warns when an event has image without imageAlt", () => {
+    const block = {
+      id: "blk_events_alt",
+      type: "eventList",
+      version: 1,
+      data: {
+        events: [
+          {
+            id: "ev_01",
+            title: "Conferință",
+            startsAt: "2026-09-01T16:00:00+03:00",
+            image: sampleEventImage,
+          },
+        ],
+      },
+    };
+    const result = validateBlock(block);
+    expect(result.ok).toBe(true);
+    const codes = result.warnings.map((w) => w.code);
+    expect(codes).toContain("block.eventList.event.imageAlt.missing");
   });
 
   test("preserves unknown fields on a single event entry (forward-compat)", () => {

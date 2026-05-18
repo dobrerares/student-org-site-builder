@@ -1,5 +1,6 @@
 /** @jsxImportSource preact */
 import type { HeroBlock } from "@sosb/schema";
+import { assetRefAlt, assetRefPath } from "../asset-ref-path.js";
 
 /**
  * Hero block — structural HTML only.
@@ -19,9 +20,11 @@ export function Hero(props: { block: HeroBlock }): preact.JSX.Element {
   const eyebrow = typeof data.eyebrow === "string" ? data.eyebrow : undefined;
   const title = data.title;
   const subtitle = typeof data.subtitle === "string" ? data.subtitle : undefined;
-  const backgroundImage =
-    typeof data.backgroundImage === "string" ? data.backgroundImage : undefined;
-  const backgroundAlt = typeof data.backgroundAlt === "string" ? data.backgroundAlt : "";
+  const backgroundImage = assetRefPath(data.backgroundImage);
+  const backgroundAlt =
+    typeof data.backgroundAlt === "string" && data.backgroundAlt.length > 0
+      ? data.backgroundAlt
+      : assetRefAlt(data.backgroundImage);
 
   return (
     <section data-block="hero" data-block-id={id} aria-labelledby={`${id}__title`}>

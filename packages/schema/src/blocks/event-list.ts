@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AssetRefSchema } from "./asset-ref.js";
 
 /**
  * eventList block — a list of single-occurrence events with optional
@@ -54,7 +55,8 @@ export const EventEntrySchema = z.looseObject({
   id: z.string().min(1),
   title: z.string().min(1),
   description: z.string().optional(),
-  image: z.string().optional(),
+  image: AssetRefSchema.optional(),
+  imageAlt: z.string().optional(),
   startsAt: IsoDateTimeWithOffset,
   endsAt: IsoDateTimeWithOffset.optional(),
   location: z.string().optional(),

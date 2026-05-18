@@ -48,6 +48,7 @@ export const SPINE_FIELD_METADATA: readonly FieldOverride[] = [
   // Org label rewrites
   { path: "org.legalName", label: "Official organization name" },
   { path: "org.shortName", label: "Display name (used in nav)" },
+  { path: "org.logoAlt", label: "Logo description (for screen readers)" },
 ];
 
 export const BLOCK_FIELD_METADATA: Partial<
@@ -72,6 +73,7 @@ export const BLOCK_FIELD_METADATA: Partial<
   ctaBanner: [
     { path: "backgroundImage.alt", label: "Image description (for screen readers)" },
   ],
+  eventList: [{ path: "events.[].imageAlt", label: "Image description (for screen readers)" }],
 };
 
 /**

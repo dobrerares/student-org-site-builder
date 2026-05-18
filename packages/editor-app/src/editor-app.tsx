@@ -91,7 +91,10 @@ import {
 } from "@sosb/i18n";
 
 import { BLOCK_FIELD_METADATA, SPINE_FIELD_METADATA } from "./field-metadata.js";
+import { applyAltSyncPatches, expandAltSyncPatches } from "./alt-sync.js";
 import { fieldsFromSchema } from "./form-generator.js";
+import { getAtPath, setAtPath } from "./get-set-path.js";
+import { MEDIA_PICKER_RENDERERS } from "./media-picker-renderers.js";
 import { SpineForm, applyPatch } from "./spine-form.js";
 import { ThemeForm } from "./theme-form.js";
 import { iframeSrcdoc } from "./iframe-srcdoc.js";
@@ -121,6 +124,14 @@ import { ExportConfirmDialog } from "./export-confirm.js";
 import { navigateToIssue } from "./issue-navigate.js";
 import { I18nProvider, useTranslator } from "./i18n-context.js";
 import { LocaleToggle } from "./locale-toggle.js";
+import { exportToZip, importFromZip, ZipImportError } from "@sosb/zip";
+import {
+  downloadBlob,
+  exportZipBasename,
+  mergeAssetVfs,
+  pickZipBlob,
+  populateImageDisplayUrls,
+} from "./site-io.js";
 
 const MOBILE_BREAKPOINT_PX = 768;
 
@@ -218,7 +229,11 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   // metadata onto each FieldNode. SpineForm reads `node.tier` to honour
   // the "Show advanced" toggle (ADR 0043).
   const fields = useMemo(
-    () => fieldsFromSchema(SiteSchema, { overrides: SPINE_FIELD_METADATA }),
+    () =>
+      fieldsFromSchema(SiteSchema, {
+        overrides: SPINE_FIELD_METADATA,
+        schemaRenderers: MEDIA_PICKER_RENDERERS,
+      }),
     [],
   );
   // Block catalog memo — used both by the un-drilled block list (indirectly,
@@ -421,7 +436,16 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     subpath: readonly (string | number)[],
     value: unknown,
   ): void {
-    patch(["pages", pageIndex, "blocks", blockIndex, "data", ...subpath], value);
+    state.update((draft) => {
+      const dataPath: (string | number)[] = ["pages", pageIndex, "blocks", blockIndex, "data"];
+      const blockData = getAtPath(draft, dataPath) as Record<string, unknown>;
+      const nextData = applyAltSyncPatches(
+        blockData,
+        expandAltSyncPatches(blockData, subpath, value),
+      );
+      setAtPath(draft as unknown as Record<string, unknown>, dataPath, nextData);
+    });
+    pushHistory(state.getSnapshot());
   }
 
   /**
@@ -512,9 +536,13 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
    * `uploader` so re-uploads preserve it; the public callback shape
    * stays `(file) => Promise<AssetRefLike>`.
    */
-  async function uploadAssetForPicker(file: File): Promise<AssetRefLike> {
+  async function uploadAssetForPicker(file: File, suggestedAlt?: string): Promise<AssetRefLike> {
     const vfs = assetVfsRef.current!;
-    const ref = await uploadAsset({ kind: "file", file, alt: file.name }, vfs, {
+    const alt =
+      suggestedAlt !== undefined && suggestedAlt.trim().length > 0
+        ? suggestedAlt.trim()
+        : file.name;
+    const ref = await uploadAsset({ kind: "file", file, alt }, vfs, {
       processor: CanvasImageProcessor,
     });
     // Mint a display URL for the picker's thumbnail. Reads the freshly-
@@ -673,20 +701,65 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     }
   });
 
+  async function performExport(): Promise<void> {
+    if (props.onExport !== undefined) {
+      props.onExport(snapshot);
+      return;
+    }
+    const blob = await exportToZip(snapshot, assetVfsRef.current!);
+    const basename = exportZipBasename(snapshot.org.name);
+    downloadBlob(blob, `${basename}.zip`);
+  }
+
   function handleExportClick(): void {
     const result = validationResult;
     if (result.errors.length === 0 && result.warnings.length === 0) {
-      // Clean: export immediately.
-      props.onExport?.(snapshot);
+      void performExport();
       return;
     }
-    // Open the confirmation dialog.
     setExportDialog(result);
   }
 
   function handleExportConfirm(): void {
     setExportDialog(null);
-    props.onExport?.(snapshot);
+    void performExport();
+  }
+
+  async function handleBuiltinImport(): Promise<void> {
+    const blob = await pickZipBlob();
+    if (blob === null) return;
+    try {
+      const imported = await importFromZip(blob);
+      const vfs = assetVfsRef.current!;
+      for (const path of await vfs.list("assets/")) {
+        await vfs.delete(path);
+      }
+      await mergeAssetVfs(imported.vfs, vfs);
+      await populateImageDisplayUrls(vfs, displayUrlCacheRef.current!);
+      historyRef.current = createHistoryStore<Site>({
+        initial: structuredClone(imported.siteData),
+      });
+      setHistoryVersion((v) => v + 1);
+      applySite(imported.siteData);
+      setActivePageIndex(0);
+      setDrillMode({ kind: "blocks" });
+    } catch (err) {
+      const message =
+        err instanceof ZipImportError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Import failed.";
+      window.alert(message);
+    }
+  }
+
+  function handleImportClick(): void {
+    if (props.onImport !== undefined) {
+      props.onImport();
+      return;
+    }
+    void handleBuiltinImport();
   }
 
   function handleExportCancel(): void {
@@ -730,7 +803,14 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
           <span data-testid="inspector-eyebrow">Site</span>
           <h2>Site settings</h2>
         </header>
-        <SpineForm fields={fields} site={snapshot} onPatch={patch} />
+        <SpineForm
+          fields={fields}
+          site={snapshot}
+          onPatch={patch}
+          uploader={uploadAssetForPicker}
+          documentUploader={uploadDocumentForPicker}
+          displayUrlFor={displayUrlForAsset}
+        />
       </div>
     );
   } else if (drillMode.kind === "theme") {
@@ -862,7 +942,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   return (
     <div data-testid="editor-app" ref={rootRef}>
       <TopBar
-        onImport={props.onImport}
+        onImport={handleImportClick}
         onExport={handleExportClick}
         onReset={props.onReset}
         onUndo={doUndo}

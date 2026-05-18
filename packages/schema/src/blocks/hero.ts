@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AssetRefSchema } from "./asset-ref.js";
 
 /**
  * Hero block — the mandatory page-opening block.
@@ -12,7 +13,7 @@ export const HeroDataSchema = z.looseObject({
   eyebrow: z.string().optional(),
   title: z.string().min(1),
   subtitle: z.string().optional(),
-  backgroundImage: z.string().optional(),
+  backgroundImage: AssetRefSchema.optional(),
   backgroundAlt: z.string().optional(),
 });
 

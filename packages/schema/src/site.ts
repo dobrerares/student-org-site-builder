@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AssetRefSchema } from "./blocks/asset-ref.js";
 import { BlockEnvelopeSchema } from "./blocks/index.js";
 
 /**
@@ -17,7 +18,8 @@ const OrgSchema = z.looseObject({
   name: z.string().min(1),
   tagline: z.string().optional(),
   foundedYear: z.number().int().optional(),
-  logo: z.string().optional(),
+  logo: AssetRefSchema.optional(),
+  logoAlt: z.string().optional(),
   address: z.string().optional(),
   email: z.string().optional(),
   phone: z.string().optional(),

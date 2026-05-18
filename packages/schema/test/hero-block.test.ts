@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { HeroBlockSchema, validateBlock } from "../src/index.js";
+import { historipolHeroBgRef } from "./fixtures/asset-refs.js";
 
 describe("hero block schema", () => {
   test("validates a well-formed hero block", () => {
@@ -24,7 +25,7 @@ describe("hero block schema", () => {
         eyebrow: "Bun venit",
         title: "HISTORIPOL",
         subtitle: "Comunitatea",
-        backgroundImage: "assets/4a91d2.jpg",
+        backgroundImage: { ...historipolHeroBgRef, alt: "Photo of students" },
         backgroundAlt: "Photo of students",
       },
     };
@@ -86,7 +87,15 @@ describe("hero block schema", () => {
       version: 1,
       data: {
         title: "Welcome",
-        backgroundImage: "assets/abc.jpg",
+        backgroundImage: {
+          hash: "abc123",
+          path: "assets/abc123.jpg",
+          metadataPath: "assets/abc123.metadata.json",
+          mime: "image/jpeg",
+          width: 800,
+          height: 600,
+          alt: "Temporary upload alt",
+        },
         // backgroundAlt intentionally missing
       },
     };

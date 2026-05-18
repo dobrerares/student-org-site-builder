@@ -38,6 +38,8 @@ import type { AssetRefLike } from "@sosb/schema";
 export interface AssetPickerProps {
   readonly value: AssetRefLike | undefined;
   readonly onChange: (next: AssetRefLike) => void;
+  /** When set, clears the asset and sibling alt (optional image slots). */
+  readonly onClear?: () => void;
   /** Required: how this picker writes to the VFS. Injected so tests can mock. */
   readonly uploader: (file: File) => Promise<AssetRefLike>;
   /**
@@ -122,17 +124,35 @@ export function AssetPicker(props: AssetPickerProps): JSX.Element {
       ) : null}
 
       {hasValue && !imageErrored ? (
-        <img
-          data-testid="asset-picker-thumbnail"
-          // Prefer the host-provided display URL (typically `blob:...` for
-          // freshly-uploaded assets, or a `data:` URL in test fixtures);
-          // fall back to `value.path` for the legacy/external-URL case.
-          // If neither resolves, the `onError` handler below switches to
-          // MISSING state.
-          src={props.displayUrlFor?.(props.value!) ?? props.value!.path}
-          alt={props.value!.alt}
-          onError={() => setErrorHash(props.value!.hash)}
-        />
+        <>
+          <img
+            data-testid="asset-picker-thumbnail"
+            // Prefer the host-provided display URL (typically `blob:...` for
+            // freshly-uploaded assets, or a `data:` URL in test fixtures);
+            // fall back to `value.path` for the legacy/external-URL case.
+            // If neither resolves, the `onError` handler below switches to
+            // MISSING state.
+            src={props.displayUrlFor?.(props.value!) ?? props.value!.path}
+            alt={props.value!.alt}
+            onError={() => setErrorHash(props.value!.hash)}
+          />
+          <button
+            type="button"
+            data-testid="asset-picker-replace"
+            onClick={triggerFilePicker}
+          >
+            Replace image
+          </button>
+          {props.onClear !== undefined ? (
+            <button
+              type="button"
+              data-testid="asset-picker-remove"
+              onClick={props.onClear}
+            >
+              Remove image
+            </button>
+          ) : null}
+        </>
       ) : null}
 
       {hasValue && imageErrored ? (

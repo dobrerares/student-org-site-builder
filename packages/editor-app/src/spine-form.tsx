@@ -7,9 +7,12 @@
  */
 import type { JSX } from "preact";
 import { useState } from "preact/hooks";
-import type { Site } from "@sosb/schema";
+import type { AssetRefLike, DocumentAssetRef, Site } from "@sosb/schema";
 
+import { expandAltSyncPatches, suggestedAltForAssetPath } from "./alt-sync.js";
 import { AdvancedToggle } from "./advanced-toggle.js";
+import { AssetPicker } from "./asset-picker.js";
+import { DocumentPicker, type DocumentAssetRefLike } from "./document-picker.js";
 import type { FieldNode } from "./form-generator.js";
 import { getAtPath, setAtPath } from "./get-set-path.js";
 import { useTranslator } from "./i18n-context.js";
@@ -18,12 +21,19 @@ export interface SpineFormProps {
   readonly fields: FieldNode[];
   readonly site: Site;
   readonly onPatch: (path: readonly (string | number)[], value: unknown) => void;
+  readonly uploader: (file: File, suggestedAlt?: string) => Promise<AssetRefLike>;
+  readonly documentUploader: (file: File) => Promise<DocumentAssetRef>;
+  readonly displayUrlFor?: (ref: AssetRefLike) => string | undefined;
 }
 
-export function SpineForm({ fields, site, onPatch }: SpineFormProps): JSX.Element {
-  // Per-form local "Show advanced" toggle state (ADR 0043). Each
-  // SpineForm mount owns its own state — no persistence, no
-  // module-level coupling. Default false.
+export function SpineForm({
+  fields,
+  site,
+  onPatch,
+  uploader,
+  documentUploader,
+  displayUrlFor,
+}: SpineFormProps): JSX.Element {
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   return (
     <form data-testid="spine-form" onSubmit={(event) => event.preventDefault()}>
@@ -34,6 +44,9 @@ export function SpineForm({ fields, site, onPatch }: SpineFormProps): JSX.Elemen
           node={field}
           site={site}
           onPatch={onPatch}
+          uploader={uploader}
+          documentUploader={documentUploader}
+          displayUrlFor={displayUrlFor}
           showAdvanced={showAdvanced}
         />
       ))}
@@ -45,10 +58,9 @@ interface FieldRendererProps {
   readonly node: FieldNode;
   readonly site: Site;
   readonly onPatch: (path: readonly (string | number)[], value: unknown) => void;
-  /**
-   * Toggle state from the parent SpineForm. Advanced fields render
-   * only when `true`; hidden fields drop regardless (ADR 0043).
-   */
+  readonly uploader: (file: File, suggestedAlt?: string) => Promise<AssetRefLike>;
+  readonly documentUploader: (file: File) => Promise<DocumentAssetRef>;
+  readonly displayUrlFor: ((ref: AssetRefLike) => string | undefined) | undefined;
   readonly showAdvanced: boolean;
 }
 
@@ -56,16 +68,13 @@ function FieldRenderer({
   node,
   site,
   onPatch,
+  uploader,
+  documentUploader,
+  displayUrlFor,
   showAdvanced,
 }: FieldRendererProps): JSX.Element | null {
-  // `useTranslator` must run before any conditional return to satisfy
-  // the Rules of Hooks; the tier gate below is a pure return-null
-  // short-circuit that the renderer applies after every hook fires.
   const t = useTranslator();
 
-  // Tier-based visibility filter (ADR 0043). Hidden fields are NEVER
-  // rendered; advanced fields require the toggle to be on. Default-tier
-  // fields fall through to the normal kind switch below.
   if (node.tier === "hidden") {
     return null;
   }
@@ -87,6 +96,9 @@ function FieldRenderer({
               node={child}
               site={site}
               onPatch={onPatch}
+              uploader={uploader}
+              documentUploader={documentUploader}
+              displayUrlFor={displayUrlFor}
               showAdvanced={showAdvanced}
             />
           ))}
@@ -94,10 +106,6 @@ function FieldRenderer({
       );
 
     case "array":
-      // Site-spine arrays — `languages`, `pages`, `org.social` — are
-      // structural lists. v1 surfaces them as a read-only summary; the
-      // forms that create / reorder / delete entries arrive in their own
-      // issues (page CRUD = #25-style work; languages = bilingual UI).
       return (
         <fieldset data-field={dottedPath} data-kind="array">
           <legend>{node.name}</legend>
@@ -118,7 +126,10 @@ function FieldRenderer({
             data-field={dottedPath}
             value={typeof value === "string" ? value : ""}
             onInput={(event: JSX.TargetedEvent<HTMLInputElement>) => {
-              onPatch(node.path, event.currentTarget.value);
+              const next = event.currentTarget.value;
+              for (const patch of expandAltSyncPatches(site, node.path, next)) {
+                onPatch(patch.path, patch.value);
+              }
             }}
           />
         </label>
@@ -182,12 +193,41 @@ function FieldRenderer({
       );
 
     case "custom":
-      // TODO(T4/T11): mount the registered custom widget. The form-generator
-      // emits `"custom"` nodes for both schema-identity dispatch (e.g.,
-      // `AssetRefSchema` → asset-picker) and path-keyed dispatch (e.g.,
-      // `theme.id` → theme-picker). For now we render nothing so the type
-      // checker is satisfied and the existing forms keep working until the
-      // widget-mounting follow-up tasks land.
+      if (node.renderer === "asset-picker") {
+        const suggestedAlt = suggestedAltForAssetPath(site, node.path);
+        return (
+          <AssetPicker
+            value={value as AssetRefLike | undefined}
+            onChange={(next) => {
+              for (const patch of expandAltSyncPatches(site, node.path, next)) {
+                onPatch(patch.path, patch.value);
+              }
+            }}
+            onClear={
+              node.optional
+                ? () => {
+                    for (const patch of expandAltSyncPatches(site, node.path, undefined)) {
+                      onPatch(patch.path, patch.value);
+                    }
+                  }
+                : undefined
+            }
+            uploader={(file) =>
+              uploader(file, suggestedAlt && suggestedAlt.length > 0 ? suggestedAlt : undefined)
+            }
+            displayUrlFor={displayUrlFor}
+          />
+        );
+      }
+      if (node.renderer === "document-picker") {
+        return (
+          <DocumentPicker
+            value={value as DocumentAssetRefLike | undefined}
+            onChange={(next) => onPatch(node.path, next)}
+            uploader={documentUploader}
+          />
+        );
+      }
       return <span data-field={dottedPath} data-kind="custom" data-renderer={node.renderer} />;
   }
 }
@@ -198,6 +238,8 @@ function FieldRenderer({
  */
 export function applyPatch(site: Site, path: readonly (string | number)[], value: unknown): Site {
   const draft = structuredClone(site) as unknown as Record<string, unknown>;
-  setAtPath(draft, path, value);
+  for (const patch of expandAltSyncPatches(site, path, value)) {
+    setAtPath(draft, patch.path, patch.value);
+  }
   return draft as unknown as Site;
 }

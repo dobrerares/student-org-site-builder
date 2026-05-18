@@ -7,7 +7,38 @@ import { SiteSchema } from "@sosb/schema";
 import minimal from "./fixtures/minimal-site.json" with { type: "json" };
 import { SPINE_FIELD_METADATA } from "../src/field-metadata.js";
 import { fieldsFromSchema, type FieldNode } from "../src/form-generator.js";
+import type { AssetRefLike, DocumentAssetRef } from "@sosb/schema";
 import { SpineForm } from "../src/spine-form.js";
+
+const stubAsset: AssetRefLike = {
+  hash: "stub",
+  path: "assets/stub.jpg",
+  metadataPath: "assets/stub.metadata.json",
+  mime: "image/jpeg",
+  width: 1,
+  height: 1,
+  alt: "stub",
+};
+
+const stubUploader = async (): Promise<AssetRefLike> => stubAsset;
+const stubDocumentUploader = async (): Promise<DocumentAssetRef> => ({
+  hash: "doc",
+  path: "assets/doc.pdf",
+  metadataPath: "assets/doc.metadata.json",
+  mime: "application/pdf",
+  byteSize: 1,
+  label: "doc",
+});
+
+function spineProps(fields: FieldNode[], site: Site = baseSite) {
+  return {
+    fields,
+    site,
+    onPatch: () => {},
+    uploader: stubUploader,
+    documentUploader: stubDocumentUploader,
+  };
+}
 
 /**
  * SpineForm + "Show advanced" toggle (ADR 0043, T16).
@@ -48,7 +79,7 @@ describe("SpineForm — Show advanced toggle (ADR 0043, T16)", () => {
   test("renders the AdvancedToggle control", () => {
     const fields = fieldsFromSchema(SiteSchema, { overrides: SPINE_FIELD_METADATA });
     const { container } = render(
-      <SpineForm fields={fields} site={baseSite} onPatch={() => {}} />,
+      <SpineForm {...spineProps(fields)} />,
     );
     expect(container.querySelector('[data-testid="advanced-toggle"]')).not.toBeNull();
   });
@@ -59,7 +90,7 @@ describe("SpineForm — Show advanced toggle (ADR 0043, T16)", () => {
       stringNode(["org", "legalName"], "advanced"),
     ];
     const { container } = render(
-      <SpineForm fields={fields} site={baseSite} onPatch={() => {}} />,
+      <SpineForm {...spineProps(fields)} />,
     );
     expect(container.querySelector('[data-field="org.name"]')).not.toBeNull();
     expect(container.querySelector('[data-field="org.legalName"]')).toBeNull();
@@ -71,7 +102,7 @@ describe("SpineForm — Show advanced toggle (ADR 0043, T16)", () => {
       stringNode(["org", "legalName"], "advanced"),
     ];
     const { container } = render(
-      <SpineForm fields={fields} site={baseSite} onPatch={() => {}} />,
+      <SpineForm {...spineProps(fields)} />,
     );
     const checkbox = container.querySelector<HTMLInputElement>(
       '[data-testid="advanced-toggle"] input[type="checkbox"]',
@@ -89,7 +120,7 @@ describe("SpineForm — Show advanced toggle (ADR 0043, T16)", () => {
       stringNode(["org", "internalNote"], "hidden"),
     ];
     const { container } = render(
-      <SpineForm fields={fields} site={baseSite} onPatch={() => {}} />,
+      <SpineForm {...spineProps(fields)} />,
     );
     expect(container.querySelector('[data-field="org.internalNote"]')).toBeNull();
 
@@ -107,10 +138,10 @@ describe("SpineForm — Show advanced toggle (ADR 0043, T16)", () => {
     ];
 
     const first = render(
-      <SpineForm fields={fields} site={baseSite} onPatch={() => {}} />,
+      <SpineForm {...spineProps(fields)} />,
     );
     const second = render(
-      <SpineForm fields={fields} site={baseSite} onPatch={() => {}} />,
+      <SpineForm {...spineProps(fields)} />,
     );
 
     // Both start with the advanced field hidden.

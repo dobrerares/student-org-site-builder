@@ -499,10 +499,12 @@ describe("BlockForm — imageGallery wires AssetPicker per image (ADR 0043, T11)
     await Promise.resolve();
 
     expect(uploader).toHaveBeenCalledTimes(1);
-    expect(uploader).toHaveBeenCalledWith(file);
-    expect(patches.length).toBe(1);
+    expect(uploader).toHaveBeenCalledWith(file, "Second photo");
+    expect(patches.length).toBe(2);
     expect(patches[0]!.path).toEqual(["images", 1, "asset"]);
     expect(patches[0]!.value).toEqual(uploaded);
+    expect(patches[1]!.path).toEqual(["images", 1, "alt"]);
+    expect(patches[1]!.value).toBe(uploaded.alt);
   });
 });
 
