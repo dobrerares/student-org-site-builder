@@ -2,6 +2,8 @@
 import type { QuoteBlock } from "@sosb/schema";
 import { markdownInlineToHtml } from "@sosb/markdown";
 import { assetRefAlt, assetRefPath } from "../asset-ref-path.js";
+import type { AssetUrlForPath } from "../asset-url.js";
+import { resolveAssetUrl } from "../asset-url.js";
 
 /**
  * Quote block — pull-quote with attribution.
@@ -47,14 +49,21 @@ import { assetRefAlt, assetRefPath } from "../asset-ref-path.js";
  * the asset reference resolved by the asset pipeline (#6); it is not
  * user-arbitrary HTML.
  */
-export function Quote(props: { block: QuoteBlock }): preact.JSX.Element {
+export function Quote(props: {
+  block: QuoteBlock;
+  assetUrlForPath?: AssetUrlForPath | undefined;
+}): preact.JSX.Element {
   const { id, data } = props.block;
   const text = typeof data.text === "string" ? data.text : "";
   const author =
     typeof data.author === "string" && data.author.length > 0 ? data.author : undefined;
   const authorRole =
     typeof data.authorRole === "string" && data.authorRole.length > 0 ? data.authorRole : undefined;
-  const authorImage = assetRefPath(data.authorImage);
+  const authorImagePath = assetRefPath(data.authorImage);
+  const authorImage =
+    authorImagePath !== undefined
+      ? resolveAssetUrl(authorImagePath, props.assetUrlForPath)
+      : undefined;
   const authorImageAlt =
     typeof data.authorImageAlt === "string" && data.authorImageAlt.length > 0
       ? data.authorImageAlt

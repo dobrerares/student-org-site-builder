@@ -15,6 +15,7 @@ import { render } from "preact-render-to-string";
 import type { Site } from "@sosb/schema";
 import { PageShell } from "./page-shell.js";
 import { emitTokenRoot } from "./tokens.js";
+import type { AssetUrlForPath } from "./asset-url.js";
 import { STUB_THEME_CSS, STUB_THEME_ID } from "./themes/stub.js";
 import { MINIMAL_THEME_CSS, MINIMAL_THEME_ID } from "./themes/minimal.js";
 import { MODERN_THEME_CSS, MODERN_THEME_ID } from "./themes/modern.js";
@@ -45,6 +46,13 @@ export interface RenderOptions {
    * `iframeSrcdoc` passes this option through `renderPreviewHtml`.
    */
   readonly mode?: "deploy" | "preview";
+  /**
+   * Optional browser/editor resolver for VFS asset paths. Deploy output omits
+   * this so canonical `assets/...` paths remain stable; the live editor preview
+   * passes a blob-URL resolver so srcdoc iframes can actually load in-memory
+   * uploads and imported zip assets.
+   */
+  readonly assetUrlForPath?: AssetUrlForPath | undefined;
 }
 
 /**
@@ -76,7 +84,15 @@ export function renderSite(data: Site, themeId: string, opts?: RenderOptions): s
 
   const mode = opts?.mode ?? "deploy";
   const css = composeCss(data, themeId);
-  const body = render(<PageShell site={data} page={page} css={css} mode={mode} />);
+  const body = render(
+    <PageShell
+      site={data}
+      page={page}
+      css={css}
+      mode={mode}
+      assetUrlForPath={opts?.assetUrlForPath}
+    />,
+  );
   return `<!doctype html>${body}`;
 }
 

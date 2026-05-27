@@ -1,5 +1,7 @@
 /** @jsxImportSource preact */
 import type { PartnerLogosBlock } from "@sosb/schema";
+import type { AssetUrlForPath } from "../asset-url.js";
+import { resolveAssetUrl } from "../asset-url.js";
 
 /**
  * partnerLogos block — structural HTML only.
@@ -23,7 +25,10 @@ import type { PartnerLogosBlock } from "@sosb/schema";
  * objects are ignored without throwing — the schema's preserve-unknown-keys
  * carries them through to round-trip persistence.
  */
-export function PartnerLogos(props: { block: PartnerLogosBlock }): preact.JSX.Element {
+export function PartnerLogos(props: {
+  block: PartnerLogosBlock;
+  assetUrlForPath?: AssetUrlForPath | undefined;
+}): preact.JSX.Element {
   const { id, data } = props.block;
   const title = typeof data.title === "string" && data.title.length > 0 ? data.title : undefined;
   const partners = data.partners;
@@ -44,7 +49,7 @@ export function PartnerLogos(props: { block: PartnerLogosBlock }): preact.JSX.El
           {partners.map((partner, index) => {
             const name = partner.name;
             const logo = partner.logo;
-            const logoSrc = logo.path;
+            const logoSrc = resolveAssetUrl(logo.path, props.assetUrlForPath);
             const logoAlt = logo.alt;
             const url =
               typeof partner.url === "string" && partner.url.length > 0 ? partner.url : undefined;

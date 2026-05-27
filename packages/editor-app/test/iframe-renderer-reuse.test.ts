@@ -72,4 +72,34 @@ describe("iframe preview reuses @sosb/renderer", () => {
     const preview = renderPreviewHtml(twoPageSite, "stub", { pageIndex: 1 });
     expect(preview).toBe(direct);
   });
+
+  test("iframeSrcdoc passes the preview asset resolver through to the renderer", () => {
+    const site: Site = structuredClone(baseSite);
+    site.pages[0]!.blocks = [
+      {
+        id: "blk_home_hero",
+        type: "hero",
+        version: 1,
+        data: {
+          title: "Preview",
+          backgroundImage: {
+            hash: "hero",
+            path: "assets/hero.jpg",
+            metadataPath: "assets/hero.metadata.json",
+            mime: "image/jpeg",
+            width: 1600,
+            height: 1067,
+            alt: "Hero",
+          },
+        },
+      },
+    ];
+
+    const html = iframeSrcdoc(site, "stub", 0, (path) =>
+      path === "assets/hero.jpg" ? "blob:hero-preview" : undefined,
+    );
+
+    expect(html).toContain('src="blob:hero-preview"');
+    expect(html).not.toContain('src="assets/hero.jpg"');
+  });
 });

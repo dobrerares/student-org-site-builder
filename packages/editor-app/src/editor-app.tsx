@@ -130,7 +130,7 @@ import {
   exportZipBasename,
   mergeAssetVfs,
   pickZipBlob,
-  populateImageDisplayUrls,
+  populateAssetDisplayUrls,
 } from "./site-io.js";
 
 const MOBILE_BREAKPOINT_PX = 768;
@@ -498,10 +498,9 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   // the same value and reuse the same blob URL. This mirrors the
   // pipeline's own dedup property (same bytes → same path).
   //
-  // Scope: this cache covers UPLOADS in the current session. The
-  // import path (loading bytes from a freshly-imported zip) is a
-  // separate gap — populating the cache on import lives in a
-  // follow-up tied to the import flow itself.
+  // The same cache backs picker thumbnails and the live preview iframe:
+  // pickers resolve by AssetRef hash, while the preview resolves canonical
+  // `assets/...` paths by extracting the same content hash.
   const displayUrlCacheRef = useRef<Map<string, string>>();
   if (displayUrlCacheRef.current === undefined) {
     displayUrlCacheRef.current = new Map();
@@ -523,6 +522,14 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
 
   function displayUrlForAsset(ref: AssetRefLike): string | undefined {
     return displayUrlCacheRef.current!.get(ref.hash);
+  }
+
+  function displayUrlForAssetPath(path: string): string | undefined {
+    if (!path.startsWith("assets/")) return undefined;
+    const filename = path.slice("assets/".length);
+    const dot = filename.lastIndexOf(".");
+    const hash = dot >= 0 ? filename.slice(0, dot) : filename;
+    return displayUrlCacheRef.current!.get(hash);
   }
 
   /**
@@ -581,6 +588,12 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   async function uploadDocumentForPicker(file: File): Promise<DocumentAssetRef> {
     const vfs = assetVfsRef.current!;
     const ref = await uploadDocument({ kind: "file", file, label: file.name }, vfs);
+    const cache = displayUrlCacheRef.current!;
+    if (!cache.has(ref.hash)) {
+      const bytes = await vfs.read(ref.path);
+      const blob = new Blob([new Uint8Array(bytes)], { type: ref.mime });
+      cache.set(ref.hash, URL.createObjectURL(blob));
+    }
     // `@sosb/assets`'s runtime `DocumentRef` interface uses the closed
     // `SupportedDocumentMime` enum for `mime`; the schema's
     // `DocumentAssetRef` widens it to `z.string()` for forward-compat.
@@ -735,7 +748,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
         await vfs.delete(path);
       }
       await mergeAssetVfs(imported.vfs, vfs);
-      await populateImageDisplayUrls(vfs, displayUrlCacheRef.current!);
+      await populateAssetDisplayUrls(vfs, displayUrlCacheRef.current!);
       historyRef.current = createHistoryStore<Site>({
         initial: structuredClone(imported.siteData),
       });
@@ -920,7 +933,12 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     </section>
   );
 
-  const previewSrcdoc = iframeSrcdoc(snapshot, snapshot.theme.id, safeActivePageIndex);
+  const previewSrcdoc = iframeSrcdoc(
+    snapshot,
+    snapshot.theme.id,
+    safeActivePageIndex,
+    displayUrlForAssetPath,
+  );
   const previewPane = (
     <section data-testid="preview-pane" aria-label={t("pane.preview.label")}>
       <iframe

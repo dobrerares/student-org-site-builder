@@ -45,6 +45,8 @@ import {
   pagePath,
 } from "./routing.js";
 import { PREVIEW_NAV_SCRIPT, PREVIEW_NAV_SCRIPT_MARKER } from "./preview-nav-script.js";
+import type { AssetUrlForPath } from "./asset-url.js";
+import { resolveAssetUrl } from "./asset-url.js";
 
 /**
  * The page shell.
@@ -100,7 +102,7 @@ function pageDescription(site: Site, page: Page): string | undefined {
  * (`twitter:image`) the renderer emits. Returns `undefined` when the first
  * block is not a hero or when `backgroundImage` is absent / empty.
  */
-function pageOgImage(page: Page): string | undefined {
+function pageOgImage(page: Page, assetUrlForPath: AssetUrlForPath | undefined): string | undefined {
   const firstBlock = page.blocks[0];
   if (firstBlock === undefined) return undefined;
   if (firstBlock.type !== "hero") return undefined;
@@ -114,19 +116,22 @@ function pageOgImage(page: Page): string | undefined {
         ? data.backgroundImage
         : undefined;
   if (path === undefined || path.length === 0) return undefined;
-  return path;
+  return resolveAssetUrl(path, assetUrlForPath);
 }
 
-function renderBlock(block: BlockEnvelope): preact.JSX.Element | null {
+function renderBlock(
+  block: BlockEnvelope,
+  assetUrlForPath: AssetUrlForPath | undefined,
+): preact.JSX.Element | null {
   if (!isKnownBlockType(block.type)) return null;
   if (block.type === "hero") {
-    return <Hero block={block as unknown as HeroBlock} />;
+    return <Hero block={block as unknown as HeroBlock} assetUrlForPath={assetUrlForPath} />;
   }
   if (block.type === "richText") {
     return <RichText block={block as unknown as RichTextBlock} />;
   }
   if (block.type === "quote") {
-    return <Quote block={block as unknown as QuoteBlock} />;
+    return <Quote block={block as unknown as QuoteBlock} assetUrlForPath={assetUrlForPath} />;
   }
   if (block.type === "valueList") {
     return <ValueList block={block as unknown as ValueListBlock} />;
@@ -141,28 +146,52 @@ function renderBlock(block: BlockEnvelope): preact.JSX.Element | null {
     return <CustomHtml block={block as unknown as CustomHtmlBlock} />;
   }
   if (block.type === "activitiesList") {
-    return <ActivitiesList block={block as unknown as ActivitiesListBlock} />;
+    return (
+      <ActivitiesList
+        block={block as unknown as ActivitiesListBlock}
+        assetUrlForPath={assetUrlForPath}
+      />
+    );
   }
   if (block.type === "teamGrid") {
-    return <TeamGrid block={block as unknown as TeamGridBlock} />;
+    return <TeamGrid block={block as unknown as TeamGridBlock} assetUrlForPath={assetUrlForPath} />;
   }
   if (block.type === "faq") {
     return <Faq block={block as unknown as FaqBlock} />;
   }
   if (block.type === "ctaBanner") {
-    return <CtaBanner block={block as unknown as CtaBannerBlock} />;
+    return (
+      <CtaBanner block={block as unknown as CtaBannerBlock} assetUrlForPath={assetUrlForPath} />
+    );
   }
   if (block.type === "partnerLogos") {
-    return <PartnerLogos block={block as unknown as PartnerLogosBlock} />;
+    return (
+      <PartnerLogos
+        block={block as unknown as PartnerLogosBlock}
+        assetUrlForPath={assetUrlForPath}
+      />
+    );
   }
   if (block.type === "imageGallery") {
-    return <ImageGallery block={block as unknown as ImageGalleryBlock} />;
+    return (
+      <ImageGallery
+        block={block as unknown as ImageGalleryBlock}
+        assetUrlForPath={assetUrlForPath}
+      />
+    );
   }
   if (block.type === "documentDownloads") {
-    return <DocumentDownloads block={block as unknown as DocumentDownloadsBlock} />;
+    return (
+      <DocumentDownloads
+        block={block as unknown as DocumentDownloadsBlock}
+        assetUrlForPath={assetUrlForPath}
+      />
+    );
   }
   if (block.type === "eventList") {
-    return <EventList block={block as unknown as EventListBlock} />;
+    return (
+      <EventList block={block as unknown as EventListBlock} assetUrlForPath={assetUrlForPath} />
+    );
   }
   return null;
 }
@@ -193,11 +222,12 @@ export function PageShell(props: {
   page: Page;
   css: string;
   mode?: "deploy" | "preview";
+  assetUrlForPath?: AssetUrlForPath | undefined;
 }): preact.JSX.Element {
-  const { site, page, css, mode = "deploy" } = props;
+  const { site, page, css, mode = "deploy", assetUrlForPath } = props;
   const title = pageTitle(site, page);
   const description = pageDescription(site, page);
-  const ogImage = pageOgImage(page);
+  const ogImage = pageOgImage(page, assetUrlForPath);
   const twitterCardType = ogImage === undefined ? "summary" : "summary_large_image";
   const navPages = navPagesFor(site, page);
   const activeHref = pagePath(site, page);
@@ -289,7 +319,7 @@ export function PageShell(props: {
         )}
         <main>
           {page.blocks.map((block) => {
-            const rendered = renderBlock(block);
+            const rendered = renderBlock(block, assetUrlForPath);
             if (rendered !== null) return rendered;
             return (
               <div

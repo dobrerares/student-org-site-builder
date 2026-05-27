@@ -10,6 +10,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./memory": "./src/memory.ts",
+    "./zip-driver": "./src/zip-driver.ts",
     "./vfs": "./src/vfs.ts",
     "./test-conformance": "./src/test-conformance.ts"
   },

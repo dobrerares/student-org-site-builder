@@ -97,16 +97,15 @@ describe("build — SEO meta (build-pipeline overlay)", () => {
 
   test("absolute URLs in hero backgroundImage are preserved (not double-prefixed)", () => {
     const absUrl = structuredClone(fixture) as Site;
-    (absUrl.pages[0]!.blocks[0]!.data as { backgroundImage?: { path: string } }).backgroundImage =
-      {
-        hash: "cdn",
-        path: "https://cdn.example.com/hero.jpg",
-        metadataPath: "assets/cdn.metadata.json",
-        mime: "image/jpeg",
-        width: 1600,
-        height: 1067,
-        alt: "CDN hero",
-      };
+    (absUrl.pages[0]!.blocks[0]!.data as { backgroundImage?: unknown }).backgroundImage = {
+      hash: "cdn",
+      path: "https://cdn.example.com/hero.jpg",
+      metadataPath: "assets/cdn.metadata.json",
+      mime: "image/jpeg",
+      width: 1600,
+      height: 1067,
+      alt: "CDN hero",
+    };
     const dist = build(absUrl, { siteUrl: "https://stub.example.org" });
     const html = dist.get("index.html")!;
     expect(html).toMatch(

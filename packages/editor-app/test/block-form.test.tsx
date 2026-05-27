@@ -534,7 +534,7 @@ describe("BlockForm — Show advanced toggle (ADR 0043, T16)", () => {
     };
   }
 
-  function clickAdvancedToggle(container: HTMLElement): void {
+  function clickAdvancedToggle(container: ParentNode): void {
     const checkbox = container.querySelector<HTMLInputElement>(
       '[data-testid="advanced-toggle"] input[type="checkbox"]',
     );
@@ -543,9 +543,7 @@ describe("BlockForm — Show advanced toggle (ADR 0043, T16)", () => {
   }
 
   test("hides tier=advanced fields by default (toggle off)", () => {
-    const overrides: readonly FieldOverride[] = [
-      { path: "intro", tier: "advanced" },
-    ];
+    const overrides: readonly FieldOverride[] = [{ path: "intro", tier: "advanced" }];
     const { container } = render(
       <BlockForm
         schema={ValueListDataSchema}
@@ -566,9 +564,7 @@ describe("BlockForm — Show advanced toggle (ADR 0043, T16)", () => {
   });
 
   test("reveals tier=advanced fields when the toggle is on", () => {
-    const overrides: readonly FieldOverride[] = [
-      { path: "intro", tier: "advanced" },
-    ];
+    const overrides: readonly FieldOverride[] = [{ path: "intro", tier: "advanced" }];
     const { container } = render(
       <BlockForm
         schema={ValueListDataSchema}
@@ -588,9 +584,7 @@ describe("BlockForm — Show advanced toggle (ADR 0043, T16)", () => {
   });
 
   test("never renders tier=hidden fields regardless of toggle state", () => {
-    const overrides: readonly FieldOverride[] = [
-      { path: "intro", tier: "hidden" },
-    ];
+    const overrides: readonly FieldOverride[] = [{ path: "intro", tier: "hidden" }];
     const { container } = render(
       <BlockForm
         schema={ValueListDataSchema}
@@ -612,9 +606,7 @@ describe("BlockForm — Show advanced toggle (ADR 0043, T16)", () => {
   });
 
   test("toggle state is per-instance (separate mounts have independent state)", () => {
-    const overrides: readonly FieldOverride[] = [
-      { path: "intro", tier: "advanced" },
-    ];
+    const overrides: readonly FieldOverride[] = [{ path: "intro", tier: "advanced" }];
 
     // Render two BlockForms side by side in separate Preact roots so each
     // mounts its own `useState` cell. If the toggle state leaked across
@@ -968,13 +960,13 @@ describe("BlockForm — asset-picker dispatch covers every AssetRef-bearing bloc
       // suffix catches both top-level slots (`backgroundImage.hash`)
       // and nested-in-array slots (`partners.0.logo.hash`).
       for (const leaf of ASSET_LEAF_FIELDS) {
-        const matches = Array.from(
-          container.querySelectorAll<HTMLElement>("[data-field]"),
-        ).filter((el) => {
-          const path = el.getAttribute("data-field") ?? "";
-          const last = path.split(".").pop();
-          return last === leaf;
-        });
+        const matches = Array.from(container.querySelectorAll<HTMLElement>("[data-field]")).filter(
+          (el) => {
+            const path = el.getAttribute("data-field") ?? "";
+            const last = path.split(".").pop();
+            return last === leaf;
+          },
+        );
         expect(
           matches,
           `${blockCase.type} surfaced a raw input for AssetRef leaf "${leaf}" (schema-identity dispatch missed?)`,

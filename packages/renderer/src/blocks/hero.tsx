@@ -1,6 +1,8 @@
 /** @jsxImportSource preact */
 import type { HeroBlock } from "@sosb/schema";
 import { assetRefAlt, assetRefPath } from "../asset-ref-path.js";
+import type { AssetUrlForPath } from "../asset-url.js";
+import { resolveAssetUrl } from "../asset-url.js";
 
 /**
  * Hero block — structural HTML only.
@@ -15,12 +17,19 @@ import { assetRefAlt, assetRefPath } from "../asset-ref-path.js";
  * throwing — the schema's preserve-unknown-keys carries them through to
  * round-trip persistence; the renderer just doesn't surface them.
  */
-export function Hero(props: { block: HeroBlock }): preact.JSX.Element {
+export function Hero(props: {
+  block: HeroBlock;
+  assetUrlForPath?: AssetUrlForPath | undefined;
+}): preact.JSX.Element {
   const { id, data } = props.block;
   const eyebrow = typeof data.eyebrow === "string" ? data.eyebrow : undefined;
   const title = data.title;
   const subtitle = typeof data.subtitle === "string" ? data.subtitle : undefined;
-  const backgroundImage = assetRefPath(data.backgroundImage);
+  const backgroundImagePath = assetRefPath(data.backgroundImage);
+  const backgroundImage =
+    backgroundImagePath !== undefined
+      ? resolveAssetUrl(backgroundImagePath, props.assetUrlForPath)
+      : undefined;
   const backgroundAlt =
     typeof data.backgroundAlt === "string" && data.backgroundAlt.length > 0
       ? data.backgroundAlt

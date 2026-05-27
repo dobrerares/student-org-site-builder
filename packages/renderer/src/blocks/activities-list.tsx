@@ -1,5 +1,7 @@
 /** @jsxImportSource preact */
 import type { ActivitiesListBlock, ActivityItem } from "@sosb/schema";
+import type { AssetUrlForPath } from "../asset-url.js";
+import { resolveAssetUrl } from "../asset-url.js";
 
 /**
  * `activitiesList` block — structural HTML only.
@@ -24,7 +26,10 @@ import type { ActivitiesListBlock, ActivityItem } from "@sosb/schema";
  *   anchor focusable and announceable even when the visible text is empty.
  * - Item images carry the alt text from the schema (mandatory non-empty).
  */
-export function ActivitiesList(props: { block: ActivitiesListBlock }): preact.JSX.Element {
+export function ActivitiesList(props: {
+  block: ActivitiesListBlock;
+  assetUrlForPath?: AssetUrlForPath | undefined;
+}): preact.JSX.Element {
   const { id, data } = props.block;
   const intro = typeof data.intro === "string" ? data.intro : undefined;
   const layout = data.layout;
@@ -44,7 +49,13 @@ export function ActivitiesList(props: { block: ActivitiesListBlock }): preact.JS
         {intro !== undefined && <p class="activities-list__intro">{intro}</p>}
         <ul class="activities-list__items" role="list">
           {items.map((item, idx) => (
-            <ActivityItemView key={`${id}__item_${idx}`} parentId={id} index={idx} item={item} />
+            <ActivityItemView
+              key={`${id}__item_${idx}`}
+              parentId={id}
+              index={idx}
+              item={item}
+              assetUrlForPath={props.assetUrlForPath}
+            />
           ))}
         </ul>
       </div>
@@ -56,6 +67,7 @@ interface ActivityItemViewProps {
   readonly parentId: string;
   readonly index: number;
   readonly item: ActivityItem;
+  readonly assetUrlForPath: AssetUrlForPath | undefined;
 }
 
 function ActivityItemView(props: ActivityItemViewProps): preact.JSX.Element {
@@ -71,7 +83,7 @@ function ActivityItemView(props: ActivityItemViewProps): preact.JSX.Element {
       {image !== undefined && (
         <div class="activities-list__media">
           <img
-            src={image.path}
+            src={resolveAssetUrl(image.path, props.assetUrlForPath)}
             alt={image.alt}
             width={image.width || undefined}
             height={image.height || undefined}

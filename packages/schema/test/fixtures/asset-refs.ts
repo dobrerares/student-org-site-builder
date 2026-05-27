@@ -24,7 +24,7 @@ export function assetRefFromPath(
   vfsPath: string,
   alt: string,
   mime: "image/jpeg" | "image/png" | "image/webp" | "image/svg+xml" = "image/jpeg",
-): typeof historipolHeroBgRef {
+) {
   const base = vfsPath.replace(/^assets\//, "").replace(/\.[^.]+$/, "");
   return {
     hash: base,

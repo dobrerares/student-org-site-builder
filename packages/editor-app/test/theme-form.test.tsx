@@ -25,15 +25,12 @@ describe("ThemeForm", () => {
   });
 
   test("ThemeForm onChange writes a new theme id back to the site", () => {
-    let next: Site | null = null;
+    const updates: Site[] = [];
     const site = { theme: { id: "academic" } } as unknown as Site;
-    const { container } = render(
-      <ThemeForm site={site} onChange={(s) => (next = s)} />,
-    );
+    const { container } = render(<ThemeForm site={site} onChange={(s) => updates.push(s)} />);
     const civic = container.querySelector('[data-theme-id="civic"]') as HTMLElement;
     civic.click();
-    expect(next).not.toBeNull();
-    expect(next!.theme.id).toBe("civic");
+    expect(updates[0]!.theme.id).toBe("civic");
   });
 
   test("ThemeForm does not render any auto-generated text inputs for theme.id", () => {
@@ -59,7 +56,7 @@ describe("ThemeForm", () => {
     );
     const firstColorInput = container.querySelector('input[type="color"]') as HTMLInputElement;
     fireEvent.input(firstColorInput, { target: { value: "#ff0000" } });
-    expect(next?.theme.tokens?.colorPrimary).toBe("#ff0000");
+    expect((next as Site | null)?.theme.tokens?.colorPrimary).toBe("#ff0000");
   });
 
   test("ThemeForm onChange for a font token writes to site.theme.tokens", () => {
@@ -73,7 +70,7 @@ describe("ThemeForm", () => {
       '[data-testid="font-picker"][data-kind="headline"] select',
     ) as HTMLSelectElement;
     fireEvent.change(headlineSelect, { target: { value: "Lora" } });
-    expect(next?.theme.tokens?.fontHeadline).toBe("Lora");
+    expect((next as Site | null)?.theme.tokens?.fontHeadline).toBe("Lora");
   });
 
   test("ThemeForm preserves existing tokens when updating a single token", () => {
@@ -89,9 +86,9 @@ describe("ThemeForm", () => {
     );
     const accentInput = container.querySelectorAll('input[type="color"]')[1] as HTMLInputElement;
     fireEvent.input(accentInput, { target: { value: "#aa00aa" } });
-    expect(next?.theme.tokens?.colorAccent).toBe("#aa00aa");
+    expect((next as Site | null)?.theme.tokens?.colorAccent).toBe("#aa00aa");
     // Other tokens preserved:
-    expect(next?.theme.tokens?.colorPrimary).toBe("#111111");
-    expect(next?.theme.tokens?.fontBody).toBe("Inter");
+    expect((next as Site | null)?.theme.tokens?.colorPrimary).toBe("#111111");
+    expect((next as Site | null)?.theme.tokens?.fontBody).toBe("Inter");
   });
 });
