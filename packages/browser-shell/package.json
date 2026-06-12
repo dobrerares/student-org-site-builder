@@ -20,6 +20,8 @@
     "@sosb/schema": "workspace:*",
     "@sosb/themes": "workspace:*",
     "@sosb/vfs": "workspace:*",
+    "@sosb/wizard": "workspace:*",
+    "@sosb/zip": "workspace:*",
     "preact": "^10.29.1"
   },
   "devDependencies": {

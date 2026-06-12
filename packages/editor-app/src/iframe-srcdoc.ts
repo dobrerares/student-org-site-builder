@@ -16,11 +16,18 @@
  */
 
 import type { Site } from "@sosb/schema";
+import type { RenderOptions } from "@sosb/renderer";
 import { renderPreviewHtml } from "./preview-html.js";
 
-export function iframeSrcdoc(site: Site, themeId: string, pageIndex?: number): string {
+export function iframeSrcdoc(
+  site: Site,
+  themeId: string,
+  pageIndex?: number,
+  assetUrlForPath?: RenderOptions["assetUrlForPath"],
+): string {
   return renderPreviewHtml(site, themeId, {
     mode: "preview",
     ...(typeof pageIndex === "number" ? { pageIndex } : {}),
+    ...(assetUrlForPath !== undefined ? { assetUrlForPath } : {}),
   });
 }

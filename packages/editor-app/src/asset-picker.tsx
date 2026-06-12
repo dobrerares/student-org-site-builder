@@ -38,6 +38,8 @@ import type { AssetRefLike } from "@sosb/schema";
 export interface AssetPickerProps {
   readonly value: AssetRefLike | undefined;
   readonly onChange: (next: AssetRefLike) => void;
+  /** When set, clears the asset and sibling alt (optional image slots). */
+  readonly onClear?: (() => void) | undefined;
   /** Required: how this picker writes to the VFS. Injected so tests can mock. */
   readonly uploader: (file: File) => Promise<AssetRefLike>;
   /**
@@ -83,9 +85,7 @@ export function AssetPicker(props: AssetPickerProps): JSX.Element {
     fileInputRef.current?.click();
   };
 
-  const onFileChosen = async (
-    event: JSX.TargetedEvent<HTMLInputElement>,
-  ): Promise<void> => {
+  const onFileChosen = async (event: JSX.TargetedEvent<HTMLInputElement>): Promise<void> => {
     const input = event.currentTarget;
     const file = input.files?.[0];
     if (file === undefined) return;
@@ -112,48 +112,46 @@ export function AssetPicker(props: AssetPickerProps): JSX.Element {
   return (
     <div data-testid="asset-picker">
       {uploadError !== null ? (
-        <p
-          data-testid="asset-picker-error"
-          role="alert"
-          data-error-message={uploadError}
-        >
+        <p data-testid="asset-picker-error" role="alert" data-error-message={uploadError}>
           Upload failed: {uploadError}. Please try again.
         </p>
       ) : null}
 
       {hasValue && !imageErrored ? (
-        <img
-          data-testid="asset-picker-thumbnail"
-          // Prefer the host-provided display URL (typically `blob:...` for
-          // freshly-uploaded assets, or a `data:` URL in test fixtures);
-          // fall back to `value.path` for the legacy/external-URL case.
-          // If neither resolves, the `onError` handler below switches to
-          // MISSING state.
-          src={props.displayUrlFor?.(props.value!) ?? props.value!.path}
-          alt={props.value!.alt}
-          onError={() => setErrorHash(props.value!.hash)}
-        />
+        <>
+          <img
+            data-testid="asset-picker-thumbnail"
+            // Prefer the host-provided display URL (typically `blob:...` for
+            // freshly-uploaded assets, or a `data:` URL in test fixtures);
+            // fall back to `value.path` for the legacy/external-URL case.
+            // If neither resolves, the `onError` handler below switches to
+            // MISSING state.
+            src={props.displayUrlFor?.(props.value!) ?? props.value!.path}
+            alt={props.value!.alt}
+            onError={() => setErrorHash(props.value!.hash)}
+          />
+          <button type="button" data-testid="asset-picker-replace" onClick={triggerFilePicker}>
+            Replace image
+          </button>
+          {props.onClear !== undefined ? (
+            <button type="button" data-testid="asset-picker-remove" onClick={props.onClear}>
+              Remove image
+            </button>
+          ) : null}
+        </>
       ) : null}
 
       {hasValue && imageErrored ? (
         <div data-testid="asset-picker-missing" role="status">
           <span>Missing image — the asset bytes could not be loaded.</span>
-          <button
-            type="button"
-            data-testid="asset-picker-reupload"
-            onClick={triggerFilePicker}
-          >
+          <button type="button" data-testid="asset-picker-reupload" onClick={triggerFilePicker}>
             Re-upload
           </button>
         </div>
       ) : null}
 
       {!hasValue ? (
-        <button
-          type="button"
-          data-testid="asset-picker-add"
-          onClick={triggerFilePicker}
-        >
+        <button type="button" data-testid="asset-picker-add" onClick={triggerFilePicker}>
           Add image
         </button>
       ) : null}

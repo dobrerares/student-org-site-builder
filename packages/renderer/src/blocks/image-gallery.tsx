@@ -1,5 +1,7 @@
 /** @jsxImportSource preact */
 import type { ImageGalleryBlock } from "@sosb/schema";
+import type { AssetUrlForPath } from "../asset-url.js";
+import { resolveAssetUrl } from "../asset-url.js";
 
 /**
  * imageGallery block — structural HTML only.
@@ -16,7 +18,10 @@ import type { ImageGalleryBlock } from "@sosb/schema";
  * Forward-compat: gallery data is consumed tolerantly (typeof checks). The
  * schema's `looseObject` carries unknown fields through round-trip.
  */
-export function ImageGallery(props: { block: ImageGalleryBlock }): preact.JSX.Element {
+export function ImageGallery(props: {
+  block: ImageGalleryBlock;
+  assetUrlForPath?: AssetUrlForPath | undefined;
+}): preact.JSX.Element {
   const { id, data } = props.block;
   const title = typeof data.title === "string" ? data.title : undefined;
   const layout = data.layout;
@@ -45,6 +50,7 @@ export function ImageGallery(props: { block: ImageGalleryBlock }): preact.JSX.El
       <ul class="image-gallery__grid" role="list">
         {images.map((image, index) => {
           const asset = image.asset;
+          const src = resolveAssetUrl(asset.path, props.assetUrlForPath);
           const alt = image.alt;
           const caption = typeof image.caption === "string" ? image.caption : undefined;
           const figureId = `${id}__fig_${index}`;
@@ -52,7 +58,7 @@ export function ImageGallery(props: { block: ImageGalleryBlock }): preact.JSX.El
 
           const img = (
             <img
-              src={asset.path}
+              src={src}
               alt={alt}
               width={asset.width || undefined}
               height={asset.height || undefined}
@@ -71,7 +77,7 @@ export function ImageGallery(props: { block: ImageGalleryBlock }): preact.JSX.El
                     data-sosb-lightbox-open
                     data-gallery={id}
                     data-index={index}
-                    data-src={asset.path}
+                    data-src={src}
                     data-alt={alt}
                     data-caption={caption ?? ""}
                     aria-label={

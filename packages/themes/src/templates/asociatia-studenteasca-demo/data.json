@@ -4,15 +4,33 @@
     "name": "Asociația Studențească Demo",
     "tagline": "O comunitate de studenți care învață împreună",
     "foundedYear": 2021,
-    "logo": "assets/placeholder-logo.svg",
+    "logo": {
+      "hash": "placeholder-logo",
+      "path": "assets/placeholder-logo.svg",
+      "metadataPath": "assets/placeholder-logo.metadata.json",
+      "mime": "image/svg+xml",
+      "width": 400,
+      "height": 100,
+      "alt": "Logo asociație demo"
+    },
     "address": "Strada Universității nr. 1, Demo City 010101",
     "email": "contact@demo-asociatie.example",
     "phone": "+40 700 000 000",
     "social": [
-      { "platform": "instagram", "url": "https://instagram.com/demo-asociatie" },
-      { "platform": "facebook", "url": "https://facebook.com/demo-asociatie" },
-      { "platform": "linkedin", "url": "https://linkedin.com/company/demo-asociatie" }
-    ]
+      {
+        "platform": "instagram",
+        "url": "https://instagram.com/demo-asociatie"
+      },
+      {
+        "platform": "facebook",
+        "url": "https://facebook.com/demo-asociatie"
+      },
+      {
+        "platform": "linkedin",
+        "url": "https://linkedin.com/company/demo-asociatie"
+      }
+    ],
+    "logoAlt": "Logo asociație demo"
   },
   "theme": {
     "id": "academic",
@@ -47,7 +65,15 @@
             "eyebrow": "Bun venit",
             "title": "Asociația Studențească Demo",
             "subtitle": "Învățăm, creștem și construim împreună o comunitate studențească puternică.",
-            "backgroundImage": "assets/placeholder-photo-hero.jpg",
+            "backgroundImage": {
+              "hash": "placeholder-photo-hero",
+              "path": "assets/placeholder-photo-hero.jpg",
+              "metadataPath": "assets/placeholder-photo-hero.metadata.json",
+              "mime": "image/jpeg",
+              "width": 1600,
+              "height": 1067,
+              "alt": "Studenți în aulă în timpul unei conferințe academice"
+            },
             "backgroundAlt": "Studenți în aulă în timpul unei conferințe academice"
           }
         },
@@ -331,7 +357,12 @@
                   "height": 600,
                   "alt": "Portret Maria Popescu, fundal neutru"
                 },
-                "socials": [{ "platform": "linkedin", "url": "https://linkedin.com/in/demo-1" }]
+                "socials": [
+                  {
+                    "platform": "linkedin",
+                    "url": "https://linkedin.com/in/demo-1"
+                  }
+                ]
               },
               {
                 "name": "Andrei Ionescu",

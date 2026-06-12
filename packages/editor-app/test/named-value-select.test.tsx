@@ -24,7 +24,7 @@ describe("NamedValueSelect", () => {
     const { container } = render(
       <NamedValueSelect value={undefined} onChange={() => {}} options={DENSITY_OPTIONS} />,
     );
-    const select = container.querySelector('select') as HTMLSelectElement;
+    const select = container.querySelector("select") as HTMLSelectElement;
     const optionTexts = Array.from(select.options).map((o) => o.text);
     expect(optionTexts).toEqual(["(use theme default)", "Compact", "Normal", "Comfortable"]);
   });
@@ -33,7 +33,7 @@ describe("NamedValueSelect", () => {
     const { container } = render(
       <NamedValueSelect value={undefined} onChange={() => {}} options={DENSITY_OPTIONS} />,
     );
-    const select = container.querySelector('select') as HTMLSelectElement;
+    const select = container.querySelector("select") as HTMLSelectElement;
     expect(select.value).toBe("");
   });
 
@@ -41,7 +41,7 @@ describe("NamedValueSelect", () => {
     const { container } = render(
       <NamedValueSelect value="compact" onChange={() => {}} options={DENSITY_OPTIONS} />,
     );
-    const select = container.querySelector('select') as HTMLSelectElement;
+    const select = container.querySelector("select") as HTMLSelectElement;
     expect(select.value).toBe("compact");
   });
 
@@ -49,7 +49,7 @@ describe("NamedValueSelect", () => {
     const { container } = render(
       <NamedValueSelect value="ultra-tight" onChange={() => {}} options={DENSITY_OPTIONS} />,
     );
-    const select = container.querySelector('select') as HTMLSelectElement;
+    const select = container.querySelector("select") as HTMLSelectElement;
     expect(select.value).toBe("ultra-tight");
     const customOption = Array.from(select.options).find((o) => o.value === "ultra-tight");
     expect(customOption?.text).toContain("Custom");
@@ -60,7 +60,7 @@ describe("NamedValueSelect", () => {
     const { container } = render(
       <NamedValueSelect value="compact" onChange={onChange} options={DENSITY_OPTIONS} />,
     );
-    const select = container.querySelector('select') as HTMLSelectElement;
+    const select = container.querySelector("select") as HTMLSelectElement;
     fireEvent.change(select, { target: { value: "" } });
     expect(onChange).toHaveBeenCalledWith(undefined);
   });

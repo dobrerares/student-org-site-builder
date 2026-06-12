@@ -10,6 +10,16 @@ import { EditorApp } from "../src/editor-app.js";
 const tieredSite = tiered as unknown as Site;
 const minimalSite = minimal as unknown as Site;
 
+function cleanExportSite(): Site {
+  const site = structuredClone(minimalSite);
+  site.theme.tokens = {
+    ...(site.theme.tokens ?? {}),
+    colorPrimary: "#1f3a5f",
+    colorAccent: "#7a2d16",
+  };
+  return site;
+}
+
 beforeEach(() => {
   Object.defineProperty(window, "innerWidth", {
     configurable: true,
@@ -125,7 +135,7 @@ describe("EditorApp pre-export gate", () => {
   test("clean site exports immediately without opening the dialog", () => {
     const exports: Site[] = [];
     const { container } = render(
-      <EditorApp initial={structuredClone(minimalSite)} onExport={(s) => exports.push(s)} />,
+      <EditorApp initial={cleanExportSite()} onExport={(s) => exports.push(s)} />,
     );
     const exportBtn = container.querySelector<HTMLButtonElement>('button[data-action="export"]');
     fireEvent.click(exportBtn!);

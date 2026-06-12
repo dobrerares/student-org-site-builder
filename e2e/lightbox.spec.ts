@@ -1,10 +1,9 @@
 import { test, expect } from "@playwright/test";
 import { build } from "esbuild";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
-import { fileURLToPath, pathToFileURL } from "node:url";
 import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 import path from "node:path";
-import os from "node:os";
 
 const require = createRequire(import.meta.url);
 
@@ -40,24 +39,32 @@ interface RendererModule {
 
 async function bundleForNode(): Promise<RendererModule> {
   const entryPath = path.join(repoRoot, "packages", "renderer", "src", "index.tsx");
-  const tmpDir = path.join(os.tmpdir(), "sosb-renderer-lightbox");
+  const tmpDir = path.join(
+    repoRoot,
+    "packages",
+    "renderer",
+    "node_modules",
+    ".cache",
+    "sosb-renderer-lightbox",
+  );
   mkdirSync(tmpDir, { recursive: true });
-  const outFile = path.join(tmpDir, `renderer-${process.pid}-${Date.now()}.mjs`);
+  const outFile = path.join(tmpDir, `renderer-${process.pid}-${Date.now()}.cjs`);
   const result = await build({
     entryPoints: [entryPath],
     bundle: true,
     write: false,
-    format: "esm",
+    format: "cjs",
     platform: "node",
     target: "es2022",
     jsx: "automatic",
     jsxImportSource: "preact",
     absWorkingDir: repoRoot,
+    external: ["jsdom"],
   });
   const out = result.outputFiles[0];
   if (out === undefined) throw new Error("esbuild produced no node output");
   writeFileSync(outFile, out.text);
-  return (await import(pathToFileURL(outFile).href)) as RendererModule;
+  return require(outFile) as RendererModule;
 }
 
 test.describe("imageGallery lightbox — real-browser behaviour", () => {

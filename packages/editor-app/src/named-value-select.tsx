@@ -51,8 +51,7 @@ export function NamedValueSelect(props: NamedValueSelectProps): JSX.Element {
   // select (no `selected` attribute is needed — the underlying
   // `value=""` matches when `props.value` is undefined).
   const trimmed = props.value ?? "";
-  const isCustom =
-    trimmed !== "" && !props.options.some((o) => o.value === trimmed);
+  const isCustom = trimmed !== "" && !props.options.some((o) => o.value === trimmed);
 
   const handleChange = (event: JSX.TargetedEvent<HTMLSelectElement>): void => {
     const next = event.currentTarget.value;
@@ -60,15 +59,8 @@ export function NamedValueSelect(props: NamedValueSelectProps): JSX.Element {
   };
 
   return (
-    <div
-      data-testid="named-value-select"
-      data-name-key={props.nameKey ?? ""}
-    >
-      <select
-        value={trimmed}
-        onChange={handleChange}
-        aria-label={props.label ?? undefined}
-      >
+    <div data-testid="named-value-select" data-name-key={props.nameKey ?? ""}>
+      <select value={trimmed} onChange={handleChange} aria-label={props.label ?? undefined}>
         <option value="">(use theme default)</option>
         {props.options.map((option) => (
           <option key={option.value} value={option.value}>

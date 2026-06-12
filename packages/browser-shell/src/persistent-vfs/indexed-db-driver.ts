@@ -19,8 +19,9 @@
  * see each other's writes.
  */
 
-import type { Vfs } from "@sosb/vfs";
-import { VfsNotFoundError, validatePath, validatePrefix } from "@sosb/vfs";
+import type { Vfs } from "@sosb/vfs/vfs";
+import { VfsNotFoundError } from "@sosb/vfs/errors";
+import { validatePath, validatePrefix } from "@sosb/vfs/path";
 
 /** Default object-store name. Stable across the v1.x series. */
 const STORE = "vfs";

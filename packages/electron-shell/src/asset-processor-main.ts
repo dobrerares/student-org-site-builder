@@ -89,6 +89,8 @@ function chooseCanonicalMime(inputMime: SupportedMime): SupportedMime {
       // Even Electron-side, the canonical for WebP-with-alpha stays PNG
       // for portability with the browser pipeline.
       return "image/png";
+    case "image/avif":
+      return "image/jpeg";
     case "image/svg+xml":
       // Unreachable -- SVG is rejected upstream.
       throw new Error("chooseCanonicalMime: SVG inputs are not handled here");

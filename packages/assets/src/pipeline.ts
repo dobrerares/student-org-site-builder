@@ -208,6 +208,8 @@ function extensionFor(mime: SupportedMime): string {
       return "png";
     case "image/webp":
       return "webp";
+    case "image/avif":
+      return "avif";
     case "image/svg+xml":
       return "svg";
   }

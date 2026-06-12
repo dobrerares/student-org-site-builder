@@ -108,10 +108,12 @@ discouraged — every bespoke form is a divergent file to maintain.
 ### What goes where (concrete v1.x inventory)
 
 **Schema-identity dispatch:**
+
 - `AssetRefSchema` → asset picker
 - `DocumentRefSchema` → asset picker (document variant)
 
 **Metadata `renderer:` slot:**
+
 - `theme.id` → `"theme-picker"`
 - `theme.tokens.colorPrimary` / `colorAccent` → `"color-picker"`
 - `theme.tokens.fontHeadline` / `fontBody` → `"font-picker"` (reads
@@ -120,6 +122,7 @@ discouraged — every bespoke form is a divergent file to maintain.
   per-field option lists
 
 **Metadata `label:` rewrites:**
+
 - block-level `alt` (all variants) → "Image description (for screen readers)"
 - `slug` → "Page address (the URL slug)"
 - `localizedAs` → "Linked translation"
@@ -129,12 +132,14 @@ discouraged — every bespoke form is a divergent file to maintain.
 - `org.shortName` → "Display name (used in nav)"
 
 **Metadata `tier: "advanced"`:**
+
 - `pages[].slug`
 - `pages[].localizedAs`
 - `pages[].seo.title`
 - `pages[].seo.description`
 
 **Metadata `tier: "hidden"`:**
+
 - `pages[].navOrder` (already managed by the reorder UI in
   `pages-ops.ts`; rendering an input for it would compete with the
   drag/move-up/move-down affordances)

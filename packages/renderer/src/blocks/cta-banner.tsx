@@ -1,5 +1,7 @@
 /** @jsxImportSource preact */
 import type { CtaBannerBlock } from "@sosb/schema";
+import type { AssetUrlForPath } from "../asset-url.js";
+import { resolveAssetUrl } from "../asset-url.js";
 
 /**
  * `ctaBanner` block — structural HTML only.
@@ -15,7 +17,10 @@ import type { CtaBannerBlock } from "@sosb/schema";
  * conditionally rendered; unknown extra fields on `data` are ignored at
  * render time and preserved by the schema's looseObject for round-trip.
  */
-export function CtaBanner(props: { block: CtaBannerBlock }): preact.JSX.Element {
+export function CtaBanner(props: {
+  block: CtaBannerBlock;
+  assetUrlForPath?: AssetUrlForPath | undefined;
+}): preact.JSX.Element {
   const { id, data } = props.block;
   const title = data.title;
   const subtitle = typeof data.subtitle === "string" ? data.subtitle : undefined;
@@ -54,7 +59,11 @@ export function CtaBanner(props: { block: CtaBannerBlock }): preact.JSX.Element 
         )}
         {backgroundImage !== undefined && (
           <div class="ctaBanner__media">
-            <img src={backgroundImage.path} alt={backgroundImage.alt} loading="lazy" />
+            <img
+              src={resolveAssetUrl(backgroundImage.path, props.assetUrlForPath)}
+              alt={backgroundImage.alt}
+              loading="lazy"
+            />
           </div>
         )}
       </div>

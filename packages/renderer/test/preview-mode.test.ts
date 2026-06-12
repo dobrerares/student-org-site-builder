@@ -44,4 +44,19 @@ describe("renderSite — preview mode nav interception", () => {
     const b = renderSite(fixture, "stub", { mode: "preview" });
     expect(a).toBe(b);
   });
+
+  test("assetUrlForPath rewrites preview asset URLs without changing deploy defaults", () => {
+    const deploy = renderSite(singlePage, "stub");
+    expect(deploy).toContain('src="assets/hero.jpg"');
+    expect(deploy).toContain('content="assets/hero.jpg"');
+
+    const preview = renderSite(singlePage, "stub", {
+      mode: "preview",
+      assetUrlForPath: (path) => (path === "assets/hero.jpg" ? "blob:hero-preview" : undefined),
+    });
+
+    expect(preview).toContain('src="blob:hero-preview"');
+    expect(preview).toContain('content="blob:hero-preview"');
+    expect(preview).not.toContain('src="assets/hero.jpg"');
+  });
 });

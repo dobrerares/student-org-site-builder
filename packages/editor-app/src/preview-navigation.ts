@@ -57,8 +57,9 @@ import { pagePath } from "@sosb/renderer";
  *     decide." That keeps this function pure and testable.
  */
 export function resolvePathToPageIndex(site: Site, path: string): number | null {
-  // TODO(user): implement
-  void site;
-  void path;
+  for (let i = 0; i < site.pages.length; i++) {
+    const page = site.pages[i];
+    if (page !== undefined && pagePath(site, page) === path) return i;
+  }
   return null;
 }

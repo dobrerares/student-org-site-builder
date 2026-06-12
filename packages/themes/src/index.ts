@@ -24,8 +24,4 @@ export type {
   TemplateDescriptor,
 } from "./templates/index.js";
 export { buildThemeCatalog } from "./theme-catalog.js";
-export type {
-  ThemeCatalog,
-  ThemeCatalogEntry,
-  ThemeFonts,
-} from "./theme-catalog.js";
+export type { ThemeCatalog, ThemeCatalogEntry, ThemeFonts, ThemePreview } from "./theme-catalog.js";

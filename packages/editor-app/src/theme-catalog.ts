@@ -6,8 +6,4 @@
  * rewrite.
  */
 export { buildThemeCatalog } from "@sosb/themes";
-export type {
-  ThemeCatalog,
-  ThemeCatalogEntry,
-  ThemeFonts,
-} from "@sosb/themes";
+export type { ThemeCatalog, ThemeCatalogEntry, ThemeFonts, ThemePreview } from "@sosb/themes";

@@ -20,7 +20,7 @@ describe("FontPicker", () => {
     const { container } = render(
       <FontPicker themeId="academic" kind="headline" value={undefined} onChange={() => {}} />,
     );
-    const select = container.querySelector('select') as HTMLSelectElement;
+    const select = container.querySelector("select") as HTMLSelectElement;
     const optionTexts = Array.from(select.options).map((o) => o.text);
     // academic's headline fonts include Source Serif Pro, Lora, Crimson Pro
     expect(optionTexts).toContain("Source Serif Pro");
@@ -31,7 +31,7 @@ describe("FontPicker", () => {
     const { container } = render(
       <FontPicker themeId="academic" kind="body" value={undefined} onChange={() => {}} />,
     );
-    const select = container.querySelector('select') as HTMLSelectElement;
+    const select = container.querySelector("select") as HTMLSelectElement;
     expect(select.value).toBe(""); // default option uses empty string value
     const defaultOption = Array.from(select.options).find((o) => o.value === "");
     expect(defaultOption?.text).toBe("(use theme default)");
@@ -41,7 +41,7 @@ describe("FontPicker", () => {
     const { container } = render(
       <FontPicker themeId="academic" kind="headline" value="Lora" onChange={() => {}} />,
     );
-    const select = container.querySelector('select') as HTMLSelectElement;
+    const select = container.querySelector("select") as HTMLSelectElement;
     expect(select.value).toBe("Lora");
   });
 
@@ -49,7 +49,7 @@ describe("FontPicker", () => {
     const { container } = render(
       <FontPicker themeId="academic" kind="headline" value="Comic Sans" onChange={() => {}} />,
     );
-    const select = container.querySelector('select') as HTMLSelectElement;
+    const select = container.querySelector("select") as HTMLSelectElement;
     expect(select.value).toBe("Comic Sans");
     const customOption = Array.from(select.options).find((o) => o.value === "Comic Sans");
     expect(customOption?.text).toContain("Custom");
@@ -60,7 +60,7 @@ describe("FontPicker", () => {
     const { container } = render(
       <FontPicker themeId="academic" kind="headline" value="Lora" onChange={onChange} />,
     );
-    const select = container.querySelector('select') as HTMLSelectElement;
+    const select = container.querySelector("select") as HTMLSelectElement;
     fireEvent.change(select, { target: { value: "" } });
     expect(onChange).toHaveBeenCalledWith(undefined);
   });

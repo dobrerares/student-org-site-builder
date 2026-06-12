@@ -98,4 +98,15 @@ describe("site spine schema", () => {
   test("exports the v1 schema version constant", () => {
     expect(SITE_SCHEMA_VERSION).toBe(1);
   });
+
+  test("validate() warns when org logo is set without logoAlt", () => {
+    const broken = structuredClone(historipol) as {
+      org: { logoAlt?: string };
+    };
+    delete broken.org.logoAlt;
+    const result = validate(broken);
+    expect(result.ok).toBe(true);
+    const codes = result.warnings.map((w) => w.code);
+    expect(codes).toContain("site.org.logoAlt.missing");
+  });
 });

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AssetRefSchema } from "./asset-ref.js";
 
 /**
  * Quote block — pull-quote with attribution.
@@ -30,7 +31,7 @@ export const QuoteDataSchema = z.looseObject({
   text: z.string().min(1),
   author: z.string().optional(),
   authorRole: z.string().optional(),
-  authorImage: z.string().optional(),
+  authorImage: AssetRefSchema.optional(),
   authorImageAlt: z.string().optional(),
 });
 

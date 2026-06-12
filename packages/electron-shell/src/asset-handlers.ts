@@ -13,7 +13,7 @@
  *   1. Refuses any payload that isn't bytes -- never accepts a
  *      filesystem path. The renderer cannot coerce the main process
  *      into reading arbitrary files via this channel.
- *   2. Validates declared mime against an allowlist (JPEG/PNG/WebP/SVG).
+ *   2. Validates declared mime against an allowlist (JPEG/PNG/WebP/AVIF/SVG).
  *   3. Caps the bytes at a hard limit (50 MB) so a malicious renderer
  *      can't OOM the main process.
  *   4. Validates `variantWidths` is a non-empty array of positive
@@ -41,7 +41,19 @@ export const MAX_ASSET_PAYLOAD_BYTES = 50 * 1024 * 1024;
  * enforces this check BEFORE the bytes reach Sharp -- a malformed mime
  * is rejected as a security posture, not a Sharp error.
  */
-const ALLOWED_MIMES: readonly string[] = ["image/jpeg", "image/png", "image/webp", "image/svg+xml"];
+const ALLOWED_MIMES: readonly string[] = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/avif",
+  "image/svg+xml",
+];
+const ALLOWED_VARIANT_MIMES: readonly string[] = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/avif",
+];
 
 export interface ProcessAssetForVariantsRequest {
   readonly bytes: Uint8Array;
@@ -155,6 +167,16 @@ function validateRequest(request: ProcessAssetForVariantsRequest): void {
     throw new AssetIpcError(
       "ipc.asset.variants.invalid",
       "variantWidths must be a non-empty array of positive finite numbers",
+    );
+  }
+
+  if (
+    request.targetVariantMime !== undefined &&
+    !ALLOWED_VARIANT_MIMES.includes(request.targetVariantMime)
+  ) {
+    throw new AssetIpcError(
+      "ipc.asset.mime.unsupported",
+      `unsupported variant mime "${request.targetVariantMime}" -- accepted: ${ALLOWED_VARIANT_MIMES.join(", ")}`,
     );
   }
 }

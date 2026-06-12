@@ -4,7 +4,16 @@
     "name": "Asociația Studențească HISTORIPOL",
     "tagline": "Istorie, identitate, comunitate",
     "foundedYear": 2024,
-    "logo": "assets/8e3a7f.png",
+    "logo": {
+      "hash": "8e3a7f",
+      "path": "assets/8e3a7f.png",
+      "metadataPath": "assets/8e3a7f.metadata.json",
+      "mime": "image/png",
+      "width": 320,
+      "height": 120,
+      "alt": "Sigla Asociației Studențească HISTORIPOL"
+    },
+    "logoAlt": "Sigla Asociației Studențească HISTORIPOL",
     "address": "Universitatea „Ovidius” Constanța, Str. Universității nr. 1, Constanța 900527",
     "email": "contact@historipol.ro",
     "phone": "+40 241 000 000",
@@ -46,7 +55,15 @@
             "eyebrow": "Bun venit",
             "title": "HISTORIPOL",
             "subtitle": "Comunitatea studenților istorici de la Universitatea „Ovidius” Constanța",
-            "backgroundImage": "assets/4a91d2.jpg",
+            "backgroundImage": {
+              "hash": "4a91d2",
+              "path": "assets/4a91d2.jpg",
+              "metadataPath": "assets/4a91d2.metadata.json",
+              "mime": "image/jpeg",
+              "width": 1600,
+              "height": 1067,
+              "alt": "Studenți la o conferință de istorie în aula universității"
+            },
             "backgroundAlt": "Studenți la o conferință de istorie în aula universității"
           }
         }
@@ -72,7 +89,15 @@
             "eyebrow": "Welcome",
             "title": "HISTORIPOL",
             "subtitle": "The community of history students at Ovidius University of Constanța",
-            "backgroundImage": "assets/4a91d2.jpg",
+            "backgroundImage": {
+              "hash": "4a91d2",
+              "path": "assets/4a91d2.jpg",
+              "metadataPath": "assets/4a91d2.metadata.json",
+              "mime": "image/jpeg",
+              "width": 1600,
+              "height": 1067,
+              "alt": "Students at a history conference in the university hall"
+            },
             "backgroundAlt": "Students at a history conference in the university hall"
           }
         }

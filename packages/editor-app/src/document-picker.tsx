@@ -130,9 +130,7 @@ export function DocumentPicker(props: DocumentPickerProps): JSX.Element {
     fileInputRef.current?.click();
   };
 
-  const onFileChosen = async (
-    event: JSX.TargetedEvent<HTMLInputElement>,
-  ): Promise<void> => {
+  const onFileChosen = async (event: JSX.TargetedEvent<HTMLInputElement>): Promise<void> => {
     const input = event.currentTarget;
     const file = input.files?.[0];
     if (file === undefined) return;
@@ -157,11 +155,7 @@ export function DocumentPicker(props: DocumentPickerProps): JSX.Element {
   return (
     <div data-testid="document-picker">
       {uploadError !== null ? (
-        <p
-          data-testid="document-picker-error"
-          role="alert"
-          data-error-message={uploadError}
-        >
+        <p data-testid="document-picker-error" role="alert" data-error-message={uploadError}>
           Upload failed: {uploadError}. Please try again.
         </p>
       ) : null}
@@ -190,20 +184,12 @@ export function DocumentPicker(props: DocumentPickerProps): JSX.Element {
           <span data-testid="document-picker-filename">{filenameFor(props.value!.path)}</span>
           <span data-testid="document-picker-type">{typeLabelFor(props.value!.mime)}</span>
           <span data-testid="document-picker-size">{formatByteSize(props.value!.byteSize)}</span>
-          <button
-            type="button"
-            data-testid="document-picker-replace"
-            onClick={triggerFilePicker}
-          >
+          <button type="button" data-testid="document-picker-replace" onClick={triggerFilePicker}>
             Replace document
           </button>
         </div>
       ) : (
-        <button
-          type="button"
-          data-testid="document-picker-add"
-          onClick={triggerFilePicker}
-        >
+        <button type="button" data-testid="document-picker-add" onClick={triggerFilePicker}>
           Add document
         </button>
       )}

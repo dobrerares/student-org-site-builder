@@ -46,8 +46,7 @@ export function FontPicker(props: FontPickerProps): JSX.Element {
   // is needed — the underlying `value=""` matches when `props.value`
   // is undefined).
   const trimmed = props.value ?? "";
-  const isCustom =
-    trimmed !== "" && !catalogFonts.includes(trimmed);
+  const isCustom = trimmed !== "" && !catalogFonts.includes(trimmed);
 
   const handleChange = (event: JSX.TargetedEvent<HTMLSelectElement>): void => {
     const next = event.currentTarget.value;
@@ -56,11 +55,7 @@ export function FontPicker(props: FontPickerProps): JSX.Element {
 
   return (
     <div data-testid="font-picker" data-kind={props.kind}>
-      <select
-        value={trimmed}
-        onChange={handleChange}
-        aria-label={props.label ?? undefined}
-      >
+      <select value={trimmed} onChange={handleChange} aria-label={props.label ?? undefined}>
         <option value="">(use theme default)</option>
         {catalogFonts.map((font) => (
           <option key={font} value={font}>

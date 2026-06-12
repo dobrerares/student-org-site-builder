@@ -1,5 +1,7 @@
 /** @jsxImportSource preact */
 import type { DocumentDownloadsBlock } from "@sosb/schema";
+import type { AssetUrlForPath } from "../asset-url.js";
+import { resolveAssetUrl } from "../asset-url.js";
 
 /**
  * documentDownloads block — renders a list of downloadable documents
@@ -101,7 +103,10 @@ interface RenderableFile {
   ariaLabel: string;
 }
 
-function readFile(raw: unknown): RenderableFile | null {
+function readFile(
+  raw: unknown,
+  assetUrlForPath: AssetUrlForPath | undefined,
+): RenderableFile | null {
   if (raw === null || typeof raw !== "object") return null;
   const file = raw as DocumentFileShape;
   const asset = file.asset;
@@ -115,7 +120,7 @@ function readFile(raw: unknown): RenderableFile | null {
   const sizeLabel = formatByteSize(byteSize);
   const ariaLabel = `${label}, ${typeLabel}, ${sizeLabel}`;
   return {
-    href: path,
+    href: resolveAssetUrl(path, assetUrlForPath),
     label,
     description: readString(file.description),
     typeLabel,
@@ -128,7 +133,10 @@ function readLayout(raw: unknown): "list" | "cards" {
   return raw === "cards" ? "cards" : "list";
 }
 
-export function DocumentDownloads(props: { block: DocumentDownloadsBlock }): preact.JSX.Element {
+export function DocumentDownloads(props: {
+  block: DocumentDownloadsBlock;
+  assetUrlForPath?: AssetUrlForPath | undefined;
+}): preact.JSX.Element {
   const { id, data } = props.block;
   const safeData = data as DocumentDataShape;
   const title = readString(safeData.title);
@@ -137,7 +145,9 @@ export function DocumentDownloads(props: { block: DocumentDownloadsBlock }): pre
   const headingId = title !== undefined ? `${id}__title` : undefined;
 
   const rawFiles = Array.isArray(safeData.files) ? safeData.files : [];
-  const files = rawFiles.map(readFile).filter((file): file is RenderableFile => file !== null);
+  const files = rawFiles
+    .map((file) => readFile(file, props.assetUrlForPath))
+    .filter((file): file is RenderableFile => file !== null);
 
   const sectionProps: Record<string, string> = {
     "data-block": "documentDownloads",

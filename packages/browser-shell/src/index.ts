@@ -17,6 +17,11 @@
  */
 
 export { IndexedDbDriver, openIndexedDbDriver } from "./persistent-vfs/indexed-db-driver.js";
+export { OpfsDriver, openOpfsDriver } from "./persistent-vfs/opfs-driver.js";
+export {
+  openPreferredPersistentVfs,
+  type PreferredPersistentVfsOptions,
+} from "./persistent-vfs/preferred.js";
 export {
   registerServiceWorker,
   type ServiceWorkerHandle,
@@ -31,3 +36,5 @@ export {
   buildServiceWorkerScript,
   type ServiceWorkerScriptOptions,
 } from "./service-worker/script.js";
+export { WelcomeShell, type WelcomeLoadedSite, type WelcomeShellProps } from "./welcome-shell.js";
+export { WELCOME_SHELL_CSS, injectWelcomeShellCss } from "./welcome-shell-css.js";

@@ -107,7 +107,15 @@ function buildHeroRo(): BlockEnvelope {
       eyebrow: HOMEPAGE_EYEBROW_RO,
       title: HOMEPAGE_TITLE_RO,
       subtitle: LONG_RO_COPY,
-      backgroundImage: "assets/hero.jpg",
+      backgroundImage: {
+        hash: "hero",
+        path: "assets/hero.jpg",
+        metadataPath: "assets/hero.metadata.json",
+        mime: "image/jpeg",
+        width: 1600,
+        height: 1067,
+        alt: "Studenți la ședință — Învățăm ÎMPREUNĂ pentru Țară (Ă, Â, Î, Ș, Ț)",
+      },
       // Alt text covers diacritics that the title alone would miss; we
       // deliberately spell the uppercase forms (Ă/Â/Î/Ș/Ț) inline so the
       // test corpus exercises every codepoint in `ROMANIAN_DIACRITIC_CHARSET`.
@@ -125,7 +133,15 @@ function buildHeroEn(): BlockEnvelope {
       eyebrow: HOMEPAGE_EYEBROW_EN,
       title: HOMEPAGE_TITLE_EN,
       subtitle: LONG_EN_COPY,
-      backgroundImage: "assets/hero.jpg",
+      backgroundImage: {
+        hash: "hero",
+        path: "assets/hero.jpg",
+        metadataPath: "assets/hero.metadata.json",
+        mime: "image/jpeg",
+        width: 1600,
+        height: 1067,
+        alt: "Students at a community workshop",
+      },
       backgroundAlt: "Students at a community workshop",
     },
   };

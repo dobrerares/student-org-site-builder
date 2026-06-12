@@ -33,7 +33,15 @@
             "text": "Am construit ceva *real* împreună — o experiență **transformatoare**.",
             "author": "Maria Popescu",
             "authorRole": "Alumni, promoția 2023",
-            "authorImage": "assets/maria.jpg",
+            "authorImage": {
+              "hash": "maria",
+              "path": "assets/maria.jpg",
+              "metadataPath": "assets/maria.metadata.json",
+              "mime": "image/jpeg",
+              "width": 1600,
+              "height": 1067,
+              "alt": "Maria în timpul absolvirii"
+            },
             "authorImageAlt": "Maria în timpul absolvirii"
           }
         }

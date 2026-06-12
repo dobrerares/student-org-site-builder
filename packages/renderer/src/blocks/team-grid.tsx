@@ -1,5 +1,7 @@
 /** @jsxImportSource preact */
 import type { TeamGridBlock, TeamGridPerson, TeamGridSocialLink } from "@sosb/schema";
+import type { AssetUrlForPath } from "../asset-url.js";
+import { resolveAssetUrl } from "../asset-url.js";
 
 /**
  * teamGrid block — structural HTML only.
@@ -23,7 +25,10 @@ import type { TeamGridBlock, TeamGridPerson, TeamGridSocialLink } from "@sosb/sc
  * the issue's out-of-scope confirms it; this implementation rejects no
  * data, but only one bucketing level is rendered.
  */
-export function TeamGrid(props: { block: TeamGridBlock }): preact.JSX.Element {
+export function TeamGrid(props: {
+  block: TeamGridBlock;
+  assetUrlForPath?: AssetUrlForPath | undefined;
+}): preact.JSX.Element {
   const { id, data } = props.block;
   const title = typeof data.title === "string" && data.title.length > 0 ? data.title : undefined;
   const intro = typeof data.intro === "string" && data.intro.length > 0 ? data.intro : undefined;
@@ -51,7 +56,13 @@ export function TeamGrid(props: { block: TeamGridBlock }): preact.JSX.Element {
         )}
         {intro !== undefined && <p class="team-grid__intro">{intro}</p>}
         {groups.map((group) => (
-          <TeamGroup key={group.key ?? "__flat__"} group={group} blockId={id} style={gridStyle} />
+          <TeamGroup
+            key={group.key ?? "__flat__"}
+            group={group}
+            blockId={id}
+            style={gridStyle}
+            assetUrlForPath={props.assetUrlForPath}
+          />
         ))}
       </div>
     </section>
@@ -96,6 +107,7 @@ function TeamGroup(props: {
   group: PersonGroup;
   blockId: string;
   style: string;
+  assetUrlForPath: AssetUrlForPath | undefined;
 }): preact.JSX.Element {
   const { group, blockId, style } = props;
   const groupId =
@@ -114,14 +126,21 @@ function TeamGroup(props: {
       )}
       <ul class="team-grid__list" style={style}>
         {group.people.map((person, idx) => (
-          <Person key={`${groupId}-${idx}`} person={person} />
+          <Person
+            key={`${groupId}-${idx}`}
+            person={person}
+            assetUrlForPath={props.assetUrlForPath}
+          />
         ))}
       </ul>
     </div>
   );
 }
 
-function Person(props: { person: TeamGridPerson }): preact.JSX.Element {
+function Person(props: {
+  person: TeamGridPerson;
+  assetUrlForPath: AssetUrlForPath | undefined;
+}): preact.JSX.Element {
   const { person } = props;
   const photo = person.photo;
   const photoAlt = photo !== undefined ? photo.alt : "";
@@ -135,7 +154,7 @@ function Person(props: { person: TeamGridPerson }): preact.JSX.Element {
         {photo !== undefined ? (
           <img
             class="team-person__photo"
-            src={photo.path}
+            src={resolveAssetUrl(photo.path, props.assetUrlForPath)}
             alt={photoAlt}
             width={photo.width}
             height={photo.height}

@@ -1,6 +1,10 @@
 import { describe, expect, test } from "vitest";
 
-import { lookupFieldOverride, SPINE_FIELD_METADATA, BLOCK_FIELD_METADATA } from "../src/field-metadata.js";
+import {
+  lookupFieldOverride,
+  SPINE_FIELD_METADATA,
+  BLOCK_FIELD_METADATA,
+} from "../src/field-metadata.js";
 
 describe("field-metadata", () => {
   test("SPINE_FIELD_METADATA marks pages[].slug as advanced", () => {
@@ -51,10 +55,9 @@ describe("field-metadata", () => {
       const altEntry = entries?.find(
         (e) => e.path.toLowerCase().endsWith("alt") || e.path.toLowerCase().endsWith("alt.alt"),
       );
-      expect(
-        altEntry?.label,
-        `${blockType} alt-text label should be relabelled`,
-      ).toBe("Image description (for screen readers)");
+      expect(altEntry?.label, `${blockType} alt-text label should be relabelled`).toBe(
+        "Image description (for screen readers)",
+      );
     }
   });
 
@@ -63,10 +66,7 @@ describe("field-metadata", () => {
     // Catches typos like "pages[].slug" (missing dot) or "pages.0.slug"
     // (concrete index instead of wildcard) at module-load time.
     const PATH_RE = /^[a-zA-Z][a-zA-Z0-9]*(?:\.(?:\[\]|[a-zA-Z][a-zA-Z0-9]*))*$/;
-    const allEntries = [
-      ...SPINE_FIELD_METADATA,
-      ...Object.values(BLOCK_FIELD_METADATA).flat(),
-    ];
+    const allEntries = [...SPINE_FIELD_METADATA, ...Object.values(BLOCK_FIELD_METADATA).flat()];
     for (const entry of allEntries) {
       expect(entry.path, `bad path: ${entry.path}`).toMatch(PATH_RE);
     }

@@ -4,14 +4,29 @@
     "name": "Asociația Stub",
     "tagline": "A site for JSON-LD tests",
     "foundedYear": 2024,
-    "logo": "assets/logo.png",
+    "logo": {
+      "hash": "logo",
+      "path": "assets/logo.png",
+      "metadataPath": "assets/logo.metadata.json",
+      "mime": "image/png",
+      "width": 1600,
+      "height": 1067,
+      "alt": "Org logo"
+    },
     "address": "Str. Test 1, Constanța",
     "email": "contact@stub.example.org",
     "phone": "+40 700 000 000",
     "social": [
-      { "platform": "facebook", "url": "https://facebook.com/asociatia.stub" },
-      { "platform": "instagram", "url": "https://instagram.com/asociatia.stub" }
-    ]
+      {
+        "platform": "facebook",
+        "url": "https://facebook.com/asociatia.stub"
+      },
+      {
+        "platform": "instagram",
+        "url": "https://instagram.com/asociatia.stub"
+      }
+    ],
+    "logoAlt": "Org logo"
   },
   "theme": {
     "id": "stub",
@@ -21,7 +36,9 @@
     }
   },
   "defaultLanguage": "ro",
-  "languages": ["ro"],
+  "languages": [
+    "ro"
+  ],
   "pages": [
     {
       "slug": "acasa",
@@ -40,7 +57,15 @@
           "version": 1,
           "data": {
             "title": "Asociația Stub",
-            "backgroundImage": "assets/hero.jpg",
+            "backgroundImage": {
+              "hash": "hero",
+              "path": "assets/hero.jpg",
+              "metadataPath": "assets/hero.metadata.json",
+              "mime": "image/jpeg",
+              "width": 1600,
+              "height": 1067,
+              "alt": "Studenți"
+            },
             "backgroundAlt": "Studenți"
           }
         }
@@ -61,7 +86,9 @@
           "id": "blk_team_hero",
           "type": "hero",
           "version": 1,
-          "data": { "title": "Echipa noastră" }
+          "data": {
+            "title": "Echipa noastră"
+          }
         },
         {
           "id": "blk_team_grid",
@@ -83,7 +110,10 @@
                   "alt": "Portret Ana Popescu"
                 }
               },
-              { "name": "Bogdan Ionescu", "role": "Vicepreședinte" }
+              {
+                "name": "Bogdan Ionescu",
+                "role": "Vicepreședinte"
+              }
             ]
           }
         }
@@ -104,7 +134,9 @@
           "id": "blk_events_hero",
           "type": "hero",
           "version": 1,
-          "data": { "title": "Evenimente" }
+          "data": {
+            "title": "Evenimente"
+          }
         },
         {
           "id": "blk_events_list",
@@ -118,7 +150,16 @@
                 "startsAt": "2026-10-12T18:00:00+03:00",
                 "endsAt": "2026-10-12T21:00:00+03:00",
                 "location": "Aula Mare",
-                "image": "assets/conf.jpg",
+                "image": {
+                  "hash": "conf",
+                  "path": "assets/conf.jpg",
+                  "metadataPath": "assets/conf.metadata.json",
+                  "mime": "image/jpeg",
+                  "width": 1600,
+                  "height": 1067,
+                  "alt": "Conference photo"
+                },
+                "imageAlt": "Conference photo",
                 "description": "O conferință despre studenție."
               },
               {
@@ -147,7 +188,9 @@
           "id": "blk_faq_hero",
           "type": "hero",
           "version": 1,
-          "data": { "title": "Întrebări frecvente" }
+          "data": {
+            "title": "Întrebări frecvente"
+          }
         },
         {
           "id": "blk_faq",
@@ -155,8 +198,14 @@
           "version": 1,
           "data": {
             "items": [
-              { "question": "Cum mă alătur?", "answer": "Trimite un email la contact@stub.example.org." },
-              { "question": "Care e taxa?", "answer": "Nu există taxă de înscriere." }
+              {
+                "question": "Cum mă alătur?",
+                "answer": "Trimite un email la contact@stub.example.org."
+              },
+              {
+                "question": "Care e taxa?",
+                "answer": "Nu există taxă de înscriere."
+              }
             ]
           }
         }

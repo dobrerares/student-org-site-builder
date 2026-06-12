@@ -1,9 +1,9 @@
 import { test, expect } from "@playwright/test";
 import { build as esbuild } from "esbuild";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 import path from "node:path";
-import os from "node:os";
 
 /**
  * Browser-runnability of `@sosb/build` (binding AC #4).
@@ -28,6 +28,7 @@ import os from "node:os";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..");
+const requireFromHere = createRequire(import.meta.url);
 const fixturePath = path.join(
   repoRoot,
   "packages",
@@ -62,25 +63,32 @@ async function bundleForBrowser(): Promise<string> {
 
 async function bundleForNode(): Promise<BuildModule> {
   const entryPath = path.join(repoRoot, "packages", "build", "src", "index.ts");
-  const tmpDir = path.join(os.tmpdir(), "sosb-build-browser");
+  const tmpDir = path.join(
+    repoRoot,
+    "packages",
+    "renderer",
+    "node_modules",
+    ".cache",
+    "sosb-build-browser",
+  );
   mkdirSync(tmpDir, { recursive: true });
-  const outFile = path.join(tmpDir, `build-${process.pid}-${Date.now()}.mjs`);
+  const outFile = path.join(tmpDir, `build-${process.pid}-${Date.now()}.cjs`);
   const result = await esbuild({
     entryPoints: [entryPath],
     bundle: true,
     write: false,
-    format: "esm",
+    format: "cjs",
     platform: "node",
     target: "es2022",
     jsx: "automatic",
     jsxImportSource: "preact",
     absWorkingDir: repoRoot,
+    external: ["jsdom"],
   });
   const out = result.outputFiles[0];
   if (out === undefined) throw new Error("esbuild produced no node output");
   writeFileSync(outFile, out.text);
-  const mod = (await import(pathToFileURL(outFile).href)) as BuildModule;
-  return mod;
+  return requireFromHere(outFile) as BuildModule;
 }
 
 test("build() produces byte-identical dist output in Node and headless Chromium", async ({

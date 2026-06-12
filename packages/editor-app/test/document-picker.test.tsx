@@ -46,11 +46,7 @@ describe("DocumentPicker", () => {
 
   test("with a value, renders document icon, filename, type label, byte size — no text inputs", () => {
     const { container } = render(
-      <DocumentPicker
-        value={SAMPLE_PDF}
-        onChange={() => {}}
-        uploader={async () => SAMPLE_PDF}
-      />,
+      <DocumentPicker value={SAMPLE_PDF} onChange={() => {}} uploader={async () => SAMPLE_PDF} />,
     );
     // Icon present.
     expect(container.querySelector('[data-testid="document-picker-icon"]')).not.toBeNull();
@@ -74,11 +70,7 @@ describe("DocumentPicker", () => {
 
   test("with a value, clicking 'Replace document' opens the file picker", () => {
     const { container } = render(
-      <DocumentPicker
-        value={SAMPLE_PDF}
-        onChange={() => {}}
-        uploader={async () => SAMPLE_PDF}
-      />,
+      <DocumentPicker value={SAMPLE_PDF} onChange={() => {}} uploader={async () => SAMPLE_PDF} />,
     );
     const fileInput = container.querySelector(
       '[data-testid="document-picker-file-input"]',
@@ -118,9 +110,7 @@ describe("DocumentPicker", () => {
       <DocumentPicker value={undefined} onChange={onChange} uploader={uploader} />,
     );
 
-    const fileInput = container.querySelector(
-      'input[type="file"]',
-    ) as HTMLInputElement;
+    const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
     expect(fileInput).not.toBeNull();
 
     const file = new File([new Uint8Array([0x25, 0x50, 0x44, 0x46])], "report.pdf", {
@@ -149,9 +139,7 @@ describe("DocumentPicker", () => {
     const { container } = render(
       <DocumentPicker value={undefined} onChange={() => {}} uploader={failingUploader} />,
     );
-    const addBtn = container.querySelector(
-      '[data-testid="document-picker-add"]',
-    ) as HTMLElement;
+    const addBtn = container.querySelector('[data-testid="document-picker-add"]') as HTMLElement;
     addBtn.click();
     const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
     const fakeFile = new File(["x"], "x.pdf", { type: "application/pdf" });

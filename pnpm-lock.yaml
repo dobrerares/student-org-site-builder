@@ -100,6 +100,12 @@ importers:
       '@sosb/vfs':
         specifier: workspace:*
         version: link:../vfs
+      '@sosb/wizard':
+        specifier: workspace:*
+        version: link:../wizard
+      '@sosb/zip':
+        specifier: workspace:*
+        version: link:../zip
       preact:
         specifier: ^10.29.1
         version: 10.29.1

@@ -1,9 +1,9 @@
 import { test, expect } from "@playwright/test";
 import { build } from "esbuild";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 import path from "node:path";
-import os from "node:os";
 
 /**
  * Node-vs-browser parity (binding AC).
@@ -27,6 +27,7 @@ import os from "node:os";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..");
+const requireFromHere = createRequire(import.meta.url);
 const fixturePath = path.join(
   repoRoot,
   "packages",
@@ -61,25 +62,32 @@ async function bundleForBrowser(): Promise<string> {
 
 async function bundleForNode(): Promise<RendererModule> {
   const entryPath = path.join(repoRoot, "packages", "renderer", "src", "index.tsx");
-  const tmpDir = path.join(os.tmpdir(), "sosb-renderer-parity");
+  const tmpDir = path.join(
+    repoRoot,
+    "packages",
+    "renderer",
+    "node_modules",
+    ".cache",
+    "sosb-renderer-parity",
+  );
   mkdirSync(tmpDir, { recursive: true });
-  const outFile = path.join(tmpDir, `renderer-${process.pid}-${Date.now()}.mjs`);
+  const outFile = path.join(tmpDir, `renderer-${process.pid}-${Date.now()}.cjs`);
   const result = await build({
     entryPoints: [entryPath],
     bundle: true,
     write: false,
-    format: "esm",
+    format: "cjs",
     platform: "node",
     target: "es2022",
     jsx: "automatic",
     jsxImportSource: "preact",
     absWorkingDir: repoRoot,
+    external: ["jsdom"],
   });
   const out = result.outputFiles[0];
   if (out === undefined) throw new Error("esbuild produced no node output");
   writeFileSync(outFile, out.text);
-  const mod = (await import(pathToFileURL(outFile).href)) as RendererModule;
-  return mod;
+  return requireFromHere(outFile) as RendererModule;
 }
 
 test("renderSite produces byte-identical output in Node and headless Chromium", async ({

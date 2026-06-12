@@ -91,10 +91,14 @@ import {
 } from "@sosb/i18n";
 
 import { BLOCK_FIELD_METADATA, SPINE_FIELD_METADATA } from "./field-metadata.js";
+import { applyAltSyncPatches, expandAltSyncPatches } from "./alt-sync.js";
 import { fieldsFromSchema } from "./form-generator.js";
+import { getAtPath, setAtPath } from "./get-set-path.js";
+import { MEDIA_PICKER_RENDERERS } from "./media-picker-renderers.js";
 import { SpineForm, applyPatch } from "./spine-form.js";
 import { ThemeForm } from "./theme-form.js";
 import { iframeSrcdoc } from "./iframe-srcdoc.js";
+import { resolvePathToPageIndex } from "./preview-navigation.js";
 // Side-effect import: registers the editor-app stylesheet on `document.head`
 // once, before any component renders. Guarded for SSR / non-DOM tooling.
 import "./editor-app-css.js";
@@ -121,12 +125,27 @@ import { ExportConfirmDialog } from "./export-confirm.js";
 import { navigateToIssue } from "./issue-navigate.js";
 import { I18nProvider, useTranslator } from "./i18n-context.js";
 import { LocaleToggle } from "./locale-toggle.js";
+import { exportToZip, importFromZip, ZipImportError } from "@sosb/zip";
+import {
+  downloadBlob,
+  exportZipBasename,
+  mergeAssetVfs,
+  pickZipBlob,
+  populateAssetDisplayUrls,
+} from "./site-io.js";
 
 const MOBILE_BREAKPOINT_PX = 768;
 
 export interface EditorAppProps {
   /** Initial site loaded into the editor. */
   readonly initial: Site;
+  /**
+   * Optional asset store seeded by a host shell. Used when a parent shell
+   * imports a full site zip before mounting the editor.
+   */
+  readonly initialAssetVfs?: Vfs;
+  /** Optional VFS used by `@sosb/editor-state` for debounced draft autosave. */
+  readonly autosaveVfs?: Vfs;
   /** Optional — fired when the user clicks the Import button. */
   readonly onImport?: () => void;
   /** Optional — fired when the user clicks the Export button. */
@@ -193,7 +212,10 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
 
   const stateRef = useRef<EditorState>();
   if (stateRef.current === undefined) {
-    stateRef.current = createEditorState({ initial: props.initial });
+    stateRef.current =
+      props.autosaveVfs === undefined
+        ? createEditorState({ initial: props.initial })
+        : createEditorState({ initial: props.initial, vfs: props.autosaveVfs });
   }
   const state = stateRef.current;
 
@@ -218,7 +240,11 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   // metadata onto each FieldNode. SpineForm reads `node.tier` to honour
   // the "Show advanced" toggle (ADR 0043).
   const fields = useMemo(
-    () => fieldsFromSchema(SiteSchema, { overrides: SPINE_FIELD_METADATA }),
+    () =>
+      fieldsFromSchema(SiteSchema, {
+        overrides: SPINE_FIELD_METADATA,
+        schemaRenderers: MEDIA_PICKER_RENDERERS,
+      }),
     [],
   );
   // Block catalog memo — used both by the un-drilled block list (indirectly,
@@ -392,6 +418,30 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     host.postSiteData(snapshot, snapshot.theme.id, safeActivePageIndex);
   }, [snapshot, safeActivePageIndex]);
 
+  // Inbound preview events. The renderer's preview-only nav script prevents
+  // normal iframe navigation and posts `{ type: "navigate", path }`; the
+  // editor maps that path back onto `site.pages` and updates the active page.
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (iframe === null) return;
+    const host = createPreviewHost({
+      iframe,
+      onPreviewEvent(message) {
+        if (message.type !== "navigate") return;
+        const nextIndex = resolvePathToPageIndex(snapshot, message.path);
+        if (nextIndex === null || nextIndex === safeActivePageIndex) return;
+        setActivePageIndex(nextIndex);
+      },
+    });
+    function onMessage(event: MessageEvent): void {
+      host.handleIncomingMessage(event.data);
+    }
+    window.addEventListener("message", onMessage);
+    return () => {
+      window.removeEventListener("message", onMessage);
+    };
+  }, [snapshot, safeActivePageIndex]);
+
   // Root ref so issue-navigation queries land in the editor's own DOM
   // tree (and not whatever the host page might have rendered).
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -421,7 +471,16 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     subpath: readonly (string | number)[],
     value: unknown,
   ): void {
-    patch(["pages", pageIndex, "blocks", blockIndex, "data", ...subpath], value);
+    state.update((draft) => {
+      const dataPath: (string | number)[] = ["pages", pageIndex, "blocks", blockIndex, "data"];
+      const blockData = getAtPath(draft, dataPath) as Record<string, unknown>;
+      const nextData = applyAltSyncPatches(
+        blockData,
+        expandAltSyncPatches(blockData, subpath, value),
+      );
+      setAtPath(draft as unknown as Record<string, unknown>, dataPath, nextData);
+    });
+    pushHistory(state.getSnapshot());
   }
 
   /**
@@ -449,7 +508,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   // persistence-by-zip.
   const assetVfsRef = useRef<Vfs>();
   if (assetVfsRef.current === undefined) {
-    assetVfsRef.current = new MemoryDriver();
+    assetVfsRef.current = props.initialAssetVfs ?? new MemoryDriver();
   }
 
   // Display-URL cache for the picker thumbnails.
@@ -474,10 +533,9 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   // the same value and reuse the same blob URL. This mirrors the
   // pipeline's own dedup property (same bytes → same path).
   //
-  // Scope: this cache covers UPLOADS in the current session. The
-  // import path (loading bytes from a freshly-imported zip) is a
-  // separate gap — populating the cache on import lives in a
-  // follow-up tied to the import flow itself.
+  // The same cache backs picker thumbnails and the live preview iframe:
+  // pickers resolve by AssetRef hash, while the preview resolves canonical
+  // `assets/...` paths by extracting the same content hash.
   const displayUrlCacheRef = useRef<Map<string, string>>();
   if (displayUrlCacheRef.current === undefined) {
     displayUrlCacheRef.current = new Map();
@@ -497,8 +555,20 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     };
   }, []);
 
+  useEffect(() => {
+    void populateAssetDisplayUrls(assetVfsRef.current!, displayUrlCacheRef.current!);
+  }, []);
+
   function displayUrlForAsset(ref: AssetRefLike): string | undefined {
     return displayUrlCacheRef.current!.get(ref.hash);
+  }
+
+  function displayUrlForAssetPath(path: string): string | undefined {
+    if (!path.startsWith("assets/")) return undefined;
+    const filename = path.slice("assets/".length);
+    const dot = filename.lastIndexOf(".");
+    const hash = dot >= 0 ? filename.slice(0, dot) : filename;
+    return displayUrlCacheRef.current!.get(hash);
   }
 
   /**
@@ -512,9 +582,13 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
    * `uploader` so re-uploads preserve it; the public callback shape
    * stays `(file) => Promise<AssetRefLike>`.
    */
-  async function uploadAssetForPicker(file: File): Promise<AssetRefLike> {
+  async function uploadAssetForPicker(file: File, suggestedAlt?: string): Promise<AssetRefLike> {
     const vfs = assetVfsRef.current!;
-    const ref = await uploadAsset({ kind: "file", file, alt: file.name }, vfs, {
+    const alt =
+      suggestedAlt !== undefined && suggestedAlt.trim().length > 0
+        ? suggestedAlt.trim()
+        : file.name;
+    const ref = await uploadAsset({ kind: "file", file, alt }, vfs, {
       processor: CanvasImageProcessor,
     });
     // Mint a display URL for the picker's thumbnail. Reads the freshly-
@@ -553,6 +627,12 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   async function uploadDocumentForPicker(file: File): Promise<DocumentAssetRef> {
     const vfs = assetVfsRef.current!;
     const ref = await uploadDocument({ kind: "file", file, label: file.name }, vfs);
+    const cache = displayUrlCacheRef.current!;
+    if (!cache.has(ref.hash)) {
+      const bytes = await vfs.read(ref.path);
+      const blob = new Blob([new Uint8Array(bytes)], { type: ref.mime });
+      cache.set(ref.hash, URL.createObjectURL(blob));
+    }
     // `@sosb/assets`'s runtime `DocumentRef` interface uses the closed
     // `SupportedDocumentMime` enum for `mime`; the schema's
     // `DocumentAssetRef` widens it to `z.string()` for forward-compat.
@@ -673,20 +753,65 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     }
   });
 
+  async function performExport(): Promise<void> {
+    if (props.onExport !== undefined) {
+      props.onExport(snapshot);
+      return;
+    }
+    const blob = await exportToZip(snapshot, assetVfsRef.current!);
+    const basename = exportZipBasename(snapshot.org.name);
+    downloadBlob(blob, `${basename}.zip`);
+  }
+
   function handleExportClick(): void {
     const result = validationResult;
     if (result.errors.length === 0 && result.warnings.length === 0) {
-      // Clean: export immediately.
-      props.onExport?.(snapshot);
+      void performExport();
       return;
     }
-    // Open the confirmation dialog.
     setExportDialog(result);
   }
 
   function handleExportConfirm(): void {
     setExportDialog(null);
-    props.onExport?.(snapshot);
+    void performExport();
+  }
+
+  async function handleBuiltinImport(): Promise<void> {
+    const blob = await pickZipBlob();
+    if (blob === null) return;
+    try {
+      const imported = await importFromZip(blob);
+      const vfs = assetVfsRef.current!;
+      for (const path of await vfs.list("assets/")) {
+        await vfs.delete(path);
+      }
+      await mergeAssetVfs(imported.vfs, vfs);
+      await populateAssetDisplayUrls(vfs, displayUrlCacheRef.current!);
+      historyRef.current = createHistoryStore<Site>({
+        initial: structuredClone(imported.siteData),
+      });
+      setHistoryVersion((v) => v + 1);
+      applySite(imported.siteData);
+      setActivePageIndex(0);
+      setDrillMode({ kind: "blocks" });
+    } catch (err) {
+      const message =
+        err instanceof ZipImportError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Import failed.";
+      window.alert(message);
+    }
+  }
+
+  function handleImportClick(): void {
+    if (props.onImport !== undefined) {
+      props.onImport();
+      return;
+    }
+    void handleBuiltinImport();
   }
 
   function handleExportCancel(): void {
@@ -730,7 +855,14 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
           <span data-testid="inspector-eyebrow">Site</span>
           <h2>Site settings</h2>
         </header>
-        <SpineForm fields={fields} site={snapshot} onPatch={patch} />
+        <SpineForm
+          fields={fields}
+          site={snapshot}
+          onPatch={patch}
+          uploader={uploadAssetForPicker}
+          documentUploader={uploadDocumentForPicker}
+          displayUrlFor={displayUrlForAsset}
+        />
       </div>
     );
   } else if (drillMode.kind === "theme") {
@@ -840,7 +972,12 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     </section>
   );
 
-  const previewSrcdoc = iframeSrcdoc(snapshot, snapshot.theme.id, safeActivePageIndex);
+  const previewSrcdoc = iframeSrcdoc(
+    snapshot,
+    snapshot.theme.id,
+    safeActivePageIndex,
+    displayUrlForAssetPath,
+  );
   const previewPane = (
     <section data-testid="preview-pane" aria-label={t("pane.preview.label")}>
       <iframe
@@ -862,7 +999,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   return (
     <div data-testid="editor-app" ref={rootRef}>
       <TopBar
-        onImport={props.onImport}
+        onImport={handleImportClick}
         onExport={handleExportClick}
         onReset={props.onReset}
         onUndo={doUndo}

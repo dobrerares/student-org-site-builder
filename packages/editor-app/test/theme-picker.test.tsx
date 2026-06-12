@@ -14,17 +14,13 @@ describe("ThemePicker", () => {
   afterEach(() => cleanup());
 
   test("renders one option per cataloged theme (5 — stub omitted)", () => {
-    const { container } = render(
-      <ThemePicker value="academic" onChange={() => {}} />,
-    );
+    const { container } = render(<ThemePicker value="academic" onChange={() => {}} />);
     const options = container.querySelectorAll("[data-theme-option]");
     expect(options.length).toBe(5);
   });
 
   test("marks the active option", () => {
-    const { container } = render(
-      <ThemePicker value="civic" onChange={() => {}} />,
-    );
+    const { container } = render(<ThemePicker value="civic" onChange={() => {}} />);
     const active = container.querySelector('[data-theme-option][data-active="true"]');
     expect(active?.getAttribute("data-theme-id")).toBe("civic");
   });
@@ -40,20 +36,16 @@ describe("ThemePicker", () => {
   });
 
   test("renders the humanised current-value note when value is unknown", () => {
-    const { container } = render(
-      <ThemePicker value="someFutureTheme" onChange={() => {}} />,
-    );
+    const { container } = render(<ThemePicker value="someFutureTheme" onChange={() => {}} />);
     // Per ADR 0044, never fall back to a raw text input.
     expect(container.querySelector('input[type="text"]')).toBeNull();
-    const note = container.querySelector('[data-theme-current-unknown]');
+    const note = container.querySelector("[data-theme-current-unknown]");
     expect(note).not.toBeNull();
     expect(note?.textContent).toContain("Some future theme");
   });
 
   test("the active option has aria-checked=true and others have aria-checked=false", () => {
-    const { container } = render(
-      <ThemePicker value="civic" onChange={() => {}} />,
-    );
+    const { container } = render(<ThemePicker value="civic" onChange={() => {}} />);
     const inputs = container.querySelectorAll('input[type="radio"]');
     expect(inputs.length).toBe(5);
     for (const input of Array.from(inputs)) {
@@ -63,11 +55,17 @@ describe("ThemePicker", () => {
   });
 
   test("renders each theme's description text", () => {
-    const { container } = render(
-      <ThemePicker value="academic" onChange={() => {}} />,
-    );
+    const { container } = render(<ThemePicker value="academic" onChange={() => {}} />);
     // The "Academic" description from theme-catalog.ts mentions "scholarly"
     const academic = container.querySelector('[data-theme-id="academic"]');
     expect(academic?.textContent?.toLowerCase()).toContain("scholarly");
+  });
+
+  test("renders a visual preview for each cataloged theme", () => {
+    const { container } = render(<ThemePicker value="academic" onChange={() => {}} />);
+    expect(container.querySelectorAll("[data-theme-option-preview]").length).toBe(5);
+    expect(container.querySelectorAll("[data-theme-preview-swatch]").length).toBeGreaterThanOrEqual(
+      15,
+    );
   });
 });

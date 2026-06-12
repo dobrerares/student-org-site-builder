@@ -1,4 +1,6 @@
-import { MemoryDriver, ZipDriver, type Vfs } from "@sosb/vfs";
+import { MemoryDriver } from "@sosb/vfs/memory";
+import { ZipDriver } from "@sosb/vfs/zip-driver";
+import type { Vfs } from "@sosb/vfs/vfs";
 import { migrateSite, validate, type Site } from "@sosb/schema";
 
 import { ZipImportError } from "./errors.js";

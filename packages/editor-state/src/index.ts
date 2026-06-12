@@ -14,7 +14,7 @@
  */
 
 import type { BlockEnvelope, Site } from "@sosb/schema";
-import type { Vfs } from "@sosb/vfs";
+import type { Vfs } from "@sosb/vfs/vfs";
 
 /**
  * Path inside the auto-save VFS where the editor's persisted snapshot lives.
@@ -106,7 +106,7 @@ export function createEditorState(options: EditorStateOptions): EditorState {
     if (timer !== null) clearTimeout(timer);
     timer = setTimeout(() => {
       timer = null;
-      pendingWrite = writeSnapshot(vfs, snapshot);
+      pendingWrite = saveAutosave(vfs, snapshot);
     }, debounceMs);
   }
 
@@ -135,7 +135,7 @@ export function createEditorState(options: EditorStateOptions): EditorState {
       if (timer !== null) {
         clearTimeout(timer);
         timer = null;
-        pendingWrite = writeSnapshot(vfs, snapshot);
+        pendingWrite = saveAutosave(vfs, snapshot);
       }
       if (pendingWrite !== null) {
         await pendingWrite;
@@ -150,7 +150,7 @@ export function createEditorState(options: EditorStateOptions): EditorState {
  * matches `@sosb/zip`'s `data.json` (UTF-8, 2-space indent, trailing
  * newline) so the auto-save is byte-identical to the equivalent export.
  */
-async function writeSnapshot(vfs: Vfs, snapshot: Site): Promise<void> {
+export async function saveAutosave(vfs: Vfs, snapshot: Site): Promise<void> {
   const text = JSON.stringify(snapshot, null, AUTOSAVE_INDENT) + "\n";
   await vfs.write(AUTOSAVE_PATH, enc.encode(text));
 }

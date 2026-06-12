@@ -46,15 +46,11 @@ export function ThemePicker(props: ThemePickerProps): JSX.Element {
     <div data-theme-picker-root>
       {!isKnown && (
         <p data-theme-current-unknown role="status">
-          Current theme: <code>{catalog.entryFor(props.value).label}</code>{" "}
-          — not in the picker. Choose a theme below to switch.
+          Current theme: <code>{catalog.entryFor(props.value).label}</code> — not in the picker.
+          Choose a theme below to switch.
         </p>
       )}
-      <div
-        data-testid="theme-picker"
-        role="radiogroup"
-        aria-label="Theme"
-      >
+      <div data-testid="theme-picker" role="radiogroup" aria-label="Theme">
         {catalog.entries.map((entry) => {
           const isActive = entry.id === props.value;
           return (
@@ -73,6 +69,21 @@ export function ThemePicker(props: ThemePickerProps): JSX.Element {
               />
               <span data-theme-option-label>{entry.label}</span>
               <span data-theme-option-description>{entry.description}</span>
+              <span data-theme-option-preview aria-hidden="true">
+                <span data-theme-preview-swatches>
+                  {entry.preview.swatches.map((swatch) => (
+                    <span
+                      key={swatch}
+                      data-theme-preview-swatch
+                      style={{ backgroundColor: swatch }}
+                    />
+                  ))}
+                </span>
+                <span data-theme-preview-type>
+                  <strong>{entry.preview.headlineSample}</strong>
+                  <span>{entry.preview.bodySample}</span>
+                </span>
+              </span>
             </label>
           );
         })}

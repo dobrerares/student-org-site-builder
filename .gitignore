@@ -43,3 +43,6 @@ Thumbs.db
 
 # Claude Code local state (lock files, schedules)
 .claude/
+
+# Superpowers brainstorming session artifacts (server state, mockups)
+.superpowers/

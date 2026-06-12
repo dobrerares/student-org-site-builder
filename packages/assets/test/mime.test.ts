@@ -8,6 +8,10 @@ const PNG_MAGIC = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
 const WEBP_MAGIC = new Uint8Array([
   0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50,
 ]);
+// ....ftypavif....
+const AVIF_MAGIC = new Uint8Array([
+  0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x61, 0x76, 0x69, 0x66,
+]);
 const SVG_BYTES = new TextEncoder().encode(
   '<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"></svg>',
 );
@@ -28,6 +32,10 @@ describe("detectMime", () => {
 
   test("detects WebP from RIFF/WEBP magic bytes", () => {
     expect(detectMime(WEBP_MAGIC, undefined)).toBe("image/webp");
+  });
+
+  test("detects AVIF from ftyp/avif box bytes", () => {
+    expect(detectMime(AVIF_MAGIC, undefined)).toBe("image/avif");
   });
 
   test("detects SVG with XML declaration", () => {

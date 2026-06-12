@@ -45,20 +45,15 @@ import type { JSX } from "preact";
 import { useState } from "preact/hooks";
 import type { ZodType } from "zod";
 import type { AssetRefLike, DocumentAssetRef } from "@sosb/schema";
-import {
-  ActivityImageRefSchema,
-  AssetRefSchema,
-  CtaBannerAssetRefSchema,
-  DocumentAssetRefSchema,
-  PersonPhotoSchema,
-} from "@sosb/schema";
 
+import { expandAltSyncPatches, suggestedAltForAssetPath } from "./alt-sync.js";
 import { AdvancedToggle } from "./advanced-toggle.js";
 import type { FieldOverride } from "./field-metadata.js";
 import { fieldsFromSchema, type FieldNode } from "./form-generator.js";
 import { getAtPath } from "./get-set-path.js";
 import { AssetPicker } from "./asset-picker.js";
 import { DocumentPicker, type DocumentAssetRefLike } from "./document-picker.js";
+import { MEDIA_PICKER_RENDERERS } from "./media-picker-renderers.js";
 
 /**
  * Schema-identity registry consumed by the form-generator walk.
@@ -84,13 +79,7 @@ import { DocumentPicker, type DocumentAssetRefLike } from "./document-picker.js"
  * They share the same UX (upload + preview + alt-edit), so the renderer
  * arm below (`node.renderer === "asset-picker"`) is shared.
  */
-const MEDIA_PICKER_RENDERERS: ReadonlyMap<ZodType, string> = new Map<ZodType, string>([
-  [AssetRefSchema, "asset-picker"],
-  [CtaBannerAssetRefSchema, "asset-picker"],
-  [PersonPhotoSchema, "asset-picker"],
-  [ActivityImageRefSchema, "asset-picker"],
-  [DocumentAssetRefSchema, "document-picker"],
-]);
+export { MEDIA_PICKER_RENDERERS };
 
 export interface BlockFormProps<TData> {
   /** The block's data schema (e.g. `ValueListDataSchema`). */
@@ -115,7 +104,7 @@ export interface BlockFormProps<TData> {
    * uploader would render a permanently-broken widget instead of
    * failing loud at mount time.
    */
-  readonly uploader: (file: File) => Promise<AssetRefLike>;
+  readonly uploader: (file: File, suggestedAlt?: string) => Promise<AssetRefLike>;
   /**
    * Uploader injected into any mounted `<DocumentPicker>` widgets. Same
    * required-prop posture as `uploader`: the document picker has no
@@ -183,7 +172,7 @@ interface FieldRendererProps {
   // `undefined` is explicit so we can forward an optional prop under
   // `exactOptionalPropertyTypes: true` without creating a missing-key shape.
   readonly newItem: ((arrayPath: readonly (string | number)[]) => unknown) | undefined;
-  readonly uploader: (file: File) => Promise<AssetRefLike>;
+  readonly uploader: (file: File, suggestedAlt?: string) => Promise<AssetRefLike>;
   readonly documentUploader: (file: File) => Promise<DocumentAssetRef>;
   // `undefined` explicit again (exactOptionalPropertyTypes).
   readonly displayUrlFor: ((ref: AssetRefLike) => string | undefined) | undefined;
@@ -333,7 +322,10 @@ function FieldRenderer({
             data-field={dottedPath}
             value={typeof value === "string" ? value : ""}
             onInput={(event: JSX.TargetedEvent<HTMLInputElement>) => {
-              onPatch(node.path, event.currentTarget.value);
+              const next = event.currentTarget.value;
+              for (const patch of expandAltSyncPatches(data, node.path, next)) {
+                onPatch(patch.path, patch.value);
+              }
             }}
           />
         </label>
@@ -409,11 +401,27 @@ function FieldRenderer({
       // registration that forgets to add a renderer arm is loud-in-DOM
       // rather than silent.
       if (node.renderer === "asset-picker") {
+        const suggestedAlt = suggestedAltForAssetPath(data, node.path);
         return (
           <AssetPicker
             value={value as AssetRefLike | undefined}
-            onChange={(next) => onPatch(node.path, next)}
-            uploader={uploader}
+            onChange={(next) => {
+              for (const patch of expandAltSyncPatches(data, node.path, next)) {
+                onPatch(patch.path, patch.value);
+              }
+            }}
+            onClear={
+              node.optional
+                ? () => {
+                    for (const patch of expandAltSyncPatches(data, node.path, undefined)) {
+                      onPatch(patch.path, patch.value);
+                    }
+                  }
+                : undefined
+            }
+            uploader={(file) =>
+              uploader(file, suggestedAlt && suggestedAlt.length > 0 ? suggestedAlt : undefined)
+            }
             displayUrlFor={displayUrlFor}
           />
         );

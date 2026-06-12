@@ -39,7 +39,7 @@ describe("renderSite - Twitter Card baseline (renderer)", () => {
 
   test("falls back to twitter:card summary when no hero backgroundImage", () => {
     const noImage = structuredClone(fixture) as Site;
-    delete (noImage.pages[0]!.blocks[0]!.data as { backgroundImage?: string }).backgroundImage;
+    delete (noImage.pages[0]!.blocks[0]!.data as { backgroundImage?: unknown }).backgroundImage;
     const html = renderSite(noImage, "stub");
     expect(html).toMatch(/<meta name="twitter:card" content="summary"/);
     expect(html).not.toMatch(/<meta name="twitter:image"/);

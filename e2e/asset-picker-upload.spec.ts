@@ -203,9 +203,7 @@ test("uploading an image into the picker renders an <img> whose bytes actually l
     await expect(page.getByTestId("editor-pane")).toBeVisible({ timeout: 10_000 });
 
     // Drill into the gallery so the BlockForm mounts.
-    const galleryRow = page.locator(
-      '[data-testid="block-row"][data-block-id="blk_home_gallery"]',
-    );
+    const galleryRow = page.locator('[data-testid="block-row"][data-block-id="blk_home_gallery"]');
     await expect(galleryRow).toBeVisible();
     await galleryRow.locator('[data-testid="block-row-select"]').click();
     await expect(
@@ -244,12 +242,22 @@ test("uploading an image into the picker renders an <img> whose bytes actually l
     // `uploadAsset` writes ("assets/<hash>.png") and a URL the browser can
     // fetch, the <img> is in the DOM but its naturalWidth is 0.
     await expect
+      .poll(async () => await thumbnail.evaluate((img) => (img as HTMLImageElement).naturalWidth), {
+        timeout: 5_000,
+      })
+      .toBeGreaterThan(0);
+
+    const previewImage = page
+      .frameLocator('[data-testid="preview-pane"] iframe')
+      .locator('[data-block="imageGallery"] img');
+    await expect(previewImage).toBeVisible();
+    await expect
       .poll(
-        async () =>
-          await thumbnail.evaluate((img) => (img as HTMLImageElement).naturalWidth),
+        async () => await previewImage.evaluate((img) => (img as HTMLImageElement).naturalWidth),
         { timeout: 5_000 },
       )
       .toBeGreaterThan(0);
+    await expect(previewImage).toHaveAttribute("src", /^blob:/);
   } finally {
     await server.close();
   }

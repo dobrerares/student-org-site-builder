@@ -48,30 +48,20 @@ export const SPINE_FIELD_METADATA: readonly FieldOverride[] = [
   // Org label rewrites
   { path: "org.legalName", label: "Official organization name" },
   { path: "org.shortName", label: "Display name (used in nav)" },
+  { path: "org.logoAlt", label: "Logo description (for screen readers)" },
 ];
 
 export const BLOCK_FIELD_METADATA: Partial<
   Record<keyof typeof KnownBlockSchemas, readonly FieldOverride[]>
 > = {
   // Alt text relabel applies wherever a block has a user-editable alt.
-  hero: [
-    { path: "backgroundAlt", label: "Image description (for screen readers)" },
-  ],
-  quote: [
-    { path: "authorImageAlt", label: "Image description (for screen readers)" },
-  ],
-  imageGallery: [
-    { path: "images.[].alt", label: "Image description (for screen readers)" },
-  ],
-  teamGrid: [
-    { path: "people.[].photo.alt", label: "Image description (for screen readers)" },
-  ],
-  partnerLogos: [
-    { path: "partners.[].logo.alt", label: "Image description (for screen readers)" },
-  ],
-  ctaBanner: [
-    { path: "backgroundImage.alt", label: "Image description (for screen readers)" },
-  ],
+  hero: [{ path: "backgroundAlt", label: "Image description (for screen readers)" }],
+  quote: [{ path: "authorImageAlt", label: "Image description (for screen readers)" }],
+  imageGallery: [{ path: "images.[].alt", label: "Image description (for screen readers)" }],
+  teamGrid: [{ path: "people.[].photo.alt", label: "Image description (for screen readers)" }],
+  partnerLogos: [{ path: "partners.[].logo.alt", label: "Image description (for screen readers)" }],
+  ctaBanner: [{ path: "backgroundImage.alt", label: "Image description (for screen readers)" }],
+  eventList: [{ path: "events.[].imageAlt", label: "Image description (for screen readers)" }],
 };
 
 /**

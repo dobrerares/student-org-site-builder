@@ -1415,6 +1415,52 @@ button[data-issue] [data-issue-path] {
     gap: var(--sp-4);
   }
 }
+
+/* ============================================================
+ * 22. Theme picker previews
+ * ============================================================ */
+[data-theme-picker-root] [data-theme-option] {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.35rem 0.65rem;
+  align-items: start;
+  padding: 0.7rem;
+  border: 1px solid var(--border);
+  margin-block: 0.5rem;
+}
+[data-theme-option-label],
+[data-theme-option-description],
+[data-theme-option-preview] {
+  grid-column: 2;
+}
+[data-theme-option-label] {
+  font-weight: 700;
+}
+[data-theme-option-description] {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+[data-theme-option-preview] {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.6rem;
+  align-items: center;
+  margin-top: 0.35rem;
+}
+[data-theme-preview-swatches] {
+  display: flex;
+  gap: 0.25rem;
+}
+[data-theme-preview-swatch] {
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid var(--border);
+}
+[data-theme-preview-type] {
+  display: grid;
+  gap: 0.1rem;
+  font-size: 0.8rem;
+}
 `;
 
 /**
