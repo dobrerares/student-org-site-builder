@@ -89,6 +89,27 @@ describe("SharpImageProcessor.encodeVariants — JPEG → WebP variants", () => 
   }, 120_000);
 });
 
+describe("SharpImageProcessor.encodeVariants — JPEG → AVIF variants", () => {
+  test("a large photo can produce AVIF variants for Electron srcsets", async () => {
+    const proc = await createSharpImageProcessor();
+    const fixture = await makeLargeJpegFixture(2 * 1024 * 1024);
+    const decoded = await proc.decode(fixture.bytes, "image/jpeg");
+
+    const variants = await proc.encodeVariants(decoded, {
+      widths: [400, 800],
+      targetMime: "image/avif",
+      quality: 58,
+    });
+
+    expect(variants).toHaveLength(2);
+    for (const variant of variants) {
+      expect(variant.mime).toBe("image/avif");
+      expect(detectMime(variant.bytes)).toBe("image/avif");
+      expect([400, 800]).toContain(variant.width);
+    }
+  }, 120_000);
+});
+
 describe("SharpImageProcessor.encodeVariants — alpha preservation", () => {
   test("PNG with alpha → PNG variants preserve transparent regions", async () => {
     const proc = await createSharpImageProcessor();

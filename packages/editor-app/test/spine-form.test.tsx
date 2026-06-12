@@ -78,9 +78,7 @@ describe("SpineForm — Show advanced toggle (ADR 0043, T16)", () => {
 
   test("renders the AdvancedToggle control", () => {
     const fields = fieldsFromSchema(SiteSchema, { overrides: SPINE_FIELD_METADATA });
-    const { container } = render(
-      <SpineForm {...spineProps(fields)} />,
-    );
+    const { container } = render(<SpineForm {...spineProps(fields)} />);
     expect(container.querySelector('[data-testid="advanced-toggle"]')).not.toBeNull();
   });
 
@@ -89,9 +87,7 @@ describe("SpineForm — Show advanced toggle (ADR 0043, T16)", () => {
       stringNode(["org", "name"]),
       stringNode(["org", "legalName"], "advanced"),
     ];
-    const { container } = render(
-      <SpineForm {...spineProps(fields)} />,
-    );
+    const { container } = render(<SpineForm {...spineProps(fields)} />);
     expect(container.querySelector('[data-field="org.name"]')).not.toBeNull();
     expect(container.querySelector('[data-field="org.legalName"]')).toBeNull();
   });
@@ -101,9 +97,7 @@ describe("SpineForm — Show advanced toggle (ADR 0043, T16)", () => {
       stringNode(["org", "name"]),
       stringNode(["org", "legalName"], "advanced"),
     ];
-    const { container } = render(
-      <SpineForm {...spineProps(fields)} />,
-    );
+    const { container } = render(<SpineForm {...spineProps(fields)} />);
     const checkbox = container.querySelector<HTMLInputElement>(
       '[data-testid="advanced-toggle"] input[type="checkbox"]',
     );
@@ -119,9 +113,7 @@ describe("SpineForm — Show advanced toggle (ADR 0043, T16)", () => {
       stringNode(["org", "name"]),
       stringNode(["org", "internalNote"], "hidden"),
     ];
-    const { container } = render(
-      <SpineForm {...spineProps(fields)} />,
-    );
+    const { container } = render(<SpineForm {...spineProps(fields)} />);
     expect(container.querySelector('[data-field="org.internalNote"]')).toBeNull();
 
     const checkbox = container.querySelector<HTMLInputElement>(
@@ -137,12 +129,8 @@ describe("SpineForm — Show advanced toggle (ADR 0043, T16)", () => {
       stringNode(["org", "legalName"], "advanced"),
     ];
 
-    const first = render(
-      <SpineForm {...spineProps(fields)} />,
-    );
-    const second = render(
-      <SpineForm {...spineProps(fields)} />,
-    );
+    const first = render(<SpineForm {...spineProps(fields)} />);
+    const second = render(<SpineForm {...spineProps(fields)} />);
 
     // Both start with the advanced field hidden.
     expect(first.container.querySelector('[data-field="org.legalName"]')).toBeNull();

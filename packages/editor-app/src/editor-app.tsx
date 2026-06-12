@@ -98,6 +98,7 @@ import { MEDIA_PICKER_RENDERERS } from "./media-picker-renderers.js";
 import { SpineForm, applyPatch } from "./spine-form.js";
 import { ThemeForm } from "./theme-form.js";
 import { iframeSrcdoc } from "./iframe-srcdoc.js";
+import { resolvePathToPageIndex } from "./preview-navigation.js";
 // Side-effect import: registers the editor-app stylesheet on `document.head`
 // once, before any component renders. Guarded for SSR / non-DOM tooling.
 import "./editor-app-css.js";
@@ -138,6 +139,13 @@ const MOBILE_BREAKPOINT_PX = 768;
 export interface EditorAppProps {
   /** Initial site loaded into the editor. */
   readonly initial: Site;
+  /**
+   * Optional asset store seeded by a host shell. Used when a parent shell
+   * imports a full site zip before mounting the editor.
+   */
+  readonly initialAssetVfs?: Vfs;
+  /** Optional VFS used by `@sosb/editor-state` for debounced draft autosave. */
+  readonly autosaveVfs?: Vfs;
   /** Optional — fired when the user clicks the Import button. */
   readonly onImport?: () => void;
   /** Optional — fired when the user clicks the Export button. */
@@ -204,7 +212,10 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
 
   const stateRef = useRef<EditorState>();
   if (stateRef.current === undefined) {
-    stateRef.current = createEditorState({ initial: props.initial });
+    stateRef.current =
+      props.autosaveVfs === undefined
+        ? createEditorState({ initial: props.initial })
+        : createEditorState({ initial: props.initial, vfs: props.autosaveVfs });
   }
   const state = stateRef.current;
 
@@ -407,6 +418,30 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     host.postSiteData(snapshot, snapshot.theme.id, safeActivePageIndex);
   }, [snapshot, safeActivePageIndex]);
 
+  // Inbound preview events. The renderer's preview-only nav script prevents
+  // normal iframe navigation and posts `{ type: "navigate", path }`; the
+  // editor maps that path back onto `site.pages` and updates the active page.
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (iframe === null) return;
+    const host = createPreviewHost({
+      iframe,
+      onPreviewEvent(message) {
+        if (message.type !== "navigate") return;
+        const nextIndex = resolvePathToPageIndex(snapshot, message.path);
+        if (nextIndex === null || nextIndex === safeActivePageIndex) return;
+        setActivePageIndex(nextIndex);
+      },
+    });
+    function onMessage(event: MessageEvent): void {
+      host.handleIncomingMessage(event.data);
+    }
+    window.addEventListener("message", onMessage);
+    return () => {
+      window.removeEventListener("message", onMessage);
+    };
+  }, [snapshot, safeActivePageIndex]);
+
   // Root ref so issue-navigation queries land in the editor's own DOM
   // tree (and not whatever the host page might have rendered).
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -473,7 +508,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   // persistence-by-zip.
   const assetVfsRef = useRef<Vfs>();
   if (assetVfsRef.current === undefined) {
-    assetVfsRef.current = new MemoryDriver();
+    assetVfsRef.current = props.initialAssetVfs ?? new MemoryDriver();
   }
 
   // Display-URL cache for the picker thumbnails.
@@ -518,6 +553,10 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       }
       cache.clear();
     };
+  }, []);
+
+  useEffect(() => {
+    void populateAssetDisplayUrls(assetVfsRef.current!, displayUrlCacheRef.current!);
   }, []);
 
   function displayUrlForAsset(ref: AssetRefLike): string | undefined {

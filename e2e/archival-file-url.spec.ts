@@ -30,7 +30,7 @@ test.beforeAll(async () => {
   }
 });
 
-test("the archival HTML loads from file:// and renders the editor's two-pane layout", async ({
+test("the archival HTML loads from file:// and opens the editor's two-pane layout", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1200, height: 900 });
@@ -39,6 +39,9 @@ test("the archival HTML loads from file:// and renders the editor's two-pane lay
   // inline (a sibling .js, a sibling .css) would 404 under file://.
   const fileUrl = pathToFileURL(archivalHtml).href;
   await page.goto(fileUrl);
+
+  await expect(page.getByTestId("welcome-screen")).toBeVisible();
+  await page.getByTestId("welcome-action-blank").click();
 
   await expect(page.getByTestId("editor-pane")).toBeVisible();
   await expect(page.getByTestId("preview-pane")).toBeVisible();

@@ -135,14 +135,14 @@ test("a populated imageGallery block renders the picker as a thumbnail, never an
   // by clicking the row's select affordance — the BlockListEditor exposes
   // `block-row-select` as the primary click target when the parent provides
   // an `onSelect` callback (the editor does).
-  const galleryRow = page.locator(
-    '[data-testid="block-row"][data-block-id="blk_home_gallery"]',
-  );
+  const galleryRow = page.locator('[data-testid="block-row"][data-block-id="blk_home_gallery"]');
   await expect(galleryRow).toBeVisible();
   await galleryRow.locator('[data-testid="block-row-select"]').click();
 
   // After drill-in the inspector mounts the BlockForm for the gallery.
-  await expect(page.locator('[data-testid="inspector"][data-inspector-mode="block"]')).toBeVisible();
+  await expect(
+    page.locator('[data-testid="inspector"][data-inspector-mode="block"]'),
+  ).toBeVisible();
 
   // ADR 0044 Corollary 1 assertions — the load-bearing block:
   //

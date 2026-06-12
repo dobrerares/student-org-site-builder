@@ -20,7 +20,7 @@ in flight: each block landed schema + renderer + tests independently, and
 the editor wiring would have been merge-conflict bait. The deferral has
 now expired — all 15 block schemas and renderers are merged, the
 `BlockForm` exists and is exported (`@sosb/editor-app`'s `index.tsx`),
-but it is *mounted nowhere*. The block list shows label, title, drag
+but it is _mounted nowhere_. The block list shows label, title, drag
 handle, move, remove. There is no per-block field editor.
 
 A second, related deferral comes from ADR 0008 ("Block library picker,
@@ -36,7 +36,7 @@ reach a block-data editor, every non-hero block they added would render
 as a blank section.
 
 A third, smaller gap: ADR 0024 ("Academic theme — first pass") stated
-the curated HISTORIPOL Academic demo is *"the default demo"* of the
+the curated HISTORIPOL Academic demo is _"the default demo"_ of the
 project, but the archival build's `run-archival-build.ts:72` defaults
 its seed to `packages/browser-shell/test/fixtures/minimal-site.json`
 (one hero, `"Stub Org"`). The curated demo data
@@ -49,25 +49,25 @@ production seed.
 These three gaps interact: until the editor can edit block data, the
 seed sparseness is the dominant pain ("I edit a field, nothing visible
 changes"). Once the editor can edit blocks, the seed sparseness becomes
-the *next* dominant pain ("I drilled into the one hero, edited the
+the _next_ dominant pain ("I drilled into the one hero, edited the
 title, and now what?"). Resolving them together produces a coherent
 "the editor works end-to-end on real content" outcome that no single
 fix delivers alone.
 
-What this ADR does not pin (still deferred, see *Out of scope* below):
+What this ADR does not pin (still deferred, see _Out of scope_ below):
 
 - The iframe-reload-on-keystroke behaviour. The editor's preview
   iframe currently reloads in full every time `srcdoc` is reassigned,
   which produces a white flash and resets scroll. ADR 0005 chose this
-  deliberately and the choice still holds for the *built site* contract;
-  whether it should hold for the *preview iframe* is a separate
+  deliberately and the choice still holds for the _built site_ contract;
+  whether it should hold for the _preview iframe_ is a separate
   re-architecture.
 - Selection sync between the inspector and the preview iframe (clicking
   a block scrolls the iframe to that block, highlights it). Sound only
   becomes useful once the iframe stops reloading on every keystroke;
   pairs naturally with the deferred iframe re-architecture.
-- Designed default *content* for blocks added via the dialog. This ADR
-  ships *functional placeholders* — schema-valid stubs the user
+- Designed default _content_ for blocks added via the dialog. This ADR
+  ships _functional placeholders_ — schema-valid stubs the user
   immediately overwrites. Curated copy is a follow-up content pass.
 
 ## Decision
@@ -172,7 +172,7 @@ Rejected:
 - **Wiring-only, defaults-and-metadata as a sibling issue.** Lands a
   drill-in inspector that for 14 block types shows a form full of
   blank required fields. Worse demo than today's "blocks aren't
-  reachable from the UI" because the user *expects* the inspector to
+  reachable from the UI" because the user _expects_ the inspector to
   be useful.
 - **Seed swap as a sibling issue.** Decouples cleanly but means the
   wiring lands and is demoed against the degenerate one-hero seed.
@@ -202,7 +202,7 @@ goal, the placeholders show the structure I fill in".
 
 ### Strict scope: no SpineForm rework, no theme-picker work
 
-Two adjacent ergonomic issues are explicitly *out of scope* for this
+Two adjacent ergonomic issues are explicitly _out of scope_ for this
 issue:
 
 - The SpineForm's auto-generated UI for the deeply-nested SiteSchema is
@@ -233,15 +233,15 @@ fixed three-pane variant). The decision turned on three factors:
    height, then drills back out.
 2. **Mixing envelope controls and data controls.** The block row holds
    move-up/move-down/remove (envelope-level operations). Inline-expanded,
-   data-level field editing happens *inside* a row that also holds
+   data-level field editing happens _inside_ a row that also holds
    structural controls — pressing Tab from the last data field lands on
    "Remove block" by accident. Drill-in cleanly separates "the row
    manipulates the block in the page" from "the inspector edits the
    block's data".
 3. **Symmetry with PagesList.** PagesList is already a list of items
-   the user clicks to *navigate to* (changing the active page). Adding
-   a sibling list (BlockListEditor) where the user clicks to *navigate
-   to* (changing the active block) reuses the same pattern. Inline-
+   the user clicks to _navigate to_ (changing the active page). Adding
+   a sibling list (BlockListEditor) where the user clicks to _navigate
+   to_ (changing the active block) reuses the same pattern. Inline-
    expansion would break this symmetry; drill-in extends it.
 
 The bundle-scope choice (wiring + metadata + defaults + seed in one
@@ -255,7 +255,7 @@ worse than today (e.g. wiring without defaults = "blocks are reachable
 but blank"). Bundling gives one shippable unit; splitting gives several
 intermediate states each of which is its own visible regression.
 
-The seed-swap deserves its own note: it is the *cheapest* of the five
+The seed-swap deserves its own note: it is the _cheapest_ of the five
 sub-decisions (one-line import + one config change) and addresses a
 disproportionate share of the user-perception problem ("preview
 doesn't update much"). Excluding it from the bundle on grounds of
@@ -285,18 +285,18 @@ behaviourally the wrong call.
   payload; this is expected and bounded.
 - The minimal-site test fixture stays exactly where it is and continues
   to drive the editor-app tests that want the degenerate case. Only
-  the *production seed* changes.
-- ADR 0035's *Out of scope* note about block-CRUD is now satisfied. A
+  the _production seed_ changes.
+- ADR 0035's _Out of scope_ note about block-CRUD is now satisfied. A
   one-line cross-reference appended to 0035 points future readers
   here.
-- ADR 0008's *Consequences* note about per-block additive metadata
+- ADR 0008's _Consequences_ note about per-block additive metadata
   PRs is implicitly closed; future blocks (#22 onwards if any land)
   still follow the additive pattern, but the current 14-block backfill
   is a one-shot.
 - The "preview doesn't update much" perception complaint is
   partially addressed (visible content + reachable block-data editing
-  + meaningful starter seed). The reload-flash component remains
-  until the iframe re-architecture lands.
+  - meaningful starter seed). The reload-flash component remains
+    until the iframe re-architecture lands.
 
 ### Post-landing follow-up
 
@@ -312,9 +312,9 @@ unstyled while the hero rendered correctly.
 
 The original design intent was clearly composition — the
 `activities-list-golden.test.ts` header even said so verbatim:
-*"the renderer falls back to the stub theme... they will regenerate
+_"the renderer falls back to the stub theme... they will regenerate
 against the Academic theme when #47 substitutes the CSS for `themeId
-=== "academic"`"*. The implementation just never landed.
+=== "academic"`"_. The implementation just never landed.
 
 Fix: `themeCssFor` now returns `${STUB_THEME_CSS}\n${THEME_CSS}` for
 every non-stub theme, with the theme's rules winning per the CSS
@@ -354,10 +354,10 @@ match the cascade-winning rule rather than the first occurrence.
   iframe-side script swap `<body>` innerHTML in place — is its own
   issue and will require an amendment to ADR 0005 (which committed to
   "iframe = static HTML, byte-identical to build pipeline output" for
-  reasons that hold for *built sites* but not for the *editor preview*
+  reasons that hold for _built sites_ but not for the _editor preview_
   iframe specifically). Selection sync (drill-in scrolls/highlights
   the active block in the preview) is paired with this work.
-- **Designed default *content* for non-hero blocks.** This issue ships
+- **Designed default _content_ for non-hero blocks.** This issue ships
   functional placeholders. A follow-up content pass replaces them
   with designed copy (likely bilingual ro/en, matching the curated
   demo's tone). That is content work, not wiring work.

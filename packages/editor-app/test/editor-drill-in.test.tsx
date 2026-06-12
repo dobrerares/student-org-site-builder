@@ -17,6 +17,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/preact";
 import type { BlockEnvelope, Site } from "@sosb/schema";
+import { encodePreviewMessage } from "@sosb/preview-bridge";
 
 import minimal from "./fixtures/minimal-site.json" with { type: "json" };
 import { EditorApp } from "../src/editor-app.js";
@@ -34,6 +35,11 @@ function setViewportWidth(width: number): void {
 
 function siteWithMultiplePagesAndBlocks(): Site {
   const site = structuredClone(baseSite);
+  site.theme.tokens = {
+    ...(site.theme.tokens ?? {}),
+    colorPrimary: "#1f3a5f",
+    colorAccent: "#7a2d16",
+  };
   site.pages = [
     {
       slug: "acasa",
@@ -226,9 +232,7 @@ describe("EditorApp drill-in inspector", () => {
   test("clicking the Theme affordance drills into the ThemeForm", () => {
     const { container } = render(<EditorApp initial={structuredClone(baseSite)} />);
 
-    const themeLink = container.querySelector<HTMLButtonElement>(
-      '[data-testid="drill-in-theme"]',
-    );
+    const themeLink = container.querySelector<HTMLButtonElement>('[data-testid="drill-in-theme"]');
     expect(themeLink).not.toBeNull();
 
     fireEvent.click(themeLink!);
@@ -247,9 +251,7 @@ describe("EditorApp drill-in inspector", () => {
   test("the back-to-blocks button drills out of the theme inspector", () => {
     const { container } = render(<EditorApp initial={structuredClone(baseSite)} />);
 
-    fireEvent.click(
-      container.querySelector<HTMLButtonElement>('[data-testid="drill-in-theme"]')!,
-    );
+    fireEvent.click(container.querySelector<HTMLButtonElement>('[data-testid="drill-in-theme"]')!);
     expect(container.querySelector('[data-testid="theme-form"]')).not.toBeNull();
 
     const back = container.querySelector<HTMLButtonElement>('[data-testid="drill-back"]');
@@ -282,6 +284,26 @@ describe("EditorApp drill-in inspector", () => {
     const blockList = container.querySelector('[data-testid="block-list"]');
     expect(blockList).not.toBeNull();
     expect(blockList?.getAttribute("data-page-slug")).toBe("despre");
+  });
+
+  test("preview navigate messages switch the active page", async () => {
+    const { container } = render(<EditorApp initial={siteWithMultiplePagesAndBlocks()} />);
+
+    expect(
+      container.querySelector('[data-testid="block-list"]')?.getAttribute("data-page-slug"),
+    ).toBe("acasa");
+    await Promise.resolve();
+
+    window.dispatchEvent(
+      new MessageEvent("message", {
+        data: encodePreviewMessage({ type: "navigate", path: "/despre/" }),
+      }),
+    );
+    await Promise.resolve();
+
+    expect(
+      container.querySelector('[data-testid="block-list"]')?.getAttribute("data-page-slug"),
+    ).toBe("despre");
   });
 
   test("removing the block you are drilled into falls back to the un-drilled view", () => {

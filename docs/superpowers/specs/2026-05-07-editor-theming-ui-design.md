@@ -161,14 +161,14 @@ sees current values, but the schema fields stay `undefined` until edited
 
 **Six controls, by token:**
 
-| Token            | Control                          | Why this control                                        |
-| ---------------- | -------------------------------- | ------------------------------------------------------- |
-| `colorPrimary`   | `<input type="color">` + hex     | Native color picker is zero-bytes, accessible, OS-themed |
-| `colorAccent`    | same                             | same                                                    |
-| `fontHeadline`   | `<select>`                       | Curated list (see "user contribution" below)            |
-| `fontBody`       | `<select>`                       | same                                                    |
-| `density`        | `<select>` of named scales       | Discrete choices map cleanly to a multiplier string     |
-| `radius`         | `<select>` of named scales       | same                                                    |
+| Token          | Control                      | Why this control                                         |
+| -------------- | ---------------------------- | -------------------------------------------------------- |
+| `colorPrimary` | `<input type="color">` + hex | Native color picker is zero-bytes, accessible, OS-themed |
+| `colorAccent`  | same                         | same                                                     |
+| `fontHeadline` | `<select>`                   | Curated list (see "user contribution" below)             |
+| `fontBody`     | `<select>`                   | same                                                     |
+| `density`      | `<select>` of named scales   | Discrete choices map cleanly to a multiplier string      |
+| `radius`       | `<select>` of named scales   | same                                                     |
 
 **Patch shape.** Every control calls `onPatch(["theme", "tokens", <key>], value)`.
 Choosing the empty option ("Use theme default") calls
@@ -277,7 +277,7 @@ field renames in the schema (which won't happen in v1.x anyway).
 
 - `packages/editor-app/test/spine-form.test.tsx` — when site has
   `theme: { id: "civic" }`, the spine-form renders `<ThemeEditor>` and
-  *does not* render the generic object-fieldset for `theme`.
+  _does not_ render the generic object-fieldset for `theme`.
 - `packages/wizard/test/identity.test.tsx` — wizard's identity step still
   renders the same five radios with descriptions sourced from the new
   shared registry (regression).
@@ -296,14 +296,14 @@ build's CSS.
 
 ## Acceptance criteria (PRD coverage matrix)
 
-| PRD § | Story (abbrev.)                                    | Verified by                        |
-| ----- | -------------------------------------------------- | ---------------------------------- |
-| §41   | Pick from 5 themes mid-edit                        | `<ThemePicker>` test + e2e         |
-| §42   | One-line description + preview                     | Registry test + visual snapshot    |
-| §43   | Switch themes mid-edit without losing content      | E2E theme-switch test              |
-| §44   | Customize 6 tokens via UI                          | `<TokenForm>` tests + e2e          |
-| §45   | Contrast warning under AA                          | Contrast util + `<TokenForm>` test |
-| §46   | Skip token customization                           | Default-collapsed state, reset test |
+| PRD § | Story (abbrev.)                               | Verified by                         |
+| ----- | --------------------------------------------- | ----------------------------------- |
+| §41   | Pick from 5 themes mid-edit                   | `<ThemePicker>` test + e2e          |
+| §42   | One-line description + preview                | Registry test + visual snapshot     |
+| §43   | Switch themes mid-edit without losing content | E2E theme-switch test               |
+| §44   | Customize 6 tokens via UI                     | `<TokenForm>` tests + e2e           |
+| §45   | Contrast warning under AA                     | Contrast util + `<TokenForm>` test  |
+| §46   | Skip token customization                      | Default-collapsed state, reset test |
 
 CI gates already in place that this work must not regress:
 
@@ -340,18 +340,18 @@ fails to differentiate. Find the middle.
 // Density — multiplier applied to spacing tokens at render time.
 // Picking these wrong makes pages look cramped or empty.
 const DENSITY_OPTIONS = [
-  { id: "compact",     label: "Compact",     value: "0.85" },  // TODO: tune
-  { id: "comfortable", label: "Comfortable", value: "1" },     // theme default
-  { id: "spacious",    label: "Spacious",    value: "1.15" },  // TODO: tune
+  { id: "compact", label: "Compact", value: "0.85" }, // TODO: tune
+  { id: "comfortable", label: "Comfortable", value: "1" }, // theme default
+  { id: "spacious", label: "Spacious", value: "1.15" }, // TODO: tune
 ];
 
 // Radius — applied to --radius. Shipped themes range from 0px (civic) to
 // 16px (modern). User picks the named bucket.
 const RADIUS_OPTIONS = [
-  { id: "square",  label: "Square",  value: "0px" },
-  { id: "subtle",  label: "Subtle",  value: "4px" },
+  { id: "square", label: "Square", value: "0px" },
+  { id: "subtle", label: "Subtle", value: "4px" },
   { id: "rounded", label: "Rounded", value: "8px" },
-  { id: "soft",    label: "Soft",    value: "16px" },
+  { id: "soft", label: "Soft", value: "16px" },
 ];
 ```
 
@@ -381,7 +381,7 @@ Windows isn't acceptable without the fallback being equivalently nice.
 
 1. The renderer's per-theme token constants come in two shapes today:
    schema-keyed records (`EDITORIAL_THEME_TOKENS`) and raw `[cssProp,
-   value]` arrays with renderer-internal extras (`ACADEMIC_THEME_TOKENS`,
+value]` arrays with renderer-internal extras (`ACADEMIC_THEME_TOKENS`,
    `CIVIC_THEME_BASELINE_TOKENS`). The registry derives a schema-keyed
    subset from whichever shape each theme uses, so both layouts can
    continue to coexist. The renderer keeps its current switches.

@@ -17,33 +17,33 @@ Wizard stays upload-free (editor only).
 
 ## Locked decisions (do not re-litigate)
 
-| Topic | Decision |
-|--------|-----------|
-| Scope | All image slots: existing `AssetRef` blocks + **hero**, **quote**, **eventList**, **`org.logo`** |
-| Legacy `z.string()` image paths | **No migrations** — change schema + rewrite in-repo fixtures in same PR |
-| Hero / quote alt | Keep **`backgroundAlt`** / **`authorImageAlt`** siblings |
-| Events / org alt | Add **`events[].imageAlt`** / **`org.logoAlt`** siblings |
-| Alt sync | **Dual-write** on sibling patch and on upload/replace |
-| Wizard | **Editor only** — no picker in `@sosb/wizard` |
-| Spine | Extend **`SpineForm`** like **`BlockForm`** (`schemaRenderers`, `uploader`, `displayUrlFor`) |
-| Picker UX | **Replace image** always when value set; **Remove image** on optional slots clears ref **and** sibling alt |
-| Block envelope `version` | Stay **`1`** — no `BLOCK_MIGRATIONS` entries |
+| Topic                           | Decision                                                                                                   |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Scope                           | All image slots: existing `AssetRef` blocks + **hero**, **quote**, **eventList**, **`org.logo`**           |
+| Legacy `z.string()` image paths | **No migrations** — change schema + rewrite in-repo fixtures in same PR                                    |
+| Hero / quote alt                | Keep **`backgroundAlt`** / **`authorImageAlt`** siblings                                                   |
+| Events / org alt                | Add **`events[].imageAlt`** / **`org.logoAlt`** siblings                                                   |
+| Alt sync                        | **Dual-write** on sibling patch and on upload/replace                                                      |
+| Wizard                          | **Editor only** — no picker in `@sosb/wizard`                                                              |
+| Spine                           | Extend **`SpineForm`** like **`BlockForm`** (`schemaRenderers`, `uploader`, `displayUrlFor`)               |
+| Picker UX                       | **Replace image** always when value set; **Remove image** on optional slots clears ref **and** sibling alt |
+| Block envelope `version`        | Stay **`1`** — no `BLOCK_MIGRATIONS` entries                                                               |
 
 ---
 
 ## Already exists (extend, don’t reinvent)
 
-| Artifact | Path |
-|----------|------|
-| Asset picker component | `packages/editor-app/src/asset-picker.tsx` |
-| Document picker | `packages/editor-app/src/document-picker.tsx` |
-| BlockForm dispatch | `packages/editor-app/src/block-form.tsx` (`SCHEMA_RENDERERS`, `asset-picker` arm) |
-| Upload wiring | `packages/editor-app/src/editor-app.tsx` (`uploadAssetForPicker`, `displayUrlForAsset`, VFS ref) |
-| Canonical AssetRef schema | `packages/schema/src/blocks/asset-ref.ts` |
-| Form overrides ADR | `docs/adr/0043-form-override-architecture.md` |
-| No technical inputs ADR | `docs/adr/0044-no-technical-field-escape-hatches.md` |
-| Prior plan (partial overlap) | `docs/plans/2026-05-11-form-overrides-and-pickers.md` |
-| E2e upload / round-trip | `e2e/asset-picker-upload.spec.ts`, `e2e/round-trip-zero-reuploads.spec.ts` |
+| Artifact                     | Path                                                                                             |
+| ---------------------------- | ------------------------------------------------------------------------------------------------ |
+| Asset picker component       | `packages/editor-app/src/asset-picker.tsx`                                                       |
+| Document picker              | `packages/editor-app/src/document-picker.tsx`                                                    |
+| BlockForm dispatch           | `packages/editor-app/src/block-form.tsx` (`SCHEMA_RENDERERS`, `asset-picker` arm)                |
+| Upload wiring                | `packages/editor-app/src/editor-app.tsx` (`uploadAssetForPicker`, `displayUrlForAsset`, VFS ref) |
+| Canonical AssetRef schema    | `packages/schema/src/blocks/asset-ref.ts`                                                        |
+| Form overrides ADR           | `docs/adr/0043-form-override-architecture.md`                                                    |
+| No technical inputs ADR      | `docs/adr/0044-no-technical-field-escape-hatches.md`                                             |
+| Prior plan (partial overlap) | `docs/plans/2026-05-11-form-overrides-and-pickers.md`                                            |
+| E2e upload / round-trip      | `e2e/asset-picker-upload.spec.ts`, `e2e/round-trip-zero-reuploads.spec.ts`                       |
 
 **Gaps called out in code today:**
 
@@ -196,12 +196,12 @@ Use **`verification-before-completion`** before claiming done.
 
 ## Skills for next session
 
-| Skill | Use |
-|-------|-----|
-| `subagent-driven-development` | Execute tasks 1–8 |
-| `using-git-worktrees` | Isolate branch before Task 1 |
-| `test-driven-development` | Each implementer subagent |
-| `verification-before-completion` | Before marking tasks done |
+| Skill                            | Use                            |
+| -------------------------------- | ------------------------------ |
+| `subagent-driven-development`    | Execute tasks 1–8              |
+| `using-git-worktrees`            | Isolate branch before Task 1   |
+| `test-driven-development`        | Each implementer subagent      |
+| `verification-before-completion` | Before marking tasks done      |
 | `finishing-a-development-branch` | After all tasks + final review |
 
 ---

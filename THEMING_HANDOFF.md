@@ -1,6 +1,7 @@
 # Editor theming UI — handoff
 
 **State as of handoff (2026-05-07):**
+
 - Spec committed and pushed: `docs/superpowers/specs/2026-05-07-editor-theming-ui-design.md` (commit `6b56e73`).
 - Plan committed and pushed: `docs/superpowers/plans/2026-05-07-editor-theming-ui.md` (commit `5cb8a8d`).
 - `main` is at `5cb8a8d`, up to date with `origin/main`.
@@ -40,17 +41,17 @@ prepared code so they're easy to find.
 
 ## Where everything is
 
-| Artifact                              | Path                                                                         |
-| ------------------------------------- | ---------------------------------------------------------------------------- |
-| Spec (design)                         | `docs/superpowers/specs/2026-05-07-editor-theming-ui-design.md`              |
-| Plan (5 PRs, TDD steps, full code)    | `docs/superpowers/plans/2026-05-07-editor-theming-ui.md`                     |
-| PRD (source of truth)                 | `docs/PRD.md` — §41–46 covers the theming user stories                       |
-| Existing renderer theme constants     | `packages/renderer/src/themes/*.ts`                                          |
-| Existing token pipeline (untouched)   | `packages/renderer/src/tokens.ts` (`emitTokenRoot`)                          |
-| Existing schema (untouched)           | `packages/schema/src/site.ts` (`ThemeTokensSchema`, `ThemeSchema`)           |
-| Existing wizard theme picker          | `packages/wizard/src/steps/identity.tsx` (PR 1 replaces its local THEMES)    |
-| Existing editor spine-form            | `packages/editor-app/src/spine-form.tsx` (PR 4 adds the carve-out)           |
-| Per-theme axe-core gate (must pass)   | `e2e/a11y.spec.ts` (must keep passing — PR 1 is the only refactor it sees)   |
+| Artifact                            | Path                                                                       |
+| ----------------------------------- | -------------------------------------------------------------------------- |
+| Spec (design)                       | `docs/superpowers/specs/2026-05-07-editor-theming-ui-design.md`            |
+| Plan (5 PRs, TDD steps, full code)  | `docs/superpowers/plans/2026-05-07-editor-theming-ui.md`                   |
+| PRD (source of truth)               | `docs/PRD.md` — §41–46 covers the theming user stories                     |
+| Existing renderer theme constants   | `packages/renderer/src/themes/*.ts`                                        |
+| Existing token pipeline (untouched) | `packages/renderer/src/tokens.ts` (`emitTokenRoot`)                        |
+| Existing schema (untouched)         | `packages/schema/src/site.ts` (`ThemeTokensSchema`, `ThemeSchema`)         |
+| Existing wizard theme picker        | `packages/wizard/src/steps/identity.tsx` (PR 1 replaces its local THEMES)  |
+| Existing editor spine-form          | `packages/editor-app/src/spine-form.tsx` (PR 4 adds the carve-out)         |
+| Per-theme axe-core gate (must pass) | `e2e/a11y.spec.ts` (must keep passing — PR 1 is the only refactor it sees) |
 
 ---
 
@@ -75,6 +76,7 @@ prepared code so they're easy to find.
 ### PR 1 — Theme registry (low risk)
 
 **Files changed:**
+
 - New: `packages/themes/src/registry.ts`, `packages/themes/test/registry.test.ts`
 - Modified: `packages/themes/src/index.ts`, `packages/wizard/src/steps/identity.tsx`,
   `packages/wizard/package.json`, `pnpm-lock.yaml`
@@ -97,6 +99,7 @@ may want punchier copy. ~120 words total across 5 themes × 2 langs.
 ### PR 2 — Contrast util (low risk)
 
 **Files changed:**
+
 - New: `packages/editor-app/src/contrast.ts`, `packages/editor-app/test/contrast.test.ts`
 - Modified: `packages/editor-app/package.json` (add `@sosb/themes` dep),
   `packages/themes/test/registry.test.ts` (drift guard), `pnpm-lock.yaml`
@@ -114,6 +117,7 @@ places update.
 ### PR 3 — `<ThemeEditor>` component (medium risk)
 
 **Files changed:**
+
 - New: `packages/editor-app/src/theme-editor.tsx`, `packages/editor-app/test/theme-editor.test.tsx`
 
 **Why medium risk:** The largest of the five. Four sub-components
@@ -128,6 +132,7 @@ separate PRs lets you test the component in isolation before exposing it
 to users.
 
 **Reference user contributions:**
+
 - `DENSITY_OPTIONS` and `RADIUS_OPTIONS` arrays — the named-scale values
   are designer judgment.
 - `FONT_OPTIONS` array — system-font stacks chosen for cross-platform
@@ -136,6 +141,7 @@ to users.
 ### PR 4 — Spine-form carve-out (low risk, high visibility)
 
 **Files changed:**
+
 - Modified: `packages/editor-app/src/spine-form.tsx` (two-line change in
   the `case "object":` branch)
 - Modified: `packages/editor-app/test/theme-editor.test.tsx` (add the
@@ -154,11 +160,13 @@ v1.x is additive-only per PRD, so this is theoretical.
 ### PR 5 — E2E + site-CSS round-trip (medium risk, partially blocked)
 
 **Files changed:**
+
 - New: `e2e/theming.spec.ts`
 - Modified (untracked): `MERGE_HANDOFF.md` (append a re-enable breadcrumb
   for the skipped test)
 
 **Why medium risk:**
+
 1. Playwright e2e tests are environment-fragile. The first test (theme
    switch updates iframe preview) depends on the browser-shell entry
    selectors. If they've shifted, the spec needs `getByRole`/
@@ -186,6 +194,7 @@ flagged interest in shaping them.
 Where: `packages/themes/src/registry.ts` (PR 1, Task 1.2).
 
 Defaults shipped (English):
+
 - Academic — "Institutional, restrained — fits research societies and honors programs."
 - Modern — "Clean, contemporary, breathing room — fits youth-focused programs."
 - Editorial — "Magazine-style typography for storytelling-heavy orgs."
@@ -249,6 +258,7 @@ orchestration. Reading them here so the next session has full context:
 ## Recommended order for the next session
 
 If green CI matters during the work:
+
 ```
 A. MERGE_HANDOFF.md #1 (cta-banner NPE)        — 5 min, 27 tests come back
 B. MERGE_HANDOFF.md #2 (assets recovery)        — ~30 min, unblocks PR 5
@@ -260,6 +270,7 @@ G. THEMING plan PR 5 (e2e)                      — round-trip test now works
 ```
 
 If you're comfortable with `pnpm test` red until the very end:
+
 ```
 A. THEMING plan PR 1 → 4 (theming UI ships)
 B. MERGE_HANDOFF.md #1 + #2

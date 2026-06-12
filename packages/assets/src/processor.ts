@@ -86,6 +86,8 @@ export interface ImageProcessor {
  * - WebP → PNG (we transcode to PNG to preserve alpha without WebP's
  *           encoder ambiguity in v1; the Electron pipeline #37 covers
  *           the AVIF/WebP variants)
+ * - AVIF → JPEG (browser canonical fallback; Electron variants preserve
+ *           the AVIF path where supported)
  * - SVG → SVG (passthrough; never reaches this function)
  *
  * The PRD's "PNG/WebP for alpha" list is treated as "either is fine,
@@ -101,6 +103,8 @@ export function chooseOutputMime(inputMime: SupportedMime): SupportedMime {
       return "image/png";
     case "image/webp":
       return "image/png";
+    case "image/avif":
+      return "image/jpeg";
     case "image/svg+xml":
       return "image/svg+xml";
   }

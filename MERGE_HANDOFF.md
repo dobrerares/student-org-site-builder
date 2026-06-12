@@ -1,6 +1,7 @@
 # Post-orchestration handoff — three follow-ups
 
 **State as of handoff (2026-05-06, end of session):**
+
 - All 16 open PRs from the prior MERGE_HANDOFF are landed on `main`.
 - `main` is at `944bbec` (see "What landed" below).
 - 0 open PRs.
@@ -258,7 +259,7 @@ If the file isn't there, the PR landed on a stacked base. This bug bit #59, #62,
 
 ### `gh pr edit --base main` BEFORE merge, every time
 
-Reflexive habit: any PR with a non-`main` base (visible in `gh pr list --json baseRefName`) gets retargeted *before* `gh pr merge`. The agents in this session did this for all 16 PRs and zero new lost-merges occurred.
+Reflexive habit: any PR with a non-`main` base (visible in `gh pr list --json baseRefName`) gets retargeted _before_ `gh pr merge`. The agents in this session did this for all 16 PRs and zero new lost-merges occurred.
 
 ### Cookbook-driven parallel agents > free-form exploration
 

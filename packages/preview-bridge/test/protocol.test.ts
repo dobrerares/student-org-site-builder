@@ -77,9 +77,7 @@ describe("preview-bridge protocol", () => {
   });
 
   test("decodePreviewMessage round-trips a navigate event", () => {
-    const nav = decodePreviewMessage(
-      encodePreviewMessage({ type: "navigate", path: "/about/" }),
-    );
+    const nav = decodePreviewMessage(encodePreviewMessage({ type: "navigate", path: "/about/" }));
     expect(nav).toEqual({ type: "navigate", path: "/about/" });
   });
 

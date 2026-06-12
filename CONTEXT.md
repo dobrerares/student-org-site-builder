@@ -63,14 +63,14 @@ the CSS mechanism, not the content).
 **Template** (curated):
 A complete pre-built Site shipped from `@sosb/themes/templates/` that
 acts as a real-content seed for new editor sessions. The canonical one is
-the HISTORIPOL Academic demo. Templates are *not* themes — a template
+the HISTORIPOL Academic demo. Templates are _not_ themes — a template
 chooses one theme and wires content into it.
 _Avoid_: starter, preset, sample.
 
 ### The editor
 
 **Site spine**:
-Everything in the Site schema *except* `pages[].blocks` **and `theme`**.
+Everything in the Site schema _except_ `pages[].blocks` **and `theme`**.
 Org name, declared languages, page metadata, social URLs. The spine is
 edited through the **SpineForm**; blocks are edited through the
 **BlockForm**; the theme is edited through the **ThemeForm**. Each
@@ -94,6 +94,7 @@ spine, plus an array editor for item-collection blocks.
 The form behind the theme drill-in. Walks just the carved-out `theme`
 sub-schema (theme id + tokens) and renders custom widgets for each
 field. The full widget table is:
+
 - `theme.id` → theme picker (reads theme catalog)
 - `theme.tokens.colorPrimary` / `colorAccent` → native `<input type="color">`
   (hex-only by design — `hsl()` and named CSS colors are not editor-side
@@ -310,7 +311,7 @@ pre-export confirm dialog.
   Resolved: "Site settings" is only the user-facing label for the
   affordance that drills the user into editing spine fields; in code and
   prose, use **site spine**.
-- **"Page"** can mean a page within a Site or a *language version* of a
+- **"Page"** can mean a page within a Site or a _language version_ of a
   page. Resolved: a "language version" is itself a separate Page; the
   link is the `localizedAs` field. There is no nested per-language
   structure inside a single Page.

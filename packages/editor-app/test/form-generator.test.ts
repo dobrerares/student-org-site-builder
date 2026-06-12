@@ -363,4 +363,3 @@ function findAllByName(root: FieldNode, name: string): FieldNode[] {
   walk(root);
   return matches;
 }
-

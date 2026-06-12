@@ -171,7 +171,9 @@ test("site settings: org.logo upload shows thumbnail", async ({ page }) => {
     await page.getByTestId("site-settings-link").click();
     await expect(page.locator('[data-inspector-mode="settings"]')).toBeVisible();
 
-    const settingsPicker = page.locator('[data-inspector-mode="settings"] [data-testid="asset-picker"]');
+    const settingsPicker = page.locator(
+      '[data-inspector-mode="settings"] [data-testid="asset-picker"]',
+    );
     await settingsPicker.locator('[data-testid="asset-picker-add"]').click();
     await settingsPicker.locator('[data-testid="asset-picker-file-input"]').setInputFiles({
       name: "logo.png",

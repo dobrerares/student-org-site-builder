@@ -83,6 +83,10 @@ export async function createSharpProcessor(): Promise<ImageProcessor> {
           outBuffer = await pipeline.webp({ quality: jpegQuality, lossless: false }).toBuffer();
           outMime = "image/webp";
           break;
+        case "image/avif":
+          outBuffer = await pipeline.avif({ quality: jpegQuality, effort: 4 }).toBuffer();
+          outMime = "image/avif";
+          break;
         default:
           throw new Error(`SharpImageProcessor: unsupported target mime ${targetMime}`);
       }

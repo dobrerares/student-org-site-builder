@@ -18,9 +18,9 @@ Two concrete asks:
    signature move, not a personality change.
 2. **Overlay text on hero images** — currently every theme renders the hero
    image as a polite `.hero__media` block below the title. Themes should
-   composite text *over* the image when one is present.
+   composite text _over_ the image when one is present.
 
-Constraint that shaped every decision below: this is a *generic student-org*
+Constraint that shaped every decision below: this is a _generic student-org_
 site builder. Theme designs serve org self-presentation (welcome / identify
 the org / what we do / join us). They must not pretend to be museums,
 magazines, or government communiques. See
@@ -30,12 +30,12 @@ magazines, or government communiques. See
 
 Locked through the visual companion session on 2026-05-27:
 
-| Decision | Choice | Rationale |
-|---|---|---|
-| Pizzaz volume | Bold but on-brand | Each theme leans hard into its archetype with one signature move. |
-| Hero overlay pattern | Full-bleed image + scrim, per-theme variants | Theme decides treatment; no new schema field. |
-| Block scope | Hero + 3 high-impact blocks per theme | rich-text, quote, cta-banner. Other 14 blocks share generic theme-flavored CSS. |
-| Eyebrow field | Remove | `data.eyebrow` deleted from `HeroDataSchema`. Existing data round-trips silently via loose-object preservation but no UI, no render. |
+| Decision             | Choice                                       | Rationale                                                                                                                            |
+| -------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Pizzaz volume        | Bold but on-brand                            | Each theme leans hard into its archetype with one signature move.                                                                    |
+| Hero overlay pattern | Full-bleed image + scrim, per-theme variants | Theme decides treatment; no new schema field.                                                                                        |
+| Block scope          | Hero + 3 high-impact blocks per theme        | rich-text, quote, cta-banner. Other 14 blocks share generic theme-flavored CSS.                                                      |
+| Eyebrow field        | Remove                                       | `data.eyebrow` deleted from `HeroDataSchema`. Existing data round-trips silently via loose-object preservation but no UI, no render. |
 
 ## Architecture overview
 
@@ -87,7 +87,9 @@ return (
       </div>
     )}
     <div class="hero__inner">
-      <h1 id={`${id}__title`} class="hero__title">{title}</h1>
+      <h1 id={`${id}__title`} class="hero__title">
+        {title}
+      </h1>
       {subtitle !== undefined && <p class="hero__subtitle">{subtitle}</p>}
     </div>
   </section>
@@ -185,33 +187,33 @@ personality compounds (typography, ornament, color treatment all show).
 
 ### Rich-text
 
-| Theme | Signature |
-|---|---|
-| Academic | First-paragraph dropcap (serif, 3em, gold accent, drop-flowed). Gold hairline above h2/h3 headings. Italic emphasis for `<em>`. |
-| Civic | Bold sans throughout. Blockquotes inside rich-text get the same burgundy anchor stripe as hero subtitle. |
+| Theme     | Signature                                                                                                                                                             |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Academic  | First-paragraph dropcap (serif, 3em, gold accent, drop-flowed). Gold hairline above h2/h3 headings. Italic emphasis for `<em>`.                                       |
+| Civic     | Bold sans throughout. Blockquotes inside rich-text get the same burgundy anchor stripe as hero subtitle.                                                              |
 | Editorial | First-paragraph dropcap (italic serif, ochre, 4em). Ornamental three-dot divider (`* * *`) before each h2. Pull-quotes inside rich-text get oversized italic styling. |
-| Modern | Inline code chips get a soft gradient background. h2/h3 get a 4px gradient accent rule on the left. |
-| Minimal | Hairline 1px rule above h2/h3. Inline code in monospace. Restrained — no other ornament. |
+| Modern    | Inline code chips get a soft gradient background. h2/h3 get a 4px gradient accent rule on the left.                                                                   |
+| Minimal   | Hairline 1px rule above h2/h3. Inline code in monospace. Restrained — no other ornament.                                                                              |
 
 ### Quote
 
-| Theme | Signature |
-|---|---|
-| Academic | Hanging gold quotation mark before the text (CSS pseudo-element). Italic serif body. Attribution in small-caps below a thin gold rule. |
-| Civic | Burgundy anchor stripe on the left, full height of the quote. Bold serif body. Attribution right-aligned with em-rule. |
-| Editorial | Massive italic serif body (1.5em), no quote marks (the typography carries it). Ochre em-rule + attribution in sans-serif small caps. |
-| Modern | Glass-style card: subtle gradient border, backdrop-blur, gradient drop-quote mark in the corner. |
-| Minimal | Hairline border, restrained sans body, monospace attribution. |
+| Theme     | Signature                                                                                                                              |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Academic  | Hanging gold quotation mark before the text (CSS pseudo-element). Italic serif body. Attribution in small-caps below a thin gold rule. |
+| Civic     | Burgundy anchor stripe on the left, full height of the quote. Bold serif body. Attribution right-aligned with em-rule.                 |
+| Editorial | Massive italic serif body (1.5em), no quote marks (the typography carries it). Ochre em-rule + attribution in sans-serif small caps.   |
+| Modern    | Glass-style card: subtle gradient border, backdrop-blur, gradient drop-quote mark in the corner.                                       |
+| Minimal   | Hairline border, restrained sans body, monospace attribution.                                                                          |
 
 ### CTA banner
 
-| Theme | Signature |
-|---|---|
-| Academic | Cream plate with gold-bordered button. Serif heading. |
-| Civic | Deep navy background with full-height burgundy anchor stripe (matches hero). Bold sans button, sharp corners. |
-| Editorial | Dark band, massive sans heading, italic serif subtitle, sharp-cornered ochre button. |
-| Modern | Gradient mesh background (same recipe as hero fallback). Glass button with subtle glow on hover (CSS-only `:hover` brightness). |
-| Minimal | Hairline-bordered band on cream, outline button, restrained. |
+| Theme     | Signature                                                                                                                       |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Academic  | Cream plate with gold-bordered button. Serif heading.                                                                           |
+| Civic     | Deep navy background with full-height burgundy anchor stripe (matches hero). Bold sans button, sharp corners.                   |
+| Editorial | Dark band, massive sans heading, italic serif subtitle, sharp-cornered ochre button.                                            |
+| Modern    | Gradient mesh background (same recipe as hero fallback). Glass button with subtle glow on hover (CSS-only `:hover` brightness). |
+| Minimal   | Hairline-bordered band on cream, outline button, restrained.                                                                    |
 
 ## Schema change — remove `eyebrow`
 
@@ -266,13 +268,13 @@ branch.
 `preview { swatches, headlineSample, bodySample }`. The descriptions today
 are accurate but vanilla — refresh to communicate each theme's new signature:
 
-| Theme | New description |
-|---|---|
-| academic | "Scholarly and restrained — cream parchment, gold rules, serif throughout. For research societies, honors programs, academic clubs." |
-| civic | "Engaged and direct — deep navy with a single burgundy anchor stripe. For advocacy, volunteering, debate, and civic-engagement orgs." |
+| Theme     | New description                                                                                                                                       |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| academic  | "Scholarly and restrained — cream parchment, gold rules, serif throughout. For research societies, honors programs, academic clubs."                  |
+| civic     | "Engaged and direct — deep navy with a single burgundy anchor stripe. For advocacy, volunteering, debate, and civic-engagement orgs."                 |
 | editorial | "Editorial duet — massive sans display headlines with italic serif accents and dropcaps. For student publications, literary clubs, debate societies." |
-| minimal | "Disciplined restraint — hairline rules, monospace meta, lots of breathing room. For orgs that want their photos and writing to do the work." |
-| modern | "Bright and contemporary — gradient mesh backgrounds, gradient-text headlines, glass-styled accents. For tech, hackathon, and startup-leaning orgs." |
+| minimal   | "Disciplined restraint — hairline rules, monospace meta, lots of breathing room. For orgs that want their photos and writing to do the work."         |
+| modern    | "Bright and contemporary — gradient mesh backgrounds, gradient-text headlines, glass-styled accents. For tech, hackathon, and startup-leaning orgs."  |
 
 Swatches and headline samples stay (already wired through to the picker).
 
@@ -316,7 +318,7 @@ their hex counterparts.
 
 **Contrast assertions:** civic's WCAG AAA claim in its theme header comment
 needs re-verification — overlay text on a photo can't be guaranteed AAA
-without testing. New axe test asserts the *scrim-rendered text* (white on
+without testing. New axe test asserts the _scrim-rendered text_ (white on
 navy gradient) hits AA 4.5:1 against the darkest scrim layer; the
 guarantee that AAA holds against the photo behind cannot survive an
 arbitrary user-uploaded image, so the header comment's AAA claim narrows
@@ -345,7 +347,7 @@ into per-theme PRs:
    hero overlay + 3 block signatures + 4 goldens + axe/contrast updates.
    These can land in any order, are independently mergeable, and can be
    built in parallel worktrees.
-7. PR 7 — Theme catalog metadata refresh (descriptions). Tiny.
+3. PR 7 — Theme catalog metadata refresh (descriptions). Tiny.
 
 Recommend doing PR 1 first to unblock the parallel theme work.
 

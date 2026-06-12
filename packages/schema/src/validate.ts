@@ -35,6 +35,9 @@ export const KNOWN_THEME_IDS_FOR_VALIDATION: readonly string[] = [
   "stub",
 ];
 
+const MIN_TEXT_CONTRAST_RATIO = 4.5;
+const IMAGE_WARNING_BUDGET_BYTES = 200 * 1024;
+
 /**
  * The three severity tiers from the PRD:
  *
@@ -344,6 +347,149 @@ function runSiteRules(site: z.infer<typeof SiteSchema>, result: ValidationResult
       message: `Theme id "${site.theme.id}" is not one of the canonical themes (${KNOWN_THEME_IDS_FOR_VALIDATION.join(", ")}).`,
     });
   }
+
+  runThemeContrastRules(site, result);
+  runOversizedImageRules(site, result);
+}
+
+function runThemeContrastRules(site: z.infer<typeof SiteSchema>, result: ValidationResult): void {
+  const tokens = site.theme.tokens ?? {};
+  const checks: ReadonlyArray<readonly [string, unknown]> = [
+    ["colorPrimary", tokens.colorPrimary],
+    ["colorAccent", tokens.colorAccent],
+  ];
+  for (const [tokenName, raw] of checks) {
+    if (typeof raw !== "string") continue;
+    const ratio = contrastAgainstWhite(raw);
+    if (ratio === null || ratio >= MIN_TEXT_CONTRAST_RATIO) continue;
+    result.warnings.push({
+      severity: "warning",
+      path: ["theme", "tokens", tokenName],
+      code: "site.theme.tokens.contrast.low",
+      message: `${tokenName} has ${ratio.toFixed(2)}:1 contrast against the default page background. Use a darker colour for WCAG AA text contrast.`,
+    });
+  }
+}
+
+function runOversizedImageRules(site: z.infer<typeof SiteSchema>, result: ValidationResult): void {
+  for (const issue of collectOversizedImages(site)) {
+    result.warnings.push(issue);
+  }
+}
+
+function contrastAgainstWhite(hex: string): number | null {
+  const rgb = parseHexColor(hex);
+  if (rgb === null) return null;
+  const fg = relativeLuminance(rgb);
+  const bg = 1;
+  return (bg + 0.05) / (fg + 0.05);
+}
+
+function parseHexColor(input: string): readonly [number, number, number] | null {
+  const trimmed = input.trim();
+  const short = /^#([0-9a-f]{3})$/i.exec(trimmed);
+  if (short !== null) {
+    const chars = short[1]!;
+    return [0, 1, 2].map((idx) => Number.parseInt(chars[idx]! + chars[idx]!, 16)) as [
+      number,
+      number,
+      number,
+    ];
+  }
+  const long = /^#([0-9a-f]{6})$/i.exec(trimmed);
+  if (long === null) return null;
+  const value = long[1]!;
+  return [
+    Number.parseInt(value.slice(0, 2), 16),
+    Number.parseInt(value.slice(2, 4), 16),
+    Number.parseInt(value.slice(4, 6), 16),
+  ];
+}
+
+function relativeLuminance(rgb: readonly [number, number, number]): number {
+  const [r, g, b] = rgb.map((channel) => {
+    const c = channel / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  }) as [number, number, number];
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function collectOversizedImages(site: z.infer<typeof SiteSchema>): ValidationIssue[] {
+  const warnings: ValidationIssue[] = [];
+  visitPotentialAsset(site.org.logo, ["org", "logo"], warnings);
+  site.pages.forEach((page, pageIdx) => {
+    page.blocks.forEach((block, blockIdx) => {
+      visitPotentialAsset(block.data, ["pages", pageIdx, "blocks", blockIdx, "data"], warnings);
+    });
+  });
+  return warnings;
+}
+
+function visitPotentialAsset(
+  value: unknown,
+  path: (string | number)[],
+  warnings: ValidationIssue[],
+): void {
+  if (value === null || value === undefined) return;
+  if (Array.isArray(value)) {
+    value.forEach((item, idx) => visitPotentialAsset(item, [...path, idx], warnings));
+    return;
+  }
+  if (typeof value !== "object") return;
+
+  const record = value as Record<string, unknown>;
+  if (isImageAssetRef(record)) {
+    const largest = largestKnownImageBytes(record);
+    if (largest !== null && largest > IMAGE_WARNING_BUDGET_BYTES) {
+      warnings.push({
+        severity: "warning",
+        path,
+        code: "site.asset.image.oversized",
+        message: `Image "${record.path}" is ${formatBytes(largest)}, above the ${formatBytes(IMAGE_WARNING_BUDGET_BYTES)} performance budget.`,
+      });
+    }
+    return;
+  }
+
+  for (const [key, child] of Object.entries(record)) {
+    visitPotentialAsset(child, [...path, key], warnings);
+  }
+}
+
+function isImageAssetRef(record: Record<string, unknown>): record is Record<string, unknown> & {
+  path: string;
+  mime: string;
+} {
+  return (
+    typeof record.path === "string" &&
+    typeof record.mime === "string" &&
+    record.mime.startsWith("image/")
+  );
+}
+
+function largestKnownImageBytes(record: Record<string, unknown>): number | null {
+  const candidates: number[] = [];
+  if (typeof record.bytes === "number" && Number.isFinite(record.bytes)) {
+    candidates.push(record.bytes);
+  }
+  if (Array.isArray(record.variants)) {
+    for (const variant of record.variants) {
+      if (
+        variant !== null &&
+        typeof variant === "object" &&
+        typeof (variant as Record<string, unknown>).bytes === "number" &&
+        Number.isFinite((variant as Record<string, unknown>).bytes)
+      ) {
+        candidates.push((variant as { bytes: number }).bytes);
+      }
+    }
+  }
+  if (candidates.length === 0) return null;
+  return Math.max(...candidates);
+}
+
+function formatBytes(bytes: number): string {
+  return `${Math.round(bytes / 1024)} KB`;
 }
 
 function runBlockRules(block: KnownBlockData, result: ValidationResult): void {

@@ -58,21 +58,10 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
 
   return (
     <div data-testid="color-picker">
-      {props.label !== undefined ? (
-        <label data-color-picker-label>{props.label}</label>
-      ) : null}
-      <input
-        type="color"
-        value={swatchValue}
-        aria-label={props.label}
-        onInput={handleInput}
-      />
+      {props.label !== undefined ? <label data-color-picker-label>{props.label}</label> : null}
+      <input type="color" value={swatchValue} aria-label={props.label} onInput={handleInput} />
       {hasValue ? (
-        <button
-          type="button"
-          data-testid="color-picker-reset"
-          onClick={handleReset}
-        >
+        <button type="button" data-testid="color-picker-reset" onClick={handleReset}>
           Reset to default
         </button>
       ) : (

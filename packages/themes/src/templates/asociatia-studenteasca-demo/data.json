@@ -44,9 +44,7 @@
     }
   },
   "defaultLanguage": "ro",
-  "languages": [
-    "ro"
-  ],
+  "languages": ["ro"],
   "pages": [
     {
       "slug": "acasa",

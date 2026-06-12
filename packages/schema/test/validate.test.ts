@@ -49,3 +49,60 @@ describe("validate() — theme.id closed-set rule (ADR 0044 corollary 3)", () =>
     expect(warning).toBeUndefined();
   });
 });
+
+describe("validate() — PRD quality warnings", () => {
+  test("emits a warning for low-contrast custom theme colours", () => {
+    const site = makeMinimalSite({ themeId: "academic" }) as {
+      theme: { tokens: { colorPrimary: string; colorAccent: string } };
+    };
+    site.theme.tokens.colorPrimary = "#ffffff";
+
+    const result = validate(site);
+    const warning = result.warnings.find(
+      (w) =>
+        w.code === "site.theme.tokens.contrast.low" &&
+        w.path.join(".") === "theme.tokens.colorPrimary",
+    );
+    expect(warning).toBeDefined();
+  });
+
+  test("does not warn for contrast-safe custom theme colours", () => {
+    const site = makeMinimalSite({ themeId: "academic" }) as {
+      theme: { tokens: { colorPrimary: string; colorAccent: string } };
+    };
+    site.theme.tokens.colorPrimary = "#111111";
+
+    const result = validate(site);
+    const warning = result.warnings.find(
+      (w) =>
+        w.code === "site.theme.tokens.contrast.low" &&
+        w.path.join(".") === "theme.tokens.colorPrimary",
+    );
+    expect(warning).toBeUndefined();
+  });
+
+  test("emits a warning for image refs with oversized byte metadata", () => {
+    const site = makeMinimalSite({ themeId: "academic" }) as {
+      pages: Array<{
+        blocks: Array<{
+          data: { backgroundImage?: Record<string, unknown> };
+        }>;
+      }>;
+    };
+    const image = site.pages[0]!.blocks[0]!.data.backgroundImage!;
+    image.variants = [
+      {
+        width: 1600,
+        height: 900,
+        mime: "image/webp",
+        path: "assets/hero.1600.webp",
+        bytes: 260 * 1024,
+      },
+    ];
+
+    const result = validate(site);
+    const warning = result.warnings.find((w) => w.code === "site.asset.image.oversized");
+    expect(warning).toBeDefined();
+    expect(warning?.path).toEqual(["pages", 0, "blocks", 0, "data", "backgroundImage"]);
+  });
+});

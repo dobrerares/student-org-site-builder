@@ -31,13 +31,13 @@
             "title": "Un spațiu pentru gând istoric și acțiune politică",
             "subtitle": "Conferințe, dezbateri și ateliere pentru studenții care vor să înțeleagă lumea — nu doar să o memoreze.",
             "backgroundImage": {
-                      "hash": "hero",
-                      "path": "assets/hero.jpg",
-                      "metadataPath": "assets/hero.metadata.json",
-                      "mime": "image/jpeg",
-                      "width": 1600,
-                      "height": 1067,
-                      "alt": "Studenți într-o sală de conferințe la Universitatea Ovidius"
+              "hash": "hero",
+              "path": "assets/hero.jpg",
+              "metadataPath": "assets/hero.metadata.json",
+              "mime": "image/jpeg",
+              "width": 1600,
+              "height": 1067,
+              "alt": "Studenți într-o sală de conferințe la Universitatea Ovidius"
             },
             "backgroundAlt": "Studenți într-o sală de conferințe la Universitatea Ovidius"
           }

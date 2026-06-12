@@ -147,6 +147,8 @@ async function encodeWithSharp(
       return pipeline.png({ compressionLevel: 9 }).toBuffer();
     case "image/webp":
       return pipeline.webp({ quality, lossless: false }).toBuffer();
+    case "image/avif":
+      return pipeline.avif({ quality, effort: 4 }).toBuffer();
     case "image/svg+xml":
       // Unreachable: SVG never goes through the sharp processor.
       throw new Error("SharpImageProcessor: SVG output is not supported (use passthrough)");

@@ -15,6 +15,7 @@
 ## File Map
 
 **New files:**
+
 - `packages/themes/src/registry.ts` — `ThemeDescriptor` type + `THEMES` array
 - `packages/themes/test/registry.test.ts` — registry shape + drift-with-renderer assertions
 - `packages/editor-app/src/contrast.ts` — WCAG luminance + ratio + effective-bg lookup
@@ -24,6 +25,7 @@
 - `e2e/theming.spec.ts` — e2e theme-switch + token-override-reaches-dist round-trip
 
 **Modified files:**
+
 - `packages/themes/src/index.ts` — re-export `THEMES`, `ThemeDescriptor`
 - `packages/wizard/src/steps/identity.tsx` — drop local `THEMES`, import from `@sosb/themes`
 - `packages/wizard/package.json` — add `@sosb/themes` dependency
@@ -31,6 +33,7 @@
 - `packages/editor-app/package.json` — add `@sosb/themes` dependency
 
 **Untouched:**
+
 - `packages/schema/src/site.ts` — schema is already correct; no migration
 - `packages/renderer/src/themes/*.ts` — token constants stay where they are
 - `packages/renderer/src/tokens.ts` — `emitTokenRoot` already does what we need
@@ -45,6 +48,7 @@ Goal: a single source of truth for theme metadata (label, description, schema-ke
 ### Task 1.1: Write failing test for the registry
 
 **Files:**
+
 - Create: `packages/themes/test/registry.test.ts`
 
 - [ ] **Step 1: Write the test file**
@@ -110,6 +114,7 @@ describe("THEMES registry", () => {
 - [ ] **Step 2: Run the test, confirm it fails**
 
 Run from repo root:
+
 ```bash
 pnpm --filter @sosb/themes test
 ```
@@ -119,6 +124,7 @@ Expected: `Cannot find module '../src/registry.js'` or similar import-failure me
 ### Task 1.2: Create the registry module
 
 **Files:**
+
 - Create: `packages/themes/src/registry.ts`
 
 - [ ] **Step 1: Implement registry**
@@ -294,6 +300,7 @@ Expected: clean.
 This guards against `MODERN_INLINE_DEFAULTS` going stale when someone edits `modern.ts`'s CSS string.
 
 **Files:**
+
 - Modify: `packages/themes/test/registry.test.ts` (append)
 
 - [ ] **Step 1: Add the drift test**
@@ -339,6 +346,7 @@ Expected: PASS. If FAIL, the test caught a real drift — update either `MODERN_
 ### Task 1.4: Wire wizard's identity step to the registry
 
 **Files:**
+
 - Modify: `packages/wizard/package.json` (add dep)
 - Modify: `packages/wizard/src/steps/identity.tsx`
 
@@ -384,24 +392,24 @@ export interface IdentityStepProps {
 Replace lines 51–67 (the `<ul data-testid="theme-list">` block) with:
 
 ```tsx
-      <ul data-testid="theme-list">
-        {THEMES.map((theme) => (
-          <li key={theme.id}>
-            <label>
-              <input
-                type="radio"
-                name="theme"
-                value={theme.id}
-                data-field={`identity.theme.${theme.id}`}
-                checked={props.data.themeId === theme.id}
-                onChange={() => props.onPatch({ themeId: theme.id })}
-              />
-              <span>{theme.label.en /* TODO: route through useTranslator */}</span>
-              <span>{theme.description.en}</span>
-            </label>
-          </li>
-        ))}
-      </ul>
+<ul data-testid="theme-list">
+  {THEMES.map((theme) => (
+    <li key={theme.id}>
+      <label>
+        <input
+          type="radio"
+          name="theme"
+          value={theme.id}
+          data-field={`identity.theme.${theme.id}`}
+          checked={props.data.themeId === theme.id}
+          onChange={() => props.onPatch({ themeId: theme.id })}
+        />
+        <span>{theme.label.en /* TODO: route through useTranslator */}</span>
+        <span>{theme.description.en}</span>
+      </label>
+    </li>
+  ))}
+</ul>
 ```
 
 The `// TODO: route through useTranslator` is intentional — the wizard's i18n is owned by a different package and threading translations through is out of scope for this PR. The label/description default to English so the wizard still works; an i18n PR later wires `useTranslator()` in.
@@ -452,17 +460,14 @@ Goal: a 25-line WCAG 2.2 contrast utility with effective-bg lookup, with no runt
 ### Task 2.1: Write failing tests for `contrast.ts`
 
 **Files:**
+
 - Create: `packages/editor-app/test/contrast.test.ts`
 
 - [ ] **Step 1: Write the test file**
 
 ```ts
 import { describe, expect, it } from "vitest";
-import {
-  contrastRatio,
-  meetsAaNormal,
-  effectiveBackgroundFor,
-} from "../src/contrast.js";
+import { contrastRatio, meetsAaNormal, effectiveBackgroundFor } from "../src/contrast.js";
 
 describe("contrastRatio", () => {
   it("returns 21 for black on white", () => {
@@ -525,6 +530,7 @@ Expected: import-failure errors for the missing `contrast.ts`.
 ### Task 2.2: Implement `contrast.ts`
 
 **Files:**
+
 - Create: `packages/editor-app/src/contrast.ts`
 
 - [ ] **Step 1: Implement**
@@ -633,6 +639,7 @@ Expected: clean.
 We added `PER_THEME_BG_OVERRIDES` in `editor-app`. Make sure it stays in sync with what each theme actually emits.
 
 **Files:**
+
 - Modify: `packages/themes/test/registry.test.ts`
 - Modify: `packages/editor-app/package.json` (add `@sosb/themes` dep if missing)
 
@@ -730,6 +737,7 @@ Goal: build the component (picker + token form + warning + reset) in isolation. 
 ### Task 3.1: Write failing tests for `<ThemePicker>`
 
 **Files:**
+
 - Create: `packages/editor-app/test/theme-editor.test.tsx`
 
 - [ ] **Step 1: Write picker tests**
@@ -764,8 +772,9 @@ function siteWith(overrides: Partial<Site> = {}): Site {
 describe("<ThemePicker>", () => {
   it("renders one card per registered theme", () => {
     render(<ThemeEditor site={siteWith()} onPatch={vi.fn()} />);
-    expect(screen.getAllByRole("radio", { name: /academic|modern|editorial|civic|minimal/i }))
-      .toHaveLength(5);
+    expect(
+      screen.getAllByRole("radio", { name: /academic|modern|editorial|civic|minimal/i }),
+    ).toHaveLength(5);
   });
 
   it("marks the active theme as checked", () => {
@@ -794,6 +803,7 @@ Expected: import-failure for `../src/theme-editor.js`.
 ### Task 3.2: Implement `<ThemePicker>` (composed inside `<ThemeEditor>`)
 
 **Files:**
+
 - Create: `packages/editor-app/src/theme-editor.tsx`
 
 - [ ] **Step 1: Skeleton + picker**
@@ -871,6 +881,7 @@ Expected: 3 picker tests PASS.
 ### Task 3.3: Write failing tests for `<TokenForm>`
 
 **Files:**
+
 - Modify: `packages/editor-app/test/theme-editor.test.tsx` (append)
 
 - [ ] **Step 1: Append token-form tests**
@@ -934,6 +945,7 @@ Expected: 5 token-form tests FAIL with "Unable to find...customize button".
 ### Task 3.4: Implement `<TokenForm>`
 
 **Files:**
+
 - Modify: `packages/editor-app/src/theme-editor.tsx`
 
 - [ ] **Step 1: Add the imports**
@@ -982,8 +994,11 @@ const FONT_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
   { value: "", label: "Use theme default" },
   { value: 'Georgia, "Times New Roman", serif', label: "Georgia (serif)" },
   { value: '"Iowan Old Style", Charter, Georgia, serif', label: "Iowan / Charter (serif)" },
-  { value: '-apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', label: "System sans" },
-  { value: 'Inter, system-ui, sans-serif', label: "Inter (sans)" },
+  {
+    value: '-apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    label: "System sans",
+  },
+  { value: "Inter, system-ui, sans-serif", label: "Inter (sans)" },
   { value: '"Helvetica Neue", Arial, sans-serif', label: "Helvetica (sans)" },
 ];
 ```
@@ -1165,6 +1180,7 @@ Expected: contrast tests FAIL.
 ### Task 3.6: Implement `<ContrastWarning>`
 
 **Files:**
+
 - Modify: `packages/editor-app/src/theme-editor.tsx`
 
 - [ ] **Step 1: Add imports**
@@ -1264,6 +1280,7 @@ Expected: Reset tests FAIL.
 ### Task 3.8: Implement `<ResetToThemeDefaults>`
 
 **Files:**
+
 - Modify: `packages/editor-app/src/theme-editor.tsx`
 
 - [ ] **Step 1: Add the component**
@@ -1277,7 +1294,11 @@ function ResetToThemeDefaults({ site, onPatch }: SubProps): JSX.Element | null {
     <button
       type="button"
       onClick={() => {
-        if (confirm(`Discard color/font/density/radius customizations and return to ${themeName}'s defaults?`)) {
+        if (
+          confirm(
+            `Discard color/font/density/radius customizations and return to ${themeName}'s defaults?`,
+          )
+        ) {
           onPatch(["theme", "tokens"], undefined);
         }
       }}
@@ -1352,6 +1373,7 @@ Goal: mount `<ThemeEditor>` in `spine-form.tsx` so it actually appears in the ed
 ### Task 4.1: Write failing test for the carve-out
 
 **Files:**
+
 - Modify: `packages/editor-app/test/theme-editor.test.tsx` (append)
 
 - [ ] **Step 1: Append a spine-form integration test**
@@ -1381,6 +1403,7 @@ Expected: FAIL — `theme-editor` testid not found because `SpineForm` is recurs
 ### Task 4.2: Add the carve-out
 
 **Files:**
+
 - Modify: `packages/editor-app/src/spine-form.tsx`
 
 - [ ] **Step 1: Import `<ThemeEditor>`**
@@ -1463,6 +1486,7 @@ Goal: prove the full chain — user customizes tokens in the editor → exports 
 ### Task 5.1: Write the e2e theming spec
 
 **Files:**
+
 - Create: `e2e/theming.spec.ts`
 
 - [ ] **Step 1: Write the spec**
@@ -1480,22 +1504,19 @@ test.describe("editor theming UI", () => {
     await page.getByRole("radio", { name: /civic/i }).check();
 
     const iframe = page.frameLocator("iframe[title*=preview], iframe[data-testid=preview]");
-    const primary = await iframe.locator(":root").evaluate(
-      (el) => getComputedStyle(el).getPropertyValue("--color-primary").trim(),
-    );
+    const primary = await iframe
+      .locator(":root")
+      .evaluate((el) => getComputedStyle(el).getPropertyValue("--color-primary").trim());
     expect(primary).toBe("#0c2d5e");
   });
 
-  test.skip(
-    "token customizations land in exported dist/index.html",
-    async () => {
-      // Skipped until packages/assets browser pipeline lost-merge (#54
-      // recovery) is resolved per MERGE_HANDOFF.md follow-up #2. The export
-      // path runs through canvas-processor / pipeline / mime / hash files
-      // that are missing from main, so the site-export button errors out.
-      // Re-enable this test (remove the .skip) once the recovery PR lands.
-    },
-  );
+  test.skip("token customizations land in exported dist/index.html", async () => {
+    // Skipped until packages/assets browser pipeline lost-merge (#54
+    // recovery) is resolved per MERGE_HANDOFF.md follow-up #2. The export
+    // path runs through canvas-processor / pipeline / mime / hash files
+    // that are missing from main, so the site-export button errors out.
+    // Re-enable this test (remove the .skip) once the recovery PR lands.
+  });
 });
 ```
 
@@ -1510,6 +1531,7 @@ Expected: 1 passed, 1 skipped.
 ### Task 5.2: Verify the spec is picked up by the existing playwright config
 
 **Files:**
+
 - Verify: `playwright.config.ts` already picks up `e2e/*.spec.ts`. If not, add the new file to the `testMatch` array.
 
 - [ ] **Step 1: Inspect config**
@@ -1531,6 +1553,7 @@ Expected: all e2e tests PASS, plus 1 skip (theming round-trip).
 ### Task 5.3: Add the re-enable note to MERGE_HANDOFF
 
 **Files:**
+
 - Modify: `MERGE_HANDOFF.md` (the untracked follow-up doc)
 
 - [ ] **Step 1: Append a follow-up note**
@@ -1544,12 +1567,12 @@ After follow-up #2 (assets browser pipeline recovery) lands, remove the
 `test.skip` from `e2e/theming.spec.ts` ("token customizations land in
 exported dist/index.html") and implement the body. The test should:
 
-  1. Start a blank site
-  2. Open the theme editor, click Customize
-  3. Set colorPrimary to a recognizable hex (e.g. #ff00aa)
-  4. Trigger Export → download the zip
-  5. Unzip, read dist/index.html
-  6. Assert `:root { ... --color-primary: #ff00aa; ... }` is in the file
+1. Start a blank site
+2. Open the theme editor, click Customize
+3. Set colorPrimary to a recognizable hex (e.g. #ff00aa)
+4. Trigger Export → download the zip
+5. Unzip, read dist/index.html
+6. Assert `:root { ... --color-primary: #ff00aa; ... }` is in the file
 
 This is the "site CSS verification" called out in the design spec
 (docs/superpowers/specs/2026-05-07-editor-theming-ui-design.md).
@@ -1612,6 +1635,7 @@ pnpm --filter @sosb/browser-shell dev
 ```
 
 Open the dev URL. Walk through:
+
 1. Start a blank site (or wizard, then editor).
 2. Confirm the theme editor is visible inline.
 3. Pick each of the 5 themes; confirm the iframe preview updates each time.
@@ -1629,18 +1653,18 @@ If issues exist for §41–46, close them with a reference to the merging PRs. I
 
 ## Self-review (against the spec)
 
-| Spec section                              | Plan task(s)            | Notes |
-| ----------------------------------------- | ----------------------- | ----- |
-| 1. New theme registry                     | Task 1.1–1.3            | covered |
-| 2. `<ThemeEditor>` component              | Task 3.1–3.10           | all four sub-components covered |
-| 3. Spine-form carve-out                   | Task 4.1–4.3            | covered |
-| 4. Contrast warning logic                 | Task 2.1–2.4 + Task 3.5 | covered |
+| Spec section                              | Plan task(s)            | Notes                                                                   |
+| ----------------------------------------- | ----------------------- | ----------------------------------------------------------------------- |
+| 1. New theme registry                     | Task 1.1–1.3            | covered                                                                 |
+| 2. `<ThemeEditor>` component              | Task 3.1–3.10           | all four sub-components covered                                         |
+| 3. Spine-form carve-out                   | Task 4.1–4.3            | covered                                                                 |
+| 4. Contrast warning logic                 | Task 2.1–2.4 + Task 3.5 | covered                                                                 |
 | 5. Site CSS verification                  | Task 5.1–5.4            | round-trip test conditional on MERGE_HANDOFF#2 (test.skip + breadcrumb) |
-| 6. Test surface                           | All tasks               | unit + integration + e2e covered |
-| Theme descriptions (RO/EN, learning-mode) | Task 1.2 step 1         | TODO comments in registry.ts; punchier copy welcome from user |
-| Density/radius scale (learning-mode)      | Task 3.4 step 2         | TODO comments on each option array |
-| Font dropdown candidates (learning-mode)  | Task 3.4 step 2         | TODO comments on FONT_OPTIONS |
-| Wizard label/description i18n             | Task 1.4 step 2         | TODO comment for follow-up i18n PR |
+| 6. Test surface                           | All tasks               | unit + integration + e2e covered                                        |
+| Theme descriptions (RO/EN, learning-mode) | Task 1.2 step 1         | TODO comments in registry.ts; punchier copy welcome from user           |
+| Density/radius scale (learning-mode)      | Task 3.4 step 2         | TODO comments on each option array                                      |
+| Font dropdown candidates (learning-mode)  | Task 3.4 step 2         | TODO comments on FONT_OPTIONS                                           |
+| Wizard label/description i18n             | Task 1.4 step 2         | TODO comment for follow-up i18n PR                                      |
 
 Coverage matches the spec. The three learning-mode contribution sites
 have explicit `TODO:` markers in the code so the user can find them

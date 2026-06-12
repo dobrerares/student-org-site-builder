@@ -32,6 +32,13 @@ export interface ThemeCatalogEntry {
   readonly label: string;
   readonly description: string;
   readonly fonts: ThemeFonts;
+  readonly preview: ThemePreview;
+}
+
+export interface ThemePreview {
+  readonly swatches: readonly string[];
+  readonly headlineSample: string;
+  readonly bodySample: string;
 }
 
 export interface ThemeCatalog {
@@ -47,6 +54,11 @@ const THEME_METADATA: Record<string, Omit<ThemeCatalogEntry, "id">> = {
       headline: ["Source Serif Pro", "Lora", "Crimson Pro"],
       body: ["Source Sans Pro", "Inter", "Lato"],
     },
+    preview: {
+      swatches: ["#1f3a5f", "#c08a3e", "#f7f4ed"],
+      headlineSample: "Cercetare",
+      bodySample: "Serif academic, calm rhythm.",
+    },
   },
   civic: {
     label: "Civic",
@@ -54,6 +66,11 @@ const THEME_METADATA: Record<string, Omit<ThemeCatalogEntry, "id">> = {
     fonts: {
       headline: ["Public Sans", "IBM Plex Sans", "Inter"],
       body: ["Public Sans", "Inter", "Roboto"],
+    },
+    preview: {
+      swatches: ["#123c69", "#d64045", "#f2f6f8"],
+      headlineSample: "Comunitate",
+      bodySample: "Clear civic action.",
     },
   },
   editorial: {
@@ -63,6 +80,11 @@ const THEME_METADATA: Record<string, Omit<ThemeCatalogEntry, "id">> = {
       headline: ["Playfair Display", "Source Serif Pro", "Bodoni Moda"],
       body: ["Source Serif Pro", "Lora", "Inter"],
     },
+    preview: {
+      swatches: ["#161616", "#b23a48", "#faf7f2"],
+      headlineSample: "Revistă",
+      bodySample: "Editorial, story-led.",
+    },
   },
   minimal: {
     label: "Minimal",
@@ -71,6 +93,11 @@ const THEME_METADATA: Record<string, Omit<ThemeCatalogEntry, "id">> = {
       headline: ["Inter", "Helvetica Neue", "Arial"],
       body: ["Inter", "Helvetica Neue", "Arial"],
     },
+    preview: {
+      swatches: ["#111111", "#666666", "#ffffff"],
+      headlineSample: "Claritate",
+      bodySample: "Minimal and quiet.",
+    },
   },
   modern: {
     label: "Modern",
@@ -78,6 +105,11 @@ const THEME_METADATA: Record<string, Omit<ThemeCatalogEntry, "id">> = {
     fonts: {
       headline: ["Outfit", "Manrope", "Inter"],
       body: ["Inter", "Manrope", "Roboto"],
+    },
+    preview: {
+      swatches: ["#0f172a", "#2563eb", "#ffffff"],
+      headlineSample: "Program",
+      bodySample: "Modern, bright, direct.",
     },
   },
 };
@@ -102,12 +134,11 @@ function entryForId(id: string): ThemeCatalogEntry {
     label: humanise(id),
     description: `Theme "${id}".`,
     fonts: { headline: [], body: [] },
+    preview: { swatches: [], headlineSample: "", bodySample: "" },
   };
 }
 
 export function buildThemeCatalog(): ThemeCatalog {
-  const entries = Object.keys(THEME_METADATA)
-    .sort()
-    .map(entryForId);
+  const entries = Object.keys(THEME_METADATA).sort().map(entryForId);
   return { entries, entryFor: entryForId };
 }

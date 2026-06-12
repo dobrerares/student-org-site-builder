@@ -78,7 +78,7 @@ describe("alt-sync", () => {
     const patches = expandAltSyncPatches(data, ["images", 0, "alt"], "Updated");
     const next = applyAltSyncPatches(data as Record<string, unknown>, patches);
     expect((next.images as { alt: string }[])[0]!.alt).toBe("Updated");
-    expect(((next.images as { asset: { alt: string } }[])[0]!.asset).alt).toBe("Updated");
+    expect((next.images as { asset: { alt: string } }[])[0]!.asset.alt).toBe("Updated");
   });
 
   test("suggestedAltForAssetPath reads sibling alt", () => {

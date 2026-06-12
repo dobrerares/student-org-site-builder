@@ -66,11 +66,7 @@ describe("AssetPicker", () => {
 
   test("with a value, renders a thumbnail <img src={value.path}> and no text inputs", () => {
     const { container } = render(
-      <AssetPicker
-        value={SAMPLE_ASSET}
-        onChange={() => {}}
-        uploader={async () => SAMPLE_ASSET}
-      />,
+      <AssetPicker value={SAMPLE_ASSET} onChange={() => {}} uploader={async () => SAMPLE_ASSET} />,
     );
     const img = container.querySelector("img");
     expect(img).not.toBeNull();
@@ -82,11 +78,7 @@ describe("AssetPicker", () => {
 
   test("with undefined value, shows an 'Add image' CTA and no text inputs", () => {
     const { container } = render(
-      <AssetPicker
-        value={undefined}
-        onChange={() => {}}
-        uploader={async () => freshAsset()}
-      />,
+      <AssetPicker value={undefined} onChange={() => {}} uploader={async () => freshAsset()} />,
     );
     const add = container.querySelector('[data-testid="asset-picker-add"]');
     expect(add).not.toBeNull();
@@ -97,11 +89,7 @@ describe("AssetPicker", () => {
 
   test("when the value's image fails to load, shows a 'missing asset' state with a re-upload button", () => {
     const { container } = render(
-      <AssetPicker
-        value={SAMPLE_ASSET}
-        onChange={() => {}}
-        uploader={async () => freshAsset()}
-      />,
+      <AssetPicker value={SAMPLE_ASSET} onChange={() => {}} uploader={async () => freshAsset()} />,
     );
     const img = container.querySelector("img") as HTMLImageElement;
     expect(img).not.toBeNull();
@@ -129,9 +117,7 @@ describe("AssetPicker", () => {
       <AssetPicker value={undefined} onChange={onChange} uploader={uploader} />,
     );
 
-    const fileInput = container.querySelector(
-      'input[type="file"]',
-    ) as HTMLInputElement;
+    const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
     expect(fileInput).not.toBeNull();
 
     const file = new File([new Uint8Array([0xff, 0xd8])], "test.jpg", {
@@ -238,9 +224,7 @@ describe("AssetPicker", () => {
     const uploader = async (): Promise<AssetRefLike> => freshAsset();
 
     // 1. With value + image OK.
-    const ok = render(
-      <AssetPicker value={SAMPLE_ASSET} onChange={() => {}} uploader={uploader} />,
-    );
+    const ok = render(<AssetPicker value={SAMPLE_ASSET} onChange={() => {}} uploader={uploader} />);
     expect(nonFileInputs(ok.container)).toHaveLength(0);
     ok.unmount();
 
@@ -253,9 +237,7 @@ describe("AssetPicker", () => {
     errored.unmount();
 
     // 3. Empty state.
-    const empty = render(
-      <AssetPicker value={undefined} onChange={() => {}} uploader={uploader} />,
-    );
+    const empty = render(<AssetPicker value={undefined} onChange={() => {}} uploader={uploader} />);
     expect(nonFileInputs(empty.container)).toHaveLength(0);
 
     // And in every state the only <input> permitted is type="file".

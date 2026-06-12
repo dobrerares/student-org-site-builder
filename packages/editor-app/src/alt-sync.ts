@@ -134,7 +134,9 @@ export function applyAltSyncPatches(
  */
 export function pairedAltPaths(
   assetPath: readonly (string | number)[],
-): { assetPath: readonly (string | number)[]; siblingAltPath: readonly (string | number)[] } | undefined {
+):
+  | { assetPath: readonly (string | number)[]; siblingAltPath: readonly (string | number)[] }
+  | undefined {
   const last = assetPath[assetPath.length - 1];
   if (typeof last !== "string") return undefined;
 

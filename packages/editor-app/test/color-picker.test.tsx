@@ -18,26 +18,20 @@ afterEach(cleanup);
 
 describe("ColorPicker", () => {
   test("renders a native color input bound to the value", () => {
-    const { container } = render(
-      <ColorPicker value="#1a2440" onChange={() => {}} />,
-    );
+    const { container } = render(<ColorPicker value="#1a2440" onChange={() => {}} />);
     const input = container.querySelector('input[type="color"]') as HTMLInputElement;
     expect(input).not.toBeNull();
     expect(input.value.toLowerCase()).toBe("#1a2440");
   });
 
   test("shows a 'using theme default' indicator when value is undefined", () => {
-    const { container } = render(
-      <ColorPicker value={undefined} onChange={() => {}} />,
-    );
+    const { container } = render(<ColorPicker value={undefined} onChange={() => {}} />);
     expect(container.querySelector('[data-testid="color-picker-default-note"]')).not.toBeNull();
   });
 
   test("invokes onChange with the new hex on user pick", () => {
     const onChange = vi.fn();
-    const { container } = render(
-      <ColorPicker value="#1a2440" onChange={onChange} />,
-    );
+    const { container } = render(<ColorPicker value="#1a2440" onChange={onChange} />);
     const input = container.querySelector('input[type="color"]') as HTMLInputElement;
     // Simulate user picking a new color
     fireEvent.input(input, { target: { value: "#ff0000" } });
@@ -46,9 +40,7 @@ describe("ColorPicker", () => {
 
   test("'Reset to default' button fires onChange(undefined)", () => {
     const onChange = vi.fn();
-    const { container } = render(
-      <ColorPicker value="#1a2440" onChange={onChange} />,
-    );
+    const { container } = render(<ColorPicker value="#1a2440" onChange={onChange} />);
     const reset = container.querySelector('[data-testid="color-picker-reset"]') as HTMLElement;
     expect(reset).not.toBeNull();
     reset.click();

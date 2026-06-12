@@ -19,13 +19,13 @@ for end users" principle in isolation:
 - **ADR 0008 / 0014 / 0040** (block schemas with `AssetRef`s) — block
   schemas include `hash`, `mime`, `path`, `metadataPath`, `width`,
   `height` fields that the asset pipeline (`@sosb/assets`) populates;
-  nothing in the ADRs says users *type* these.
+  nothing in the ADRs says users _type_ these.
 - **ADR 0019 (block library)** — block catalog with `mandatory` /
   `optional` / `advanced` categories, defaulting to a curated,
   non-technical surface.
 - **ADR 0038 (custom HTML sanitization)** — the one block where
   pasting raw markup is acceptable carries an explicit advanced/danger
-  marker; this is the *exception*, not the model.
+  marker; this is the _exception_, not the model.
 
 But this principle has never been written down as a project invariant.
 As a result, two concrete failure modes have already appeared:
@@ -40,7 +40,7 @@ As a result, two concrete failure modes have already appeared:
    that have no meaning to a user and are produced exclusively by
    the asset pipeline. The block-defaults file even seeds the literal
    string `"hash": "placeholder"`, signalling that the codebase
-   *expects* a different UI (an "asset picker") to exist — but no
+   _expects_ a different UI (an "asset picker") to exist — but no
    such UI was built.
 
 ADR 0043 builds the missing UI mechanism. This ADR consolidates the
@@ -115,7 +115,7 @@ values.
   hypothetical edge cases erodes the actual case.
 - The principle is **stricter than "hide advanced fields"** (ADR 0043's
   `tier:` mechanism). The "Show advanced" toggle reveals fields users
-  *could* legitimately edit but don't usually need to. This ADR puts
+  _could_ legitimately edit but don't usually need to. This ADR puts
   a different category of field — pipeline-produced metadata — off
   limits entirely. There is no toggle that makes those fields
   appropriate user-facing surfaces.
@@ -170,7 +170,7 @@ values.
   follows this principle by construction — it doesn't expose pipeline
   fields because it doesn't auto-generate forms from schemas.
 - Custom HTML's `sanitize: false` toggle (ADR 0038) — that is a
-  *user-facing risk-acceptance* case (the user is deliberately opting
-  into raw HTML), not a *pipeline-metadata* case. The danger marker
+  _user-facing risk-acceptance_ case (the user is deliberately opting
+  into raw HTML), not a _pipeline-metadata_ case. The danger marker
   there is the right surface for that decision; this ADR does not
   apply.

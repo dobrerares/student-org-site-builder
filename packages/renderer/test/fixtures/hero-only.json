@@ -34,13 +34,13 @@
             "title": "Stub Org",
             "subtitle": "A fixture for renderer tests",
             "backgroundImage": {
-                      "hash": "hero",
-                      "path": "assets/hero.jpg",
-                      "metadataPath": "assets/hero.metadata.json",
-                      "mime": "image/jpeg",
-                      "width": 1600,
-                      "height": 1067,
-                      "alt": "Studenți la o conferință"
+              "hash": "hero",
+              "path": "assets/hero.jpg",
+              "metadataPath": "assets/hero.metadata.json",
+              "mime": "image/jpeg",
+              "width": 1600,
+              "height": 1067,
+              "alt": "Studenți la o conferință"
             },
             "backgroundAlt": "Studenți la o conferință"
           }

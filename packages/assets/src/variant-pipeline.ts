@@ -40,7 +40,10 @@ export interface UploadVariantsOptions {
   /** Variant widths to emit. Defaults to {@link RESPONSIVE_VARIANT_WIDTHS}. */
   readonly variantWidths?: readonly number[];
   /** Output mime for variants. Defaults to `image/webp`. */
-  readonly targetVariantMime?: Extract<SupportedMime, "image/webp" | "image/png" | "image/jpeg">;
+  readonly targetVariantMime?: Extract<
+    SupportedMime,
+    "image/webp" | "image/avif" | "image/png" | "image/jpeg"
+  >;
   /** Quality factor for variant lossy encoders. Defaults to {@link WEBP_VARIANT_QUALITY}. */
   readonly variantQuality?: number;
   /** Override the canonical long-edge cap. Defaults to {@link MAX_LONG_EDGE_PX} (2000). */
@@ -239,6 +242,8 @@ function extensionFor(mime: SupportedMime): string {
       return "png";
     case "image/webp":
       return "webp";
+    case "image/avif":
+      return "avif";
     case "image/svg+xml":
       return "svg";
   }
