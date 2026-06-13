@@ -1,6 +1,9 @@
 # Theme pizzaz refresh — design
 
-**Status:** Design — pending implementation plan
+**Status:** SUPERSEDED by `2026-06-14-themes-identity-refresh-design.md` — the
+maintainer dropped the per-theme "pizzaz / signature move" direction in favour
+of identity-via-fundamentals + a bulletproof responsive/foolproof engine. Kept
+for history; do not implement from this doc.
 **Owner:** rdobre
 **Branch:** feat/universal-asset-picker (will likely split per-theme)
 
