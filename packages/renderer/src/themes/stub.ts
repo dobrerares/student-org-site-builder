@@ -32,13 +32,6 @@ main { display: block; }
 [data-block="hero"] {
   padding: var(--space-xl) var(--space-md);
 }
-[data-block="hero"] .hero__eyebrow {
-  font-size: 0.875rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-muted);
-  margin: 0 0 var(--space-sm) 0;
-}
 [data-block="hero"] h1 {
   font-family: var(--font-headline);
   margin: 0 0 var(--space-md) 0;

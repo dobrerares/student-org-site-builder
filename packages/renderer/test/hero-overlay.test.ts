@@ -1,4 +1,7 @@
 import { describe, expect, test } from "vitest";
+import type { Site } from "@sosb/schema";
+import heroOnly from "./fixtures/hero-only.json" with { type: "json" };
+import { renderSite } from "../src/index.js";
 import { PRODUCTION_SITE_BASE_CSS } from "../src/themes/production-base.js";
 
 describe("universal hero treatment (production base)", () => {
@@ -17,4 +20,21 @@ describe("universal hero treatment (production base)", () => {
     expect(PRODUCTION_SITE_BASE_CSS).toMatch(/rgba\(var\(--color-fg-rgb\)/);
     expect(PRODUCTION_SITE_BASE_CSS).toMatch(/\.hero--has-image[^{]*\.hero__title[^{]*\{[^}]*color:\s*var\(--color-on-image\)/);
   });
+});
+
+const fixture = heroOnly as unknown as Site;
+
+describe("no theme overrides the shared hero (per-theme hero CSS stripped)", () => {
+  const PRODUCTION_THEME_IDS = ["minimal", "modern", "editorial", "civic", "academic"];
+  for (const id of PRODUCTION_THEME_IDS) {
+    test(`${id}: emits no theme-level [data-block="hero"] rule`, () => {
+      const site = structuredClone(fixture) as Site;
+      site.theme = { id, tokens: {} };
+      const html = renderSite(site, id);
+      const styles = [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map((m) => m[1]!).join("\n");
+      expect(styles).not.toContain(".hero__eyebrow");
+      const heroTitleSizes = [...styles.matchAll(/\[data-block="hero"\][^{]*h1[^{]*\{[^}]*font-size[^}]*\}/g)];
+      expect(heroTitleSizes.length).toBe(0);
+    });
+  }
 });

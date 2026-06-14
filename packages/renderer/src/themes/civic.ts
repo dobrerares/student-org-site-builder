@@ -115,56 +115,6 @@ a:hover, a:focus-visible {
   outline-offset: 3px;
 }
 
-[data-block="hero"] {
-  padding: var(--space-xl) var(--space-md);
-  border-block-end: 1px solid var(--color-border);
-}
-[data-block="hero"] .hero__inner {
-  max-width: 64rem;
-  margin: 0 auto;
-}
-[data-block="hero"] .hero__eyebrow {
-  font-family: var(--font-body);
-  font-size: 0.8125rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  /* Use --color-primary (dark, contrast-safe) rather than --color-accent:
-     a user-overridable accent token can easily fall below WCAG AA 4.5:1
-     for small text. Eyebrow then matches the h1 color block, which is
-     the civic theme's already-established headline discipline. */
-  color: var(--color-primary);
-  margin: 0 0 var(--space-sm) 0;
-}
-[data-block="hero"] h1 {
-  font-family: var(--font-headline);
-  font-weight: 700;
-  font-size: 2.5rem;
-  line-height: 1.15;
-  letter-spacing: 0;
-  color: var(--color-primary);
-  margin: 0 0 var(--space-md) 0;
-}
-[data-block="hero"] .hero__subtitle {
-  font-family: var(--font-body);
-  font-weight: 400;
-  font-size: 1.1875rem;
-  line-height: 1.5;
-  color: var(--color-fg);
-  margin: 0 0 var(--space-md) 0;
-  max-width: 48rem;
-}
-[data-block="hero"] .hero__media {
-  margin-top: var(--space-lg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-[data-block="hero"] .hero__media img {
-  display: block;
-  max-width: 100%;
-  height: auto;
-}
 [data-site-nav] {
   background: var(--color-primary);
   border-bottom: 4px solid var(--color-accent);

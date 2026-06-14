@@ -101,48 +101,6 @@ a {
   text-decoration-thickness: 1px;
 }
 a:hover { text-decoration-thickness: 2px; }
-[data-block="hero"] {
-  padding: var(--space-xl) var(--space-md);
-  border-bottom: 1px solid var(--color-muted);
-}
-[data-block="hero"] .hero__inner {
-  max-width: 56rem;
-  margin: 0 auto;
-}
-[data-block="hero"] .hero__eyebrow {
-  font-family: var(--font-headline);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  /* See note on the link rule above — same rationale: dark contrast-safe
-     colour for text instead of the user-overridable accent. */
-  color: var(--color-primary);
-  margin: 0 0 var(--space-md) 0;
-}
-[data-block="hero"] h1 {
-  font-size: 3.157rem;
-  margin: 0 0 var(--space-md) 0;
-  color: var(--color-primary);
-}
-[data-block="hero"] .hero__subtitle {
-  font-family: var(--font-body);
-  font-size: 1.333rem;
-  line-height: 1.5;
-  color: var(--color-fg);
-  margin: 0 0 var(--space-lg) 0;
-  max-width: 38rem;
-}
-[data-block="hero"] .hero__media {
-  margin-top: var(--space-lg);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-}
-[data-block="hero"] .hero__media img {
-  display: block;
-  width: 100%;
-  height: auto;
-}
 [data-site-nav] {
   border-top: 1px solid var(--color-primary);
   border-bottom: 1px solid var(--color-primary);
@@ -159,9 +117,6 @@ a:hover { text-decoration-thickness: 2px; }
   font-weight: 700;
   letter-spacing: 0;
   text-transform: uppercase;
-}
-[data-block="hero"] .hero__inner {
-  max-width: var(--site-wide-width);
 }
 [data-block="valueList"] .value-list__items {
   gap: var(--space-lg);

@@ -145,53 +145,6 @@ p {
 /* Italic emphasis — the academic register prefers italics over bold. */
 em, i, cite { font-style: italic; }
 
-/* Hero — page-opening composition. */
-[data-block="hero"] {
-  padding: var(--space-xl) var(--space-md);
-  border-bottom: 1px solid var(--color-accent);
-}
-[data-block="hero"] .hero__inner {
-  max-width: var(--site-readable-width);
-  margin: 0 auto;
-}
-[data-block="hero"] .hero__eyebrow {
-  font-size: var(--type-scale-sm);
-  font-style: italic;
-  letter-spacing: 0.06em;
-  /* Use --color-primary (dark, contrast-safe against any background) rather
-     than --color-accent: a user-overridable accent token can easily fall
-     below WCAG AA 4.5:1 for small text, and the editor's contrast warning
-     can't perfectly cover every theme's surface palette. The eyebrow then
-     reads as a tracked-italic uppercase label in the same color as the h1,
-     which actually reinforces the heading block visually. */
-  color: var(--color-primary);
-  margin: 0 0 var(--space-sm) 0;
-  text-transform: uppercase;
-}
-[data-block="hero"] h1 {
-  font-family: var(--font-headline);
-  font-size: var(--type-scale-3xl);
-  line-height: var(--leading-display);
-  color: var(--color-primary);
-  margin: 0 0 var(--space-md) 0;
-}
-[data-block="hero"] .hero__subtitle {
-  margin: 0 0 var(--space-md) 0;
-  color: var(--color-fg);
-  font-size: var(--type-scale-lg);
-  line-height: var(--leading-body);
-  max-width: var(--measure-body);
-}
-[data-block="hero"] .hero__media {
-  margin-top: var(--space-md);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-[data-block="hero"] .hero__media img {
-  display: block;
-  max-width: 100%;
-  height: auto;
-}
 [data-site-nav] {
   border-top: 4px solid var(--color-primary);
   border-bottom: 1px solid var(--color-accent);
@@ -204,9 +157,6 @@ em, i, cite { font-style: italic; }
 }
 [data-site-nav] a {
   font-style: italic;
-}
-[data-block="hero"] {
-  border-top: 1px solid var(--color-accent);
 }
 [data-block="valueList"] .value-list__inner,
 [data-block="activitiesList"] .activities-list__inner,

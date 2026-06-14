@@ -97,45 +97,6 @@ a {
   text-decoration: underline;
   text-underline-offset: 0.15em;
 }
-[data-block="hero"] {
-  padding: var(--space-xl) var(--space-md);
-  max-width: 56rem;
-  margin: 0 auto;
-}
-[data-block="hero"] .hero__eyebrow {
-  font-size: 0.8125rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-muted);
-  margin: 0 0 var(--space-sm) 0;
-  font-weight: 500;
-}
-[data-block="hero"] h1 {
-  font-family: var(--font-headline);
-  font-size: 1.728rem;
-  line-height: 1.2;
-  font-weight: 600;
-  margin: 0 0 var(--space-sm) 0;
-  color: var(--color-primary);
-  letter-spacing: 0;
-}
-[data-block="hero"] .hero__subtitle {
-  font-size: 1rem;
-  line-height: 1.5;
-  color: var(--color-fg);
-  margin: 0 0 var(--space-md) 0;
-  max-width: 40rem;
-}
-[data-block="hero"] .hero__media {
-  margin-top: var(--space-lg);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-[data-block="hero"] .hero__media img {
-  display: block;
-  max-width: 100%;
-  height: auto;
-}
 [data-site-nav],
 [data-language-switcher] {
   max-width: 56rem;
