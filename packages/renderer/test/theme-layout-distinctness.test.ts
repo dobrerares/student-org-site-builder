@@ -46,7 +46,10 @@ describe("production themes — generated-site layout polish", () => {
   });
 
   test.each([
-    ["modern", /color-mix\(in srgb, var\(--color-bg\) 92%, var\(--color-accent\)\)/],
+    // Modern's "Tech" identity is fundamentals-only: its distinct treatment is
+    // the round shape token (--radius-base: 12px) that the engine derives the
+    // card/badge/button radii from — no decorative tint/bar signature.
+    ["modern", /--radius-base:\s*12px/],
     ["minimal", /\[data-block="valueList"\][\s\S]*max-width: 56rem/],
     ["academic", /border-block-start:\s*1px solid var\(--color-accent\)/],
     ["civic", /\[data-site-nav\]\s*\{[\s\S]*background:\s*var\(--color-primary\)/],

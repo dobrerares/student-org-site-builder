@@ -1,61 +1,69 @@
 /**
- * Modern theme — issue #28.
+ * Modern theme — "Tech" identity (hackathons / engineering / startup clubs).
  *
- * Aesthetic brief (from #28 + the AFK orchestration scope-expansion notes):
- *  - Sans-serif throughout, system stack (zero web-font network cost,
- *    universally available, friendly to Romanian diacritics).
- *  - Generous whitespace and a geometric, sans-serif type system.
- *  - Restrained palette: neutral white/slate base with one bold accent.
- *  - Subtle, flat: no gradients, no decorative shadows, no ornaments.
- *  - 8px corner radius (matches the renderer baseline `--radius-md`).
+ * Aesthetic brief: crisp, bright, geometric. The identity comes entirely from
+ * fundamentals — palette, type, density, shape — layered over the shared
+ * engine. There are no decorative "signature moves" (no tints, no accent bars,
+ * no special nav alignment). What makes Modern read as Tech:
+ *
+ *  - Palette: slate + a single bright royal-blue accent on a pure-white base.
+ *  - Type: Space Grotesk for display (geometric, technical) paired with Inter
+ *    for body. Both are self-hosted by the renderer (the first family in each
+ *    stack matches the font registry, so `@font-face` is auto-emitted).
+ *  - Density: normal — baseline engine spacing (no `--density-scale` override).
+ *  - Shape: round. `--radius-base: 12px` lets the engine derive the rounded
+ *    `--radius-sm/md/lg` for cards, badges and buttons.
  *
  * Contract with the renderer:
- *  - Mirrors the structural pattern of `stub.ts`: one id constant, one CSS
- *    string, registered by id in `index.tsx::themeCssFor`.
+ *  - Mirrors the structural pattern of the other themes: one id constant, a
+ *    baseline-token list, and one CSS string, registered by id in
+ *    `index.tsx`.
  *  - All colour, spacing, typography, and radius values reference
- *    `var(--token)`. The single exception is the `:root` override block
- *    inside this CSS, which legitimately *defines* the token values that
- *    the rest of the theme consumes (the renderer's tokens.ts emits a
- *    *baseline* set of tokens; themes layer their own overrides via a
- *    later-wins `:root` rule).
- *
- * Per-block × per-theme goldens for blocks #9–#22 are explicitly out of
- * scope for this PR; only the hero golden ships here. Each block PR adds
- * its own modern-theme golden when those blocks land.
+ *    `var(--token)`. The single exception is a `:root` block, which
+ *    legitimately *defines* token values the rest of the theme consumes.
+ *  - Cards/borders/surfaces come from the shared production base; this theme
+ *    only contributes the fundamentals above plus genuinely-universal polish
+ *    (accent links, a visible focus ring).
  */
 
 export const MODERN_THEME_ID = "modern" as const;
 
 /**
- * Modern-theme CSS.
- *
- * Layered onto the renderer's baseline tokens-on-`:root` rule, this CSS
- * begins with its own `:root` block that overrides the baseline typography
- * (sans system stack on both headline and body) and palette (slate +
- * royal-blue accent). Per-block rules then consume only `var(--token)`.
- *
- * The hero now uses the shared universal overlay from `production-base.ts`,
- * so this theme contributes palette and type only — no per-theme hero CSS.
- */
-/**
- * Modern palette as raw [cssProp, value] pairs, routed through
+ * Modern ("Tech") tokens as raw [cssProp, value] pairs, routed through
  * `themeBaselineTokensFor` so the renderer's resolved-palette map (and thus
- * the derived --color-*-rgb / --color-on-* tokens) reflect modern's colors.
+ * the derived --color-*-rgb / --color-on-* tokens) reflect modern's colors,
+ * and so the first font family in each stack is gated for self-hosting.
+ *
+ * Shape: a single `--radius-base: 12px` (round). The engine derives
+ * `--radius-sm/md/lg` from it, so the theme ships no direct radius overrides.
+ * Density: omitted — Tech is normal density, i.e. the engine baseline of 1.
  */
 export const MODERN_THEME_BASELINE_TOKENS: ReadonlyArray<readonly [string, string]> = [
-  ["--font-headline", '-apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'],
-  ["--font-body", '-apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'],
+  // Palette — slate + bright royal-blue accent on a pure-white base.
+  ["--color-primary", "#0f172a"],
+  ["--color-accent", "#2563eb"],
   ["--color-bg", "#ffffff"],
   ["--color-fg", "#0f172a"],
   ["--color-muted", "#64748b"],
-  ["--color-primary", "#0f172a"],
-  ["--color-accent", "#2563eb"],
+  // Type — Space Grotesk display + Inter body. The first quoted family in each
+  // stack is self-hosted by the renderer (auto @font-face); the rest are
+  // system fallbacks friendly to Romanian diacritics.
+  ["--font-headline", '"Space Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'],
+  ["--font-body", '"Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'],
+  // Shape — round. The engine derives --radius-sm/md/lg from this base.
+  ["--radius-base", "12px"],
 ];
 
+/**
+ * Layout-only CSS for the Modern ("Tech") theme. Every value is a structural
+ * primitive or a `var(--token)` reference — there is no raw colour and no
+ * `color-mix()` anywhere (the test suite asserts no raw colour outside
+ * `:root`). Cards, borders and surfaces are inherited from the shared
+ * production base; the rounded corners come from `--radius-base: 12px`
+ * deriving the engine's `--radius-*`. This overlay only adds fundamentals:
+ * crisp block spacing, accent links, and a visible focus ring.
+ */
 export const MODERN_THEME_CSS = `
-:root {
-  --space-2xl: 6rem;
-}
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 body {
@@ -77,39 +85,11 @@ main { display: block; }
   margin-inline: auto;
   align-items: center;
 }
-[data-site-nav] ul {
-  justify-content: flex-end;
-}
 [data-block="valueList"] .value-list__items,
 [data-block="activitiesList"][data-layout="cards"] .activities-list__items,
 [data-block="teamGrid"] .team-grid__list,
 [data-block="documentDownloads"][data-layout="cards"] .document-downloads__list {
   gap: var(--space-lg);
-}
-[data-block="valueList"] .value-list__item,
-[data-block="activitiesList"] .activities-list__item,
-[data-block="teamGrid"] .team-person__figure,
-[data-block="documentDownloads"] .document-downloads__item,
-[data-block="event-list"] .event-list__item article,
-[data-block="faq"] .faq__item,
-[data-block="partnerLogos"] .partner-logos__item {
-  border-color: color-mix(in srgb, var(--color-muted) 28%, var(--color-bg));
-  border-radius: var(--radius-md);
-}
-[data-block="valueList"] .value-list__item,
-[data-block="activitiesList"] .activities-list__item,
-[data-block="teamGrid"] .team-person__figure {
-  background: color-mix(in srgb, var(--color-bg) 92%, var(--color-accent));
-}
-[data-block="valueList"] .value-list__icon {
-  width: 2.5rem;
-  height: 2.5rem;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-xs);
-  border: 1px solid color-mix(in srgb, var(--color-accent) 45%, var(--color-bg));
-  border-radius: var(--radius-md);
-  background: var(--color-bg);
 }
 [data-block="activitiesList"][data-layout="cards"] .activities-list__item {
   padding: 0;
@@ -120,7 +100,6 @@ main { display: block; }
 }
 [data-block="activitiesList"] .activities-list__badge {
   justify-self: start;
-  border-radius: var(--radius-sm);
 }
 [data-block="teamGrid"] .team-person__caption {
   padding: 0 var(--space-md) var(--space-md);
@@ -128,13 +107,21 @@ main { display: block; }
 [data-block="ctaBanner"] .ctaBanner__inner {
   align-items: center;
 }
-[data-block="ctaBanner"] .ctaBanner__button {
-  border-radius: var(--radius-md);
-}
 [data-block="documentDownloads"] .document-downloads__link {
   gap: var(--space-xs);
 }
-[data-block="event-list"] .event-list__item article {
-  border-left: 4px solid var(--color-accent);
+/* Links carry the bright accent — the one place colour does work. */
+a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+a:hover {
+  text-decoration: none;
+}
+/* Visible keyboard focus ring in the accent colour. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 `.trim();
