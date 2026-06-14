@@ -1,63 +1,93 @@
 /**
- * Editorial theme.
+ * Editorial theme — "Editorial" identity (student publications / cultural /
+ * debate societies).
  *
- * Print-magazine inspired: serif body type, sans-serif headings for contrast,
- * generous body line-height, sophisticated palette built on ink-black, cream,
- * and a single ochre accent. Type scale tilted toward larger contrast (1.333
- * ratio). Restrained — over-decoration is the wrong direction for this brief.
+ * Aesthetic brief: type-forward, warm, magazine-ish — but NOT costume. The
+ * identity comes entirely from fundamentals — palette, type, density, shape —
+ * layered over the shared engine. There are no decorative "signature moves":
+ * no uppercase eyebrows, no rules-as-ornament, no folio numerals. What makes
+ * Editorial read as a magazine:
  *
- * Implementation note: like every theme, this contributes layout-only CSS
- * that consumes `var(--token)` exclusively. Palette and font defaults arrive
- * via the `EDITORIAL_THEME_TOKENS` map below, which the renderer can register
- * as defaults. Per-block × per-theme goldens are deferred until the block
- * matrix lands; v1 covers tokens emission + hero golden + axe-clean.
+ *  - Palette: terracotta on warm paper. A near-black warm ink (#1a1714) carries
+ *    the text and headlines; a single terracotta accent (#c4622d) does the
+ *    persuading — links, focus, emphasis. The page sits on a warm cream ground
+ *    (#fbf8f3) with a warm grey muted (#8a7e72), so the whole thing reads like
+ *    a printed magazine spread rather than a clinical white screen.
+ *  - Type: SERIF display + SANS body — Fraunces for headlines (a high-contrast
+ *    display serif with real magazine character) paired with Inter for body.
+ *    Both are self-hosted by the renderer (the first family in each stack
+ *    matches the font registry, so `@font-face` is auto-emitted). This reverses
+ *    the legacy sans-display / serif-body pairing: the editorial voice now lives
+ *    in the Fraunces serif display, not in uppercasing.
+ *  - Density: comfortable — `--density-scale: 1.15` opens up the engine's
+ *    `--space-*` scale. Magazine pages breathe.
+ *  - Shape: soft — `--radius-base: 6px`. The engine derives the gently-rounded
+ *    `--radius-sm/md/lg` for cards and badges.
+ *
+ * Contract with the renderer:
+ *  - One id constant, a baseline-token list, and one CSS string, registered by
+ *    id in `index.tsx`. The id stays `editorial`.
+ *  - All colour, spacing, typography, and radius values reference
+ *    `var(--token)`. The single exception is the `:root` block (emitted by the
+ *    engine from the baseline tokens), which legitimately *defines* the values
+ *    the rest of the theme consumes.
+ *  - Headline sizing flows from the engine's fluid `--type-*` clamp scale, so
+ *    display type is responsive and never overflows on mobile (the legacy
+ *    hardcoded rem scale is gone). Cards / borders / surfaces come from the
+ *    shared production base; this theme contributes only the fundamentals above
+ *    plus genuinely-universal polish (Fraunces headings, accent links, a
+ *    visible focus ring, a comfortable quote measure).
  */
 
 export const EDITORIAL_THEME_ID = "editorial" as const;
 
 /**
- * Default token values for the Editorial theme. The keys mirror the schema's
- * theme-token shape (`colorPrimary`, `colorAccent`, etc.). When a site picks
- * this theme but does not override individual tokens, these are the values
- * the renderer should emit on `:root`.
+ * Editorial tokens as raw [cssProp, value] pairs, routed through
+ * `themeBaselineTokensFor` so the renderer's resolved-palette map (and thus
+ * the derived --color-*-rgb / --color-on-* tokens) reflect editorial's warm
+ * palette, and so the first font family in each stack is gated for
+ * self-hosting. The tuple mechanism (unlike the legacy schema-keyed Record)
+ * lets the theme set --color-bg / --color-fg / --color-muted as well as the
+ * density and radius engine knobs — so the warm cream ground actually renders.
  *
- * Palette rationale (print-magazine, restrained):
- *  - bg: cream — paper-like warmth without yellowing
- *  - fg: ink — deep, soft black; not pure #000 to keep the page readable
- *  - primary: a touch deeper than fg, used for headlines and emphasis
- *  - accent: ochre — the single editorial accent, chosen over brick / teal
- *    because ochre reads warmest against a cream ground
- *  - muted: warm grey, harmonious with cream rather than competing with it
- *
- * Typography rationale:
- *  - Body: serif stack with broadly-available print-feeling faces. Charter
- *    leads (best modern web-readability among the classics), Source Serif
- *    next, then system Georgia, then a generic serif fallback.
- *  - Headline: sans-serif for contrast (the brief calls out the trick of
- *    pairing sans display + serif body for editorial feel). System UI sans
- *    leads to keep weight low; Helvetica / Arial / Inter as common fallbacks.
+ * Density: comfortable — `--density-scale: 1.15` multiplies the engine's
+ * `--space-*` scale (baseline 1). Shape: soft — `--radius-base: 6px`, from
+ * which the engine derives `--radius-sm/md/lg`.
  */
-export const EDITORIAL_THEME_TOKENS: Readonly<Record<string, string>> = {
-  colorPrimary: "#0e0c0a",
-  colorAccent: "#a8732a",
-  fontHeadline:
-    '"Helvetica Neue", "Inter", system-ui, -apple-system, "Segoe UI", Arial, sans-serif',
-  fontBody: '"Charter", "Source Serif 4", "Source Serif Pro", Georgia, "Times New Roman", serif',
-};
+export const EDITORIAL_THEME_BASELINE_TOKENS: ReadonlyArray<readonly [string, string]> = [
+  // Palette — terracotta on warm paper. Warm ink for primary + fg, a single
+  // terracotta accent, a cream ground, and a warm grey muted.
+  ["--color-primary", "#1a1714"],
+  ["--color-accent", "#c4622d"],
+  ["--color-bg", "#fbf8f3"],
+  ["--color-fg", "#1a1714"],
+  ["--color-muted", "#8a7e72"],
+  // Type — Fraunces serif display + Inter body. The first quoted family in each
+  // stack is self-hosted by the renderer (auto @font-face); the rest are system
+  // fallbacks friendly to Romanian diacritics. This flips the legacy
+  // sans-display / serif-body pairing — the magazine voice is the serif display.
+  ["--font-headline", '"Fraunces", Georgia, "Times New Roman", serif'],
+  ["--font-body", '"Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'],
+  // Density — comfortable. Multiplies the engine's --space-* scale (baseline 1).
+  ["--density-scale", "1.15"],
+  // Shape — soft. The engine derives --radius-sm/md/lg from this base.
+  ["--radius-base", "6px"],
+];
 
 /**
- * Layout-only CSS for the Editorial theme. Every value MUST be `var(--token)`
- * or a unitless number / structural primitive — the test suite asserts there
- * is no hex / rgb leakage outside of `:root`.
+ * Layout-only CSS for the Editorial theme. Every value is a structural
+ * primitive (units, dimensions, font-weights) or a `var(--token)` reference —
+ * there is no raw colour anywhere, and the test suite asserts this.
  *
- * Type-scale values follow the perfect-fourth (1.333) ratio, computed off a
- * 1rem (16px equivalent) base:
- *   small  ≈ 0.75rem    body = 1rem
- *   h6     = 1rem       h5   = 1.125rem
- *   h4     = 1.333rem   h3   = 1.777rem
- *   h2     = 2.369rem   h1   = 3.157rem
- * The ratio gives the larger headline contrast the brief calls for without
- * tipping into theatrical sizes.
+ * No `:root` block here: the Editorial palette ships via the baseline-token
+ * list, spacing flows from the engine's density-scaled `--space-*`
+ * (`--density-scale: 1.15`, comfortable), and the soft 6px corners derive from
+ * `--radius-base: 6px`. Heading sizes consume the engine's fluid `--type-*`
+ * clamp scale so display type stays responsive. This overlay keeps only the
+ * type-forward fundamentals — Fraunces serif headings, accent underlined links,
+ * a visible focus ring, and a comfortable quote measure. No uppercasing, no
+ * rules-as-ornament: the magazine feel is the Fraunces serif display +
+ * terracotta + warm cream + comfortable density.
  */
 export const EDITORIAL_THEME_CSS = `
 *, *::before, *::after { box-sizing: border-box; }
@@ -80,27 +110,33 @@ h1, h2, h3, h4, h5, h6 {
   line-height: 1.15;
   letter-spacing: 0;
   margin: 0 0 var(--space-md) 0;
-  font-weight: 700;
+  font-weight: 600;
 }
-h1 { font-size: 3.157rem; letter-spacing: 0; }
-h2 { font-size: 2.369rem; }
-h3 { font-size: 1.777rem; }
-h4 { font-size: 1.333rem; }
-h5 { font-size: 1.125rem; }
-h6 { font-size: 1rem; text-transform: uppercase; letter-spacing: 0.06em; }
+/* Fluid display scale from the engine's --type-* clamp tokens. The hero title
+   is sized by the shared hero overlay (var(--type-3xl)); the bare h1 below is
+   the editorial display-headline contract the hero's <h1> also inherits. */
+h1 { font-size: var(--type-3xl); letter-spacing: 0; }
+h2 { font-size: var(--type-2xl); }
+h3 { font-size: var(--type-xl); }
+h4 { font-size: var(--type-lg); }
+h5 { font-size: var(--type-base); }
+h6 { font-size: var(--type-base); letter-spacing: 0.02em; }
 p { margin: 0 0 var(--space-md) 0; }
 a {
-  /* Use --color-primary (dark, contrast-safe) rather than --color-accent:
-     a user-overridable accent token can easily fall below WCAG AA 4.5:1
-     for body text. Editorial's link affordance is the underline (always
-     present, thickening on hover), not the colour — this swap keeps the
-     restrained-magazine feel while guaranteeing readability. */
-  color: var(--color-primary);
+  /* Links carry the terracotta accent — the one place colour does the
+     persuading. The underline (always present, thickening on hover) is the
+     editorial link affordance. */
+  color: var(--color-accent);
   text-decoration: underline;
   text-underline-offset: 0.15em;
   text-decoration-thickness: 1px;
 }
-a:hover { text-decoration-thickness: 2px; }
+a:hover, a:focus-visible { text-decoration-thickness: 2px; }
+/* Visible keyboard focus ring in the accent colour. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
 [data-site-nav] {
   border-top: 1px solid var(--color-primary);
   border-bottom: 1px solid var(--color-primary);
@@ -113,10 +149,9 @@ a:hover { text-decoration-thickness: 2px; }
 }
 [data-site-nav] a {
   font-family: var(--font-headline);
-  font-size: 0.8125rem;
-  font-weight: 700;
+  font-size: 0.9375rem;
+  font-weight: 600;
   letter-spacing: 0;
-  text-transform: uppercase;
 }
 [data-block="valueList"] .value-list__items {
   gap: var(--space-lg);
@@ -140,7 +175,6 @@ a:hover { text-decoration-thickness: 2px; }
 [data-block="event-list"] .event-list__item-title,
 [data-block="faq"] .faq__question {
   font-family: var(--font-headline);
-  text-transform: uppercase;
   letter-spacing: 0;
 }
 [data-block="activitiesList"][data-layout="cards"] .activities-list__items,
@@ -162,7 +196,7 @@ a:hover { text-decoration-thickness: 2px; }
 [data-block="quote"] .quote__text {
   border-left: 0;
   padding-left: 0;
-  font-size: 1.777rem;
+  font-size: var(--type-xl);
 }
 [data-block="imageGallery"] .image-gallery__grid {
   gap: var(--space-sm);

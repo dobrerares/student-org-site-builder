@@ -24,9 +24,9 @@ import { PRODUCTION_SITE_BASE_CSS } from "./themes/production-base.js";
 import { MINIMAL_THEME_BASELINE_TOKENS, MINIMAL_THEME_CSS, MINIMAL_THEME_ID } from "./themes/minimal.js";
 import { MODERN_THEME_BASELINE_TOKENS, MODERN_THEME_CSS, MODERN_THEME_ID } from "./themes/modern.js";
 import {
+  EDITORIAL_THEME_BASELINE_TOKENS,
   EDITORIAL_THEME_CSS,
   EDITORIAL_THEME_ID,
-  EDITORIAL_THEME_TOKENS,
 } from "./themes/editorial.js";
 import { CIVIC_THEME_BASELINE_TOKENS, CIVIC_THEME_CSS, CIVIC_THEME_ID } from "./themes/civic.js";
 import { ACADEMIC_THEME_CSS, ACADEMIC_THEME_ID, ACADEMIC_THEME_TOKENS } from "./themes/academic.js";
@@ -203,9 +203,15 @@ function themeCssFor(themeId: string): string {
 }
 
 function themeDefaultsFor(themeId: string): Readonly<Record<string, string>> | undefined {
-  if (themeId === EDITORIAL_THEME_ID) return EDITORIAL_THEME_TOKENS;
+  // No theme currently ships schema-keyed defaults via this path — every
+  // production theme (incl. editorial, recast onto the tuple mechanism) routes
+  // its palette/fonts/density/radius through `themeBaselineTokensFor`. The
+  // parameter is kept (and the function in the precedence chain: baseline →
+  // defaults → tuple → user) so a future theme can opt back into schema-keyed
+  // defaults without re-threading the emitter.
   // The stub theme deliberately ships no curated defaults — it leans on the
   // baseline values in `tokens.ts` so framework tests stay anchored.
+  void themeId;
   return undefined;
 }
 
@@ -217,6 +223,7 @@ function themeDefaultsFor(themeId: string): Readonly<Record<string, string>> | u
  * `SCHEMA_TOKEN_MAP`.
  */
 function themeBaselineTokensFor(themeId: string): ReadonlyArray<readonly [string, string]> {
+  if (themeId === EDITORIAL_THEME_ID) return EDITORIAL_THEME_BASELINE_TOKENS;
   if (themeId === CIVIC_THEME_ID) return CIVIC_THEME_BASELINE_TOKENS;
   if (themeId === ACADEMIC_THEME_ID) return ACADEMIC_THEME_TOKENS;
   if (themeId === MODERN_THEME_ID) return MODERN_THEME_BASELINE_TOKENS;
