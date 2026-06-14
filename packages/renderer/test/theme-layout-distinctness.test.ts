@@ -33,12 +33,13 @@ describe("production themes — generated-site layout polish", () => {
     );
   });
 
-  test("academic theme keeps major sections on one content rail", () => {
+  test("academic narrows its content sections to a tight readable rail", () => {
     const academicCss = styleText(renderSite(fixture, "academic"));
+    // Academic's scholarly identity keeps content sections on a narrow 64rem
+    // readable rail. The hero no longer sets a per-theme rail — it uses the
+    // shared universal hero overlay (production-base.ts), so the former
+    // hero-specific rail assertion was removed.
     expect(academicCss).toContain("--site-readable-width: 64rem");
-    expect(academicCss).toMatch(
-      /\[data-block="hero"\] \.hero__inner \{[\s\S]*max-width:\s*var\(--site-readable-width\);/,
-    );
     expect(academicCss).toMatch(
       /\[data-block="valueList"\] \.value-list__inner,[\s\S]*\[data-block="teamGrid"\] \.team-grid__inner,[\s\S]*max-width:\s*var\(--site-readable-width\);/,
     );
