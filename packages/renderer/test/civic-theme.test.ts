@@ -8,15 +8,15 @@ const fixture = heroOnly as unknown as Site;
 /**
  * Civic theme - token + CSS contract tests.
  *
- * Per #30, the Civic theme renders with a deep-blue + warm-white + warm
- * accent palette and a clean sans-serif type stack at strong contrast
- * ratios. This test pins the contract (which tokens get emitted, that
- * civic consumes them via var(--...), and that the existing stub-theme
- * goldens still pass when civic isn't requested) without locking specific
- * pixel values - those live in the CSS file itself.
+ * The Civic theme carries the locked "Activist" identity: a crimson + ink
+ * palette on pure white, a heavy Archivo display / Inter body type stack,
+ * compact density and sharp corners. Identity is fundamentals-only (no
+ * decorative signature moves). This test pins the contract (which tokens get
+ * emitted, that civic consumes them via var(--...), and that the existing
+ * stub-theme goldens still pass when civic isn't requested) without locking
+ * specific pixel values - those live in the CSS file itself.
  *
- * The maintainer-expanded scope notes "AAA contrast where feasible" for
- * civic; the colour values are documented in `packages/renderer/src/themes/civic.ts`
+ * The colour values are documented in `packages/renderer/src/themes/civic.ts`
  * with their measured ratios. Visual axe-core (jsdom-mode, no contrast)
  * lives in `civic-axe.test.ts`.
  */
@@ -36,24 +36,29 @@ describe("civic theme - id is wired up", () => {
 });
 
 describe("civic theme - token palette", () => {
-  test("emits a deep-blue --color-primary in :root", () => {
+  test("emits an ink --color-primary in :root", () => {
     const html = renderCivic();
     expect(html).toMatch(/:root\s*\{[\s\S]*?--color-primary:\s*#[0-9a-fA-F]{6}/);
   });
 
-  test("emits all five core colour tokens with civic palette values", () => {
+  test("emits all five core colour tokens with Activist palette values", () => {
     const html = renderCivic();
-    expect(html).toContain("--color-primary: #0c2d5e");
-    expect(html).toContain("--color-accent: #9c3a17");
-    expect(html).toContain("--color-bg: #fdfaf3");
-    expect(html).toContain("--color-fg: #0c1b2e");
-    expect(html).toContain("--color-muted: #3b4a5e");
+    expect(html).toContain("--color-primary: #17181c");
+    expect(html).toContain("--color-accent: #cb2b2b");
+    expect(html).toContain("--color-bg: #ffffff");
+    expect(html).toContain("--color-fg: #17181c");
+    expect(html).toContain("--color-muted: #6b6b6b");
   });
 
-  test("emits a sans-serif headline and body font stack", () => {
+  test("does not emit a separate --color-border token (4-swatch palette)", () => {
     const html = renderCivic();
-    expect(html).toMatch(/--font-headline:[^;]*Source Sans/);
-    expect(html).toMatch(/--font-body:[^;]*Source Sans/);
+    expect(html).not.toContain("--color-border:");
+  });
+
+  test("emits the Archivo headline and Inter body font stack", () => {
+    const html = renderCivic();
+    expect(html).toMatch(/--font-headline:[^;]*Archivo/);
+    expect(html).toMatch(/--font-body:[^;]*Inter/);
     // Defensive: civic must not regress to a serif headline. CSS later-wins
     // means we have to inspect the *last* --font-headline declaration in
     // :root (the one that would actually resolve at runtime). The renderer's
@@ -71,11 +76,18 @@ describe("civic theme - token palette", () => {
     expect(resolvedHeadline).toMatch(/sans-serif\s*$/);
   });
 
-  test("emits rectangular radius tokens (<= 4px)", () => {
+  test("ships compact density and a sharp radius base (engine knobs)", () => {
     const html = renderCivic();
-    expect(html).toContain("--radius-sm: 2px");
-    expect(html).toContain("--radius-md: 3px");
-    expect(html).toContain("--radius-lg: 4px");
+    expect(html).toContain("--density-scale: 0.85");
+    expect(html).toContain("--radius-base: 2px");
+    // The legacy direct --radius-sm/md/lg overrides are gone — the engine
+    // derives them from --radius-base now.
+    const rootMatch = /:root\s*\{([\s\S]*?)\}/.exec(html);
+    expect(rootMatch).not.toBeNull();
+    const rootBody = rootMatch![1]!;
+    expect(rootBody).not.toContain("--radius-sm: 2px");
+    expect(rootBody).not.toContain("--radius-md: 3px");
+    expect(rootBody).not.toContain("--radius-lg: 4px");
   });
 
   test("user-supplied theme tokens still override civic baseline (later-wins)", () => {
@@ -88,7 +100,7 @@ describe("civic theme - token palette", () => {
     const rootMatch = /:root\s*\{([\s\S]*?)\}/.exec(html);
     expect(rootMatch).not.toBeNull();
     const rootBody = rootMatch![1]!;
-    const civicIdx = rootBody.indexOf("--color-primary: #0c2d5e");
+    const civicIdx = rootBody.indexOf("--color-primary: #17181c");
     const userIdx = rootBody.lastIndexOf("--color-primary: #123456");
     expect(civicIdx).toBeGreaterThanOrEqual(0);
     expect(userIdx).toBeGreaterThan(civicIdx);
@@ -132,6 +144,6 @@ describe("civic theme - does not regress stub theme", () => {
   test("rendering with stub theme still produces stub-theme output", () => {
     const html = renderSite(fixture, "stub");
     expect(html).toContain("--color-primary: #1f3a5f");
-    expect(html).not.toContain("--color-primary: #0c2d5e");
+    expect(html).not.toContain("--color-primary: #17181c");
   });
 });

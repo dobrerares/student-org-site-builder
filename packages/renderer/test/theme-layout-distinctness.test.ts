@@ -52,7 +52,10 @@ describe("production themes — generated-site layout polish", () => {
     ["modern", /--radius-base:\s*12px/],
     ["minimal", /\[data-block="valueList"\][\s\S]*max-width: 56rem/],
     ["academic", /border-block-start:\s*1px solid var\(--color-accent\)/],
-    ["civic", /\[data-site-nav\]\s*\{[\s\S]*background:\s*var\(--color-primary\)/],
+    // Civic's "Activist" identity is fundamentals-only: its distinct treatment
+    // is the compact density token (--density-scale: 0.85) the engine scales
+    // --space-* from — civic is the only theme that ships compact density.
+    ["civic", /--density-scale:\s*0\.85/],
     ["editorial", /\[data-block="quote"\]\s*\{[\s\S]*width:\s*min\(100%, 56rem\)/],
   ])("%s contributes a distinct layout treatment", (themeId, expectedMarker) => {
     expect(styleText(renderSite(fixture, themeId))).toMatch(expectedMarker);
