@@ -14,6 +14,8 @@ export default tseslint.config(
       "**/playwright-report/**",
       "**/test-results/**",
       "**/.vite/**",
+      // Codegen output (scripts/gen-fonts.mjs). Large, machine-written, stable.
+      "**/*.generated.ts",
     ],
   },
   eslint.configs.recommended,
