@@ -48,6 +48,7 @@
   --color-bg-rgb: 255, 255, 255;
   --color-on-primary: #ffffff;
   --color-on-accent: #ffffff;
+  --color-link: var(--color-accent);
 }
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
@@ -290,7 +291,7 @@ main { display: block; }
   color: var(--color-primary);
 }
 [data-block="embed"] .embed__link a {
-  color: var(--color-accent);
+  color: var(--color-link);
   text-decoration: underline;
 }
 [data-block="activitiesList"] {
@@ -889,6 +890,26 @@ main > [data-block] {
   position: relative;
   box-sizing: border-box;
 }
+/*
+ * Universal contrast-safe body links. Text color comes from --color-link (the
+ * engine derives this to the accent where it clears WCAG AA on the bg, else the
+ * dark brand primary), so link TEXT always meets AA in every theme and under any
+ * user color override. The accent still does the work visually as the underline,
+ * preserving theme identity. Hover thickens the underline rather than switching
+ * the text to the (possibly low-contrast) accent, so contrast never drops.
+ * Single source of truth: per-theme bare-anchor color rules now consume
+ * --color-link too, so this wins; it is scoped to content links and leaves
+ * nav/language-switcher link colors alone.
+ */
+[data-block] a {
+  color: var(--color-link);
+  text-decoration-line: underline;
+  text-decoration-color: var(--color-accent);
+  text-underline-offset: 0.15em;
+}
+[data-block] a:hover {
+  text-decoration-thickness: 2px;
+}
 [data-block] > :is(
   .hero__inner,
   .ctaBanner__inner,
@@ -1170,8 +1191,10 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 main { display: block; }
+/* Link text uses the contrast-safe --color-link (here it resolves to the ink
+   accent, which is high-contrast on white). */
 a {
-  color: var(--color-accent);
+  color: var(--color-link);
   text-decoration: underline;
   text-underline-offset: 0.15em;
 }

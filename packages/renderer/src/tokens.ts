@@ -1,5 +1,5 @@
 import type { Site } from "@sosb/schema";
-import { hexToRgbTriplet, onColorFor } from "./color-math.js";
+import { contrastRatio, hexToRgbTriplet, onColorFor } from "./color-math.js";
 
 /**
  * Tokens-as-CSS-custom-properties.
@@ -12,7 +12,9 @@ import { hexToRgbTriplet, onColorFor } from "./color-math.js";
  * engine tokens (`--density-scale`, `--radius-base`) that the scale tokens
  * consume. Finally the renderer emits resolution-dependent derived tokens:
  * `--color-*-rgb` siblings (so scrims can use partial-alpha theme colors
- * without raw color literals) and contrast-safe `--color-on-*` text colors.
+ * without raw color literals), contrast-safe `--color-on-*` text colors, and a
+ * contrast-safe `--color-link` (accent where it clears WCAG AA on the bg, else
+ * the dark primary) that the universal body-link rule consumes.
  */
 
 /** Map the color/font schema token keys to their CSS custom properties. */
@@ -208,8 +210,8 @@ function pushScalarTokens(
  * Compose the `:root { ... }` CSS rule for a site. Order is deterministic
  * (later wins): baseline → schema-keyed theme defaults → CSS-prop-keyed theme
  * baseline → user overrides. Resolution-dependent derived tokens
- * (`--color-*-rgb`, `--color-on-*`) are emitted last so they reflect the
- * final resolved palette regardless of which layer won.
+ * (`--color-*-rgb`, `--color-on-*`, `--color-link`) are emitted last so they
+ * reflect the final resolved palette regardless of which layer won.
  */
 export function emitTokenRoot(
   site: Site,
@@ -243,6 +245,20 @@ export function emitTokenRoot(
   }
   declarations.push(`  --color-on-primary: ${onColorFor(resolved["--color-primary"]!)};`);
   declarations.push(`  --color-on-accent: ${onColorFor(resolved["--color-accent"]!)};`);
+
+  // Contrast-safe body-link text color. Links keep the accent where it clears
+  // WCAG AA (4.5:1) against the page background (civic/modern/minimal); where the
+  // accent is too light against the bg (academic gold-on-cream, editorial
+  // terracotta-on-cream) they fall back to the dark brand primary, which is AA on
+  // the light ground. The accent still shows as the link underline (set in the
+  // universal link rule), so theme identity is preserved while the text stays
+  // legible. This is also override-proof: a user who picks a pale accent gets the
+  // primary fallback automatically. Unparseable colors (contrastRatio undefined)
+  // are treated as not-ok → primary. The emitted value is a `var()` ref (no raw
+  // hex), keeping the "no raw color outside :root" discipline intact.
+  const linkOk =
+    (contrastRatio(resolved["--color-accent"]!, resolved["--color-bg"]!) ?? 0) >= 4.5;
+  declarations.push(`  --color-link: ${linkOk ? "var(--color-accent)" : "var(--color-primary)"};`);
 
   return `:root {\n${declarations.join("\n")}\n}`;
 }

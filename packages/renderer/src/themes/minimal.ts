@@ -103,8 +103,10 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 main { display: block; }
+/* Link text uses the contrast-safe --color-link (here it resolves to the ink
+   accent, which is high-contrast on white). */
 a {
-  color: var(--color-accent);
+  color: var(--color-link);
   text-decoration: underline;
   text-underline-offset: 0.15em;
 }

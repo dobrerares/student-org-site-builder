@@ -146,10 +146,12 @@ h6 { font-size: var(--type-base); }
 p { margin: 0 0 var(--space-md) 0; max-width: var(--measure-body); }
 
 a {
-  /* Links carry the library gold accent — the one place colour does the
-     persuading. The underline (always present, thickening on hover) is the
-     scholarly link affordance. */
-  color: var(--color-accent);
+  /* Link text uses the contrast-safe --color-link. Gold-on-cream fails AA, so
+     the engine resolves --color-link to the navy primary here; the gold accent
+     still shows as the underline (universal [data-block] a rule), keeping the
+     scholarly link affordance. The underline (always present, thickening on
+     hover) is the link signal. */
+  color: var(--color-link);
   text-decoration: underline;
   text-underline-offset: 0.15em;
   text-decoration-thickness: 1px;

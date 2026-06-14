@@ -262,7 +262,7 @@ main { display: block; }
   color: var(--color-primary);
 }
 [data-block="embed"] .embed__link a {
-  color: var(--color-accent);
+  color: var(--color-link);
   text-decoration: underline;
 }
 [data-block="activitiesList"] {

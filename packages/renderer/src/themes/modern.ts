@@ -110,9 +110,11 @@ main { display: block; }
 [data-block="documentDownloads"] .document-downloads__link {
   gap: var(--space-xs);
 }
-/* Links carry the bright accent — the one place colour does work. */
+/* Link text uses the contrast-safe --color-link (here it resolves to the bright
+   accent, which clears AA on white). The underline carries the accent via the
+   universal [data-block] a rule in production-base. */
 a {
-  color: var(--color-accent);
+  color: var(--color-link);
   text-decoration: underline;
   text-underline-offset: 0.15em;
 }

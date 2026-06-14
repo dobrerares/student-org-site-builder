@@ -115,9 +115,11 @@ main { display: block; }
 ) {
   font-weight: 800;
 }
-/* Links carry the crimson accent — the one place colour does the persuading. */
+/* Link text uses the contrast-safe --color-link (here it resolves to the crimson
+   accent, which clears AA on white). The underline still carries the accent via
+   the universal [data-block] a rule in production-base. */
 a {
-  color: var(--color-accent);
+  color: var(--color-link);
   text-decoration: underline;
   text-underline-offset: 0.15em;
 }

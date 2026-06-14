@@ -54,6 +54,7 @@
   --color-bg-rgb: 247, 243, 234;
   --color-on-primary: #ffffff;
   --color-on-accent: #16181c;
+  --color-link: var(--color-primary);
 }
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
@@ -296,7 +297,7 @@ main { display: block; }
   color: var(--color-primary);
 }
 [data-block="embed"] .embed__link a {
-  color: var(--color-accent);
+  color: var(--color-link);
   text-decoration: underline;
 }
 [data-block="activitiesList"] {
@@ -895,6 +896,26 @@ main > [data-block] {
   position: relative;
   box-sizing: border-box;
 }
+/*
+ * Universal contrast-safe body links. Text color comes from --color-link (the
+ * engine derives this to the accent where it clears WCAG AA on the bg, else the
+ * dark brand primary), so link TEXT always meets AA in every theme and under any
+ * user color override. The accent still does the work visually as the underline,
+ * preserving theme identity. Hover thickens the underline rather than switching
+ * the text to the (possibly low-contrast) accent, so contrast never drops.
+ * Single source of truth: per-theme bare-anchor color rules now consume
+ * --color-link too, so this wins; it is scoped to content links and leaves
+ * nav/language-switcher link colors alone.
+ */
+[data-block] a {
+  color: var(--color-link);
+  text-decoration-line: underline;
+  text-decoration-color: var(--color-accent);
+  text-underline-offset: 0.15em;
+}
+[data-block] a:hover {
+  text-decoration-thickness: 2px;
+}
 [data-block] > :is(
   .hero__inner,
   .ctaBanner__inner,
@@ -1206,10 +1227,12 @@ h6 { font-size: var(--type-base); }
 p { margin: 0 0 var(--space-md) 0; max-width: var(--measure-body); }
 
 a {
-  /* Links carry the library gold accent — the one place colour does the
-     persuading. The underline (always present, thickening on hover) is the
-     scholarly link affordance. */
-  color: var(--color-accent);
+  /* Link text uses the contrast-safe --color-link. Gold-on-cream fails AA, so
+     the engine resolves --color-link to the navy primary here; the gold accent
+     still shows as the underline (universal [data-block] a rule), keeping the
+     scholarly link affordance. The underline (always present, thickening on
+     hover) is the link signal. */
+  color: var(--color-link);
   text-decoration: underline;
   text-underline-offset: 0.15em;
   text-decoration-thickness: 1px;

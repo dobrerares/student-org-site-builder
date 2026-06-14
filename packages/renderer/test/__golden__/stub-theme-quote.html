@@ -35,6 +35,7 @@
   --color-bg-rgb: 255, 255, 255;
   --color-on-primary: #ffffff;
   --color-on-accent: #16181c;
+  --color-link: var(--color-primary);
 }
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
@@ -277,7 +278,7 @@ main { display: block; }
   color: var(--color-primary);
 }
 [data-block="embed"] .embed__link a {
-  color: var(--color-accent);
+  color: var(--color-link);
   text-decoration: underline;
 }
 [data-block="activitiesList"] {

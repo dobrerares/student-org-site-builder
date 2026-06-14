@@ -123,10 +123,12 @@ h5 { font-size: var(--type-base); }
 h6 { font-size: var(--type-base); letter-spacing: 0.02em; }
 p { margin: 0 0 var(--space-md) 0; }
 a {
-  /* Links carry the terracotta accent — the one place colour does the
-     persuading. The underline (always present, thickening on hover) is the
-     editorial link affordance. */
-  color: var(--color-accent);
+  /* Link text uses the contrast-safe --color-link. Terracotta-on-cream fails AA,
+     so the engine resolves --color-link to the warm-ink primary here; the
+     terracotta accent still shows as the underline (universal [data-block] a
+     rule), keeping the editorial link affordance. The underline (always present,
+     thickening on hover) is the link signal. */
+  color: var(--color-link);
   text-decoration: underline;
   text-underline-offset: 0.15em;
   text-decoration-thickness: 1px;
