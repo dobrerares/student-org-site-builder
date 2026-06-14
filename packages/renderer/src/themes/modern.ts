@@ -4,8 +4,7 @@
  * Aesthetic brief (from #28 + the AFK orchestration scope-expansion notes):
  *  - Sans-serif throughout, system stack (zero web-font network cost,
  *    universally available, friendly to Romanian diacritics).
- *  - Generous whitespace, geometric layout (two-column hero on desktop,
- *    single-column on small viewports).
+ *  - Generous whitespace and a geometric, sans-serif type system.
  *  - Restrained palette: neutral white/slate base with one bold accent.
  *  - Subtle, flat: no gradients, no decorative shadows, no ornaments.
  *  - 8px corner radius (matches the renderer baseline `--radius-md`).
@@ -35,9 +34,8 @@ export const MODERN_THEME_ID = "modern" as const;
  * (sans system stack on both headline and body) and palette (slate +
  * royal-blue accent). Per-block rules then consume only `var(--token)`.
  *
- * The hero layout is two-column on viewports ≥720px and single-column
- * below; we keep the breakpoint inline rather than introducing a
- * theme-level breakpoint token to keep the contract narrow for v1.
+ * The hero now uses the shared universal overlay from `production-base.ts`,
+ * so this theme contributes palette and type only — no per-theme hero CSS.
  */
 /**
  * Modern palette as raw [cssProp, value] pairs, routed through

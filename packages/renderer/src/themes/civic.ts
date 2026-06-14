@@ -40,7 +40,7 @@
  * Density / spacing: inherits the renderer's universal spacing scale —
  * civic doesn't need denser-than-default rhythm in v1.
  *
- * No gradients. Subtle borders OK on dividers and the hero plate.
+ * No gradients. Subtle borders OK on dividers and cards.
  */
 
 export const CIVIC_THEME_ID = "civic" as const;
