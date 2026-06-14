@@ -28,6 +28,15 @@ export interface FieldOverride {
   readonly label?: string;
   readonly tier?: FieldTier;
   readonly renderer?: string;
+  /**
+   * Optional advisory helper text rendered as muted small print beneath
+   * the field's input. Soft guidance only — a length nudge, a phrasing
+   * tip — NOT validation. The engine already keeps over-length content
+   * from breaking layout (measure caps, wrapping, fluid type); this just
+   * helps authors aim for a good length. Nothing here truncates, blocks,
+   * or counts characters.
+   */
+  readonly hint?: string;
 }
 
 export const SPINE_FIELD_METADATA: readonly FieldOverride[] = [
@@ -52,13 +61,24 @@ export const SPINE_FIELD_METADATA: readonly FieldOverride[] = [
   { path: "org.legalName", label: "Official organization name" },
   { path: "org.shortName", label: "Display name (used in nav)" },
   { path: "org.logoAlt", label: "Logo description (for screen readers)" },
+
+  // Advisory length nudge — the tagline reads best as a short phrase.
+  // Soft guidance only; nothing here validates or truncates.
+  { path: "org.tagline", hint: "A short phrase — ~60 characters reads best." },
 ];
 
 export const BLOCK_FIELD_METADATA: Partial<
   Record<keyof typeof KnownBlockSchemas, readonly FieldOverride[]>
 > = {
   // Alt text relabel applies wherever a block has a user-editable alt.
-  hero: [{ path: "backgroundAlt", label: "Image description (for screen readers)" }],
+  // Hero title/subtitle carry advisory length nudges (soft guidance, not
+  // validation): the engine already keeps over-length copy from breaking
+  // layout, so these just help authors aim for punchy, scannable lengths.
+  hero: [
+    { path: "title", hint: "Aim for ~60 characters — short and punchy reads best." },
+    { path: "subtitle", hint: "~140 characters keeps the intro scannable." },
+    { path: "backgroundAlt", label: "Image description (for screen readers)" },
+  ],
   quote: [{ path: "authorImageAlt", label: "Image description (for screen readers)" }],
   imageGallery: [{ path: "images.[].alt", label: "Image description (for screen readers)" }],
   teamGrid: [{ path: "people.[].photo.alt", label: "Image description (for screen readers)" }],

@@ -12,6 +12,7 @@ import type { AssetRefLike, DocumentAssetRef, Site } from "@sosb/schema";
 import { expandAltSyncPatches, suggestedAltForAssetPath } from "./alt-sync.js";
 import { AdvancedToggle } from "./advanced-toggle.js";
 import { AssetPicker } from "./asset-picker.js";
+import { FieldHint } from "./field-hint.js";
 import { DocumentPicker, type DocumentAssetRefLike } from "./document-picker.js";
 import { fieldLabel, optionLabel } from "./field-labels.js";
 import type { FieldNode } from "./form-generator.js";
@@ -134,6 +135,7 @@ function FieldRenderer({
               }
             }}
           />
+          <FieldHint hint={node.hint} />
         </label>
       );
 

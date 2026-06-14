@@ -850,6 +850,43 @@ body {
   letter-spacing: 0.02em;
 }
 
+/* Advisory length/phrasing hints (Guardrail 1). Muted small print beneath
+ * an input — soft guidance, never validation. Reset the label's uppercase
+ * span treatment so the hint reads as a plain sentence. */
+[data-testid="editor-pane"] .field-hint {
+  margin: 0;
+  font-size: var(--step--2);
+  font-weight: 400;
+  color: var(--ink-3);
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.4;
+}
+
+/* On-color preview chip (Guardrail 2). A small swatch showing the chosen
+ * palette colour with sample text in the renderer-derived readable
+ * on-colour — so the author sees their pick stays legible. */
+[data-testid="editor-pane"] .color-picker__on-color {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 22px;
+  padding: 0 6px;
+  border: 1px solid var(--rule);
+  border-radius: var(--corner);
+  font-size: var(--step--1);
+  font-weight: 600;
+  line-height: 1;
+  vertical-align: middle;
+}
+[data-testid="editor-pane"] .color-picker__on-color--default {
+  background: var(--paper-raised);
+  color: var(--ink-3);
+  font-style: italic;
+  opacity: 0.6;
+}
+
 [data-testid="editor-pane"] input[type="text"],
 [data-testid="editor-pane"] input[type="number"],
 [data-testid="editor-pane"] input[type="search"],

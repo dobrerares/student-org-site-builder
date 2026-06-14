@@ -278,3 +278,9 @@ export { FAQ_ACCORDION_SCRIPT_SOURCE, FAQ_ENHANCED_ATTR } from "./blocks/faq.scr
 export { FONT_ASSET_PREFIX, FONT_FACE_REGISTRY, woff2Base64 } from "./fonts/registry.js";
 export type { FontFaceDef } from "./fonts/registry.js";
 export { base64ToBytes } from "./fonts/bytes.js";
+
+// Contrast-safe color math. Re-exports of the pure helpers the renderer
+// already uses to pick readable on-colors for buttons/badges (tokens.ts).
+// Surfaced so the editor's theme color pickers can preview the SAME
+// derived on-color an author's pick will produce — no logic change here.
+export { onColorFor, contrastRatio } from "./color-math.js";

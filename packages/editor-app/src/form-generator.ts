@@ -45,6 +45,7 @@ export type FieldNode =
       optional: boolean;
       label?: string;
       tier?: FieldTier;
+      hint?: string;
     }
   | {
       kind: "number";
@@ -53,6 +54,7 @@ export type FieldNode =
       optional: boolean;
       label?: string;
       tier?: FieldTier;
+      hint?: string;
     }
   | {
       kind: "boolean";
@@ -61,6 +63,7 @@ export type FieldNode =
       optional: boolean;
       label?: string;
       tier?: FieldTier;
+      hint?: string;
     }
   | {
       kind: "enum";
@@ -70,6 +73,7 @@ export type FieldNode =
       options: readonly string[];
       label?: string;
       tier?: FieldTier;
+      hint?: string;
     }
   | {
       kind: "object";
@@ -79,6 +83,7 @@ export type FieldNode =
       fields: FieldNode[];
       label?: string;
       tier?: FieldTier;
+      hint?: string;
     }
   | {
       kind: "array";
@@ -88,6 +93,7 @@ export type FieldNode =
       element: FieldNode;
       label?: string;
       tier?: FieldTier;
+      hint?: string;
     }
   | {
       kind: "custom";
@@ -97,6 +103,7 @@ export type FieldNode =
       renderer: string;
       label?: string;
       tier?: FieldTier;
+      hint?: string;
     };
 
 interface ZodInternalDef {
@@ -269,6 +276,9 @@ function makeCustomNode(
   if (override?.tier !== undefined) {
     node.tier = override.tier;
   }
+  if (override?.hint !== undefined) {
+    node.hint = override.hint;
+  }
   return node;
 }
 
@@ -287,6 +297,9 @@ function withMeta<TNode extends FieldNode>(
   }
   if (override.tier !== undefined) {
     node.tier = override.tier;
+  }
+  if (override.hint !== undefined) {
+    node.hint = override.hint;
   }
   return node;
 }

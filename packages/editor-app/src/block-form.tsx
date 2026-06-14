@@ -48,6 +48,7 @@ import type { AssetRefLike, DocumentAssetRef } from "@sosb/schema";
 
 import { expandAltSyncPatches, suggestedAltForAssetPath } from "./alt-sync.js";
 import { AdvancedToggle } from "./advanced-toggle.js";
+import { FieldHint } from "./field-hint.js";
 import type { FieldOverride } from "./field-metadata.js";
 import { fieldsFromSchema, type FieldNode } from "./form-generator.js";
 import { getAtPath } from "./get-set-path.js";
@@ -330,6 +331,7 @@ function FieldRenderer({
               }
             }}
           />
+          <FieldHint hint={node.hint} />
         </label>
       );
 

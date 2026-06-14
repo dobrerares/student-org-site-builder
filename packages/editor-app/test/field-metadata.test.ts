@@ -66,6 +66,35 @@ describe("field-metadata", () => {
     }
   });
 
+  test("hero title carries an advisory length hint", () => {
+    const entry = BLOCK_FIELD_METADATA.hero?.find((e) => e.path === "title");
+    expect(entry?.hint).toBe("Aim for ~60 characters — short and punchy reads best.");
+  });
+
+  test("hero subtitle carries an advisory length hint", () => {
+    const entry = BLOCK_FIELD_METADATA.hero?.find((e) => e.path === "subtitle");
+    expect(entry?.hint).toBe("~140 characters keeps the intro scannable.");
+  });
+
+  test("org tagline carries an advisory length hint", () => {
+    const entry = SPINE_FIELD_METADATA.find((e) => e.path === "org.tagline");
+    expect(entry?.hint).toBe("A short phrase — ~60 characters reads best.");
+  });
+
+  test("hints are advisory text only — no validation/length fields on entries", () => {
+    // Guard the soft-guidance contract: a hint is descriptive prose, never
+    // a min/max length or blocking rule. The entry shape must not have
+    // grown numeric length constraints.
+    const allEntries = [...SPINE_FIELD_METADATA, ...Object.values(BLOCK_FIELD_METADATA).flat()];
+    for (const entry of allEntries) {
+      if (entry.hint !== undefined) {
+        expect(typeof entry.hint).toBe("string");
+      }
+      expect(entry).not.toHaveProperty("minLength");
+      expect(entry).not.toHaveProperty("maxLength");
+    }
+  });
+
   test("every entry in both tables uses the canonical dotted path format", () => {
     // Format: a segment, then any number of (.segment | .[]) groups.
     // Catches typos like "pages[].slug" (missing dot) or "pages.0.slug"
