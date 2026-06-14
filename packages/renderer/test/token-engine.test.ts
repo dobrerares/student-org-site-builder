@@ -3,6 +3,7 @@ import type { Site } from "@sosb/schema";
 import heroOnly from "./fixtures/hero-only.json" with { type: "json" };
 import { emitTokenRoot, densityScale, radiusBase } from "../src/tokens.js";
 import { PRODUCTION_SITE_BASE_CSS } from "../src/themes/production-base.js";
+import { renderSite } from "../src/index.js";
 
 const fixture = heroOnly as unknown as Site;
 
@@ -127,5 +128,23 @@ describe("production base — overflow & aspect guards", () => {
     expect(PRODUCTION_SITE_BASE_CSS).toMatch(/aspect-ratio:\s*16 \/ 9/);
     expect(PRODUCTION_SITE_BASE_CSS).toMatch(/object-fit:\s*cover/);
     expect(PRODUCTION_SITE_BASE_CSS).toContain(".hero__media img");
+  });
+});
+
+describe("density/radius reach rendered CSS through renderSite (regression)", () => {
+  test("a density override changes the emitted --density-scale that --space-* consume", () => {
+    const site = structuredClone(fixture) as Site;
+    site.theme = { id: "minimal", tokens: { density: "comfortable" } };
+    const html = renderSite(site, "minimal");
+    expect(html).toContain("--density-scale: 1.15;");
+    expect(html).toContain("--space-md: calc(1rem * var(--density-scale));");
+  });
+
+  test("a radius override changes the emitted --radius-base that --radius-* consume", () => {
+    const site = structuredClone(fixture) as Site;
+    site.theme = { id: "minimal", tokens: { radius: "sharp" } };
+    const html = renderSite(site, "minimal");
+    expect(html).toContain("--radius-base: 0px;");
+    expect(html).toContain("--radius-md: var(--radius-base);");
   });
 });
