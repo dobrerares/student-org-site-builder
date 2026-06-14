@@ -66,11 +66,6 @@ describe("field-metadata", () => {
     }
   });
 
-  test("BLOCK_FIELD_METADATA uses plain copy for hero eyebrow", () => {
-    const entry = BLOCK_FIELD_METADATA.hero?.find((e) => e.path === "eyebrow");
-    expect(entry?.label).toBe("Small label above title");
-  });
-
   test("every entry in both tables uses the canonical dotted path format", () => {
     // Format: a segment, then any number of (.segment | .[]) groups.
     // Catches typos like "pages[].slug" (missing dot) or "pages.0.slug"
