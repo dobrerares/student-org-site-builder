@@ -66,8 +66,11 @@ export async function exportToZip(siteData: unknown, vfs: Vfs): Promise<Blob> {
   // validation issues; `skipValidation` lets the user's explicit download
   // choice still produce a self-contained zip.
   const dist = build(siteData as Site, { skipValidation: true });
-  for (const [path, text] of dist) {
-    await driver.write(`dist/${path}`, enc.encode(text));
+  for (const [path, value] of dist) {
+    // The dist Map carries text artefacts (HTML/XML/JSON) as `string` and
+    // binary artefacts (self-hosted woff2 fonts at `dist/assets/fonts/...`) as
+    // `Uint8Array`. Write bytes through verbatim; encode strings as UTF-8.
+    await driver.write(`dist/${path}`, typeof value === "string" ? enc.encode(value) : value);
   }
 
   // 4. Deployment guide.

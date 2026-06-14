@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import type { Site } from "@sosb/schema";
 import singlePageSite from "./fixtures/single-page-site.json" with { type: "json" };
 import { build } from "../src/index.js";
+import { textOf } from "./helpers/dist-text.js";
 
 const fixture = singlePageSite as unknown as Site;
 
@@ -15,7 +16,7 @@ const fixture = singlePageSite as unknown as Site;
 describe("build - Twitter Card overlay (siteUrl absolutisation)", () => {
   test("with siteUrl, twitter:image is rewritten to an absolute URL", () => {
     const dist = build(fixture, { siteUrl: "https://stub.example.org" });
-    const html = dist.get("index.html")!;
+    const html = textOf(dist, "index.html");
     expect(html).toMatch(
       /<meta name="twitter:image" content="https:\/\/stub\.example\.org\/assets\/hero\.jpg"/,
     );
@@ -25,7 +26,7 @@ describe("build - Twitter Card overlay (siteUrl absolutisation)", () => {
 
   test("without siteUrl, twitter:image stays whatever the renderer produced (relative)", () => {
     const dist = build(fixture);
-    const html = dist.get("index.html")!;
+    const html = textOf(dist, "index.html");
     expect(html).toMatch(/<meta name="twitter:image" content="assets\/hero\.jpg"/);
   });
 
@@ -41,7 +42,7 @@ describe("build - Twitter Card overlay (siteUrl absolutisation)", () => {
       alt: "CDN hero",
     };
     const dist = build(absUrl, { siteUrl: "https://stub.example.org" });
-    const html = dist.get("index.html")!;
+    const html = textOf(dist, "index.html");
     expect(html).toMatch(
       /<meta name="twitter:image" content="https:\/\/cdn\.example\.com\/hero\.jpg"/,
     );

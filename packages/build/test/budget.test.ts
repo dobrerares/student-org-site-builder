@@ -2,6 +2,7 @@ import { describe, expect, test, vi, afterEach, beforeEach } from "vitest";
 import type { Site } from "@sosb/schema";
 import singlePageSite from "./fixtures/single-page-site.json" with { type: "json" };
 import { build, BUDGET_LIMITS, measureBudgets } from "../src/index.js";
+import { textOf } from "./helpers/dist-text.js";
 import {
   buildOversizedCssDist,
   buildOversizedHtmlDist,
@@ -42,20 +43,20 @@ describe("build — _lighthouse-budget.json emission", () => {
 
   test("the report is JSON-parseable", () => {
     const dist = build(fixture);
-    const raw = dist.get("_lighthouse-budget.json")!;
+    const raw = textOf(dist, "_lighthouse-budget.json");
     expect(() => JSON.parse(raw)).not.toThrow();
   });
 
   test("the report records the home page (index.html)", () => {
     const dist = build(fixture);
-    const report = JSON.parse(dist.get("_lighthouse-budget.json")!);
+    const report = JSON.parse(textOf(dist, "_lighthouse-budget.json"));
     expect(report.pages).toBeDefined();
     expect(report.pages["index.html"]).toBeDefined();
   });
 
   test("the report exposes html, css, js, hero metrics", () => {
     const dist = build(fixture);
-    const report = JSON.parse(dist.get("_lighthouse-budget.json")!);
+    const report = JSON.parse(textOf(dist, "_lighthouse-budget.json"));
     const metrics = report.pages["index.html"].metrics;
     for (const key of ["html", "css", "js", "hero"]) {
       expect(metrics[key]).toBeDefined();
@@ -82,7 +83,7 @@ describe("build — _lighthouse-budget.json emission", () => {
 describe("build — pass-budget fixture (single-page-site.json)", () => {
   test("html, css, js metrics all pass", () => {
     const dist = build(fixture);
-    const report = JSON.parse(dist.get("_lighthouse-budget.json")!);
+    const report = JSON.parse(textOf(dist, "_lighthouse-budget.json"));
     const metrics = report.pages["index.html"].metrics;
     expect(metrics.html.status).toBe("pass");
     expect(metrics.css.status).toBe("pass");
@@ -91,20 +92,20 @@ describe("build — pass-budget fixture (single-page-site.json)", () => {
 
   test("hero metric is 'skipped' in v1 (asset pipeline lands in #8)", () => {
     const dist = build(fixture);
-    const report = JSON.parse(dist.get("_lighthouse-budget.json")!);
+    const report = JSON.parse(textOf(dist, "_lighthouse-budget.json"));
     expect(report.pages["index.html"].metrics.hero.status).toBe("skipped");
     expect(report.pages["index.html"].metrics.hero.note).toBeDefined();
   });
 
   test("page status is 'pass' when all measurable metrics pass", () => {
     const dist = build(fixture);
-    const report = JSON.parse(dist.get("_lighthouse-budget.json")!);
+    const report = JSON.parse(textOf(dist, "_lighthouse-budget.json"));
     expect(report.pages["index.html"].status).toBe("pass");
   });
 
   test("aggregate report status is 'pass'", () => {
     const dist = build(fixture);
-    const report = JSON.parse(dist.get("_lighthouse-budget.json")!);
+    const report = JSON.parse(textOf(dist, "_lighthouse-budget.json"));
     expect(report.status).toBe("pass");
   });
 });

@@ -23,6 +23,11 @@
           "status": "skipped",
           "limitBytes": 204800,
           "note": "hero image is hosted off-site (https://stub.example.org/assets/hero.jpg); cannot measure from dist"
+        },
+        "fonts": {
+          "status": "skipped",
+          "limitBytes": 184320,
+          "note": "site uses system fonts; no self-hosted woff2 assets to measure"
         }
       }
     }

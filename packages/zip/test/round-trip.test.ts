@@ -38,6 +38,25 @@ describe("exportToZip", () => {
     expect(paths).toContain("assets/4a91d2.jpg");
   });
 
+  test("ships self-hosted theme fonts as binary woff2 under dist/assets/fonts/ (PR-F2b)", async () => {
+    // The historipol fixture uses the `academic` theme whose body font
+    // (`Inter`) is a self-hosted registered family, so `build()` injects its
+    // woff2 bytes and the zip carries them as real binary.
+    const blob = await exportToZip(historipol, new MemoryDriver());
+    const inspector = ZipDriver.fromZipBytes(await blobToBytes(blob));
+    const paths = await inspector.list();
+    const fontPaths = paths.filter(
+      (p) => p.startsWith("dist/assets/fonts/") && p.endsWith(".woff2"),
+    );
+    expect(fontPaths.length).toBeGreaterThan(0);
+
+    for (const p of fontPaths) {
+      const back = await inspector.read(p);
+      // woff2 signature: first 4 bytes spell 'wOF2'.
+      expect(Array.from(back.subarray(0, 4))).toEqual([0x77, 0x4f, 0x46, 0x32]);
+    }
+  });
+
   test("dist/index.html is the rendered static site, not a placeholder", async () => {
     const blob = await exportToZip(historipol, new MemoryDriver());
     const inspector = ZipDriver.fromZipBytes(await blobToBytes(blob));
