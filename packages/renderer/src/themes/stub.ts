@@ -7,9 +7,10 @@
  *  - layout-only CSS that uses `var(--token)` exclusively (never raw colours)
  *  - no per-theme hero variant — the structural hero from the renderer is used
  *
- * The Academic theme (#47, see `themes/academic.ts`) ships a curated palette,
- * typography, and a per-theme hero composition. The rest (#28-#31) follow the
- * same pattern as #28-#31 land.
+ * The production themes (see `themes/academic.ts`, etc.) ship curated palettes
+ * and typography. The hero composition is now shared: every production theme
+ * uses the universal hero overlay from `production-base.ts`, contributing only
+ * palette and type — there are no per-theme hero variants.
  */
 
 export const STUB_THEME_ID = "stub" as const;
