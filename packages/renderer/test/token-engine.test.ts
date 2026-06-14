@@ -91,4 +91,24 @@ describe("resolution-dependent derived tokens", () => {
     expect(root).toContain("--color-accent: #ffffff;");
     expect(root).toContain("--color-on-accent: #16181c;");
   });
+
+  test("derived rgb + on-color follow a themeBaseline raw-pair color override", () => {
+    const site = structuredClone(fixture) as Site;
+    site.theme = { id: "stub", tokens: {} };
+    const root = emitTokenRoot(site, undefined, [["--color-accent", "#ffffff"]]);
+    expect(root).toContain("--color-accent: #ffffff;");
+    expect(root).toContain("--color-accent-rgb: 255, 255, 255;");
+    expect(root).toContain("--color-on-accent: #16181c;");
+  });
+
+  test("user token beats themeDefaults and derived on-color follows the user value", () => {
+    const site = structuredClone(fixture) as Site;
+    site.theme = { id: "stub", tokens: { colorAccent: "#ffffff" } };
+    const root = emitTokenRoot(site, { colorAccent: "#cb2b2b" });
+    const themeAccent = root.indexOf("--color-accent: #cb2b2b;");
+    const userAccent = root.lastIndexOf("--color-accent: #ffffff;");
+    expect(themeAccent).toBeGreaterThanOrEqual(0);
+    expect(userAccent).toBeGreaterThan(themeAccent);
+    expect(root).toContain("--color-on-accent: #16181c;");
+  });
 });
