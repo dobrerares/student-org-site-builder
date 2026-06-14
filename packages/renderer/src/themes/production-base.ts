@@ -179,6 +179,34 @@ main > [data-block] {
   padding: var(--space-md);
   background: var(--color-bg);
 }
+[data-block="hero"] .hero__title,
+[data-block] :is(
+  .value-list__title,
+  .activities-list__title,
+  .team-grid__title,
+  .faq__title,
+  .document-downloads__title,
+  .event-list__title,
+  .image-gallery__title,
+  .partner-logos__title,
+  .ctaBanner__title
+) {
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+[data-block] :is(.hero__subtitle, .rich-text, .quote) {
+  overflow-wrap: anywhere;
+}
+[data-block="hero"] .hero__media img,
+[data-block="imageGallery"] .image-gallery__figure > img,
+[data-block="imageGallery"] .image-gallery__trigger img,
+[data-block="activitiesList"] .activities-list__media img,
+[data-block="event-list"] .event-list__item-media img {
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  width: 100%;
+  height: auto;
+}
 @media (max-width: 640px) {
   [data-block] {
     padding-left: var(--space-md);

@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import type { Site } from "@sosb/schema";
 import heroOnly from "./fixtures/hero-only.json" with { type: "json" };
 import { emitTokenRoot, densityScale, radiusBase } from "../src/tokens.js";
+import { PRODUCTION_SITE_BASE_CSS } from "../src/themes/production-base.js";
 
 const fixture = heroOnly as unknown as Site;
 
@@ -110,5 +111,19 @@ describe("resolution-dependent derived tokens", () => {
     expect(themeAccent).toBeGreaterThanOrEqual(0);
     expect(userAccent).toBeGreaterThan(themeAccent);
     expect(root).toContain("--color-on-accent: #16181c;");
+  });
+});
+
+describe("production base — overflow & aspect guards", () => {
+  test("titles and prose wrap long words (no horizontal scroll)", () => {
+    expect(PRODUCTION_SITE_BASE_CSS).toMatch(/overflow-wrap:\s*anywhere/);
+    expect(PRODUCTION_SITE_BASE_CSS).toContain(".hero__title");
+    expect(PRODUCTION_SITE_BASE_CSS).toMatch(/hyphens:\s*auto/);
+  });
+
+  test("content images are aspect-normalized with object-fit cover", () => {
+    expect(PRODUCTION_SITE_BASE_CSS).toMatch(/aspect-ratio:\s*16 \/ 9/);
+    expect(PRODUCTION_SITE_BASE_CSS).toMatch(/object-fit:\s*cover/);
+    expect(PRODUCTION_SITE_BASE_CSS).toContain(".hero__media img");
   });
 });
