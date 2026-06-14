@@ -118,6 +118,8 @@ describe("production base — overflow & aspect guards", () => {
   test("titles and prose wrap long words (no horizontal scroll)", () => {
     expect(PRODUCTION_SITE_BASE_CSS).toMatch(/overflow-wrap:\s*anywhere/);
     expect(PRODUCTION_SITE_BASE_CSS).toContain(".hero__title");
+    expect(PRODUCTION_SITE_BASE_CSS).toContain(".hero__subtitle");
+    expect(PRODUCTION_SITE_BASE_CSS).toContain(".contact-card__heading");
     expect(PRODUCTION_SITE_BASE_CSS).toMatch(/hyphens:\s*auto/);
   });
 

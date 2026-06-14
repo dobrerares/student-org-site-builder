@@ -115,6 +115,7 @@ main > [data-block] {
   display: grid;
   gap: var(--space-sm);
 }
+[data-block="hero"] .hero__media img,
 [data-block="activitiesList"] .activities-list__media img,
 [data-block="event-list"] .event-list__item-media img,
 [data-block="teamGrid"] .team-person__photo,
@@ -181,6 +182,7 @@ main > [data-block] {
 }
 [data-block="hero"] .hero__title,
 [data-block] :is(
+  .contact-card__heading,
   .value-list__title,
   .activities-list__title,
   .team-grid__title,
@@ -204,7 +206,6 @@ main > [data-block] {
 [data-block="event-list"] .event-list__item-media img {
   aspect-ratio: 16 / 9;
   object-fit: cover;
-  width: 100%;
   height: auto;
 }
 @media (max-width: 640px) {
