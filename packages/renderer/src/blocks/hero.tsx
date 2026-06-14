@@ -22,7 +22,6 @@ export function Hero(props: {
   assetUrlForPath?: AssetUrlForPath | undefined;
 }): preact.JSX.Element {
   const { id, data } = props.block;
-  const eyebrow = typeof data.eyebrow === "string" ? data.eyebrow : undefined;
   const title = data.title;
   const subtitle = typeof data.subtitle === "string" ? data.subtitle : undefined;
   const backgroundImagePath = assetRefPath(data.backgroundImage);
@@ -34,20 +33,25 @@ export function Hero(props: {
     typeof data.backgroundAlt === "string" && data.backgroundAlt.length > 0
       ? data.backgroundAlt
       : assetRefAlt(data.backgroundImage);
+  const hasImage = backgroundImage !== undefined;
 
   return (
-    <section data-block="hero" data-block-id={id} aria-labelledby={`${id}__title`}>
+    <section
+      data-block="hero"
+      data-block-id={id}
+      class={hasImage ? "hero hero--has-image" : "hero"}
+      aria-labelledby={`${id}__title`}
+    >
+      {hasImage && (
+        <div class="hero__media">
+          <img src={backgroundImage} alt={backgroundAlt} loading="lazy" />
+        </div>
+      )}
       <div class="hero__inner">
-        {eyebrow !== undefined && <p class="hero__eyebrow">{eyebrow}</p>}
         <h1 id={`${id}__title`} class="hero__title">
           {title}
         </h1>
         {subtitle !== undefined && <p class="hero__subtitle">{subtitle}</p>}
-        {backgroundImage !== undefined && (
-          <div class="hero__media">
-            <img src={backgroundImage} alt={backgroundAlt} loading="lazy" />
-          </div>
-        )}
       </div>
     </section>
   );
