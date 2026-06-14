@@ -17,6 +17,7 @@ import { PageShell } from "./page-shell.js";
 import { emitTokenRoot } from "./tokens.js";
 import type { AssetUrlForPath } from "./asset-url.js";
 import { STUB_THEME_CSS, STUB_THEME_ID } from "./themes/stub.js";
+import { PRODUCTION_SITE_BASE_CSS } from "./themes/production-base.js";
 import { MINIMAL_THEME_CSS, MINIMAL_THEME_ID } from "./themes/minimal.js";
 import { MODERN_THEME_CSS, MODERN_THEME_ID } from "./themes/modern.js";
 import {
@@ -123,11 +124,12 @@ function composeCss(site: Site, themeId: string): string {
  */
 function themeCssFor(themeId: string): string {
   if (themeId === STUB_THEME_ID) return STUB_THEME_CSS;
-  if (themeId === EDITORIAL_THEME_ID) return `${STUB_THEME_CSS}\n${EDITORIAL_THEME_CSS}`;
-  if (themeId === CIVIC_THEME_ID) return `${STUB_THEME_CSS}\n${CIVIC_THEME_CSS}`;
-  if (themeId === ACADEMIC_THEME_ID) return `${STUB_THEME_CSS}\n${ACADEMIC_THEME_CSS}`;
-  if (themeId === MINIMAL_THEME_ID) return `${STUB_THEME_CSS}\n${MINIMAL_THEME_CSS}`;
-  if (themeId === MODERN_THEME_ID) return `${STUB_THEME_CSS}\n${MODERN_THEME_CSS}`;
+  const base = `${STUB_THEME_CSS}\n${PRODUCTION_SITE_BASE_CSS}`;
+  if (themeId === EDITORIAL_THEME_ID) return `${base}\n${EDITORIAL_THEME_CSS}`;
+  if (themeId === CIVIC_THEME_ID) return `${base}\n${CIVIC_THEME_CSS}`;
+  if (themeId === ACADEMIC_THEME_ID) return `${base}\n${ACADEMIC_THEME_CSS}`;
+  if (themeId === MINIMAL_THEME_ID) return `${base}\n${MINIMAL_THEME_CSS}`;
+  if (themeId === MODERN_THEME_ID) return `${base}\n${MODERN_THEME_CSS}`;
   return STUB_THEME_CSS;
 }
 

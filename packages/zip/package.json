@@ -12,6 +12,7 @@
     "build": "tsc --build"
   },
   "dependencies": {
+    "@sosb/build": "workspace:*",
     "@sosb/schema": "workspace:*",
     "@sosb/vfs": "workspace:*"
   }

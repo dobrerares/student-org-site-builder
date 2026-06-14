@@ -49,6 +49,14 @@ describe("renderSite — eventList block", () => {
     expect(html).toMatch(/<time[^>]*datetime="2025-12-10T18:00:00\+02:00"/);
   });
 
+  test("renders a human-readable date label instead of exposing the ISO timestamp", () => {
+    const html = renderSite(fixture, "stub");
+    expect(html).toContain(">10 dec. 2025, 18:00-20:00</time>");
+    expect(html).not.toMatch(
+      /<time[^>]*datetime="2025-12-10T18:00:00\+02:00"[^>]*>\s*2025-12-10T18:00:00\+02:00\s*<\/time>/,
+    );
+  });
+
   test("renders optional event fields (description, image, location, url)", () => {
     const html = renderSite(fixture, "stub");
     expect(html).toContain("Hands-on cu surse de arhivă.");

@@ -36,8 +36,9 @@
  * Type scale
  * ----------
  * Modular, ratio ≈ 1.25 (the major-third). Body 1rem, h1 ≈ 2.44rem. Generous
- * line-height (1.65) for body, tighter for display. Wider measure (~70ch on
- * the hero subtitle) for serious-text readability.
+ * line-height (1.65) for body, tighter for display. A comfortable text
+ * measure sits inside a wider desktop rail so pages feel like contemporary
+ * student-org sites rather than a narrow manuscript column.
  *
  * Ornament
  * --------
@@ -91,7 +92,7 @@ export const ACADEMIC_THEME_TOKENS: ReadonlyArray<readonly [string, string]> = [
   // Line-height & measure tokens — the academic readability rhythm.
   ["--leading-body", "1.65"],
   ["--leading-display", "1.15"],
-  ["--measure-body", "70ch"],
+  ["--measure-body", "88ch"],
 
   // Surface / structure tweaks consistent with the parchment-and-rule look.
   ["--radius-sm", "2px"],
@@ -105,6 +106,9 @@ export const ACADEMIC_THEME_TOKENS: ReadonlyArray<readonly [string, string]> = [
  * hex / rgb leakage outside `:root`.
  */
 export const ACADEMIC_THEME_CSS = `
+:root {
+  --site-readable-width: 64rem;
+}
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 body {
@@ -126,7 +130,7 @@ h1, h2, h3, h4, h5, h6 {
   margin: 0 0 var(--space-md) 0;
   font-weight: 600;
 }
-h1 { font-size: var(--type-scale-3xl); letter-spacing: -0.005em; }
+h1 { font-size: var(--type-scale-3xl); letter-spacing: 0; }
 h2 { font-size: var(--type-scale-2xl); }
 h3 { font-size: var(--type-scale-xl); }
 h4 { font-size: var(--type-scale-lg); }
@@ -147,7 +151,7 @@ em, i, cite { font-style: italic; }
   border-bottom: 1px solid var(--color-accent);
 }
 [data-block="hero"] .hero__inner {
-  max-width: 70ch;
+  max-width: var(--site-readable-width);
   margin: 0 auto;
 }
 [data-block="hero"] .hero__eyebrow {
@@ -187,5 +191,79 @@ em, i, cite { font-style: italic; }
   display: block;
   max-width: 100%;
   height: auto;
+}
+[data-site-nav] {
+  border-top: 4px solid var(--color-primary);
+  border-bottom: 1px solid var(--color-accent);
+  background: var(--color-bg);
+}
+[data-site-nav] ul,
+[data-language-switcher] ul {
+  max-width: var(--site-readable-width);
+  margin-inline: auto;
+}
+[data-site-nav] a {
+  font-style: italic;
+}
+[data-block="hero"] {
+  border-top: 1px solid var(--color-accent);
+}
+[data-block="valueList"] .value-list__inner,
+[data-block="activitiesList"] .activities-list__inner,
+[data-block="teamGrid"] .team-grid__inner,
+[data-block="contactCard"] .contact-card__inner,
+[data-block="faq"] .faq__inner,
+[data-block="documentDownloads"] .document-downloads__inner,
+[data-block="partnerLogos"] .partner-logos__inner,
+[data-block="event-list"] > :is(.event-list__title, .event-list__intro, .event-list__items) {
+  max-width: var(--site-readable-width);
+}
+[data-block="valueList"] .value-list__item,
+[data-block="activitiesList"] .activities-list__item,
+[data-block="teamGrid"] .team-person__figure,
+[data-block="documentDownloads"] .document-downloads__item,
+[data-block="faq"] .faq__item,
+[data-block="partnerLogos"] .partner-logos__item {
+  border: 0;
+  border-block-start: 1px solid var(--color-accent);
+  border-radius: 0;
+  background: transparent;
+  padding: var(--space-md) 0;
+}
+[data-block="event-list"] .event-list__item article {
+  border: 0;
+  border-inline-start: 2px solid var(--color-accent);
+  border-radius: 0;
+  background: transparent;
+  padding: var(--space-md) 0 var(--space-md) var(--space-md);
+}
+[data-block="valueList"] .value-list__items,
+[data-block="activitiesList"] .activities-list__items,
+[data-block="teamGrid"] .team-grid__list,
+[data-block="documentDownloads"] .document-downloads__list,
+[data-block="event-list"] .event-list__items,
+[data-block="faq"] .faq__list {
+  gap: var(--space-lg);
+}
+[data-block="valueList"] .value-list__icon {
+  color: var(--color-accent);
+}
+[data-block="activitiesList"] .activities-list__badge {
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: var(--color-bg);
+}
+[data-block="quote"] {
+  border-top: 1px solid var(--color-accent);
+  border-bottom: 1px solid var(--color-accent);
+}
+[data-block="quote"] .quote__text {
+  border-left: 0;
+  padding-left: 0;
+}
+[data-block="imageGallery"] .image-gallery__figure {
+  border: 1px solid var(--color-accent);
+  background: var(--color-bg);
+  padding: var(--space-xs);
 }
 `.trim();

@@ -162,6 +162,18 @@ export interface EditorAppProps {
 }
 
 type TabName = "editor" | "preview";
+type PreviewViewport = "fit" | "desktop" | "tablet" | "phone";
+
+const PREVIEW_VIEWPORT_OPTIONS: readonly {
+  readonly id: PreviewViewport;
+  readonly label: string;
+  readonly size: string;
+}[] = [
+  { id: "fit", label: "Fit", size: "Auto" },
+  { id: "desktop", label: "Desktop", size: "1440 x 900" },
+  { id: "tablet", label: "Tablet", size: "768 x 1024" },
+  { id: "phone", label: "Phone", size: "390 x 844" },
+];
 
 /**
  * Discriminated drill state for the editor pane.
@@ -186,6 +198,8 @@ type DrillMode =
   | { readonly kind: "block"; readonly blockId: string }
   | { readonly kind: "settings" }
   | { readonly kind: "theme" };
+
+type SaveStatus = "localOnly" | "saving" | "saved" | "error";
 
 export function EditorApp(props: EditorAppProps): JSX.Element {
   const translatorRef = useRef<Translator>();
@@ -234,7 +248,35 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
 
   const [snapshot, setSnapshot] = useState<Site>(state.getSnapshot());
   const [historyVersion, setHistoryVersion] = useState<number>(0);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>(
+    props.autosaveVfs === undefined ? "localOnly" : "saved",
+  );
+  const saveStatusSeqRef = useRef(0);
   useEffect(() => state.subscribe(setSnapshot), [state]);
+
+  useEffect(() => {
+    if (props.autosaveVfs === undefined) {
+      setSaveStatus("localOnly");
+      return;
+    }
+
+    const seq = ++saveStatusSeqRef.current;
+    setSaveStatus("saving");
+    const timer = setTimeout(() => {
+      void state
+        .flush()
+        .then(() => {
+          if (seq === saveStatusSeqRef.current) setSaveStatus("saved");
+        })
+        .catch(() => {
+          if (seq === saveStatusSeqRef.current) setSaveStatus("error");
+        });
+    }, 350);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [snapshot, state, props.autosaveVfs]);
 
   // Pass the spine-field metadata so the walker attaches tier/label
   // metadata onto each FieldNode. SpineForm reads `node.tier` to honour
@@ -338,6 +380,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
 
   const isNarrow = viewportWidth < MOBILE_BREAKPOINT_PX;
   const [activeTab, setActiveTab] = useState<TabName>("editor");
+  const [previewViewport, setPreviewViewport] = useState<PreviewViewport>("fit");
 
   // The page index currently surfaced in the spine form + preview. Defaults
   // to the home (page 0); reorder/clone/delete update this so the editor
@@ -840,7 +883,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       data-action="drill-back"
       onClick={() => setDrillMode({ kind: "blocks" })}
     >
-      Back to blocks
+      Back to page sections
     </button>
   );
 
@@ -949,7 +992,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
           onClick={() => setDrillMode({ kind: "settings" })}
         >
           <span data-testid="site-settings-link-label">Site settings</span>
-          <span data-testid="site-settings-link-hint">org · theme · languages</span>
+          <span data-testid="site-settings-link-hint">name, logo, languages</span>
         </button>
         <button
           type="button"
@@ -958,7 +1001,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
           onClick={() => setDrillMode({ kind: "theme" })}
         >
           <span data-testid="drill-in-theme-label">Theme</span>
-          <span data-testid="drill-in-theme-hint">visual treatment</span>
+          <span data-testid="drill-in-theme-hint">colors and style</span>
         </button>
       </>
     );
@@ -979,13 +1022,45 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     displayUrlForAssetPath,
   );
   const previewPane = (
-    <section data-testid="preview-pane" aria-label={t("pane.preview.label")}>
-      <iframe
-        ref={iframeRef}
-        title={t("pane.preview.label")}
-        srcdoc={previewSrcdoc}
-        sandbox="allow-same-origin"
-      />
+    <section
+      data-testid="preview-pane"
+      data-preview-viewport={previewViewport}
+      aria-label={t("pane.preview.label")}
+    >
+      <div data-testid="preview-toolbar">
+        <div
+          data-testid="viewport-preview-controls"
+          role="group"
+          aria-label="Preview viewport size"
+        >
+          {PREVIEW_VIEWPORT_OPTIONS.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              data-testid="viewport-preview-option"
+              data-viewport={option.id}
+              data-active={previewViewport === option.id}
+              aria-pressed={previewViewport === option.id}
+              title={`${option.label} preview (${option.size})`}
+              onClick={() => setPreviewViewport(option.id)}
+            >
+              <span data-testid="viewport-preview-label">{option.label}</span>
+              <span data-testid="viewport-preview-size">{option.size}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div data-testid="preview-canvas">
+        <div data-testid="preview-frame-shell" data-preview-viewport={previewViewport}>
+          {/* Scripts power renderer-owned preview interactions; same-origin keeps blob uploads visible. */}
+          <iframe
+            ref={iframeRef}
+            title={t("pane.preview.label")}
+            srcdoc={previewSrcdoc}
+            sandbox="allow-scripts allow-same-origin"
+          />
+        </div>
+      </div>
     </section>
   );
 
@@ -1006,6 +1081,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
         onRedo={doRedo}
         canUndo={canUndo}
         canRedo={canRedo}
+        saveStatus={saveStatus}
       />
       {isNarrow ? (
         <div data-testid="layout-tabs">
@@ -1069,12 +1145,21 @@ interface TopBarProps {
   readonly onRedo: () => void;
   readonly canUndo: boolean;
   readonly canRedo: boolean;
+  readonly saveStatus: SaveStatus;
 }
 
 function TopBar(props: TopBarProps): JSX.Element {
   const t = useTranslator();
   return (
     <header data-testid="top-bar">
+      <p
+        data-testid="save-status"
+        data-status={props.saveStatus}
+        aria-live="polite"
+        role={props.saveStatus === "error" ? "alert" : "status"}
+      >
+        {t(saveStatusMessageKey(props.saveStatus))}
+      </p>
       <button type="button" data-action="import" onClick={props.onImport}>
         {t("topbar.import")}
       </button>
@@ -1106,4 +1191,17 @@ function TopBar(props: TopBarProps): JSX.Element {
       </button>
     </header>
   );
+}
+
+function saveStatusMessageKey(status: SaveStatus): string {
+  switch (status) {
+    case "localOnly":
+      return "saveStatus.localOnly";
+    case "saving":
+      return "saveStatus.saving";
+    case "saved":
+      return "saveStatus.saved";
+    case "error":
+      return "saveStatus.error";
+  }
 }

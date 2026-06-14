@@ -31,16 +31,19 @@ export interface FieldOverride {
 }
 
 export const SPINE_FIELD_METADATA: readonly FieldOverride[] = [
+  // Hidden — internal file-format version, not user-editable content.
+  { path: "schemaVersion", tier: "hidden" },
+
   // theme picker — see ADR 0043 §"Metadata renderer: slot"
   { path: "theme.id", renderer: "theme-picker" },
   // theme tokens — covered by ThemeForm (T13); not in the spine walk
   // because theme is carved out (T5)
 
   // Page-level advanced fields
-  { path: "pages.[].slug", tier: "advanced", label: "Page address (the URL slug)" },
+  { path: "pages.[].slug", tier: "advanced", label: "Page link name" },
   { path: "pages.[].localizedAs", tier: "advanced", label: "Linked translation" },
-  { path: "pages.[].seo.title", tier: "advanced", label: "Search engine title" },
-  { path: "pages.[].seo.description", tier: "advanced", label: "Search engine snippet" },
+  { path: "pages.[].seo.title", tier: "advanced", label: "Google result title" },
+  { path: "pages.[].seo.description", tier: "advanced", label: "Google result description" },
 
   // Hidden — managed by reorder UI in pages-ops.ts
   { path: "pages.[].navOrder", tier: "hidden" },
@@ -55,7 +58,10 @@ export const BLOCK_FIELD_METADATA: Partial<
   Record<keyof typeof KnownBlockSchemas, readonly FieldOverride[]>
 > = {
   // Alt text relabel applies wherever a block has a user-editable alt.
-  hero: [{ path: "backgroundAlt", label: "Image description (for screen readers)" }],
+  hero: [
+    { path: "eyebrow", label: "Small label above title" },
+    { path: "backgroundAlt", label: "Image description (for screen readers)" },
+  ],
   quote: [{ path: "authorImageAlt", label: "Image description (for screen readers)" }],
   imageGallery: [{ path: "images.[].alt", label: "Image description (for screen readers)" }],
   teamGrid: [{ path: "people.[].photo.alt", label: "Image description (for screen readers)" }],

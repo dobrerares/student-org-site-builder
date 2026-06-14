@@ -22,6 +22,22 @@ const sampleEventImage = {
  * unambiguous.
  */
 describe("eventList block schema", () => {
+  const eventListWithUrl = (url?: string) => ({
+    id: "blk_events_url",
+    type: "eventList",
+    version: 1,
+    data: {
+      events: [
+        {
+          id: "ev_url",
+          title: "Event with URL",
+          startsAt: "2026-06-15T18:00:00+03:00",
+          ...(url === undefined ? {} : { url }),
+        },
+      ],
+    },
+  });
+
   test("validates a minimal well-formed eventList block (empty events)", () => {
     const block = {
       id: "blk_events_1",
@@ -84,6 +100,25 @@ describe("eventList block schema", () => {
       },
     };
     expect(EventListBlockSchema.safeParse(block).success).toBe(true);
+  });
+
+  test.each([
+    ["javascript: URL", "javascript:void(0)"],
+    ["data: URL", "data:text/plain,hello"],
+    ["bare domain without scheme", "www.example.org"],
+  ])("rejects eventList event URL with %s", (_caseName, url) => {
+    expect(EventListBlockSchema.safeParse(eventListWithUrl(url)).success).toBe(false);
+  });
+
+  test.each([
+    ["https URL", "https://example.org"],
+    ["site-relative path", "/contact"],
+  ])("accepts eventList event URL with %s", (_caseName, url) => {
+    expect(EventListBlockSchema.safeParse(eventListWithUrl(url)).success).toBe(true);
+  });
+
+  test("accepts eventList event URL being absent", () => {
+    expect(EventListBlockSchema.safeParse(eventListWithUrl()).success).toBe(true);
   });
 
   test("accepts ISO 8601 with a `Z` (UTC) suffix on startsAt", () => {

@@ -109,7 +109,7 @@ a {
   font-weight: 600;
   margin: 0 0 var(--space-sm) 0;
   color: var(--color-primary);
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 [data-block="hero"] .hero__subtitle {
   font-size: 1rem;
@@ -127,5 +127,77 @@ a {
   display: block;
   max-width: 100%;
   height: auto;
+}
+[data-site-nav],
+[data-language-switcher] {
+  max-width: 56rem;
+  margin-inline: auto;
+  border-bottom: 1px solid var(--color-muted);
+}
+[data-site-nav] ul,
+[data-language-switcher] ul {
+  gap: var(--space-md);
+}
+[data-block="valueList"],
+[data-block="activitiesList"],
+[data-block="teamGrid"],
+[data-block="contactCard"],
+[data-block="richText"],
+[data-block="quote"],
+[data-block="faq"],
+[data-block="documentDownloads"],
+[data-block="event-list"],
+[data-block="partnerLogos"],
+[data-block="imageGallery"] {
+  max-width: 56rem;
+  margin-inline: auto;
+  border-top: 1px solid var(--color-muted);
+}
+[data-block="valueList"] .value-list__item,
+[data-block="activitiesList"] .activities-list__item,
+[data-block="teamGrid"] .team-person__figure,
+[data-block="documentDownloads"] .document-downloads__item,
+[data-block="event-list"] .event-list__item article,
+[data-block="faq"] .faq__item,
+[data-block="partnerLogos"] .partner-logos__item {
+  border: 0;
+  border-top: 1px solid var(--color-muted);
+  border-radius: 0;
+  background: transparent;
+  padding: var(--space-md) 0;
+}
+[data-block="valueList"] .value-list__icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-bottom: var(--space-xs);
+}
+[data-block="activitiesList"][data-layout="cards"] .activities-list__items,
+[data-block="documentDownloads"][data-layout="cards"] .document-downloads__list,
+[data-block="teamGrid"] .team-grid__list {
+  gap: var(--space-lg);
+}
+[data-block="activitiesList"] .activities-list__body,
+[data-block="teamGrid"] .team-person__caption {
+  padding: 0;
+}
+[data-block="activitiesList"] .activities-list__badge {
+  background: transparent;
+  color: var(--color-accent);
+  padding: 0;
+  border-radius: 0;
+}
+[data-block="ctaBanner"] {
+  background: var(--color-fg);
+}
+[data-block="ctaBanner"] .ctaBanner__inner {
+  max-width: 56rem;
+}
+[data-block="ctaBanner"] .ctaBanner__button {
+  border-radius: 0;
+}
+[data-block="imageGallery"] .image-gallery__figure,
+[data-block="activitiesList"] .activities-list__media {
+  border-radius: 0;
+  background: transparent;
 }
 `.trim();

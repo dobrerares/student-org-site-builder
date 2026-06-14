@@ -10,6 +10,31 @@ import { PartnerLogosBlockSchema, validateBlock } from "../src/index.js";
  * { hash, path, mime, width, height, alt }.
  */
 describe("partnerLogos block schema", () => {
+  const partnerLogo = {
+    hash: "8e3a7f",
+    path: "assets/8e3a7f.png",
+    metadataPath: "assets/8e3a7f.metadata.json",
+    mime: "image/png",
+    width: 320,
+    height: 120,
+    alt: "Acme Corp logo",
+  };
+
+  const partnerLogosWithUrl = (url?: string) => ({
+    id: "blk_partners_url",
+    type: "partnerLogos",
+    version: 1,
+    data: {
+      partners: [
+        {
+          name: "Acme Corp",
+          ...(url === undefined ? {} : { url }),
+          logo: partnerLogo,
+        },
+      ],
+    },
+  });
+
   test("validates a minimal partnerLogos block (no title, single partner)", () => {
     const block = {
       id: "blk_partners_1",
@@ -33,6 +58,25 @@ describe("partnerLogos block schema", () => {
       },
     };
     expect(PartnerLogosBlockSchema.safeParse(block).success).toBe(true);
+  });
+
+  test.each([
+    ["javascript: URL", "javascript:void(0)"],
+    ["data: URL", "data:text/plain,hello"],
+    ["bare domain without scheme", "www.example.org"],
+  ])("rejects partnerLogos partner URL with %s", (_caseName, url) => {
+    expect(PartnerLogosBlockSchema.safeParse(partnerLogosWithUrl(url)).success).toBe(false);
+  });
+
+  test.each([
+    ["https URL", "https://example.org"],
+    ["site-relative path", "/contact"],
+  ])("accepts partnerLogos partner URL with %s", (_caseName, url) => {
+    expect(PartnerLogosBlockSchema.safeParse(partnerLogosWithUrl(url)).success).toBe(true);
+  });
+
+  test("accepts partnerLogos partner URL being absent", () => {
+    expect(PartnerLogosBlockSchema.safeParse(partnerLogosWithUrl()).success).toBe(true);
   });
 
   test("validates a partnerLogos block with title and multiple partners with optional URLs", () => {

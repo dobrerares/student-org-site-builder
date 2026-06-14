@@ -34,6 +34,7 @@ export const DocumentAssetRefSchema = z.looseObject({
   metadataPath: z.string().min(1),
   mime: z.string().min(1),
   byteSize: z.number().int().positive(),
+  originalName: z.string().optional(),
 });
 
 export const DocumentDownloadFileSchema = z.looseObject({

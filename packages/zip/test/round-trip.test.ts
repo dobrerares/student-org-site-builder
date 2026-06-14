@@ -16,7 +16,7 @@ function bytes(s: string): Uint8Array {
 }
 
 describe("exportToZip", () => {
-  test("produces a Blob containing data.json, DEPLOY.md, dist/, and any asset bytes", async () => {
+  test("produces a Blob containing data.json, DEPLOY.md, built dist/, and any asset bytes", async () => {
     const assets = new MemoryDriver();
     await assets.write("assets/8e3a7f.png", new Uint8Array([0x89, 0x50, 0x4e, 0x47]));
     await assets.write("assets/4a91d2.jpg", new Uint8Array([0xff, 0xd8, 0xff, 0xe0]));
@@ -29,9 +29,31 @@ describe("exportToZip", () => {
     const paths = await inspector.list();
     expect(paths).toContain("data.json");
     expect(paths).toContain("DEPLOY.md");
-    expect(paths.some((p) => p.startsWith("dist/"))).toBe(true);
+    expect(paths).toContain("dist/index.html");
+    expect(paths).toContain("dist/robots.txt");
+    expect(paths).toContain("dist/sitemap.xml");
+    expect(paths).toContain("dist/_lighthouse-budget.json");
+    expect(paths).not.toContain("dist/.gitkeep");
     expect(paths).toContain("assets/8e3a7f.png");
     expect(paths).toContain("assets/4a91d2.jpg");
+  });
+
+  test("dist/index.html is the rendered static site, not a placeholder", async () => {
+    const blob = await exportToZip(historipol, new MemoryDriver());
+    const inspector = ZipDriver.fromZipBytes(await blobToBytes(blob));
+    const html = new TextDecoder().decode(await inspector.read("dist/index.html"));
+    expect(html).toContain("<!doctype html>");
+    expect(html).toContain("HISTORIPOL");
+  });
+
+  test("DEPLOY.md uses the generated Cloudflare guide in the site's language", async () => {
+    const blob = await exportToZip(historipol, new MemoryDriver());
+    const inspector = ZipDriver.fromZipBytes(await blobToBytes(blob));
+    const deployMd = new TextDecoder().decode(await inspector.read("DEPLOY.md"));
+    expect(deployMd).toContain("Asociația Studențească HISTORIPOL");
+    expect(deployMd).toMatch(/încărcare directă/i);
+    expect(deployMd).toMatch(/Cloudflare Pages/);
+    expect(deployMd).not.toMatch(/placeholder/i);
   });
 
   test("data.json in the zip equals JSON.stringify(siteData) (with stable formatting)", async () => {

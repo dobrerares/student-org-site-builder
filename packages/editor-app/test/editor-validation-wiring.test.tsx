@@ -125,7 +125,7 @@ describe("EditorApp pre-export gate", () => {
     expect(confirm!.disabled).toBe(true);
 
     const input = dialog!.querySelector<HTMLInputElement>('[data-testid="export-confirm-input"]');
-    fireEvent.input(input!, { target: { value: "EXPORT" } });
+    fireEvent.input(input!, { target: { value: "DOWNLOAD" } });
     expect(confirm!.disabled).toBe(false);
     fireEvent.click(confirm!);
 

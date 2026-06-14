@@ -4,7 +4,7 @@ Bidirectional import / export with round-trip preservation, plus the
 user-facing `DEPLOY.md` generator.
 
 `exportToZip(siteData, vfs)` produces a `Blob` with the v1 PRD layout —
-`data.json` + `assets/` + (placeholder) `dist/` + `DEPLOY.md`.
+`data.json` + `assets/` + built `dist/` + generated `DEPLOY.md`.
 `importFromZip(blob)` reads the blob back into a validated `siteData`
 plus a `MemoryDriver` holding the asset bytes, running `@sosb/schema`'s
 `migrateSite` on the way in.
@@ -93,7 +93,8 @@ generator design.
 
 ## Out of scope (v1)
 
-- Real `dist/` content in the exported zip (issues #5, #46).
-- Asset transforms — resizing, hashing, re-encoding (issue #8).
-- Filesystem / Electron-backed VFS drivers (issues #35, #37).
-- Editor UI integration (issue #7).
+- Asset transforms during zip export. Upload-time image/document processing lives in
+  `@sosb/assets`; export copies the prepared `assets/` files verbatim.
+- Filesystem / Electron-backed VFS drivers outside the VFS interface.
+- Hosted publishing automation. The zip contains a static `dist/` folder and guide,
+  but users still upload or connect it to Cloudflare Pages themselves.

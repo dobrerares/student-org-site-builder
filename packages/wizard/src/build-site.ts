@@ -12,7 +12,17 @@
  * Tracking issue: #33.
  */
 
-import { HERO_BLOCK_VERSION, SITE_SCHEMA_VERSION, type Site } from "@sosb/schema";
+import {
+  ACTIVITIES_LIST_BLOCK_VERSION,
+  CONTACT_CARD_BLOCK_VERSION,
+  HERO_BLOCK_VERSION,
+  RICH_TEXT_BLOCK_VERSION,
+  TEAM_GRID_BLOCK_VERSION,
+  VALUE_LIST_BLOCK_VERSION,
+  SITE_SCHEMA_VERSION,
+  type BlockEnvelope,
+  type Site,
+} from "@sosb/schema";
 import type { WizardData } from "./state-machine.js";
 
 const DEFAULT_THEME_ID = "minimal";
@@ -27,6 +37,16 @@ const DEFAULT_HOME_SLUG_RO = "acasa";
 const DEFAULT_HOME_SLUG_EN = "home";
 const DEFAULT_HOME_NAV_LABEL_RO = "Acasă";
 const DEFAULT_HOME_NAV_LABEL_EN = "Home";
+const MANDATORY_BLOCK_ORDER = [
+  "hero",
+  "richText",
+  "valueList",
+  "activitiesList",
+  "teamGrid",
+  "contactCard",
+] as const;
+
+type WizardStarterBlockType = (typeof MANDATORY_BLOCK_ORDER)[number];
 
 /**
  * Pure mapper from wizard data to a `Site`. Each call returns a fresh
@@ -53,6 +73,7 @@ export function buildSiteFromWizard(data: WizardData): Site {
 
   const heroTitle = data.content?.heroTitle?.trim() || tagline?.trim() || orgName;
   const heroSubtitle = data.content?.heroSubtitle?.trim();
+  const selectedSections = selectedStarterSections(data);
 
   const homePage = {
     slug: defaultLanguage === "en" ? DEFAULT_HOME_SLUG_EN : DEFAULT_HOME_SLUG_RO,
@@ -60,14 +81,9 @@ export function buildSiteFromWizard(data: WizardData): Site {
     navLabel: defaultLanguage === "en" ? DEFAULT_HOME_NAV_LABEL_EN : DEFAULT_HOME_NAV_LABEL_RO,
     navOrder: 0,
     showInNav: true,
-    blocks: [
-      {
-        id: "blk_wizard_hero",
-        type: "hero",
-        version: HERO_BLOCK_VERSION,
-        data: heroSubtitle ? { title: heroTitle, subtitle: heroSubtitle } : { title: heroTitle },
-      },
-    ],
+    blocks: selectedSections.map((type) =>
+      starterBlockFor(type, { orgName, heroTitle, heroSubtitle }),
+    ),
   };
 
   return {
@@ -84,4 +100,91 @@ export function buildSiteFromWizard(data: WizardData): Site {
     languages,
     pages: [homePage],
   };
+}
+
+function selectedStarterSections(data: WizardData): WizardStarterBlockType[] {
+  const requested = data.sections?.mandatory;
+  if (requested === undefined) return [...MANDATORY_BLOCK_ORDER];
+
+  const allowed = new Set<string>(MANDATORY_BLOCK_ORDER);
+  const selected = MANDATORY_BLOCK_ORDER.filter(
+    (type) => requested.includes(type) && allowed.has(type),
+  );
+  return selected.length > 0 ? selected : ["hero"];
+}
+
+function starterBlockFor(
+  type: WizardStarterBlockType,
+  context: {
+    readonly orgName: string;
+    readonly heroTitle: string;
+    readonly heroSubtitle: string | undefined;
+  },
+): BlockEnvelope {
+  switch (type) {
+    case "hero":
+      return {
+        id: "blk_wizard_hero",
+        type,
+        version: HERO_BLOCK_VERSION,
+        data:
+          context.heroSubtitle !== undefined
+            ? { title: context.heroTitle, subtitle: context.heroSubtitle }
+            : { title: context.heroTitle },
+      };
+    case "richText":
+      return {
+        id: "blk_wizard_about",
+        type,
+        version: RICH_TEXT_BLOCK_VERSION,
+        data: {
+          markdown: `## About ${context.orgName}\n\nWrite a short introduction for your organisation here.`,
+        },
+      };
+    case "valueList":
+      return {
+        id: "blk_wizard_values",
+        type,
+        version: VALUE_LIST_BLOCK_VERSION,
+        data: {
+          title: "Our values",
+          items: [{ label: "Value name", description: "Short description of this value." }],
+          layout: "grid",
+          columns: 3,
+        },
+      };
+    case "activitiesList":
+      return {
+        id: "blk_wizard_activities",
+        type,
+        version: ACTIVITIES_LIST_BLOCK_VERSION,
+        data: {
+          title: "Activities",
+          layout: "cards",
+          items: [{ title: "New activity" }],
+        },
+      };
+    case "teamGrid":
+      return {
+        id: "blk_wizard_team",
+        type,
+        version: TEAM_GRID_BLOCK_VERSION,
+        data: {
+          title: "Team",
+          columns: 3,
+          people: [{ name: "Member name", role: "Role" }],
+        },
+      };
+    case "contactCard":
+      return {
+        id: "blk_wizard_contact",
+        type,
+        version: CONTACT_CARD_BLOCK_VERSION,
+        data: {
+          address: "Address line",
+          email: "contact@example.org",
+          phone: "+40 700 000 000",
+        },
+      };
+  }
 }

@@ -20,6 +20,15 @@ import { validatePath, validatePrefix } from "./path.js";
 export const ZIP_DRIVER_MTIME = Date.UTC(1980, 0, 1);
 
 /**
+ * Import-side decompression limits for untrusted zip input. These are
+ * deliberately generous for v1 so ordinary exported sites pass while
+ * zip-bomb style archives are rejected before unbounded inflation.
+ */
+export const ZIP_IMPORT_MAX_ENTRIES = 2_000;
+export const ZIP_IMPORT_MAX_ENTRY_BYTES = 50 * 1024 * 1024; // 50 MiB per entry
+export const ZIP_IMPORT_MAX_TOTAL_BYTES = 200 * 1024 * 1024; // 200 MiB declared total
+
+/**
  * ZIP-backed VFS driver. Functionally identical to `MemoryDriver` for
  * read/write/list/delete/copy/has — both keep an in-memory map. The
  * ZipDriver adds two static-shape conversions:
@@ -48,16 +57,44 @@ export class ZipDriver implements Vfs {
    * (trailing `/` with no body) are skipped — directories are implicit
    * in a flat-keyed VFS.
    */
-  static fromZipBytes(input: Uint8Array): ZipDriver {
+  static fromZipBytes(
+    input: Uint8Array,
+    limits: { maxEntries?: number; maxEntryBytes?: number; maxTotalBytes?: number } = {},
+  ): ZipDriver {
+    const maxEntries = limits.maxEntries ?? ZIP_IMPORT_MAX_ENTRIES;
+    const maxEntryBytes = limits.maxEntryBytes ?? ZIP_IMPORT_MAX_ENTRY_BYTES;
+    const maxTotalBytes = limits.maxTotalBytes ?? ZIP_IMPORT_MAX_TOTAL_BYTES;
+    let entryCount = 0;
+    let declaredTotalBytes = 0;
     let unzipped: Record<string, Uint8Array>;
     try {
-      unzipped = unzipSync(input);
+      unzipped = unzipSync(input, {
+        filter(file) {
+          if (file.name.endsWith("/")) return true;
+          entryCount += 1;
+          if (entryCount > maxEntries) {
+            throw new Error("zip: import limits exceeded (entry count)");
+          }
+          if (file.originalSize > maxEntryBytes) {
+            throw new Error("zip: import limits exceeded (entry size)");
+          }
+          declaredTotalBytes += file.originalSize;
+          if (declaredTotalBytes > maxTotalBytes) {
+            throw new Error("zip: import limits exceeded (total size)");
+          }
+          return true;
+        },
+      });
     } catch (cause) {
+      if (cause instanceof Error && cause.message.startsWith("zip: import limits exceeded")) {
+        throw cause;
+      }
       const err = new Error("zip: failed to decode zip bytes (input is not a valid zip)");
       (err as Error & { cause?: unknown }).cause = cause;
       throw err;
     }
     const driver = new ZipDriver();
+    let actualTotalBytes = 0;
     for (const [rawName, body] of Object.entries(unzipped)) {
       // Normalise the entry name. fflate exposes the raw zip path; we
       // strip a leading `./` and reject anything that escapes the
@@ -70,6 +107,13 @@ export class ZipDriver implements Vfs {
           `zip: malformed entry name "${rawName}" (absolute, backslash, or '..' segment)`,
         );
         throw err;
+      }
+      if (body.byteLength > maxEntryBytes) {
+        throw new Error("zip: import limits exceeded (entry size)");
+      }
+      actualTotalBytes += body.byteLength;
+      if (actualTotalBytes > maxTotalBytes) {
+        throw new Error("zip: import limits exceeded (total size)");
       }
       driver.entries.set(name, cloneBytes(body));
     }

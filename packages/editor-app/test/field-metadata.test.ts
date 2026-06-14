@@ -17,6 +17,11 @@ describe("field-metadata", () => {
     expect(entry?.tier).toBe("hidden");
   });
 
+  test("SPINE_FIELD_METADATA hides the internal schema version", () => {
+    const entry = SPINE_FIELD_METADATA.find((e) => e.path === "schemaVersion");
+    expect(entry?.tier).toBe("hidden");
+  });
+
   test("SPINE_FIELD_METADATA assigns the theme-picker renderer to theme.id", () => {
     const entry = SPINE_FIELD_METADATA.find((e) => e.path === "theme.id");
     expect(entry?.renderer).toBe("theme-picker");
@@ -59,6 +64,11 @@ describe("field-metadata", () => {
         "Image description (for screen readers)",
       );
     }
+  });
+
+  test("BLOCK_FIELD_METADATA uses plain copy for hero eyebrow", () => {
+    const entry = BLOCK_FIELD_METADATA.hero?.find((e) => e.path === "eyebrow");
+    expect(entry?.label).toBe("Small label above title");
   });
 
   test("every entry in both tables uses the canonical dotted path format", () => {

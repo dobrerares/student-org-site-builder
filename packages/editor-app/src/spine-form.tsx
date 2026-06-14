@@ -13,6 +13,7 @@ import { expandAltSyncPatches, suggestedAltForAssetPath } from "./alt-sync.js";
 import { AdvancedToggle } from "./advanced-toggle.js";
 import { AssetPicker } from "./asset-picker.js";
 import { DocumentPicker, type DocumentAssetRefLike } from "./document-picker.js";
+import { fieldLabel, optionLabel } from "./field-labels.js";
 import type { FieldNode } from "./form-generator.js";
 import { getAtPath, setAtPath } from "./get-set-path.js";
 import { useTranslator } from "./i18n-context.js";
@@ -84,12 +85,13 @@ function FieldRenderer({
 
   const dottedPath = node.path.join(".");
   const value = getAtPath(site, node.path);
+  const label = fieldLabel(node);
 
   switch (node.kind) {
     case "object":
       return (
         <fieldset data-field={dottedPath} data-kind="object">
-          <legend>{node.name}</legend>
+          <legend>{label}</legend>
           {node.fields.map((child) => (
             <FieldRenderer
               key={child.path.join(".")}
@@ -108,7 +110,7 @@ function FieldRenderer({
     case "array":
       return (
         <fieldset data-field={dottedPath} data-kind="array">
-          <legend>{node.name}</legend>
+          <legend>{label}</legend>
           <p data-testid="array-summary">
             {Array.isArray(value)
               ? t("form.array.itemCount", { count: value.length })
@@ -120,7 +122,7 @@ function FieldRenderer({
     case "string":
       return (
         <label data-field-label={dottedPath}>
-          <span>{node.name}</span>
+          <span>{label}</span>
           <input
             type="text"
             data-field={dottedPath}
@@ -138,7 +140,7 @@ function FieldRenderer({
     case "number":
       return (
         <label data-field-label={dottedPath}>
-          <span>{node.name}</span>
+          <span>{label}</span>
           <input
             type="number"
             data-field={dottedPath}
@@ -167,14 +169,14 @@ function FieldRenderer({
               onPatch(node.path, event.currentTarget.checked);
             }}
           />
-          <span>{node.name}</span>
+          <span>{label}</span>
         </label>
       );
 
     case "enum":
       return (
         <label data-field-label={dottedPath}>
-          <span>{node.name}</span>
+          <span>{label}</span>
           <select
             data-field={dottedPath}
             value={typeof value === "string" ? value : ""}
@@ -185,7 +187,7 @@ function FieldRenderer({
             {node.optional ? <option value="">{t("form.field.unset")}</option> : null}
             {node.options.map((option) => (
               <option key={option} value={option}>
-                {option}
+                {optionLabel(option)}
               </option>
             ))}
           </select>

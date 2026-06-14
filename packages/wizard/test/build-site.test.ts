@@ -118,13 +118,20 @@ describe("buildSiteFromWizard — languages → defaultLanguage + languages", ()
 });
 
 describe("buildSiteFromWizard — sections → page blocks", () => {
-  test("the home page contains a hero block (mandatory always)", () => {
+  test("the home page contains all starter sections by default", () => {
     let state = createInitialState();
     state = patch(state, "basics", { name: "Org" });
     const site = buildSiteFromWizard(state.data);
     expect(site.pages).toHaveLength(1);
     const home = site.pages[0]!;
-    expect(home.blocks.some((b) => b.type === "hero")).toBe(true);
+    expect(home.blocks.map((b) => b.type)).toEqual([
+      "hero",
+      "richText",
+      "valueList",
+      "activitiesList",
+      "teamGrid",
+      "contactCard",
+    ]);
   });
 
   test("each block on the home page has a unique id", () => {
@@ -133,12 +140,26 @@ describe("buildSiteFromWizard — sections → page blocks", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  test("sections step omitting a mandatory block defaults to all-mandatory", () => {
+  test("an explicit section selection controls which starter blocks are created", () => {
     let state = createInitialState();
     state = patch(state, "basics", { name: "Org" });
-    // sections unset → fall back to defaults, hero block always present.
+    state = patch(state, "sections", {
+      mandatory: ["hero", "teamGrid", "contactCard"],
+    });
     const site = buildSiteFromWizard(state.data);
-    expect(site.pages[0]!.blocks.some((b) => b.type === "hero")).toBe(true);
+    expect(site.pages[0]!.blocks.map((b) => b.type)).toEqual([
+      "hero",
+      "teamGrid",
+      "contactCard",
+    ]);
+  });
+
+  test("an empty section selection keeps a top page header so the site is usable", () => {
+    let state = createInitialState();
+    state = patch(state, "basics", { name: "Org" });
+    state = patch(state, "sections", { mandatory: [] });
+    const site = buildSiteFromWizard(state.data);
+    expect(site.pages[0]!.blocks.map((b) => b.type)).toEqual(["hero"]);
   });
 });
 

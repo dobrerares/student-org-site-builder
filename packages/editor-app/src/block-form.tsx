@@ -53,6 +53,7 @@ import { fieldsFromSchema, type FieldNode } from "./form-generator.js";
 import { getAtPath } from "./get-set-path.js";
 import { AssetPicker } from "./asset-picker.js";
 import { DocumentPicker, type DocumentAssetRefLike } from "./document-picker.js";
+import { fieldLabel, optionLabel } from "./field-labels.js";
 import { MEDIA_PICKER_RENDERERS } from "./media-picker-renderers.js";
 
 /**
@@ -207,12 +208,13 @@ function FieldRenderer({
 
   const dottedPath = node.path.join(".");
   const value = getAtPath(data, node.path);
+  const label = fieldLabel(node);
 
   switch (node.kind) {
     case "object":
       return (
         <fieldset data-field={dottedPath} data-kind="object">
-          <legend>{node.name}</legend>
+          <legend>{label}</legend>
           {node.fields.map((child) => (
             <FieldRenderer
               key={child.path.join(".")}
@@ -256,7 +258,7 @@ function FieldRenderer({
 
       return (
         <fieldset data-field={dottedPath} data-kind="array">
-          <legend>{node.name}</legend>
+          <legend>{label}</legend>
           <ol data-testid={`${dottedPath}__items`}>
             {items.map((_, idx) => {
               const itemPath: (string | number)[] = [...node.path, idx];
@@ -316,7 +318,7 @@ function FieldRenderer({
     case "string":
       return (
         <label data-field-label={dottedPath}>
-          <span>{node.name}</span>
+          <span>{label}</span>
           <input
             type="text"
             data-field={dottedPath}
@@ -334,7 +336,7 @@ function FieldRenderer({
     case "number":
       return (
         <label data-field-label={dottedPath}>
-          <span>{node.name}</span>
+          <span>{label}</span>
           <input
             type="number"
             data-field={dottedPath}
@@ -363,14 +365,14 @@ function FieldRenderer({
               onPatch(node.path, event.currentTarget.checked);
             }}
           />
-          <span>{node.name}</span>
+          <span>{label}</span>
         </label>
       );
 
     case "enum":
       return (
         <label data-field-label={dottedPath}>
-          <span>{node.name}</span>
+          <span>{label}</span>
           <select
             data-field={dottedPath}
             value={typeof value === "string" ? value : ""}
@@ -382,7 +384,7 @@ function FieldRenderer({
             {node.optional ? <option value="">(unset)</option> : null}
             {node.options.map((option) => (
               <option key={option} value={option}>
-                {option}
+                {optionLabel(option)}
               </option>
             ))}
           </select>
@@ -430,7 +432,11 @@ function FieldRenderer({
         return (
           <DocumentPicker
             value={value as DocumentAssetRefLike | undefined}
-            onChange={(next) => onPatch(node.path, next)}
+            onChange={(next) => {
+              for (const patch of expandDocumentAssetPatches(data, node.path, next)) {
+                onPatch(patch.path, patch.value);
+              }
+            }}
             uploader={documentUploader}
           />
         );
@@ -461,4 +467,36 @@ function rebaseElement(node: FieldNode, basePath: (string | number)[]): FieldNod
     }
   }
   return rebase(node, basePath);
+}
+
+function expandDocumentAssetPatches(
+  dataRoot: unknown,
+  assetPath: readonly (string | number)[],
+  ref: DocumentAssetRefLike,
+): readonly { readonly path: readonly (string | number)[]; readonly value: unknown }[] {
+  const patches: { path: readonly (string | number)[]; value: unknown }[] = [
+    { path: assetPath, value: ref },
+  ];
+  const last = assetPath[assetPath.length - 1];
+  if (last !== "asset") return patches;
+
+  const labelPath = [...assetPath.slice(0, -1), "label"];
+  const existingLabel = getAtPath(dataRoot, labelPath);
+  if (typeof existingLabel === "string" && existingLabel.trim().length > 0) return patches;
+
+  const fallbackLabel = documentLabelFor(ref);
+  if (fallbackLabel.length > 0) {
+    patches.push({ path: labelPath, value: fallbackLabel });
+  }
+  return patches;
+}
+
+function documentLabelFor(ref: DocumentAssetRefLike): string {
+  if (typeof ref.originalName === "string" && ref.originalName.trim().length > 0) {
+    return ref.originalName.trim();
+  }
+  const path = typeof ref.path === "string" ? ref.path : "";
+  const slash = path.lastIndexOf("/");
+  const name = slash >= 0 ? path.slice(slash + 1) : path;
+  return name.trim();
 }

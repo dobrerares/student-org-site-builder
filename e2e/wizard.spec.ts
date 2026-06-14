@@ -83,6 +83,8 @@ test("walking through every step ends on confirm with a valid Site emitted on Cr
 
   await expect(page.locator('[data-wizard-step="confirm"]').first()).toBeVisible();
   await expect(page.getByTestId("confirm-summary")).toContainText("HISTORIPOL");
+  await expect(page.getByTestId("confirm-summary")).toContainText("Top page header");
+  await expect(page.getByTestId("confirm-summary")).not.toContainText("richText");
 
   await page.locator('[data-action="create"]').click();
   const completed = await page.evaluate(() => window.__sosbWizard.completed);
@@ -90,6 +92,14 @@ test("walking through every step ends on confirm with a valid Site emitted on Cr
   expect(completed!.org.name).toBe("HISTORIPOL");
   expect(completed!.org.tagline).toBe("Studenți care fac istorie.");
   expect(Array.isArray(completed!.pages)).toBe(true);
+  expect(completed!.pages[0]!.blocks.map((block) => block.type)).toEqual([
+    "hero",
+    "richText",
+    "valueList",
+    "activitiesList",
+    "teamGrid",
+    "contactCard",
+  ]);
 });
 
 test("Back returns to a previous step preserving captured data", async ({ page }) => {

@@ -2,6 +2,22 @@ import { describe, expect, test } from "vitest";
 import { TeamGridBlockSchema, validateBlock } from "../src/index.js";
 
 describe("teamGrid block schema", () => {
+  const teamGridWithSocialUrl = (url: string) => ({
+    id: "blk_team_social_url",
+    type: "teamGrid",
+    version: 1,
+    data: {
+      columns: 3,
+      people: [
+        {
+          name: "Ana Popescu",
+          role: "Președinte",
+          socials: [{ platform: "linkedin", url }],
+        },
+      ],
+    },
+  });
+
   test("validates a well-formed teamGrid block (ungrouped)", () => {
     const block = {
       id: "blk_team_01",
@@ -59,6 +75,21 @@ describe("teamGrid block schema", () => {
       },
     };
     expect(TeamGridBlockSchema.safeParse(block).success).toBe(true);
+  });
+
+  test.each([
+    ["javascript: URL", "javascript:void(0)"],
+    ["data: URL", "data:text/plain,hello"],
+    ["bare domain without scheme", "www.example.org"],
+  ])("rejects teamGrid social link with %s", (_caseName, url) => {
+    expect(TeamGridBlockSchema.safeParse(teamGridWithSocialUrl(url)).success).toBe(false);
+  });
+
+  test.each([
+    ["https URL", "https://example.org"],
+    ["site-relative path", "/contact"],
+  ])("accepts teamGrid social link with %s", (_caseName, url) => {
+    expect(TeamGridBlockSchema.safeParse(teamGridWithSocialUrl(url)).success).toBe(true);
   });
 
   test("validates a teamGrid with no title and no intro (both optional)", () => {

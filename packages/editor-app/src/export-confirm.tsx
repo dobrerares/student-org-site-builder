@@ -4,7 +4,7 @@
  * Two flows depending on `result`:
  *
  *  - If `errors.length > 0`: a high-friction confirmation gate. The user
- *    must type the literal string `EXPORT` into a textbox before the
+ *    must type the literal string `DOWNLOAD` into a textbox before the
  *    confirm button enables. Lists every error in the dialog body.
  *  - If `errors.length === 0` (warnings only): a single-click "Export
  *    anyway" button is enabled immediately. Lists every warning in the
@@ -22,9 +22,10 @@
 import type { JSX } from "preact";
 import { useState } from "preact/hooks";
 import type { ValidationIssue, ValidationResult } from "@sosb/schema";
+import { issuePathLabel } from "./field-labels.js";
 import { pathToDotted } from "./issue-navigate.js";
 
-const CONFIRM_PHRASE = "EXPORT";
+const CONFIRM_PHRASE = "DOWNLOAD";
 
 export interface ExportConfirmDialogProps {
   readonly result: ValidationResult;
@@ -52,10 +53,12 @@ export function ExportConfirmDialog({
       aria-describedby={descId}
       data-testid="export-confirm-dialog"
     >
-      <h2 id={headingId}>{hasErrors ? "Errors block this export" : "Export with warnings?"}</h2>
+      <h2 id={headingId}>
+        {hasErrors ? "Fix these before downloading" : "Download with warnings?"}
+      </h2>
       <p id={descId}>
         {hasErrors
-          ? `${result.errors.length} error(s) and ${result.warnings.length} warning(s) found. Errors should be fixed before publishing — but you can override.`
+          ? `${result.errors.length} issue(s) need attention and ${result.warnings.length} warning(s) were found. Fixing them first is best, but you can still download a copy.`
           : `${result.warnings.length} warning(s) found. These won't break your site, but addressing them will improve quality.`}
       </p>
 
@@ -94,7 +97,7 @@ export function ExportConfirmDialog({
             if (confirmEnabled) onConfirm();
           }}
         >
-          {hasErrors ? "Export anyway" : "Export anyway"}
+          {hasErrors ? "Download anyway" : "Download anyway"}
         </button>
       </div>
     </div>
@@ -116,21 +119,25 @@ function IssueList({ severity, issues }: IssueListProps): JSX.Element {
       <ul>
         {issues.map((issue, idx) => (
           <li key={`${severity}-${idx}-${issue.code}`}>
-            <span
-              data-issue
-              data-severity={severity}
-              data-path={pathToDotted(issue.path)}
-              data-code={issue.code}
-            >
-              <span data-issue-message>{issue.message}</span>
-              <span data-issue-path>
-                {" "}
-                {pathToDotted(issue.path) === "" ? "(site)" : pathToDotted(issue.path)}
-              </span>
-            </span>
+            <IssueRow severity={severity} issue={issue} />
           </li>
         ))}
       </ul>
     </div>
+  );
+}
+
+interface IssueRowProps {
+  readonly severity: "error" | "warning" | "info";
+  readonly issue: ValidationIssue;
+}
+
+function IssueRow({ severity, issue }: IssueRowProps): JSX.Element {
+  const dotted = pathToDotted(issue.path);
+  return (
+    <span data-issue data-severity={severity} data-path={dotted} data-code={issue.code}>
+      <span data-issue-message>{issue.message}</span>
+      <span data-issue-path> {issuePathLabel(issue.path)}</span>
+    </span>
   );
 }

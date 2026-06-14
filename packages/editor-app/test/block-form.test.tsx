@@ -69,6 +69,30 @@ function noopDocumentUploader(): Promise<DocumentAssetRef> {
 describe("BlockForm — valueList items add/remove/reorder", () => {
   afterEach(cleanup);
 
+  test("renders friendly labels from field metadata instead of raw field names", () => {
+    const harness = makeHarness({
+      items: [{ label: "First" }],
+      layout: "grid",
+      columns: 3,
+    });
+
+    const { container } = render(
+      <BlockForm
+        schema={ValueListDataSchema}
+        data={harness.data}
+        onPatch={(path, value) => harness.patches.push({ path, value })}
+        onArrayChange={(path, next) => harness.arrayChanges.push({ path, next })}
+        newItem={newValueListItem}
+        uploader={noopUploader}
+        documentUploader={noopDocumentUploader}
+        overrides={[{ path: "columns", label: "Number of columns" }]}
+      />,
+    );
+
+    const label = container.querySelector('[data-field-label="columns"] span');
+    expect(label?.textContent).toBe("Number of columns");
+  });
+
   test("renders one fieldset per item with controls", () => {
     const harness = makeHarness({
       items: [
@@ -793,6 +817,49 @@ describe("BlockForm — documentDownloads wires DocumentPicker per file (ADR 004
     expect(patches.length).toBe(1);
     expect(patches[0]!.path).toEqual(["files", 1, "asset"]);
     expect(patches[0]!.value).toEqual(uploaded);
+  });
+
+  test("uploading into a new empty file row fills the label from the uploaded filename", async () => {
+    const uploaded: DocumentAssetRef = {
+      ...makeDocumentAsset("uploaded"),
+      originalName: "uploaded-report.pdf",
+    };
+    const documentUploader = vi.fn().mockResolvedValue(uploaded);
+    const patches: { path: readonly (string | number)[]; value: unknown }[] = [];
+    const data = {
+      title: "Documents",
+      layout: "list",
+      files: [{}],
+    } as unknown as DocumentDownloadsData;
+    const { container } = render(
+      <BlockForm
+        schema={DocumentDownloadsDataSchema}
+        data={data}
+        onPatch={(path, value) => patches.push({ path, value })}
+        onArrayChange={() => {}}
+        uploader={noopUploader}
+        documentUploader={documentUploader}
+      />,
+    );
+
+    const fileInput = container.querySelector<HTMLInputElement>(
+      '[data-testid="document-picker-file-input"]',
+    );
+    expect(fileInput).not.toBeNull();
+    const file = new File([new Uint8Array([0x25, 0x50, 0x44, 0x46])], "uploaded-report.pdf", {
+      type: "application/pdf",
+    });
+    Object.defineProperty(fileInput!, "files", { value: [file], configurable: true });
+    fireEvent.change(fileInput!);
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(patches.map((patch) => patch.path)).toEqual([
+      ["files", 0, "asset"],
+      ["files", 0, "label"],
+    ]);
+    expect(patches[1]!.value).toBe("uploaded-report.pdf");
   });
 });
 

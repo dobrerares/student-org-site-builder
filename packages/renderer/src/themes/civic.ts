@@ -141,7 +141,7 @@ a:hover, a:focus-visible {
   font-weight: 700;
   font-size: 2.5rem;
   line-height: 1.15;
-  letter-spacing: -0.005em;
+  letter-spacing: 0;
   color: var(--color-primary);
   margin: 0 0 var(--space-md) 0;
 }
@@ -164,5 +164,80 @@ a:hover, a:focus-visible {
   display: block;
   max-width: 100%;
   height: auto;
+}
+[data-site-nav] {
+  background: var(--color-primary);
+  border-bottom: 4px solid var(--color-accent);
+}
+[data-site-nav] ul,
+[data-language-switcher] ul {
+  max-width: var(--site-max-width);
+  margin-inline: auto;
+}
+[data-site-nav] a,
+[data-site-nav] a[data-active="true"] {
+  color: var(--color-bg);
+}
+[data-site-nav] a[data-active="true"] {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+}
+[data-language-switcher] {
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+[data-block="valueList"],
+[data-block="activitiesList"],
+[data-block="teamGrid"],
+[data-block="contactCard"],
+[data-block="richText"],
+[data-block="quote"],
+[data-block="faq"],
+[data-block="documentDownloads"],
+[data-block="event-list"],
+[data-block="partnerLogos"],
+[data-block="imageGallery"] {
+  border-block-end: 1px solid var(--color-border);
+}
+[data-block="valueList"] .value-list__item,
+[data-block="activitiesList"] .activities-list__item,
+[data-block="teamGrid"] .team-person__figure,
+[data-block="documentDownloads"] .document-downloads__item,
+[data-block="event-list"] .event-list__item article,
+[data-block="faq"] .faq__item,
+[data-block="partnerLogos"] .partner-logos__item {
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+[data-block="valueList"] .value-list__items,
+[data-block="activitiesList"] .activities-list__items,
+[data-block="teamGrid"] .team-grid__list,
+[data-block="documentDownloads"] .document-downloads__list,
+[data-block="event-list"] .event-list__items {
+  gap: var(--space-md);
+}
+[data-block="valueList"] .value-list__icon {
+  color: var(--color-accent);
+}
+[data-block="activitiesList"] .activities-list__badge {
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: var(--color-bg);
+}
+[data-block="ctaBanner"] {
+  border-block: 4px solid var(--color-accent);
+}
+[data-block="ctaBanner"] .ctaBanner__button {
+  border-radius: var(--radius-sm);
+}
+[data-block="contactCard"] .contact-card__inner {
+  display: grid;
+  gap: var(--space-md);
+}
+[data-block="documentDownloads"] .document-downloads__meta,
+[data-block="event-list"] .event-list__item-time {
+  font-weight: 700;
 }
 `.trim();

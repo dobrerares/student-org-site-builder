@@ -20,9 +20,9 @@ import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { buildBlockCatalog, type BlockCatalogEntry } from "./block-catalog.js";
 
 const CATEGORY_LABELS: Record<string, string> = {
-  mandatory: "Mandatory",
-  optional: "Optional",
-  advanced: "Advanced",
+  mandatory: "Must-have",
+  optional: "Extra sections",
+  advanced: "For experts",
 };
 
 export interface AddBlockDialogProps {
@@ -72,7 +72,7 @@ export function AddBlockDialog(props: AddBlockDialogProps): JSX.Element | null {
       data-testid="add-block-dialog"
       role="dialog"
       aria-modal="true"
-      aria-label="Add a block"
+      aria-label="Add a page section"
       tabIndex={-1}
       onKeyDown={(event: JSX.TargetedKeyboardEvent<HTMLDivElement>): void => {
         if (event.key === "Escape") {
@@ -82,11 +82,11 @@ export function AddBlockDialog(props: AddBlockDialogProps): JSX.Element | null {
       }}
     >
       <header>
-        <h2>Add a block</h2>
+        <h2>Add a page section</h2>
         <button
           type="button"
           data-testid="add-block-close"
-          aria-label="Close add-block dialog"
+          aria-label="Close add-section dialog"
           onClick={props.onClose}
         >
           Close
@@ -100,7 +100,7 @@ export function AddBlockDialog(props: AddBlockDialogProps): JSX.Element | null {
           type="search"
           data-testid="add-block-search"
           value={query}
-          placeholder="Search blocks…"
+          placeholder="Search sections..."
           onInput={(event: JSX.TargetedEvent<HTMLInputElement>): void => {
             setQuery(event.currentTarget.value);
           }}
@@ -108,7 +108,7 @@ export function AddBlockDialog(props: AddBlockDialogProps): JSX.Element | null {
       </label>
 
       {visibleGroups.length === 0 ? (
-        <p data-testid="add-block-empty">No blocks match “{query}”.</p>
+        <p data-testid="add-block-empty">No sections match "{query}".</p>
       ) : (
         <ul data-testid="add-block-groups">
           {visibleGroups.map((group) => (

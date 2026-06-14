@@ -27,6 +27,11 @@ export type EditorMessageKey =
   | "topbar.import"
   | "topbar.export"
   | "topbar.reset"
+  // Save status
+  | "saveStatus.localOnly"
+  | "saveStatus.saving"
+  | "saveStatus.saved"
+  | "saveStatus.error"
   // Layout tabs
   | "tabs.editor"
   | "tabs.preview"

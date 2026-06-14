@@ -122,6 +122,7 @@ function pageOgImage(page: Page, assetUrlForPath: AssetUrlForPath | undefined): 
 function renderBlock(
   block: BlockEnvelope,
   assetUrlForPath: AssetUrlForPath | undefined,
+  pageLang: string,
 ): preact.JSX.Element | null {
   if (!isKnownBlockType(block.type)) return null;
   if (block.type === "hero") {
@@ -190,7 +191,11 @@ function renderBlock(
   }
   if (block.type === "eventList") {
     return (
-      <EventList block={block as unknown as EventListBlock} assetUrlForPath={assetUrlForPath} />
+      <EventList
+        block={block as unknown as EventListBlock}
+        assetUrlForPath={assetUrlForPath}
+        lang={pageLang}
+      />
     );
   }
   return null;
@@ -319,7 +324,7 @@ export function PageShell(props: {
         )}
         <main>
           {page.blocks.map((block) => {
-            const rendered = renderBlock(block, assetUrlForPath);
+            const rendered = renderBlock(block, assetUrlForPath, page.lang);
             if (rendered !== null) return rendered;
             return (
               <div

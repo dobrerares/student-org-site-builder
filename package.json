@@ -11,6 +11,7 @@
     "pnpm": ">=10.0.0"
   },
   "scripts": {
+    "dev": "pnpm --filter @sosb/browser-shell run dev",
     "typecheck": "pnpm -r --if-present run typecheck",
     "lint": "eslint .",
     "format": "prettier --write .",

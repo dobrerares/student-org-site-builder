@@ -68,6 +68,7 @@ function readEventField(entry: unknown, key: string): string | undefined {
 function EventCard(props: {
   entry: EventEntry;
   assetUrlForPath: AssetUrlForPath | undefined;
+  lang: string;
 }): preact.JSX.Element {
   const { entry } = props;
   const description = readEventField(entry, "description");
@@ -88,7 +89,7 @@ function EventCard(props: {
     <article {...articleProps}>
       <h3 class="event-list__item-title">{entry.title}</h3>
       <time class="event-list__item-time" datetime={entry.startsAt}>
-        {entry.startsAt}
+        {formatEventTimeRange(entry.startsAt, endsAt, props.lang)}
       </time>
       {location !== undefined && <p class="event-list__item-location">{location}</p>}
       {description !== undefined && <p class="event-list__item-description">{description}</p>}
@@ -109,8 +110,10 @@ function EventCard(props: {
 export function EventList(props: {
   block: EventListBlock;
   assetUrlForPath?: AssetUrlForPath | undefined;
+  lang?: string | undefined;
 }): preact.JSX.Element {
   const { id, data } = props.block;
+  const lang = props.lang ?? "ro";
 
   const eventsRaw = Array.isArray(data.events) ? (data.events as EventEntry[]) : [];
   const sortBy =
@@ -143,10 +146,82 @@ export function EventList(props: {
       <ol class="event-list__items">
         {events.map((entry) => (
           <li key={entry.id} class="event-list__item">
-            <EventCard entry={entry} assetUrlForPath={props.assetUrlForPath} />
+            <EventCard entry={entry} assetUrlForPath={props.assetUrlForPath} lang={lang} />
           </li>
         ))}
       </ol>
     </section>
   );
+}
+
+interface LocalDateTimeParts {
+  year: string;
+  month: string;
+  day: string;
+  hour: string;
+  minute: string;
+}
+
+const ISO_LOCAL_DATE_TIME =
+  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$/;
+
+const MONTH_LABELS: Record<"ro" | "en", readonly string[]> = {
+  ro: ["ian.", "feb.", "mar.", "apr.", "mai", "iun.", "iul.", "aug.", "sept.", "oct.", "nov.", "dec."],
+  en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"],
+};
+
+function parseLocalDateTime(value: string): LocalDateTimeParts | null {
+  const match = ISO_LOCAL_DATE_TIME.exec(value);
+  if (match === null) return null;
+  const [, year, month, day, hour, minute] = match;
+  if (
+    year === undefined ||
+    month === undefined ||
+    day === undefined ||
+    hour === undefined ||
+    minute === undefined
+  ) {
+    return null;
+  }
+  return { year, month, day, hour, minute };
+}
+
+function languageFamily(lang: string): "ro" | "en" {
+  return lang.toLowerCase().startsWith("en") ? "en" : "ro";
+}
+
+function formatDate(parts: LocalDateTimeParts, lang: string): string {
+  const family = languageFamily(lang);
+  const monthIndex = Number.parseInt(parts.month, 10) - 1;
+  const month = MONTH_LABELS[family][monthIndex] ?? parts.month;
+  const day = String(Number.parseInt(parts.day, 10));
+  if (family === "en") return `${month} ${day}, ${parts.year}`;
+  return `${day} ${month} ${parts.year}`;
+}
+
+function formatTime(parts: LocalDateTimeParts): string {
+  return `${parts.hour}:${parts.minute}`;
+}
+
+function sameLocalDate(a: LocalDateTimeParts, b: LocalDateTimeParts): boolean {
+  return a.year === b.year && a.month === b.month && a.day === b.day;
+}
+
+function formatEventDateTime(value: string, lang: string): string {
+  const parts = parseLocalDateTime(value);
+  if (parts === null) return value;
+  return `${formatDate(parts, lang)}, ${formatTime(parts)}`;
+}
+
+function formatEventTimeRange(startsAt: string, endsAt: string | undefined, lang: string): string {
+  const start = parseLocalDateTime(startsAt);
+  if (start === null) return startsAt;
+  if (endsAt === undefined) return `${formatDate(start, lang)}, ${formatTime(start)}`;
+
+  const end = parseLocalDateTime(endsAt);
+  if (end === null) return formatEventDateTime(startsAt, lang);
+  if (sameLocalDate(start, end)) {
+    return `${formatDate(start, lang)}, ${formatTime(start)}-${formatTime(end)}`;
+  }
+  return `${formatEventDateTime(startsAt, lang)} - ${formatEventDateTime(endsAt, lang)}`;
 }

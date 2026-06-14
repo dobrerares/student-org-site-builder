@@ -112,4 +112,77 @@ test("the iframe preview's srcdoc is a complete HTML document with the org name"
   expect(srcdoc!.startsWith("<!doctype html>")).toBe(true);
   // Expect the fixture's org name to round-trip into the rendered preview.
   expect(srcdoc!).toContain("Stub Org");
+  await expect(page.locator('[data-testid="preview-pane"] iframe')).toHaveAttribute(
+    "sandbox",
+    "allow-scripts allow-same-origin",
+  );
+});
+
+test("clicking preview nav changes the active editor page instead of navigating the iframe", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1200, height: 900 });
+  const bundle = await bundleForBrowser();
+  const twoPageFixture = structuredClone(fixture);
+  twoPageFixture.pages = [
+    ...((twoPageFixture.pages as Record<string, unknown>[]) ?? []),
+    {
+      slug: "despre",
+      lang: "ro",
+      navLabel: "Despre",
+      navOrder: 1,
+      showInNav: true,
+      blocks: [
+        {
+          id: "blk_about_hero",
+          type: "hero",
+          version: 1,
+          data: { title: "About page" },
+        },
+      ],
+    },
+  ];
+
+  await page.setContent('<!doctype html><html><body><div id="root"></div></body></html>');
+  await page.addScriptTag({ type: "module", content: bundle });
+  await page.evaluate((siteData) => {
+    const root = document.getElementById("root");
+    if (root === null) throw new Error("missing root");
+    window.__sosbEditor.mount(siteData as never, root);
+  }, twoPageFixture);
+
+  const frame = page.frameLocator('[data-testid="preview-pane"] iframe');
+  const aboutLink = frame.getByRole("link", { name: "Despre", exact: true });
+  await expect(aboutLink).toHaveCount(1);
+  await aboutLink.click();
+
+  await expect(page.locator('[data-testid="pages-list-item"][data-active="true"]')).toContainText(
+    "Despre",
+  );
+  const srcdoc = await page.locator('[data-testid="preview-pane"] iframe').getAttribute("srcdoc");
+  expect(srcdoc).toContain("About page");
+});
+
+test("preview viewport controls resize the iframe shell", async ({ page }) => {
+  await page.setViewportSize({ width: 1200, height: 900 });
+  const bundle = await bundleForBrowser();
+
+  await page.setContent('<!doctype html><html><body><div id="root"></div></body></html>');
+  await page.addScriptTag({ type: "module", content: bundle });
+  await page.evaluate((siteData) => {
+    const root = document.getElementById("root");
+    if (root === null) throw new Error("missing root");
+    window.__sosbEditor.mount(siteData as never, root);
+  }, fixture);
+
+  const frame = page.getByTestId("preview-frame-shell");
+  await expect(frame).toHaveAttribute("data-preview-viewport", "fit");
+
+  await page.locator('[data-testid="viewport-preview-option"][data-viewport="phone"]').click();
+  await expect(frame).toHaveAttribute("data-preview-viewport", "phone");
+
+  const box = await frame.boundingBox();
+  expect(box).not.toBeNull();
+  expect(Math.round(box!.width)).toBe(390);
+  expect(Math.round(box!.height)).toBe(844);
 });

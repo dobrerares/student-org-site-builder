@@ -28,9 +28,9 @@ function buildResult(errors: number, warnings: number, info: number = 0): Valida
  * `onCancel()` when they back out. The exact gate depends on whether
  * errors are present:
  *
- *  - Errors present: a "type EXPORT to confirm" textbox is shown; the
+ *  - Errors present: a "type DOWNLOAD to confirm" textbox is shown; the
  *    confirm button stays disabled until that text matches.
- *  - Warnings only:  a single "Export anyway" button is enabled
+ *  - Warnings only:  a single "Download anyway" button is enabled
  *    immediately; cancel is always available.
  *  - Clean (no issues): the dialog never renders — that path is handled
  *    upstream in the editor shell, not inside the dialog.
@@ -64,7 +64,7 @@ describe("Export confirmation dialog — error gate", () => {
     // Type the gate phrase.
     const input = container.querySelector<HTMLInputElement>('[data-testid="export-confirm-input"]');
     expect(input).not.toBeNull();
-    fireEvent.input(input!, { target: { value: "EXPORT" } });
+    fireEvent.input(input!, { target: { value: "DOWNLOAD" } });
     expect(confirm!.disabled).toBe(false);
 
     fireEvent.click(confirm!);
@@ -110,7 +110,7 @@ describe("Export confirmation dialog — warning-only path", () => {
     cleanup();
   });
 
-  test("with warnings only, confirm is enabled immediately (single-click `Export anyway`)", () => {
+  test("with warnings only, confirm is enabled immediately (single-click `Download anyway`)", () => {
     const result = buildResult(0, 4, 0);
     const calls: number[] = [];
     const { container } = render(

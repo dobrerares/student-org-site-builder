@@ -78,11 +78,11 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-headline);
   color: var(--color-primary);
   line-height: 1.15;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
   margin: 0 0 var(--space-md) 0;
   font-weight: 700;
 }
-h1 { font-size: 3.157rem; letter-spacing: -0.02em; }
+h1 { font-size: 3.157rem; letter-spacing: 0; }
 h2 { font-size: 2.369rem; }
 h3 { font-size: 1.777rem; }
 h4 { font-size: 1.333rem; }
@@ -142,5 +142,83 @@ a:hover { text-decoration-thickness: 2px; }
   display: block;
   width: 100%;
   height: auto;
+}
+[data-site-nav] {
+  border-top: 1px solid var(--color-primary);
+  border-bottom: 1px solid var(--color-primary);
+}
+[data-site-nav] ul,
+[data-language-switcher] ul {
+  justify-content: center;
+  max-width: var(--site-wide-width);
+  margin-inline: auto;
+}
+[data-site-nav] a {
+  font-family: var(--font-headline);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+[data-block="hero"] .hero__inner {
+  max-width: var(--site-wide-width);
+}
+[data-block="valueList"] .value-list__items {
+  gap: var(--space-lg);
+}
+[data-block="valueList"] .value-list__item,
+[data-block="activitiesList"] .activities-list__item,
+[data-block="teamGrid"] .team-person__figure,
+[data-block="documentDownloads"] .document-downloads__item,
+[data-block="event-list"] .event-list__item article,
+[data-block="faq"] .faq__item,
+[data-block="partnerLogos"] .partner-logos__item {
+  border: 0;
+  border-top: 2px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+}
+[data-block="valueList"] .value-list__label,
+[data-block="activitiesList"] .activities-list__item-title,
+[data-block="teamGrid"] .team-person__name,
+[data-block="documentDownloads"] .document-downloads__label,
+[data-block="event-list"] .event-list__item-title,
+[data-block="faq"] .faq__question {
+  font-family: var(--font-headline);
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+[data-block="activitiesList"][data-layout="cards"] .activities-list__items,
+[data-block="documentDownloads"][data-layout="cards"] .document-downloads__list,
+[data-block="teamGrid"] .team-grid__list {
+  gap: var(--space-xl);
+}
+[data-block="activitiesList"] .activities-list__badge {
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: var(--color-bg);
+  font-family: var(--font-headline);
+}
+[data-block="quote"] {
+  width: min(100%, 56rem);
+  border-top: 2px solid var(--color-primary);
+  border-bottom: 1px solid var(--color-muted);
+}
+[data-block="quote"] .quote__text {
+  border-left: 0;
+  padding-left: 0;
+  font-size: 1.777rem;
+}
+[data-block="imageGallery"] .image-gallery__grid {
+  gap: var(--space-sm);
+}
+[data-block="imageGallery"] .image-gallery__caption {
+  font-style: italic;
+}
+@media (min-width: 860px) {
+  [data-block="activitiesList"][data-layout="alternating"] .activities-list__item {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+    align-items: end;
+  }
 }
 `.trim();

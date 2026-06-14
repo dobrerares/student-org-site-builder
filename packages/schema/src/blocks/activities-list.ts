@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isAcceptableLinkUrl } from "../url.js";
 
 /**
  * `activitiesList` block — image-bearing list of recurring projects /
@@ -48,7 +49,10 @@ export const ActivityImageRefSchema = z.looseObject({
 });
 
 export const ActivityLinkSchema = z.looseObject({
-  href: z.string().min(1),
+  href: z.string().min(1).refine(isAcceptableLinkUrl, {
+    message:
+      "Activity link URL is malformed. Use a full URL (https://example.org), a site-relative path (/contact), or mailto:/tel: links.",
+  }),
   label: z.string().optional(),
 });
 

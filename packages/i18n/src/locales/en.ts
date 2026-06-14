@@ -2,7 +2,7 @@
  * English editor messages — primary source-of-quality for English UX.
  *
  * Style notes:
- *   - Title-case for short button labels ("Import", "Export").
+ *   - Use plain action labels for non-technical users ("Open site", "Download copy").
  *   - Sentence-case for descriptions and help text.
  *   - Avoid "click here" — link or button text should describe its action.
  */
@@ -13,9 +13,15 @@ type EnglishCatalog = Readonly<Record<EditorMessageKey, string>>;
 
 export const en: EnglishCatalog = {
   // Top bar
-  "topbar.import": "Import",
-  "topbar.export": "Export",
-  "topbar.reset": "Reset",
+  "topbar.import": "Open site",
+  "topbar.export": "Download copy",
+  "topbar.reset": "Start over",
+
+  // Save status
+  "saveStatus.localOnly": "Download a copy to keep this site",
+  "saveStatus.saving": "Saving...",
+  "saveStatus.saved": "Saved in this browser",
+  "saveStatus.error": "Save failed. Download a copy now.",
 
   // Layout tabs
   "tabs.editor": "Editor",
@@ -54,11 +60,11 @@ export const en: EnglishCatalog = {
 
   // Welcome screen
   "welcome.title": "Build your organisation's website",
-  "welcome.subtitle": "No backend, no lock-in, no hosting fees.",
+  "welcome.subtitle": "Make a clean site, keep your files, and download a copy when you are ready.",
   "welcome.action.wizard": "Start the guided wizard",
   "welcome.action.template": "Start from a template",
-  "welcome.action.import": "Import an existing site",
-  "welcome.action.blank": "Start blank",
+  "welcome.action.import": "Open a saved site",
+  "welcome.action.blank": "Start from scratch",
   "welcome.recent.heading": "Recent sites",
   "welcome.recent.empty": "No recent sites yet.",
 } as const;

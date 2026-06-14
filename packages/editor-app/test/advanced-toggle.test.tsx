@@ -5,13 +5,13 @@ import { render, cleanup, fireEvent } from "@testing-library/preact";
 import { AdvancedToggle } from "../src/advanced-toggle.js";
 
 /**
- * AdvancedToggle — per-form "Show advanced" checkbox (ADR 0043).
+ * AdvancedToggle — per-form expert-options checkbox (ADR 0043).
  *
  * Three tests:
  *  1. Renders an unchecked checkbox when `value={false}`.
  *  2. Clicking the checkbox fires `onChange` with the flipped value.
  *  3. The control is reachable by accessible name — either via the
- *     `aria-label` on the input or the visible "Show advanced" text.
+ *     `aria-label` on the input or the visible "Show expert options" text.
  */
 describe("AdvancedToggle", () => {
   afterEach(cleanup);
@@ -40,7 +40,7 @@ describe("AdvancedToggle", () => {
     expect(onChange).toHaveBeenCalledWith(true);
   });
 
-  test("the toggle is accessible via aria-label or visible 'Show advanced' text", () => {
+  test("the toggle is accessible via aria-label or visible 'Show expert options' text", () => {
     const { container } = render(<AdvancedToggle value={false} onChange={() => {}} />);
     const checkbox = container.querySelector<HTMLInputElement>(
       '[data-testid="advanced-toggle"] input[type="checkbox"]',
@@ -49,8 +49,8 @@ describe("AdvancedToggle", () => {
     // The control must be reachable by either accessible-name source.
     const ariaLabel = checkbox!.getAttribute("aria-label");
     const visibleText = container.textContent ?? "";
-    const accessibleByLabel = ariaLabel === "Show advanced";
-    const accessibleByText = visibleText.includes("Show advanced");
+    const accessibleByLabel = ariaLabel === "Show expert options";
+    const accessibleByText = visibleText.includes("Show expert options");
     expect(accessibleByLabel || accessibleByText).toBe(true);
   });
 });

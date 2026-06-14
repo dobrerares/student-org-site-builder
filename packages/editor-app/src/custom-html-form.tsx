@@ -49,22 +49,20 @@ export function CustomHtmlBlockForm(props: CustomHtmlBlockFormProps): JSX.Elemen
   return (
     <fieldset data-block-form="customHTML">
       <legend>
-        Custom HTML
+        Custom code embed
         <span data-testid="custom-html-advanced-marker" data-tone="danger">
-          Advanced
+          For experts
         </span>
       </legend>
 
       <p data-testid="custom-html-explainer">
-        Paste raw HTML to embed content the curated blocks do not cover. Sanitization is on by
-        default and strips scripts, event handlers, iframes, and other active content so the
-        rendered output stays safe. Turn sanitization off only when you trust the source of the HTML
-        — disabling sanitization renders the raw markup verbatim and exposes visitors to whatever
-        the markup does.
+        Paste trusted embed code when the ready-made sections do not cover what you need. The safety
+        filter is on by default and removes code that can run in visitors' browsers. Turn it off only
+        when someone technical has checked the code.
       </p>
 
       <label data-field-label="data.html">
-        <span>HTML</span>
+        <span>Embed code</span>
         <textarea
           data-field="data.html"
           rows={8}
@@ -84,14 +82,13 @@ export function CustomHtmlBlockForm(props: CustomHtmlBlockFormProps): JSX.Elemen
             patch({ sanitize: event.currentTarget.checked });
           }}
         />
-        <span>Sanitize HTML (recommended)</span>
+        <span>Keep safety filter on (recommended)</span>
       </label>
 
       {!sanitize ? (
         <p data-testid="custom-html-danger" data-tone="danger" role="alert">
-          Warning: sanitization is OFF. The raw HTML you provide will be rendered as-is on the
-          published site. Scripts, iframes, and event handlers will execute. Enable sanitization
-          unless you fully trust the HTML source.
+          Warning: the safety filter is off. Only download or publish after someone technical has
+          checked this code.
         </p>
       ) : null}
     </fieldset>

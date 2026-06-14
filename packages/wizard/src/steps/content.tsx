@@ -40,7 +40,7 @@ export function ContentStep(props: ContentStepProps): JSX.Element {
       {!skipped && (
         <>
           <label>
-            <span>Hero title</span>
+            <span>Main headline</span>
             <input
               type="text"
               data-field="content.heroTitle"
@@ -54,7 +54,7 @@ export function ContentStep(props: ContentStepProps): JSX.Element {
           </label>
 
           <label>
-            <span>Hero subtitle</span>
+            <span>Supporting sentence</span>
             <input
               type="text"
               data-field="content.heroSubtitle"

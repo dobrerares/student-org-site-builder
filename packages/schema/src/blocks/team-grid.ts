@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isAcceptableLinkUrl } from "../url.js";
 
 /**
  * teamGrid block — list of org members with optional grouping.
@@ -19,7 +20,10 @@ import { z } from "zod";
 
 const SocialLinkSchema = z.looseObject({
   platform: z.string().min(1),
-  url: z.string().min(1),
+  url: z.string().min(1).refine(isAcceptableLinkUrl, {
+    message:
+      "Social link URL is malformed. Use a full URL (https://example.org), a site-relative path (/contact), or mailto:/tel: links.",
+  }),
 });
 
 /**

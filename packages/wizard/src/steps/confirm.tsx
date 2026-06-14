@@ -4,6 +4,7 @@
  */
 import type { JSX } from "preact";
 import type { Site } from "@sosb/schema";
+import { buildThemeCatalog } from "@sosb/themes";
 import type { WizardState } from "../state-machine.js";
 
 export interface ConfirmStepProps {
@@ -13,6 +14,7 @@ export interface ConfirmStepProps {
 
 export function ConfirmStep(props: ConfirmStepProps): JSX.Element {
   const { site } = props;
+  const themeLabel = buildThemeCatalog().entryFor(site.theme.id).label;
 
   return (
     <fieldset data-testid="confirm-step">
@@ -38,23 +40,53 @@ export function ConfirmStep(props: ConfirmStepProps): JSX.Element {
         ) : null}
 
         <dt>Theme</dt>
-        <dd>{site.theme.id}</dd>
+        <dd>{themeLabel}</dd>
 
         <dt>Languages</dt>
-        <dd>{site.languages.join(", ")}</dd>
+        <dd>{site.languages.map(languageLabel).join(", ")}</dd>
 
         <dt>Default language</dt>
-        <dd>{site.defaultLanguage}</dd>
+        <dd>{languageLabel(site.defaultLanguage)}</dd>
 
         <dt>Pages</dt>
         <dd>{site.pages.length}</dd>
 
-        <dt>Initial blocks on home page</dt>
-        <dd>
-          {site.pages[0]?.blocks.length ?? 0}
-          {site.pages[0] ? ` (${site.pages[0].blocks.map((b) => b.type).join(", ")})` : ""}
-        </dd>
+        <dt>Starter sections</dt>
+        <dd>{starterSectionLabels(site).join(", ")}</dd>
       </dl>
     </fieldset>
   );
+}
+
+function languageLabel(lang: string): string {
+  switch (lang) {
+    case "ro":
+      return "Română";
+    case "en":
+      return "English";
+    default:
+      return lang.toUpperCase();
+  }
+}
+
+function starterSectionLabels(site: Site): string[] {
+  const blocks = site.pages[0]?.blocks ?? [];
+  return blocks.map((block) => {
+    switch (block.type) {
+      case "hero":
+        return "Top page header";
+      case "richText":
+        return "About text";
+      case "valueList":
+        return "Values";
+      case "activitiesList":
+        return "Activities";
+      case "teamGrid":
+        return "Team";
+      case "contactCard":
+        return "Contact";
+      default:
+        return block.type;
+    }
+  });
 }

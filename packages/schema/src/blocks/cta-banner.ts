@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isAcceptableLinkUrl } from "../url.js";
 
 /**
  * `ctaBanner` block — call-to-action band with a single button.
@@ -23,34 +24,11 @@ import { z } from "zod";
  *   allow-list (notably `javascript:` and `data:` are rejected as unsafe).
  */
 
-const SAFE_URL_SCHEMES = new Set(["http:", "https:", "mailto:", "tel:"]);
-
-/**
- * Validate a button URL string. Returns true iff the value is safe to put on
- * an outbound `<a href>` attribute on a published static site.
- *
- * The check is intentionally narrow: we accept the schemes a student-org
- * site realistically needs and explicitly reject `javascript:` and `data:`,
- * which are XSS vectors and have no legitimate use in this context.
- */
-function isAcceptableButtonUrl(value: string): boolean {
-  if (typeof value !== "string" || value.length === 0) return false;
-  // Site-relative paths are allowed — they resolve against the deployed origin.
-  if (value.startsWith("/")) return true;
-  // Otherwise, the value must parse as an absolute URL with an allowed scheme.
-  try {
-    const parsed = new URL(value);
-    return SAFE_URL_SCHEMES.has(parsed.protocol);
-  } catch {
-    return false;
-  }
-}
-
 export const CtaButtonStyleSchema = z.enum(["primary", "secondary"]);
 
 export const CtaButtonSchema = z.looseObject({
   label: z.string().min(1, "Button label is required."),
-  url: z.string().min(1, "Button URL is required.").refine(isAcceptableButtonUrl, {
+  url: z.string().min(1, "Button URL is required.").refine(isAcceptableLinkUrl, {
     message:
       "Button URL is malformed. Use a full URL (https://example.org), a site-relative path (/contact), or mailto:/tel: links.",
   }),

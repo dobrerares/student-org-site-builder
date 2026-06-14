@@ -63,9 +63,9 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
   return (
     <section data-testid="block-list" data-page-slug={props.pageSlug}>
       <header>
-        <h2>Blocks</h2>
+        <h2>Page sections</h2>
         <button type="button" data-testid="block-add" onClick={props.onAddBlock}>
-          Add block
+          Add section
         </button>
       </header>
 

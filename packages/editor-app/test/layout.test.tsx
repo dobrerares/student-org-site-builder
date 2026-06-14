@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, test, beforeEach, afterEach } from "vitest";
-import { render, cleanup } from "@testing-library/preact";
+import { render, cleanup, fireEvent } from "@testing-library/preact";
 import type { Site } from "@sosb/schema";
 
 import minimal from "./fixtures/minimal-site.json" with { type: "json" };
@@ -59,5 +59,33 @@ describe("EditorApp layout responsiveness", () => {
     const labels = Array.from(tabs).map((t) => t.textContent?.trim());
     expect(labels).toContain("Editor");
     expect(labels).toContain("Preview");
+  });
+
+  test("preview pane exposes selectable viewport sizes", () => {
+    setViewportWidth(1200);
+    const { container } = render(<EditorApp initial={structuredClone(baseSite)} />);
+
+    const controls = container.querySelector('[data-testid="viewport-preview-controls"]');
+    expect(controls).not.toBeNull();
+
+    const frame = container.querySelector('[data-testid="preview-frame-shell"]');
+    expect(frame?.getAttribute("data-preview-viewport")).toBe("fit");
+
+    const options = Array.from(
+      container.querySelectorAll<HTMLButtonElement>('[data-testid="viewport-preview-option"]'),
+    );
+    expect(options.map((option) => option.dataset.viewport)).toEqual([
+      "fit",
+      "desktop",
+      "tablet",
+      "phone",
+    ]);
+
+    const phone = options.find((option) => option.dataset.viewport === "phone");
+    expect(phone).toBeDefined();
+    fireEvent.click(phone!);
+
+    expect(frame?.getAttribute("data-preview-viewport")).toBe("phone");
+    expect(phone?.getAttribute("aria-pressed")).toBe("true");
   });
 });

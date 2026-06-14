@@ -76,6 +76,7 @@ export function AssetPicker(props: AssetPickerProps): JSX.Element {
   // bytes) above the state-specific UI — per ADR 0044's "never lose
   // user intent silently" spirit, a rejected upload MUST show feedback.
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadingName, setUploadingName] = useState<string | null>(null);
   // In-flight token guards against rapid-fire uploads where the earlier
   // promise resolves AFTER the later one. Only the most recent token
   // wins; superseded resolutions are silently dropped.
@@ -95,22 +96,32 @@ export function AssetPicker(props: AssetPickerProps): JSX.Element {
 
     const token = ++uploadTokenRef.current;
     setUploadError(null);
+    setUploadingName(file.name);
     try {
       const next = await props.uploader(file);
       if (token !== uploadTokenRef.current) return; // superseded
+      setUploadingName(null);
       setErrorHash(null);
       props.onChange(next);
     } catch (err) {
       if (token !== uploadTokenRef.current) return; // superseded
+      setUploadingName(null);
       setUploadError(err instanceof Error ? err.message : "Upload failed");
     }
   };
 
   const hasValue = props.value !== undefined;
   const imageErrored = hasValue && errorHash === props.value!.hash;
+  const isUploading = uploadingName !== null;
 
   return (
-    <div data-testid="asset-picker">
+    <div data-testid="asset-picker" aria-busy={isUploading}>
+      {isUploading ? (
+        <p data-testid="asset-picker-uploading" role="status">
+          Uploading {uploadingName}...
+        </p>
+      ) : null}
+
       {uploadError !== null ? (
         <p data-testid="asset-picker-error" role="alert" data-error-message={uploadError}>
           Upload failed: {uploadError}. Please try again.
@@ -130,11 +141,21 @@ export function AssetPicker(props: AssetPickerProps): JSX.Element {
             alt={props.value!.alt}
             onError={() => setErrorHash(props.value!.hash)}
           />
-          <button type="button" data-testid="asset-picker-replace" onClick={triggerFilePicker}>
+          <button
+            type="button"
+            data-testid="asset-picker-replace"
+            disabled={isUploading}
+            onClick={triggerFilePicker}
+          >
             Replace image
           </button>
           {props.onClear !== undefined ? (
-            <button type="button" data-testid="asset-picker-remove" onClick={props.onClear}>
+            <button
+              type="button"
+              data-testid="asset-picker-remove"
+              disabled={isUploading}
+              onClick={props.onClear}
+            >
               Remove image
             </button>
           ) : null}
@@ -144,14 +165,24 @@ export function AssetPicker(props: AssetPickerProps): JSX.Element {
       {hasValue && imageErrored ? (
         <div data-testid="asset-picker-missing" role="status">
           <span>Missing image — the asset bytes could not be loaded.</span>
-          <button type="button" data-testid="asset-picker-reupload" onClick={triggerFilePicker}>
+          <button
+            type="button"
+            data-testid="asset-picker-reupload"
+            disabled={isUploading}
+            onClick={triggerFilePicker}
+          >
             Re-upload
           </button>
         </div>
       ) : null}
 
       {!hasValue ? (
-        <button type="button" data-testid="asset-picker-add" onClick={triggerFilePicker}>
+        <button
+          type="button"
+          data-testid="asset-picker-add"
+          disabled={isUploading}
+          onClick={triggerFilePicker}
+        >
           Add image
         </button>
       ) : null}

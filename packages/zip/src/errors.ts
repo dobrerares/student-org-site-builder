@@ -5,6 +5,8 @@ import type { ValidationResult } from "@sosb/schema";
  * `error.code` rather than parsing message text.
  *
  * - `zip.invalid` — the byte stream is not a valid zip.
+ * - `zip.limitsExceeded` — the archive exceeds the import resource limits
+ *   (entry count or decompressed size).
  * - `zip.dataJson.missing` — the zip is valid but contains no `data.json`.
  * - `zip.dataJson.invalidJson` — `data.json` exists but is not parseable JSON.
  * - `zip.dataJson.invalidShape` — `data.json` parses but does not match the
@@ -14,6 +16,7 @@ import type { ValidationResult } from "@sosb/schema";
  */
 export type ZipImportErrorCode =
   | "zip.invalid"
+  | "zip.limitsExceeded"
   | "zip.dataJson.missing"
   | "zip.dataJson.invalidJson"
   | "zip.dataJson.invalidShape"

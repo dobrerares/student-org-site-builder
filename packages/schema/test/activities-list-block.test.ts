@@ -22,6 +22,17 @@ import { ActivitiesListBlockSchema, validateBlock } from "../src/index.js";
  * loudly).
  */
 describe("activitiesList block schema", () => {
+  const activitiesListWithHref = (href: string) => ({
+    id: "blk_act_href",
+    type: "activitiesList",
+    version: 1,
+    data: {
+      title: "Activitățile noastre",
+      layout: "cards",
+      items: [{ title: "Conferință", link: { href } }],
+    },
+  });
+
   test("validates a minimal well-formed block (no items, cards layout)", () => {
     const block = {
       id: "blk_act_01",
@@ -34,6 +45,21 @@ describe("activitiesList block schema", () => {
       },
     };
     expect(ActivitiesListBlockSchema.safeParse(block).success).toBe(true);
+  });
+
+  test.each([
+    ["javascript: URL", "javascript:void(0)"],
+    ["data: URL", "data:text/plain,hello"],
+    ["bare domain without scheme", "www.example.org"],
+  ])("rejects activitiesList activity link with %s", (_caseName, href) => {
+    expect(ActivitiesListBlockSchema.safeParse(activitiesListWithHref(href)).success).toBe(false);
+  });
+
+  test.each([
+    ["https URL", "https://example.org"],
+    ["site-relative path", "/contact"],
+  ])("accepts activitiesList activity link with %s", (_caseName, href) => {
+    expect(ActivitiesListBlockSchema.safeParse(activitiesListWithHref(href)).success).toBe(true);
   });
 
   test("validates a block in each of the three layouts", () => {
