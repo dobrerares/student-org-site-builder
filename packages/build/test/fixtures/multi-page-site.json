@@ -30,7 +30,6 @@
           "type": "hero",
           "version": 1,
           "data": {
-            "eyebrow": "Bun venit",
             "title": "Asociația Stub",
             "subtitle": "Un fixture multi-page pentru build",
             "backgroundImage": {

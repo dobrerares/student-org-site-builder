@@ -30,7 +30,6 @@
           "type": "hero",
           "version": 1,
           "data": {
-            "eyebrow": "Bun venit",
             "title": "Asociația Demo",
             "subtitle": "Un fixture realist pentru auditul Lighthouse — fără imagini grele, fără JS, doar HTML și CSS minimale."
           }

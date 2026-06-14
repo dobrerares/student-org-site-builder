@@ -18,7 +18,7 @@
   --type-2xl: clamp(1.85rem, 1.45rem + 1.9vw, 2.75rem);
   --type-3xl: clamp(2.25rem, 1.6rem + 3.1vw, 3.75rem);
   --measure-body: 66ch;
-  --measure-title: 20ch;
+  --measure-title: 28ch;
   --font-headline: Georgia, serif;
   --font-body: system-ui, sans-serif;
   --color-primary: #1f3a5f;
@@ -26,6 +26,7 @@
   --color-fg: #1a1a1a;
   --color-bg: #ffffff;
   --color-muted: #5c5c5c;
+  --color-on-image: #ffffff;
   --color-primary: #0e0c0a;
   --color-accent: #a8732a;
   --font-headline: "Helvetica Neue", "Inter", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
@@ -48,13 +49,6 @@ body {
 main { display: block; }
 [data-block="hero"] {
   padding: var(--space-xl) var(--space-md);
-}
-[data-block="hero"] .hero__eyebrow {
-  font-size: 0.875rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-muted);
-  margin: 0 0 var(--space-sm) 0;
 }
 [data-block="hero"] h1 {
   font-family: var(--font-headline);
@@ -1073,6 +1067,67 @@ main > [data-block] {
   object-fit: cover;
   height: auto;
 }
+[data-block="hero"] {
+  padding: var(--space-xl) var(--space-md);
+}
+[data-block="hero"] .hero__title {
+  font-size: var(--type-3xl);
+  line-height: 1.08;
+  color: var(--color-primary);
+  max-width: var(--measure-title);
+  margin: 0 0 var(--space-md);
+}
+[data-block="hero"] .hero__subtitle {
+  font-size: var(--type-lg);
+  line-height: 1.5;
+  color: var(--color-fg);
+  max-width: var(--measure-body);
+  margin: 0;
+}
+[data-block="hero"].hero--has-image {
+  position: relative;
+  display: grid;
+  align-items: end;
+  min-height: clamp(20rem, 13rem + 32vw, 34rem);
+  overflow: hidden;
+  isolation: isolate;
+}
+[data-block="hero"].hero--has-image .hero__media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  overflow: hidden;
+}
+[data-block="hero"].hero--has-image .hero__media img {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  object-fit: cover;
+  display: block;
+}
+[data-block="hero"].hero--has-image .hero__media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(var(--color-fg-rgb), 0.85) 0%,
+    rgba(var(--color-fg-rgb), 0.5) 45%,
+    rgba(var(--color-fg-rgb), 0.2) 100%
+  );
+}
+[data-block="hero"].hero--has-image .hero__inner {
+  position: relative;
+  z-index: 1;
+}
+[data-block="hero"].hero--has-image .hero__title,
+[data-block="hero"].hero--has-image .hero__subtitle {
+  color: var(--color-on-image);
+  text-shadow: 0 1px 3px rgba(var(--color-fg-rgb), 0.5);
+}
 @media (max-width: 640px) {
   [data-block] {
     padding-left: var(--space-md);
@@ -1133,48 +1188,6 @@ a {
   text-decoration-thickness: 1px;
 }
 a:hover { text-decoration-thickness: 2px; }
-[data-block="hero"] {
-  padding: var(--space-xl) var(--space-md);
-  border-bottom: 1px solid var(--color-muted);
-}
-[data-block="hero"] .hero__inner {
-  max-width: 56rem;
-  margin: 0 auto;
-}
-[data-block="hero"] .hero__eyebrow {
-  font-family: var(--font-headline);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  /* See note on the link rule above — same rationale: dark contrast-safe
-     colour for text instead of the user-overridable accent. */
-  color: var(--color-primary);
-  margin: 0 0 var(--space-md) 0;
-}
-[data-block="hero"] h1 {
-  font-size: 3.157rem;
-  margin: 0 0 var(--space-md) 0;
-  color: var(--color-primary);
-}
-[data-block="hero"] .hero__subtitle {
-  font-family: var(--font-body);
-  font-size: 1.333rem;
-  line-height: 1.5;
-  color: var(--color-fg);
-  margin: 0 0 var(--space-lg) 0;
-  max-width: 38rem;
-}
-[data-block="hero"] .hero__media {
-  margin-top: var(--space-lg);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-}
-[data-block="hero"] .hero__media img {
-  display: block;
-  width: 100%;
-  height: auto;
-}
 [data-site-nav] {
   border-top: 1px solid var(--color-primary);
   border-bottom: 1px solid var(--color-primary);
@@ -1191,9 +1204,6 @@ a:hover { text-decoration-thickness: 2px; }
   font-weight: 700;
   letter-spacing: 0;
   text-transform: uppercase;
-}
-[data-block="hero"] .hero__inner {
-  max-width: var(--site-wide-width);
 }
 [data-block="valueList"] .value-list__items {
   gap: var(--space-lg);
@@ -1252,4 +1262,4 @@ a:hover { text-decoration-thickness: 2px; }
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
     align-items: end;
   }
-}</style></head><body><main><section data-block="hero" data-block-id="blk_home_hero" aria-labelledby="blk_home_hero__title"><div class="hero__inner"><p class="hero__eyebrow">Anul universitar 2025–2026</p><h1 id="blk_home_hero__title" class="hero__title">Un spațiu pentru gând istoric și acțiune politică</h1><p class="hero__subtitle">Conferințe, dezbateri și ateliere pentru studenții care vor să înțeleagă lumea — nu doar să o memoreze.</p><div class="hero__media"><img src="assets/hero.jpg" alt="Studenți într-o sală de conferințe la Universitatea Ovidius" loading="lazy"/></div></div></section></main></body></html>
+}</style></head><body><main><section data-block="hero" data-block-id="blk_home_hero" class="hero hero--has-image" aria-labelledby="blk_home_hero__title"><div class="hero__media"><img src="assets/hero.jpg" alt="Studenți într-o sală de conferințe la Universitatea Ovidius" loading="lazy"/></div><div class="hero__inner"><h1 id="blk_home_hero__title" class="hero__title">Un spațiu pentru gând istoric și acțiune politică</h1><p class="hero__subtitle">Conferințe, dezbateri și ateliere pentru studenții care vor să înțeleagă lumea — nu doar să o memoreze.</p></div></section></main></body></html>

@@ -18,7 +18,7 @@
   --type-2xl: clamp(1.85rem, 1.45rem + 1.9vw, 2.75rem);
   --type-3xl: clamp(2.25rem, 1.6rem + 3.1vw, 3.75rem);
   --measure-body: 66ch;
-  --measure-title: 20ch;
+  --measure-title: 28ch;
   --font-headline: Georgia, serif;
   --font-body: system-ui, sans-serif;
   --color-primary: #1f3a5f;
@@ -26,6 +26,7 @@
   --color-fg: #1a1a1a;
   --color-bg: #ffffff;
   --color-muted: #5c5c5c;
+  --color-on-image: #ffffff;
   --color-primary: #1f3a5f;
   --color-accent: #c08a3e;
   --color-primary-rgb: 31, 58, 95;
@@ -46,13 +47,6 @@ body {
 main { display: block; }
 [data-block="hero"] {
   padding: var(--space-xl) var(--space-md);
-}
-[data-block="hero"] .hero__eyebrow {
-  font-size: 0.875rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-muted);
-  margin: 0 0 var(--space-sm) 0;
 }
 [data-block="hero"] h1 {
   font-family: var(--font-headline);

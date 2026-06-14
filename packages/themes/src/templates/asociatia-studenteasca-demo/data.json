@@ -62,7 +62,6 @@
           "type": "hero",
           "version": 1,
           "data": {
-            "eyebrow": "Bun venit",
             "title": "Asociația Studențească Demo",
             "subtitle": "Învățăm, creștem și construim împreună o comunitate studențească puternică.",
             "backgroundImage": {
@@ -323,7 +322,6 @@
           "type": "hero",
           "version": 1,
           "data": {
-            "eyebrow": "Despre noi",
             "title": "Cine suntem",
             "subtitle": "O asociație fondată de studenți, pentru studenți, în jurul ideii că învățarea cea mai bună se întâmplă într-o comunitate."
           }

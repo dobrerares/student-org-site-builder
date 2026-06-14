@@ -30,7 +30,6 @@
           "type": "hero",
           "version": 1,
           "data": {
-            "eyebrow": "Bun venit",
             "title": "Stub Org",
             "subtitle": "A fixture for renderer tests",
             "backgroundImage": {

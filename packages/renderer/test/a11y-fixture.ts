@@ -79,8 +79,6 @@ const SHORT_RO_TAGLINE: string =
 
 const HOMEPAGE_TITLE_RO: string = "Bun venit la Asociația Studenților";
 const HOMEPAGE_TITLE_EN: string = "Welcome to the Students' Association";
-const HOMEPAGE_EYEBROW_RO: string = "Despre noi";
-const HOMEPAGE_EYEBROW_EN: string = "About us";
 const HOMEPAGE_NAV_LABEL_RO: string = "Acasă";
 const HOMEPAGE_NAV_LABEL_EN: string = "Home";
 
@@ -104,7 +102,6 @@ function buildHeroRo(): BlockEnvelope {
     type: "hero",
     version: 1,
     data: {
-      eyebrow: HOMEPAGE_EYEBROW_RO,
       title: HOMEPAGE_TITLE_RO,
       subtitle: LONG_RO_COPY,
       backgroundImage: {
@@ -130,7 +127,6 @@ function buildHeroEn(): BlockEnvelope {
     type: "hero",
     version: 1,
     data: {
-      eyebrow: HOMEPAGE_EYEBROW_EN,
       title: HOMEPAGE_TITLE_EN,
       subtitle: LONG_EN_COPY,
       backgroundImage: {

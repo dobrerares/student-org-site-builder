@@ -30,7 +30,6 @@
           "type": "hero",
           "version": 1,
           "data": {
-            "eyebrow": "Bun venit",
             "title": "Asociația Bilingual"
           }
         }
@@ -75,7 +74,6 @@
           "type": "hero",
           "version": 1,
           "data": {
-            "eyebrow": "Welcome",
             "title": "Asociația Bilingual"
           }
         }

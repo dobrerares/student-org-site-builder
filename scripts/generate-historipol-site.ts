@@ -241,7 +241,6 @@ async function main(): Promise<void> {
             type: "hero",
             version: 1,
             data: {
-              eyebrow: "Despre noi",
               title: 'Asociația Studențească "Historipol"',
               subtitle:
                 "O comunitate academică pentru studenți și absolvenți pasionați de istorie, relații internaționale, studii europene și științe politice.",
@@ -332,7 +331,6 @@ async function main(): Promise<void> {
             type: "hero",
             version: 1,
             data: {
-              eyebrow: "Program",
               title: "Activități",
               subtitle:
                 "Proiecte academice, culturale și civice prin care studenții FISP învață, dezbat și contribuie la comunitate.",
@@ -426,7 +424,6 @@ async function main(): Promise<void> {
             type: "hero",
             version: 1,
             data: {
-              eyebrow: "Oamenii asociației",
               title: "Echipa",
               subtitle:
                 "Studenții care coordonează reprezentarea, proiectele, comunicarea, fundraising-ul și activitatea internă a asociației.",
@@ -465,7 +462,6 @@ async function main(): Promise<void> {
             type: "hero",
             version: 1,
             data: {
-              eyebrow: "Contact",
               title: "Unde ne găsești",
               subtitle:
                 "HISTORIPOL activează în jurul Facultății de Istorie și Științe Politice din cadrul Universității „Ovidius” din Constanța.",

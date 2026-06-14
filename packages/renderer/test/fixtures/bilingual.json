@@ -30,7 +30,6 @@
           "type": "hero",
           "version": 1,
           "data": {
-            "eyebrow": "Bun venit",
             "title": "Acasă"
           }
         }
@@ -96,7 +95,6 @@
           "type": "hero",
           "version": 1,
           "data": {
-            "eyebrow": "Welcome",
             "title": "Home"
           }
         }
