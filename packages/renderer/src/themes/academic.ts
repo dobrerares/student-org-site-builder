@@ -21,7 +21,7 @@
  *   Antique Parchment (#f7f1e3) — background; warm, cream-coloured page
  *   Iron Gall (#2a2418)     — body text; an ink-dark brown, easier on the
  *                             eye against parchment than pure black
- *   Library Gold (#a67c2e)  — accent; muted gold for eyebrows, rules, dates
+ *   Library Gold (#a67c2e)  — accent; muted gold for rules, dates, links
  *   Faded Marginalia (#6b5f4a) — muted; meta text, captions
  *
  * Typography
@@ -42,8 +42,8 @@
  *
  * Ornament
  * --------
- * Modest. A thin gold rule under the eyebrow, a quiet underline on links on
- * hover, and that is it for v1. No drop-caps, no ornamental dingbats — those
+ * Modest. A quiet underline on links on hover, and that is it for v1. The
+ * hero uses the shared universal overlay. No drop-caps, no ornamental dingbats — those
  * fight Romanian diacritics and the maintainer can add them later if the
  * curation wants more flourish.
  *

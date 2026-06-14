@@ -14,7 +14,6 @@ import { exportToZip } from "../packages/zip/src/export.ts";
 
 Object.assign(globalThis, { React: { createElement: h, Fragment } });
 
-const enc = new TextEncoder();
 const outDir = join(process.cwd(), "build", "historipol-reference-site");
 
 const pages = {
