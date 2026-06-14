@@ -84,6 +84,7 @@ const BASELINE_TOKENS: ReadonlyArray<readonly [string, string]> = [
   ["--color-fg", "#1a1a1a"],
   ["--color-bg", "#ffffff"],
   ["--color-muted", "#5c5c5c"],
+  ["--color-on-image", "#ffffff"],
 ];
 
 /** The palette props whose resolved values drive derived rgb/on-color tokens. */
