@@ -263,3 +263,11 @@ export type { HreflangEntry, LanguageSwitcherEntry } from "./routing.js";
 export { EMBED_LAZY_LOAD_SCRIPT } from "./blocks/embed-lazy-loader.js";
 export { resolveEmbed } from "./blocks/embed.js";
 export { FAQ_ACCORDION_SCRIPT_SOURCE, FAQ_ENHANCED_ATTR } from "./blocks/faq.script.js";
+
+// Self-hosted font primitives. The editor preview mints blob URLs from these
+// so its in-memory resolver can satisfy the `assets/fonts/<file>.woff2` paths
+// the renderer emits (deploy/zip ship the real bytes; preview has no server).
+// Re-exports of existing internal data — emission logic is untouched.
+export { FONT_ASSET_PREFIX, FONT_FACE_REGISTRY, woff2Base64 } from "./fonts/registry.js";
+export type { FontFaceDef } from "./fonts/registry.js";
+export { base64ToBytes } from "./fonts/bytes.js";

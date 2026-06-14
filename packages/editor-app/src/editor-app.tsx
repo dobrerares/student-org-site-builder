@@ -133,6 +133,7 @@ import {
   pickZipBlob,
   populateAssetDisplayUrls,
 } from "./site-io.js";
+import { fontBlobUrlForPath, revokeFontBlobUrls } from "./font-blobs.js";
 
 const MOBILE_BREAKPOINT_PX = 768;
 
@@ -590,11 +591,16 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   useEffect(() => {
     return () => {
       const cache = displayUrlCacheRef.current;
-      if (cache === undefined) return;
-      for (const url of cache.values()) {
-        if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+      if (cache !== undefined) {
+        for (const url of cache.values()) {
+          if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+        }
+        cache.clear();
       }
-      cache.clear();
+      // Renderer-owned font blobs are minted in a module-level singleton
+      // (shared, session-static) rather than this per-mount cache; revoke
+      // them here too so a clean unmount leaves no leaked object URLs.
+      revokeFontBlobUrls();
     };
   }, []);
 
@@ -608,6 +614,11 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
 
   function displayUrlForAssetPath(path: string): string | undefined {
     if (!path.startsWith("assets/")) return undefined;
+    // Renderer-owned self-hosted fonts (`assets/fonts/<file>.woff2`) resolve
+    // to session-static blob URLs minted from the bundled woff2 base64. These
+    // are not user uploads, so they never live in the hash-keyed cache below.
+    const fontUrl = fontBlobUrlForPath(path);
+    if (fontUrl !== undefined) return fontUrl;
     const filename = path.slice("assets/".length);
     const dot = filename.lastIndexOf(".");
     const hash = dot >= 0 ? filename.slice(0, dot) : filename;
