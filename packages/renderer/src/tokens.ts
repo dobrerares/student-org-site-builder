@@ -76,7 +76,7 @@ const BASELINE_TOKENS: ReadonlyArray<readonly [string, string]> = [
   ["--type-2xl", "clamp(1.85rem, 1.45rem + 1.9vw, 2.75rem)"],
   ["--type-3xl", "clamp(2.25rem, 1.6rem + 3.1vw, 3.75rem)"],
   ["--measure-body", "66ch"],
-  ["--measure-title", "20ch"],
+  ["--measure-title", "28ch"],
   ["--font-headline", "Georgia, serif"],
   ["--font-body", "system-ui, sans-serif"],
   ["--color-primary", "#1f3a5f"],

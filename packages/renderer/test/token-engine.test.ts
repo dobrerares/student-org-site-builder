@@ -54,7 +54,7 @@ describe("baseline engine tokens", () => {
   test("emits readable measure caps and a fluid section gap", () => {
     const root = rootOf(fixture);
     expect(root).toContain("--measure-body: 66ch;");
-    expect(root).toContain("--measure-title: 20ch;");
+    expect(root).toContain("--measure-title: 28ch;");
     expect(root).toMatch(/--section-gap:\s*calc\(clamp\(/);
   });
 });
