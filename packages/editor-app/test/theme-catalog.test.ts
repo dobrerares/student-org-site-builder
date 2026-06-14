@@ -49,6 +49,6 @@ describe("buildThemeCatalog", () => {
 
   test("entryFor returns curated fonts for a known theme", () => {
     const catalog = buildThemeCatalog();
-    expect(catalog.entryFor("academic").fonts.headline).toContain("Source Serif Pro");
+    expect(catalog.entryFor("academic").fonts.headline).toContain("Source Serif 4");
   });
 });

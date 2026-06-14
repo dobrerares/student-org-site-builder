@@ -69,8 +69,8 @@ describe("ThemeForm", () => {
     const headlineSelect = container.querySelector(
       '[data-testid="font-picker"][data-kind="headline"] select',
     ) as HTMLSelectElement;
-    fireEvent.change(headlineSelect, { target: { value: "Lora" } });
-    expect((next as Site | null)?.theme.tokens?.fontHeadline).toBe("Lora");
+    fireEvent.change(headlineSelect, { target: { value: "Fraunces" } });
+    expect((next as Site | null)?.theme.tokens?.fontHeadline).toBe("Fraunces");
   });
 
   test("ThemeForm preserves existing tokens when updating a single token", () => {

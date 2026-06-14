@@ -173,7 +173,7 @@ describe("Wizard — confirm step + onComplete", () => {
     const summary = container.querySelector('[data-testid="confirm-summary"]');
     expect(summary).not.toBeNull();
     expect(summary?.textContent).toContain("HISTORIPOL");
-    expect(summary?.textContent).toContain("Minimal");
+    expect(summary?.textContent).toContain("Calm");
     expect(summary?.textContent).toContain("Română");
     expect(summary?.textContent).toContain("Top page header");
     expect(summary?.textContent).not.toContain("richText");

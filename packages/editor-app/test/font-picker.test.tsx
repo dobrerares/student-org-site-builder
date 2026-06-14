@@ -22,9 +22,9 @@ describe("FontPicker", () => {
     );
     const select = container.querySelector("select") as HTMLSelectElement;
     const optionTexts = Array.from(select.options).map((o) => o.text);
-    // academic's headline fonts include Source Serif Pro, Lora, Crimson Pro
-    expect(optionTexts).toContain("Source Serif Pro");
-    expect(optionTexts).toContain("Lora");
+    // academic's headline fonts include Source Serif 4, Fraunces, Inter
+    expect(optionTexts).toContain("Source Serif 4");
+    expect(optionTexts).toContain("Fraunces");
   });
 
   test("includes a '(use theme default)' option that is selected when value is undefined", () => {
@@ -39,10 +39,10 @@ describe("FontPicker", () => {
 
   test("when value matches a catalogued font, that option is selected", () => {
     const { container } = render(
-      <FontPicker themeId="academic" kind="headline" value="Lora" onChange={() => {}} />,
+      <FontPicker themeId="academic" kind="headline" value="Fraunces" onChange={() => {}} />,
     );
     const select = container.querySelector("select") as HTMLSelectElement;
-    expect(select.value).toBe("Lora");
+    expect(select.value).toBe("Fraunces");
   });
 
   test("when value is not in the catalog, it's added as a 'Custom:' option that is selected", () => {
@@ -58,7 +58,7 @@ describe("FontPicker", () => {
   test("onChange fires undefined when '(use theme default)' is selected", () => {
     const onChange = vi.fn();
     const { container } = render(
-      <FontPicker themeId="academic" kind="headline" value="Lora" onChange={onChange} />,
+      <FontPicker themeId="academic" kind="headline" value="Fraunces" onChange={onChange} />,
     );
     const select = container.querySelector("select") as HTMLSelectElement;
     fireEvent.change(select, { target: { value: "" } });
