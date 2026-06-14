@@ -28,14 +28,21 @@ import { resolveAssetUrl } from "../asset-url.js";
 export function TeamGrid(props: {
   block: TeamGridBlock;
   assetUrlForPath?: AssetUrlForPath | undefined;
-}): preact.JSX.Element {
+}): preact.JSX.Element | null {
   const { id, data } = props.block;
+  const people = Array.isArray(data.people) ? data.people : [];
+
+  // Empty-state suppression: a teamGrid with no people renders nothing rather
+  // than an empty styled container. (people is `.min(1)` in the schema; this
+  // guards the loose-data tolerance path.)
+  if (people.length === 0) return null;
+
   const title = typeof data.title === "string" && data.title.length > 0 ? data.title : undefined;
   const intro = typeof data.intro === "string" && data.intro.length > 0 ? data.intro : undefined;
   const groupBy =
     typeof data.groupBy === "string" && data.groupBy.length > 0 ? data.groupBy : undefined;
 
-  const groups = groupPeople(data.people, groupBy);
+  const groups = groupPeople(people, groupBy);
   // Inline custom property so theme CSS / media-queries can adapt the
   // grid-template-columns. The numeric literal goes through the schema's
   // 2/3/4 union, so the value is always safe to inline as a CSS number.

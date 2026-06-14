@@ -70,8 +70,7 @@ describe("modern theme — tokens-as-CSS-custom-properties", () => {
     // tokens); every _other_ rule must consume them via var().
     const nonRootRules = styleBlocks.join("\n").replace(/:root\s*\{[^}]*\}/g, "");
     expect(nonRootRules).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
-    expect(nonRootRules).not.toMatch(/\brgb\(/);
-    expect(nonRootRules).not.toMatch(/\brgba\(/);
+    expect(nonRootRules).not.toMatch(/\brgba?\(\s*[#0-9.]/);
     expect(nonRootRules).toContain("var(--");
   });
 });

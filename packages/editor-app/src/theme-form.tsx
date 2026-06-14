@@ -100,11 +100,13 @@ export function ThemeForm(props: ThemeFormProps): JSX.Element {
       <ThemePicker value={props.site.theme.id} onChange={handleThemeChange} />
       <ColorPicker
         label="Primary color"
+        previewOnColor
         value={props.site.theme.tokens?.colorPrimary}
         onChange={(next) => props.onChange(updateToken(props.site, "colorPrimary", next))}
       />
       <ColorPicker
         label="Accent color"
+        previewOnColor
         value={props.site.theme.tokens?.colorAccent}
         onChange={(next) => props.onChange(updateToken(props.site, "colorAccent", next))}
       />

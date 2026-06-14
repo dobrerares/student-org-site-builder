@@ -13,6 +13,7 @@ import {
   ActivitiesListDataSchema,
   CtaBannerDataSchema,
   DocumentDownloadsDataSchema,
+  HeroDataSchema,
   ImageGalleryDataSchema,
   PartnerLogosDataSchema,
   TeamGridDataSchema,
@@ -20,7 +21,7 @@ import {
 } from "@sosb/schema";
 
 import { BlockForm } from "../src/block-form.js";
-import type { FieldOverride } from "../src/field-metadata.js";
+import { BLOCK_FIELD_METADATA, type FieldOverride } from "../src/field-metadata.js";
 
 /**
  * BlockForm + valueList: the AC for issue #10 says "editor form supports
@@ -68,6 +69,30 @@ function noopDocumentUploader(): Promise<DocumentAssetRef> {
 
 describe("BlockForm — valueList items add/remove/reorder", () => {
   afterEach(cleanup);
+
+  test("renders friendly labels from field metadata instead of raw field names", () => {
+    const harness = makeHarness({
+      items: [{ label: "First" }],
+      layout: "grid",
+      columns: 3,
+    });
+
+    const { container } = render(
+      <BlockForm
+        schema={ValueListDataSchema}
+        data={harness.data}
+        onPatch={(path, value) => harness.patches.push({ path, value })}
+        onArrayChange={(path, next) => harness.arrayChanges.push({ path, next })}
+        newItem={newValueListItem}
+        uploader={noopUploader}
+        documentUploader={noopDocumentUploader}
+        overrides={[{ path: "columns", label: "Number of columns" }]}
+      />,
+    );
+
+    const label = container.querySelector('[data-field-label="columns"] span');
+    expect(label?.textContent).toBe("Number of columns");
+  });
 
   test("renders one fieldset per item with controls", () => {
     const harness = makeHarness({
@@ -794,6 +819,49 @@ describe("BlockForm — documentDownloads wires DocumentPicker per file (ADR 004
     expect(patches[0]!.path).toEqual(["files", 1, "asset"]);
     expect(patches[0]!.value).toEqual(uploaded);
   });
+
+  test("uploading into a new empty file row fills the label from the uploaded filename", async () => {
+    const uploaded: DocumentAssetRef = {
+      ...makeDocumentAsset("uploaded"),
+      originalName: "uploaded-report.pdf",
+    };
+    const documentUploader = vi.fn().mockResolvedValue(uploaded);
+    const patches: { path: readonly (string | number)[]; value: unknown }[] = [];
+    const data = {
+      title: "Documents",
+      layout: "list",
+      files: [{}],
+    } as unknown as DocumentDownloadsData;
+    const { container } = render(
+      <BlockForm
+        schema={DocumentDownloadsDataSchema}
+        data={data}
+        onPatch={(path, value) => patches.push({ path, value })}
+        onArrayChange={() => {}}
+        uploader={noopUploader}
+        documentUploader={documentUploader}
+      />,
+    );
+
+    const fileInput = container.querySelector<HTMLInputElement>(
+      '[data-testid="document-picker-file-input"]',
+    );
+    expect(fileInput).not.toBeNull();
+    const file = new File([new Uint8Array([0x25, 0x50, 0x44, 0x46])], "uploaded-report.pdf", {
+      type: "application/pdf",
+    });
+    Object.defineProperty(fileInput!, "files", { value: [file], configurable: true });
+    fireEvent.change(fileInput!);
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(patches.map((patch) => patch.path)).toEqual([
+      ["files", 0, "asset"],
+      ["files", 0, "label"],
+    ]);
+    expect(patches[1]!.value).toBe("uploaded-report.pdf");
+  });
 });
 
 /**
@@ -998,4 +1066,77 @@ describe("BlockForm — asset-picker dispatch covers every AssetRef-bearing bloc
       ).toBeGreaterThan(0);
     });
   }
+});
+
+/**
+ * BlockForm + advisory length hints (Guardrail 1).
+ *
+ * Hero title/subtitle carry a `hint` in `BLOCK_FIELD_METADATA`. The form
+ * must render that hint as muted helper text beneath the field — soft
+ * guidance only. The test drives the production metadata (not an ad-hoc
+ * override) so it also proves the metadata → form-generator → renderer
+ * wiring end to end. Crucially, the hint must NOT block or alter input:
+ * editing the title still fires onPatch with the typed value verbatim.
+ */
+describe("BlockForm — advisory length hints (Guardrail 1)", () => {
+  afterEach(cleanup);
+
+  test("renders the hero title/subtitle hints as muted helper text", () => {
+    const { container } = render(
+      <BlockForm
+        schema={HeroDataSchema}
+        data={{ title: "Welcome", subtitle: "Intro copy" }}
+        onPatch={() => {}}
+        onArrayChange={() => {}}
+        uploader={noopUploader}
+        documentUploader={noopDocumentUploader}
+        overrides={BLOCK_FIELD_METADATA.hero!}
+      />,
+    );
+
+    const hints = Array.from(
+      container.querySelectorAll<HTMLElement>('[data-testid="field-hint"]'),
+    ).map((el) => el.textContent);
+    expect(hints).toContain("Aim for ~60 characters — short and punchy reads best.");
+    expect(hints).toContain("~140 characters keeps the intro scannable.");
+  });
+
+  test("the hint is advisory only — typing an over-length title still patches verbatim", () => {
+    const patches: { path: readonly (string | number)[]; value: unknown }[] = [];
+    const { container } = render(
+      <BlockForm
+        schema={HeroDataSchema}
+        data={{ title: "Welcome" }}
+        onPatch={(path, value) => patches.push({ path, value })}
+        onArrayChange={() => {}}
+        uploader={noopUploader}
+        documentUploader={noopDocumentUploader}
+        overrides={BLOCK_FIELD_METADATA.hero!}
+      />,
+    );
+
+    const titleInput = container.querySelector<HTMLInputElement>('[data-field="title"]');
+    expect(titleInput).not.toBeNull();
+    // Well past the ~60-char advisory length — must pass through unchanged.
+    const longTitle = "x".repeat(200);
+    fireEvent.input(titleInput!, { target: { value: longTitle } });
+    expect(patches.length).toBe(1);
+    expect(patches[0]!.path).toEqual(["title"]);
+    expect(patches[0]!.value).toBe(longTitle);
+  });
+
+  test("fields without a hint render no helper text", () => {
+    const { container } = render(
+      <BlockForm
+        schema={HeroDataSchema}
+        data={{ title: "Welcome" }}
+        onPatch={() => {}}
+        onArrayChange={() => {}}
+        uploader={noopUploader}
+        documentUploader={noopDocumentUploader}
+        // No overrides: no field carries a hint.
+      />,
+    );
+    expect(container.querySelector('[data-testid="field-hint"]')).toBeNull();
+  });
 });

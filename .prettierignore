@@ -6,6 +6,7 @@ playwright-report
 test-results
 .vite
 pnpm-lock.yaml
+.agents/
 
 # Pre-existing project documents are owned outside this scaffolding;
 # don't reformat them here.

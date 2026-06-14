@@ -36,11 +36,13 @@ test e2e/a11y.spec.ts`) — see [Accessibility commitment](#accessibility-commit
 
 ## Running locally
 
-There is no top-level "run the app" script today: the editor app
-(`@sosb/editor-app`) is composed by a host shell (`@sosb/browser-shell` or
-`@sosb/electron-shell`), and those shells are still being implemented (see
-the [issues backlog](../../issues)). For now:
-
+- `pnpm dev` starts the browser editor on a local Vite server
+  (`http://localhost:5173`), seeded with the HISTORIPOL demo Template. Dev
+  sessions are ephemeral (no OPFS persistence); zip export/import works
+  normally.
+- `pnpm --filter @sosb/browser-shell build:archival` produces the
+  single-file editor at `packages/browser-shell/dist/archival/builder.html`;
+  open it directly in any browser.
 - `pnpm test` exercises every package's unit tests via Vitest.
 - `pnpm test:watch` keeps Vitest in watch mode for the package you are
   editing — pair with `pnpm -r --filter @sosb/<name>` to scope.
@@ -50,9 +52,6 @@ the [issues backlog](../../issues)). For now:
   to verify Node-vs-browser parity.
 - `pnpm -r --filter @sosb/<name> run build` builds one package in
   isolation.
-
-When the host shells land they will expose `pnpm dev` entry points; that
-will be added here in the same PR.
 
 ## Repository layout
 

@@ -5,6 +5,7 @@ import multiPageSite from "./fixtures/multi-page-site.json" with { type: "json" 
 import bilingualSite from "./fixtures/bilingual-site.json" with { type: "json" };
 import jsonLdRichSite from "./fixtures/jsonld-rich-site.json" with { type: "json" };
 import { build } from "../src/index.js";
+import { textOf } from "./helpers/dist-text.js";
 
 const single = singlePageSite as unknown as Site;
 const multi = multiPageSite as unknown as Site;
@@ -58,7 +59,7 @@ describe("build - JSON-LD: Organization (always emitted, site-level)", () => {
       "evenimente/index.html",
       "intrebari/index.html",
     ]) {
-      const html = dist.get(path)!;
+      const html = textOf(dist, path);
       const headEnd = html.indexOf("</head>");
       const head = html.slice(0, headEnd);
       expect(head).toMatch(/<script type="application\/ld\+json">/);
@@ -70,7 +71,7 @@ describe("build - JSON-LD: Organization (always emitted, site-level)", () => {
 
   test("Organization JSON-LD has @context https://schema.org and required fields", () => {
     const dist = build(rich, { siteUrl: "https://stub.example.org" });
-    const blobs = extractJsonLd(dist.get("index.html")!);
+    const blobs = extractJsonLd(textOf(dist, "index.html"));
     const org = findByType(blobs, "Organization");
     expect(org).toBeDefined();
     expect(org!["@context"]).toBe("https://schema.org");
@@ -79,7 +80,7 @@ describe("build - JSON-LD: Organization (always emitted, site-level)", () => {
 
   test("Organization JSON-LD includes optional org fields when present", () => {
     const dist = build(rich, { siteUrl: "https://stub.example.org" });
-    const blobs = extractJsonLd(dist.get("index.html")!);
+    const blobs = extractJsonLd(textOf(dist, "index.html"));
     const org = findByType(blobs, "Organization");
     expect(org).toBeDefined();
     expect(org!.logo).toBe("https://stub.example.org/assets/logo.png");
@@ -98,7 +99,7 @@ describe("build - JSON-LD: Organization (always emitted, site-level)", () => {
 
   test("Organization JSON-LD without siteUrl uses relative URL fallbacks", () => {
     const dist = build(rich);
-    const blobs = extractJsonLd(dist.get("index.html")!);
+    const blobs = extractJsonLd(textOf(dist, "index.html"));
     const org = findByType(blobs, "Organization");
     expect(org).toBeDefined();
     expect(org!.name).toBe("Asociația Stub");
@@ -108,7 +109,7 @@ describe("build - JSON-LD: Organization (always emitted, site-level)", () => {
 
   test("Organization JSON-LD on a minimal site (no socials/logo/etc) still validates", () => {
     const dist = build(single);
-    const blobs = extractJsonLd(dist.get("index.html")!);
+    const blobs = extractJsonLd(textOf(dist, "index.html"));
     const org = findByType(blobs, "Organization");
     expect(org).toBeDefined();
     expect(org!["@context"]).toBe("https://schema.org");
@@ -122,7 +123,7 @@ describe("build - JSON-LD: Organization (always emitted, site-level)", () => {
     const evil = structuredClone(rich) as Site;
     (evil.org as { name: string }).name = "Evil </script><script>alert(1)</script>";
     const dist = build(evil);
-    const html = dist.get("index.html")!;
+    const html = textOf(dist, "index.html");
     const headEnd = html.indexOf("</head>");
     const head = html.slice(0, headEnd);
     const scripts = head.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g) ?? [];
@@ -139,7 +140,7 @@ describe("build - JSON-LD: Organization (always emitted, site-level)", () => {
 describe("build - JSON-LD: Person (when teamGrid block present)", () => {
   test("emits one Person blob per team member on the team page", () => {
     const dist = build(rich, { siteUrl: "https://stub.example.org" });
-    const html = dist.get("echipa/index.html")!;
+    const html = textOf(dist, "echipa/index.html");
     const blobs = extractJsonLd(html);
     const persons = blobs.filter(
       (b): b is Record<string, unknown> =>
@@ -154,7 +155,7 @@ describe("build - JSON-LD: Person (when teamGrid block present)", () => {
 
   test("Person.image is absolutised against siteUrl", () => {
     const dist = build(rich, { siteUrl: "https://stub.example.org" });
-    const blobs = extractJsonLd(dist.get("echipa/index.html")!);
+    const blobs = extractJsonLd(textOf(dist, "echipa/index.html"));
     const persons = blobs.filter(
       (b): b is Record<string, unknown> =>
         typeof b === "object" && b !== null && (b as { "@type": unknown })["@type"] === "Person",
@@ -164,7 +165,7 @@ describe("build - JSON-LD: Person (when teamGrid block present)", () => {
 
   test("does NOT emit Person on pages without a teamGrid block", () => {
     const dist = build(rich, { siteUrl: "https://stub.example.org" });
-    const homeBlobs = extractJsonLd(dist.get("index.html")!);
+    const homeBlobs = extractJsonLd(textOf(dist, "index.html"));
     expect(
       homeBlobs.filter(
         (b) =>
@@ -177,7 +178,7 @@ describe("build - JSON-LD: Person (when teamGrid block present)", () => {
 describe("build - JSON-LD: Event (when eventList block present)", () => {
   test("emits one Event blob per event on the events page", () => {
     const dist = build(rich, { siteUrl: "https://stub.example.org" });
-    const blobs = extractJsonLd(dist.get("evenimente/index.html")!);
+    const blobs = extractJsonLd(textOf(dist, "evenimente/index.html"));
     const events = blobs.filter(
       (b): b is Record<string, unknown> =>
         typeof b === "object" && b !== null && (b as { "@type": unknown })["@type"] === "Event",
@@ -193,7 +194,7 @@ describe("build - JSON-LD: Event (when eventList block present)", () => {
 
   test("Event with no endDate / image / description still validates", () => {
     const dist = build(rich, { siteUrl: "https://stub.example.org" });
-    const blobs = extractJsonLd(dist.get("evenimente/index.html")!);
+    const blobs = extractJsonLd(textOf(dist, "evenimente/index.html"));
     const events = blobs.filter(
       (b): b is Record<string, unknown> =>
         typeof b === "object" && b !== null && (b as { "@type": unknown })["@type"] === "Event",
@@ -208,7 +209,7 @@ describe("build - JSON-LD: Event (when eventList block present)", () => {
 
   test("does NOT emit Event on pages without an eventList block", () => {
     const dist = build(rich, { siteUrl: "https://stub.example.org" });
-    const homeBlobs = extractJsonLd(dist.get("index.html")!);
+    const homeBlobs = extractJsonLd(textOf(dist, "index.html"));
     expect(
       homeBlobs.filter(
         (b) =>
@@ -221,7 +222,7 @@ describe("build - JSON-LD: Event (when eventList block present)", () => {
 describe("build - JSON-LD: FAQPage (when faq block present)", () => {
   test("emits one FAQPage blob per faq block, with mainEntity entries", () => {
     const dist = build(rich, { siteUrl: "https://stub.example.org" });
-    const blobs = extractJsonLd(dist.get("intrebari/index.html")!);
+    const blobs = extractJsonLd(textOf(dist, "intrebari/index.html"));
     const faq = findByType(blobs, "FAQPage");
     expect(faq).toBeDefined();
     expect(faq!["@context"]).toBe("https://schema.org");
@@ -236,7 +237,7 @@ describe("build - JSON-LD: FAQPage (when faq block present)", () => {
 
   test("does NOT emit FAQPage on pages without a faq block", () => {
     const dist = build(rich, { siteUrl: "https://stub.example.org" });
-    const homeBlobs = extractJsonLd(dist.get("index.html")!);
+    const homeBlobs = extractJsonLd(textOf(dist, "index.html"));
     expect(
       homeBlobs.filter(
         (b) =>
@@ -251,7 +252,7 @@ describe("build - JSON-LD: FAQPage (when faq block present)", () => {
 describe("build - JSON-LD: BreadcrumbList (when nav depth > 1)", () => {
   test("emits BreadcrumbList on non-home pages of a multi-page site", () => {
     const dist = build(multi, { siteUrl: "https://stub.example.org" });
-    const aboutBlobs = extractJsonLd(dist.get("despre/index.html")!);
+    const aboutBlobs = extractJsonLd(textOf(dist, "despre/index.html"));
     const crumbs = findByType(aboutBlobs, "BreadcrumbList");
     expect(crumbs).toBeDefined();
     expect(crumbs!["@context"]).toBe("https://schema.org");
@@ -267,14 +268,14 @@ describe("build - JSON-LD: BreadcrumbList (when nav depth > 1)", () => {
 
   test("does NOT emit BreadcrumbList on the home page itself", () => {
     const dist = build(multi, { siteUrl: "https://stub.example.org" });
-    const homeBlobs = extractJsonLd(dist.get("index.html")!);
+    const homeBlobs = extractJsonLd(textOf(dist, "index.html"));
     const crumbs = findByType(homeBlobs, "BreadcrumbList");
     expect(crumbs).toBeUndefined();
   });
 
   test("does NOT emit BreadcrumbList on a single-page site (no nav depth)", () => {
     const dist = build(single, { siteUrl: "https://stub.example.org" });
-    const blobs = extractJsonLd(dist.get("index.html")!);
+    const blobs = extractJsonLd(textOf(dist, "index.html"));
     const crumbs = findByType(blobs, "BreadcrumbList");
     expect(crumbs).toBeUndefined();
   });
@@ -296,7 +297,7 @@ describe("build - JSON-LD determinism", () => {
 
   test("JSON-LD is emitted before </head> (search engines parse head only)", () => {
     const dist = build(rich, { siteUrl: "https://stub.example.org" });
-    const html = dist.get("index.html")!;
+    const html = textOf(dist, "index.html");
     const firstScript = html.indexOf('<script type="application/ld+json">');
     const headClose = html.indexOf("</head>");
     expect(firstScript).toBeGreaterThan(0);
@@ -313,7 +314,7 @@ describe("build - JSON-LD: bilingual site sanity", () => {
       "despre/index.html",
       "en/about/index.html",
     ]) {
-      const blobs = extractJsonLd(dist.get(path)!);
+      const blobs = extractJsonLd(textOf(dist, path));
       const org = findByType(blobs, "Organization");
       expect(org).toBeDefined();
       expect(org!.name).toBe("Asociația Bilingual");
@@ -322,7 +323,7 @@ describe("build - JSON-LD: bilingual site sanity", () => {
 
   test("BreadcrumbList for the en/about page uses the active language home label and path", () => {
     const dist = build(bilingual, { siteUrl: "https://stub.example.org" });
-    const blobs = extractJsonLd(dist.get("en/about/index.html")!);
+    const blobs = extractJsonLd(textOf(dist, "en/about/index.html"));
     const crumbs = findByType(blobs, "BreadcrumbList");
     expect(crumbs).toBeDefined();
     const items = crumbs!.itemListElement as Array<Record<string, unknown>>;

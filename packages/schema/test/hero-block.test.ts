@@ -22,7 +22,6 @@ describe("hero block schema", () => {
       type: "hero",
       version: 1,
       data: {
-        eyebrow: "Bun venit",
         title: "HISTORIPOL",
         subtitle: "Comunitatea",
         backgroundImage: { ...historipolHeroBgRef, alt: "Photo of students" },

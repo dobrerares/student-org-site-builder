@@ -53,6 +53,7 @@ describe("uploadDocument — accepts whitelisted document types", () => {
     expect(ref.mime).toBe("application/pdf");
     expect(ref.path.endsWith(".pdf")).toBe(true);
     expect(ref.byteSize).toBe(bytes.byteLength);
+    expect(ref.originalName).toBe("regulament.pdf");
 
     const stored = await vfs.read(ref.path);
     expect(Array.from(stored)).toEqual(Array.from(bytes));

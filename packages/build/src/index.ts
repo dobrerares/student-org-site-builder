@@ -17,7 +17,7 @@
 
 import type { Page, Site, ValidationIssue } from "@sosb/schema";
 import { validate } from "@sosb/schema";
-import { hreflangEntriesFor, pageDistPath, pagePath, renderSite } from "@sosb/renderer";
+import { fontAssetsFor, hreflangEntriesFor, pageDistPath, pagePath, renderSite } from "@sosb/renderer";
 import {
   measureBudgets,
   formatBudgetViolations,
@@ -96,14 +96,16 @@ export interface BuildOptions {
 }
 
 /**
- * The dist folder, modelled as a `Map<string, string>`.
+ * The dist folder, modelled as a `Map<string, string | Uint8Array>`.
  *
  * Keys are POSIX-style relative paths (`index.html`, `<slug>/index.html`,
- * `robots.txt`, `sitemap.xml`). Values are UTF-8 text contents. Binary assets
- * (images, documents) are out of scope for v1's build pipeline — the asset
- * pipeline is #8 / #21 and will introduce `Uint8Array` values then.
+ * `robots.txt`, `sitemap.xml`). Text artefacts (HTML, XML, JSON, robots.txt)
+ * are UTF-8 `string` values. Binary artefacts are `Uint8Array` values — today
+ * the self-hosted theme fonts the renderer references, written at
+ * `assets/fonts/<file>.woff2` (PR-F2b). The broader image/document asset
+ * pipeline (#8 / #21) reuses this same binary lane.
  */
-export type DistFolder = Map<string, string>;
+export type DistFolder = Map<string, string | Uint8Array>;
 
 /**
  * Build a site to a virtual dist folder.
@@ -156,6 +158,19 @@ export function build(site: Site, options: BuildOptions = {}): DistFolder {
 
   dist.set("robots.txt", emitRobotsTxt(siteUrl));
   dist.set("sitemap.xml", emitSitemapXml(site, siteUrl));
+
+  // Self-hosted theme fonts (PR-F2b). The renderer emits
+  // `@font-face { src:url(assets/fonts/<file>.woff2) }` for the families this
+  // site/theme actually uses; we put the matching woff2 bytes at that path so
+  // the deployed site serves them over `font-src 'self'`. Fonts are
+  // site-level — one shared set across all pages, injected ONCE here. The Map
+  // is keyed/sorted deterministically by the renderer, and the bytes are
+  // compile-time constants, so this preserves byte-identical builds. Inject
+  // before `measureBudgets` so the new `fonts` metric sees them. Returns an
+  // empty Map for system-font themes (no entries added).
+  for (const [path, bytes] of fontAssetsFor(site, themeId)) {
+    dist.set(path, bytes);
+  }
 
   // Per-page Lighthouse-budget verification (issue #41 / ADR 0005).
   // Measure, then attach the report to the dist as a stable JSON artefact.

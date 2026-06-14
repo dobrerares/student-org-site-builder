@@ -30,14 +30,33 @@
  * through unchanged so the test assertion on `"#ff0000"` holds. If a
  * future browser surprises us with uppercase output we can wrap in
  * `.toLowerCase()` here without rippling.
+ *
+ * On-color preview (Guardrail 2): when `previewOnColor` is set, the
+ * picker renders a small swatch chip showing the author's chosen colour
+ * with sample text painted in `onColorFor(<chosen>)` — the SAME
+ * contrast-safe on-colour the renderer derives for buttons/badges
+ * (`@sosb/renderer`'s `onColorFor`, re-exported from `color-math`). It
+ * lets the author see at a glance that their pick stays legible. The
+ * chip previews the user override (the value this component knows);
+ * with no override set it shows a neutral "theme default" placeholder
+ * rather than guessing the theme's default hex. `onColorFor` returns
+ * `#ffffff` for unparseable input, so the chip degrades gracefully.
  */
 import type { JSX } from "preact";
+import { onColorFor } from "@sosb/renderer";
 
 export interface ColorPickerProps {
   readonly value: string | undefined;
   readonly onChange: (next: string | undefined) => void;
   /** Optional label rendered above the picker. */
   readonly label?: string;
+  /**
+   * When `true`, render an on-color preview chip (Guardrail 2) showing
+   * the chosen colour with sample text in the renderer-derived readable
+   * on-colour. Opt-in so only the theme palette pickers (primary/accent)
+   * carry it; defaults to off.
+   */
+  readonly previewOnColor?: boolean;
 }
 
 // Browsers refuse to render `<input type="color">` without a 7-char
@@ -69,6 +88,25 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
           (using theme default)
         </span>
       )}
+      {props.previewOnColor === true ? (
+        hasValue ? (
+          <span
+            data-testid="color-picker-on-color"
+            class="color-picker__on-color"
+            style={{ background: props.value!, color: onColorFor(props.value!) }}
+            title="Readable text color the renderer will use on this color"
+          >
+            Aa
+          </span>
+        ) : (
+          <span
+            data-testid="color-picker-on-color-default"
+            class="color-picker__on-color color-picker__on-color--default"
+          >
+            Aa
+          </span>
+        )
+      ) : null}
     </div>
   );
 }

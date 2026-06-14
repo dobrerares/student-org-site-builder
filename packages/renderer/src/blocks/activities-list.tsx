@@ -29,11 +29,16 @@ import { resolveAssetUrl } from "../asset-url.js";
 export function ActivitiesList(props: {
   block: ActivitiesListBlock;
   assetUrlForPath?: AssetUrlForPath | undefined;
-}): preact.JSX.Element {
+}): preact.JSX.Element | null {
   const { id, data } = props.block;
+  const items = Array.isArray(data.items) ? data.items : [];
+
+  // Empty-state suppression: an activitiesList with no items renders nothing
+  // rather than an empty styled container.
+  if (items.length === 0) return null;
+
   const intro = typeof data.intro === "string" ? data.intro : undefined;
   const layout = data.layout;
-  const items = Array.isArray(data.items) ? data.items : [];
 
   return (
     <section

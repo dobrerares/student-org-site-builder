@@ -25,6 +25,8 @@ export interface DocumentRef {
   mime: SupportedDocumentMime;
   /** Stored byte length. Documents are not transcoded; this equals input length. */
   byteSize: number;
+  /** User-supplied filename, when available for editor display. */
+  originalName?: string;
 }
 
 /**

@@ -28,10 +28,15 @@ import { resolveAssetUrl } from "../asset-url.js";
 export function PartnerLogos(props: {
   block: PartnerLogosBlock;
   assetUrlForPath?: AssetUrlForPath | undefined;
-}): preact.JSX.Element {
+}): preact.JSX.Element | null {
   const { id, data } = props.block;
+  const partners = Array.isArray(data.partners) ? data.partners : [];
+
+  // Empty-state suppression: a partnerLogos grid with no partners renders
+  // nothing rather than an empty styled container.
+  if (partners.length === 0) return null;
+
   const title = typeof data.title === "string" && data.title.length > 0 ? data.title : undefined;
-  const partners = data.partners;
 
   return (
     <section

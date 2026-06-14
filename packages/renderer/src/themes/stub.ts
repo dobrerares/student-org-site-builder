@@ -7,9 +7,10 @@
  *  - layout-only CSS that uses `var(--token)` exclusively (never raw colours)
  *  - no per-theme hero variant — the structural hero from the renderer is used
  *
- * The Academic theme (#47, see `themes/academic.ts`) ships a curated palette,
- * typography, and a per-theme hero composition. The rest (#28-#31) follow the
- * same pattern as #28-#31 land.
+ * The production themes (see `themes/academic.ts`, etc.) ship curated palettes
+ * and typography. The hero composition is now shared: every production theme
+ * uses the universal hero overlay from `production-base.ts`, contributing only
+ * palette and type — there are no per-theme hero variants.
  */
 
 export const STUB_THEME_ID = "stub" as const;
@@ -31,13 +32,6 @@ body {
 main { display: block; }
 [data-block="hero"] {
   padding: var(--space-xl) var(--space-md);
-}
-[data-block="hero"] .hero__eyebrow {
-  font-size: 0.875rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-muted);
-  margin: 0 0 var(--space-sm) 0;
 }
 [data-block="hero"] h1 {
   font-family: var(--font-headline);
@@ -268,7 +262,7 @@ main { display: block; }
   color: var(--color-primary);
 }
 [data-block="embed"] .embed__link a {
-  color: var(--color-accent);
+  color: var(--color-link);
   text-decoration: underline;
 }
 [data-block="activitiesList"] {

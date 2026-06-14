@@ -11,11 +11,8 @@
  * recommended before public release.
  *
  * Translator notes for the reviewer:
- *   - "Importă" / "Exportă" are the imperative singular forms; consistent
- *     with how desktop apps localise to RO. "Importați" (formal plural)
- *     would also be valid; we picked the more direct form.
- *   - "Resetează" is a calque on EN "Reset"; "Reinițializează" is more
- *     formal but may feel heavy on a small button. Open to either.
+ *   - Top-bar actions use plain user outcomes rather than file-format
+ *     terminology: "Deschide site", "Descarcă o copie".
  *   - "Previzualizare" for "Preview" is the standard tech translation.
  *   - "Vrăjitor" is the common RO localisation of "Wizard"; some apps use
  *     "Asistent" instead. We picked "Vrăjitor" for consistency with major
@@ -29,9 +26,15 @@ type RomanianCatalog = Readonly<Record<EditorMessageKey, string>>;
 
 export const ro: RomanianCatalog = {
   // Top bar
-  "topbar.import": "Importă",
-  "topbar.export": "Exportă",
-  "topbar.reset": "Resetează",
+  "topbar.import": "Deschide site",
+  "topbar.export": "Descarcă o copie",
+  "topbar.reset": "Începe de la capăt",
+
+  // Save status
+  "saveStatus.localOnly": "Descarcă o copie ca să păstrezi site-ul",
+  "saveStatus.saving": "Se salvează...",
+  "saveStatus.saved": "Salvat în acest browser",
+  "saveStatus.error": "Salvarea a eșuat. Descarcă acum o copie.",
 
   // Layout tabs
   "tabs.editor": "Editor",
@@ -70,11 +73,11 @@ export const ro: RomanianCatalog = {
 
   // Welcome screen
   "welcome.title": "Construiește site-ul organizației tale",
-  "welcome.subtitle": "Fără backend, fără dependențe, fără costuri de găzduire.",
+  "welcome.subtitle": "Creează un site curat, păstrează fișierele și descarcă o copie când e gata.",
   "welcome.action.wizard": "Pornește vrăjitorul",
   "welcome.action.template": "Pornește de la un șablon",
-  "welcome.action.import": "Importă un site existent",
-  "welcome.action.blank": "Pornește de la zero",
+  "welcome.action.import": "Deschide un site salvat",
+  "welcome.action.blank": "Începe de la zero",
   "welcome.recent.heading": "Site-uri recente",
   "welcome.recent.empty": "Niciun site recent.",
 } as const;

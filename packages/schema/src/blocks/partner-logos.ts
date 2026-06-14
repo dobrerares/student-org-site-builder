@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isAcceptableLinkUrl } from "../url.js";
 import { AssetRefSchema } from "./asset-ref.js";
 
 export { AssetRefSchema };
@@ -32,7 +33,14 @@ export { AssetRefSchema };
 
 const PartnerSchema = z.looseObject({
   name: z.string().min(1),
-  url: z.string().min(1).optional(),
+  url: z
+    .string()
+    .min(1)
+    .refine(isAcceptableLinkUrl, {
+      message:
+        "Partner URL is malformed. Use a full URL (https://example.org), a site-relative path (/contact), or mailto:/tel: links.",
+    })
+    .optional(),
   logo: AssetRefSchema,
 });
 

@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import type { Site } from "@sosb/schema";
 import singlePageSite from "./fixtures/single-page-site.json" with { type: "json" };
 import { build } from "../src/index.js";
+import { textOf } from "./helpers/dist-text.js";
 
 const fixture = singlePageSite as unknown as Site;
 
@@ -47,11 +48,10 @@ describe("build — output shape", () => {
 
   test("index.html is a complete HTML document", () => {
     const dist = build(fixture);
-    const html = dist.get("index.html");
-    expect(html).toBeDefined();
-    expect(html!.startsWith("<!doctype html>")).toBe(true);
-    expect(html!).toContain("<html");
-    expect(html!).toContain("</html>");
+    const html = textOf(dist, "index.html");
+    expect(html.startsWith("<!doctype html>")).toBe(true);
+    expect(html).toContain("<html");
+    expect(html).toContain("</html>");
   });
 });
 
@@ -70,14 +70,14 @@ describe("build — HTML preserves the renderer's body bytes", () => {
     const expected = renderSite(fixture, fixture.theme.id);
     const dist = build(fixture);
     const stripHead = (s: string): string => s.replace(/<head>[\s\S]*?<\/head>/, "<head/>");
-    expect(stripHead(dist.get("index.html")!)).toBe(stripHead(expected));
+    expect(stripHead(textOf(dist, "index.html"))).toBe(stripHead(expected));
   });
 
   test("the no-siteUrl head adds JSON-LD on top of the renderer's head bytes", async () => {
     const { renderSite } = await import("@sosb/renderer");
     const expected = renderSite(fixture, fixture.theme.id);
     const dist = build(fixture);
-    const html = dist.get("index.html")!;
+    const html = textOf(dist, "index.html");
     // Every byte the renderer produced in `<head>` survives — we only
     // append additional tags before `</head>`.
     const baselineHead = expected.match(/<head>[\s\S]*?<\/head>/)![0];

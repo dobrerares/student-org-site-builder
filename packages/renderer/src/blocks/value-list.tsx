@@ -37,8 +37,14 @@ import { VALUE_LIST_ICON_PATHS } from "./value-list-icons.js";
  * markup string. This is the same pattern the page shell uses for the
  * unknown-block placeholder comment.
  */
-export function ValueList(props: { block: ValueListBlock }): preact.JSX.Element {
+export function ValueList(props: { block: ValueListBlock }): preact.JSX.Element | null {
   const { id, data } = props.block;
+  const items = Array.isArray(data.items) ? data.items : [];
+
+  // Empty-state suppression: a valueList with no items renders nothing rather
+  // than an empty styled container.
+  if (items.length === 0) return null;
+
   const title = typeof data.title === "string" ? data.title : undefined;
   const intro = typeof data.intro === "string" ? data.intro : undefined;
   const layout = data.layout;
@@ -65,7 +71,7 @@ export function ValueList(props: { block: ValueListBlock }): preact.JSX.Element 
         )}
         {intro !== undefined && <p class="value-list__intro">{intro}</p>}
         <ul class="value-list__items">
-          {data.items.map((item, idx) => (
+          {items.map((item, idx) => (
             <Item key={`${id}__item__${idx}`} item={item} />
           ))}
         </ul>

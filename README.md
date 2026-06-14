@@ -127,14 +127,15 @@ conventions — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Status
 
-This repository was created from an architectural grilling session that
-produced the v1 specification. Several core packages have landed
-(`@sosb/schema`, `@sosb/renderer`, `@sosb/vfs`, `@sosb/zip`, `@sosb/build`,
-`@sosb/editor-state`, `@sosb/preview-bridge`, `@sosb/editor-app` and others
-are placeholders); the remaining 15 blocks, 5 themes, multi-language flow,
-and host shells are tracked in the issues backlog. Track v1 progress via
-the [issues backlog](../../issues), with [`docs/PRD.md`](docs/PRD.md) as the
-source of truth.
+v1 implementation is substantially complete: all 15 workspace packages have
+landed real implementations, including schema, renderer (15 Blocks x 5
+themes with a golden-file matrix), markdown, vfs, assets, zip round-trip,
+build pipeline, i18n (RO/EN), editor state, preview bridge, editor app with
+the universal Asset picker, wizard, themes, and both host shells (browser and
+Electron). Current work focuses on the theme visual refresh
+(`docs/superpowers/specs/2026-05-28-themes-pizzaz-design.md`) and items in
+the [issues backlog](../../issues). [`docs/PRD.md`](docs/PRD.md) remains the
+source of truth for scope.
 
 ## License
 

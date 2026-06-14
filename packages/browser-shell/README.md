@@ -33,6 +33,17 @@ removes the previous deploy's cache automatically.
 inlines every `<script src>`, `<link rel="stylesheet" href>`, and
 `<img src>` reference into a single document.
 
+## Development server
+
+From the repository root, run `pnpm dev` to start the browser editor on a
+local Vite server. Vite prints the URL, usually `http://localhost:5173`.
+The dev entry is seeded with the curated HISTORIPOL demo Template from
+`@sosb/themes`.
+
+The dev server is an ephemeral editor session: it does not register the
+service worker and does not wire OPFS persistence. Zip export/import still
+works normally for saving and loading local work.
+
 ### Documented limitations of the archival HTML
 
 The archival edition runs from `file://` and from any static host, but the

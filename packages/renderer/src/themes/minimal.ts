@@ -1,16 +1,24 @@
 /**
- * Minimal theme — issue #31.
+ * Minimal theme — "Calm" identity (content-first orgs: photography clubs,
+ * writing collectives, anyone whose words and images should carry the page).
  *
- * Restraint is the spec. The Minimal theme is the most ornament-bound theme
- * in v1: ornament is a regression. The brief:
+ * Restraint is the spec, expressed through fundamentals only — palette, type,
+ * density, shape — layered over the shared engine. No signature moves, no
+ * ornament: ornament is a regression here. What makes Minimal read as Calm:
  *
- *  - Monochrome base (white, near-black, one mid-grey for borders).
- *  - One accent colour, used sparingly (links, primary CTA only).
- *  - One sans-serif type family throughout (no headline/body pairing).
- *  - Minimal type scale (1.2 ratio max).
- *  - Tight density: small radii (sharp 0px corners), restrained spacing.
- *  - No shadows, no gradients, no decorative borders.
- *  - Hierarchy via weight + size only, not colour.
+ *  - Palette: monochrome. White base, near-black ink, one mid-grey for
+ *    hairlines. The accent is ink too (#1a1a1a) — CTAs and links are
+ *    near-black, never a hue. Hierarchy comes from weight + size + space.
+ *  - Type: a single sans-serif (Inter) for headline and body. Inter is the
+ *    first family in each stack, so the renderer self-hosts it (@font-face).
+ *  - Density: airy — `--density-scale: 1.25`, the airiest of the set. Spacing
+ *    flows from the engine's density-scaled `--space-*` scale (more breathing
+ *    room is the brand), so the theme ships no hardcoded spacing override.
+ *  - Shape: none — `--radius-base: 0px`. The engine derives sharp
+ *    `--radius-sm/md/lg: 0`, so the theme ships no direct radius overrides.
+ *
+ * A narrow 56rem reading rail keeps content sections on a calm, readable
+ * column — a legitimate Calm fundamental, not ornament.
  *
  * Per-block goldens for the other 14 blocks land alongside those blocks
  * (#9–#22). Today the theme ships a hero golden only — same scope as the
@@ -33,11 +41,12 @@ export const MINIMAL_THEME_ID = "minimal" as const;
  */
 export const MINIMAL_THEME_TOKENS = {
   colorBg: "#ffffff",
-  colorFg: "#111111",
+  colorFg: "#1a1a1a",
   // Primary equals foreground: hierarchy via weight + size, not colour.
-  colorPrimary: "#111111",
-  // Single accent — used for links and the primary CTA only.
-  colorAccent: "#2266dd",
+  colorPrimary: "#1a1a1a",
+  // Calm uses a near-black / mono accent — CTAs and links are ink, not a hue.
+  // Hierarchy comes from weight + size + space, never from colour.
+  colorAccent: "#1a1a1a",
   // Single mid-grey — borders + de-emphasised meta text.
   colorMuted: "#767676",
   fontHeadline: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
@@ -45,33 +54,43 @@ export const MINIMAL_THEME_TOKENS = {
 } as const;
 
 /**
- * Layout-only CSS for the Minimal theme. Every value MUST be `var(--token)`
- * or a structural primitive (units, dimensions, font-weights) — there is no
- * raw colour outside the `:root` rule, and the test suite asserts this.
+ * Minimal ("Calm") tokens as raw [cssProp, value] pairs, routed through
+ * `themeBaselineTokensFor` so the resolved-palette map (and the derived
+ * --color-*-rgb / --color-on-* tokens) reflect minimal's colors, and so the
+ * first font family in each stack is gated for self-hosting.
  *
- * The `:root` rule overrides the renderer's baseline tokens with Minimal's
- * palette + sharp-corner radii + tightened spacing. The `1.2` type scale is
- * applied as: body 1rem · h1 1.728rem (1.2³) · h2 1.44rem (1.2²). Anything
- * larger would break the brief; anything more granular would add noise.
+ * Density: airy — `--density-scale: 1.25` multiplies the engine's `--space-*`
+ * scale. Shape: none — `--radius-base: 0px`, from which the engine derives
+ * `--radius-sm/md/lg: 0`. Both ship here as baseline tokens (not as a
+ * hardcoded `:root` override) so the theme stays coupled to the engine knobs.
+ */
+export const MINIMAL_THEME_BASELINE_TOKENS: ReadonlyArray<readonly [string, string]> = [
+  ["--color-bg", MINIMAL_THEME_TOKENS.colorBg],
+  ["--color-fg", MINIMAL_THEME_TOKENS.colorFg],
+  ["--color-primary", MINIMAL_THEME_TOKENS.colorPrimary],
+  ["--color-accent", MINIMAL_THEME_TOKENS.colorAccent],
+  ["--color-muted", MINIMAL_THEME_TOKENS.colorMuted],
+  ["--font-headline", MINIMAL_THEME_TOKENS.fontHeadline],
+  ["--font-body", MINIMAL_THEME_TOKENS.fontBody],
+  // Density — airy. Multiplies the engine's --space-* scale (baseline 1).
+  ["--density-scale", "1.25"],
+  // Shape — none. The engine derives --radius-sm/md/lg: 0 from this base.
+  ["--radius-base", "0px"],
+];
+
+/**
+ * Layout-only CSS for the Minimal ("Calm") theme. Every value is a structural
+ * primitive (units, dimensions, font-weights) or a `var(--token)` reference —
+ * there is no raw colour anywhere, and the test suite asserts this.
+ *
+ * No `:root` block here: the Calm palette ships via the baseline-token list,
+ * spacing flows from the engine's density-scaled `--space-*` (`--density-scale:
+ * 1.25`, airier), and the sharp 0px corners derive from `--radius-base: 0px`.
+ * This overlay keeps only the restraint fundamentals — hairline borders, a
+ * narrow reading rail, stripped cards, a transparent badge, a solid-ink CTA
+ * banner, ink underlined links, and a visible focus ring.
  */
 export const MINIMAL_THEME_CSS = `
-:root {
-  --color-bg: ${MINIMAL_THEME_TOKENS.colorBg};
-  --color-fg: ${MINIMAL_THEME_TOKENS.colorFg};
-  --color-primary: ${MINIMAL_THEME_TOKENS.colorPrimary};
-  --color-accent: ${MINIMAL_THEME_TOKENS.colorAccent};
-  --color-muted: ${MINIMAL_THEME_TOKENS.colorMuted};
-  --font-headline: ${MINIMAL_THEME_TOKENS.fontHeadline};
-  --font-body: ${MINIMAL_THEME_TOKENS.fontBody};
-  --radius-sm: 0;
-  --radius-md: 0;
-  --radius-lg: 0;
-  --space-xs: 0.25rem;
-  --space-sm: 0.5rem;
-  --space-md: 1rem;
-  --space-lg: 1.5rem;
-  --space-xl: 3rem;
-}
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 body {
@@ -84,48 +103,83 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 main { display: block; }
+/* Link text uses the contrast-safe --color-link (here it resolves to the ink
+   accent, which is high-contrast on white). */
 a {
-  color: var(--color-accent);
+  color: var(--color-link);
   text-decoration: underline;
   text-underline-offset: 0.15em;
 }
-[data-block="hero"] {
-  padding: var(--space-xl) var(--space-md);
+[data-site-nav],
+[data-language-switcher] {
   max-width: 56rem;
-  margin: 0 auto;
+  margin-inline: auto;
+  border-bottom: 1px solid var(--color-muted);
 }
-[data-block="hero"] .hero__eyebrow {
-  font-size: 0.8125rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-muted);
-  margin: 0 0 var(--space-sm) 0;
-  font-weight: 500;
+[data-site-nav] ul,
+[data-language-switcher] ul {
+  gap: var(--space-md);
 }
-[data-block="hero"] h1 {
-  font-family: var(--font-headline);
-  font-size: 1.728rem;
-  line-height: 1.2;
-  font-weight: 600;
-  margin: 0 0 var(--space-sm) 0;
-  color: var(--color-primary);
-  letter-spacing: -0.01em;
+[data-block="valueList"],
+[data-block="activitiesList"],
+[data-block="teamGrid"],
+[data-block="contactCard"],
+[data-block="richText"],
+[data-block="quote"],
+[data-block="faq"],
+[data-block="documentDownloads"],
+[data-block="event-list"],
+[data-block="partnerLogos"],
+[data-block="imageGallery"] {
+  max-width: 56rem;
+  margin-inline: auto;
+  border-top: 1px solid var(--color-muted);
 }
-[data-block="hero"] .hero__subtitle {
-  font-size: 1rem;
-  line-height: 1.5;
-  color: var(--color-fg);
-  margin: 0 0 var(--space-md) 0;
-  max-width: 40rem;
+[data-block="valueList"] .value-list__item,
+[data-block="activitiesList"] .activities-list__item,
+[data-block="teamGrid"] .team-person__figure,
+[data-block="documentDownloads"] .document-downloads__item,
+[data-block="event-list"] .event-list__item article,
+[data-block="faq"] .faq__item,
+[data-block="partnerLogos"] .partner-logos__item {
+  border: 0;
+  border-top: 1px solid var(--color-muted);
+  border-radius: 0;
+  background: transparent;
+  padding: var(--space-md) 0;
 }
-[data-block="hero"] .hero__media {
-  margin-top: var(--space-lg);
-  border-radius: var(--radius-md);
-  overflow: hidden;
+[data-block="valueList"] .value-list__icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-bottom: var(--space-xs);
 }
-[data-block="hero"] .hero__media img {
-  display: block;
-  max-width: 100%;
-  height: auto;
+[data-block="activitiesList"][data-layout="cards"] .activities-list__items,
+[data-block="documentDownloads"][data-layout="cards"] .document-downloads__list,
+[data-block="teamGrid"] .team-grid__list {
+  gap: var(--space-lg);
+}
+[data-block="activitiesList"] .activities-list__body,
+[data-block="teamGrid"] .team-person__caption {
+  padding: 0;
+}
+[data-block="activitiesList"] .activities-list__badge {
+  background: transparent;
+  color: var(--color-accent);
+  padding: 0;
+  border-radius: 0;
+}
+[data-block="ctaBanner"] {
+  background: var(--color-fg);
+}
+[data-block="ctaBanner"] .ctaBanner__inner {
+  max-width: 56rem;
+}
+[data-block="ctaBanner"] .ctaBanner__button {
+  border-radius: 0;
+}
+[data-block="imageGallery"] .image-gallery__figure,
+[data-block="activitiesList"] .activities-list__media {
+  border-radius: 0;
+  background: transparent;
 }
 `.trim();

@@ -52,9 +52,15 @@ import { resolveAssetUrl } from "../asset-url.js";
 export function Quote(props: {
   block: QuoteBlock;
   assetUrlForPath?: AssetUrlForPath | undefined;
-}): preact.JSX.Element {
+}): preact.JSX.Element | null {
   const { id, data } = props.block;
   const text = typeof data.text === "string" ? data.text : "";
+
+  // Empty-state suppression: a pull-quote with no quote text is structurally
+  // meaningless (nothing to attribute to), so render nothing rather than an
+  // empty styled figure. Whitespace-only text counts as empty.
+  if (text.trim().length === 0) return null;
+
   const author =
     typeof data.author === "string" && data.author.length > 0 ? data.author : undefined;
   const authorRole =

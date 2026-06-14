@@ -15,6 +15,15 @@ import { ContactCardBlockSchema, validateBlock } from "../src/index.js";
  *    the embed URL deterministically.
  */
 describe("contactCard block schema", () => {
+  const contactCardWithSocialUrl = (url: string) => ({
+    id: "blk_contact_social_url",
+    type: "contactCard",
+    version: 1,
+    data: {
+      socials: [{ platform: "instagram", url }],
+    },
+  });
+
   test("validates an empty contactCard (all fields optional)", () => {
     const block = {
       id: "blk_contact_01",
@@ -41,6 +50,21 @@ describe("contactCard block schema", () => {
       },
     };
     expect(ContactCardBlockSchema.safeParse(block).success).toBe(true);
+  });
+
+  test.each([
+    ["javascript: URL", "javascript:void(0)"],
+    ["data: URL", "data:text/plain,hello"],
+    ["bare domain without scheme", "www.example.org"],
+  ])("rejects contactCard social link with %s", (_caseName, url) => {
+    expect(ContactCardBlockSchema.safeParse(contactCardWithSocialUrl(url)).success).toBe(false);
+  });
+
+  test.each([
+    ["https URL", "https://example.org"],
+    ["site-relative path", "/contact"],
+  ])("accepts contactCard social link with %s", (_caseName, url) => {
+    expect(ContactCardBlockSchema.safeParse(contactCardWithSocialUrl(url)).success).toBe(true);
   });
 
   test("validates a contactCard with OSM map embed opted-in", () => {

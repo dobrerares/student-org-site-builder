@@ -11,15 +11,16 @@ const STYLE_ELEMENT_ID = "sosb-welcome-shell-style";
 export const WELCOME_SHELL_CSS = String.raw`
 :root {
   color-scheme: light;
-  --sosb-shell-bg: #f6f7f9;
+  --sosb-shell-bg: #f8fafc;
   --sosb-shell-surface: #ffffff;
-  --sosb-shell-border: #d7dde5;
+  --sosb-shell-soft: #eef2f7;
+  --sosb-shell-border: #cbd5e1;
   --sosb-shell-text: #17202a;
-  --sosb-shell-muted: #52606d;
-  --sosb-shell-primary: #1f3a5f;
-  --sosb-shell-primary-strong: #152a46;
-  --sosb-shell-accent: #7a2d16;
-  --sosb-shell-focus: #3b82f6;
+  --sosb-shell-muted: #667085;
+  --sosb-shell-primary: #0f766e;
+  --sosb-shell-primary-strong: #0b5f59;
+  --sosb-shell-accent: #315b8a;
+  --sosb-shell-focus: #0f766e;
 }
 
 body {
@@ -37,8 +38,8 @@ body {
 [data-testid="welcome-screen"] {
   display: grid;
   align-content: start;
-  gap: 1.25rem;
-  max-width: 980px;
+  gap: 1rem;
+  max-width: 1040px;
   margin: 0 auto;
 }
 
@@ -52,6 +53,8 @@ body {
 
 [data-testid="welcome-screen"] > header {
   padding: clamp(1.25rem, 3vw, 2rem);
+  display: grid;
+  gap: 0.75rem;
 }
 
 [data-testid="welcome-screen"] h1,
@@ -63,8 +66,8 @@ body {
 }
 
 [data-testid="welcome-screen"] h1 {
-  max-width: 14ch;
-  font-size: clamp(2rem, 6vw, 4.5rem);
+  max-width: 18ch;
+  font-size: clamp(2rem, 5vw, 3.6rem);
 }
 
 [data-testid="welcome-screen"] p,
@@ -72,9 +75,26 @@ body {
   color: var(--sosb-shell-muted);
 }
 
+[data-testid="welcome-screen"] > header p {
+  max-width: 58ch;
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+[data-testid="welcome-drop-hint"] {
+  display: inline-flex;
+  width: fit-content;
+  padding: 0.4rem 0.6rem;
+  border: 1px dashed var(--sosb-shell-border);
+  border-radius: 6px;
+  background: var(--sosb-shell-soft);
+  color: var(--sosb-shell-text) !important;
+  font-size: 0.92rem !important;
+}
+
 [data-testid="welcome-screen"] nav {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
   gap: 0.75rem;
 }
 
@@ -90,9 +110,28 @@ body {
 }
 
 [data-testid="welcome-screen"] nav button {
+  display: grid;
+  align-content: start;
+  gap: 0.35rem;
   padding: 1rem;
   text-align: left;
-  font-weight: 700;
+  font-weight: 500;
+}
+
+[data-action-title] {
+  display: block;
+  color: inherit;
+  font-size: 1rem;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+[data-action-detail] {
+  display: block;
+  color: var(--sosb-shell-muted);
+  font-size: 0.9rem;
+  font-weight: 450;
+  line-height: 1.35;
 }
 
 [data-testid="welcome-screen"] button:hover:not(:disabled),
@@ -121,6 +160,11 @@ body {
   background: var(--sosb-shell-primary);
   border-color: var(--sosb-shell-primary);
   color: #ffffff;
+}
+
+[data-testid="welcome-action-wizard"] [data-action-detail],
+[data-testid="welcome-action-continue"] [data-action-detail] {
+  color: rgba(255, 255, 255, 0.82);
 }
 
 [data-testid="welcome-action-wizard"]:hover:not(:disabled),

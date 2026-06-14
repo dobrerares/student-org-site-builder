@@ -11,10 +11,12 @@
     "pnpm": ">=10.0.0"
   },
   "scripts": {
+    "dev": "pnpm --filter @sosb/browser-shell run dev",
     "typecheck": "pnpm -r --if-present run typecheck",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "gen:fonts": "node scripts/gen-fonts.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",

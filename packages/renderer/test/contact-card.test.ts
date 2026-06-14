@@ -46,11 +46,16 @@ describe("renderSite — contactCard structural", () => {
     expect(html).toContain('href="https://facebook.com/example"');
   });
 
-  test("tolerates a contactCard with no fields at all", () => {
+  test("suppresses a contactCard with no fields at all (empty-state foolproofing)", () => {
+    // Empty-state suppression: a contactCard with no contact channels (no
+    // address, email, phone, social, or enabled map) is just a bare "Contact"
+    // heading — render nothing rather than an empty styled card. (Previously
+    // this emitted the wrapper <section>; the suppression guard now drops it.)
     const minimal = structuredClone(fixture) as Site;
     minimal.pages[0]!.blocks[0]!.data = {};
     const html = renderSite(minimal, "stub");
-    expect(html).toMatch(/<section[^>]*data-block="contactCard"/);
+    expect(html).not.toMatch(/<section[^>]*data-block="contactCard"/);
+    expect(html).not.toMatch(/<!-- unknown block/);
   });
 
   test("tolerates an unknown extra field on contactCard data (forward-compat)", () => {
@@ -211,5 +216,54 @@ describe("renderSite — contactCard determinism", () => {
     const a = renderSite(osmFixture, "stub");
     const b = renderSite(osmFixture, "stub");
     expect(a).toBe(b);
+  });
+});
+
+describe("renderSite — contactCard map-only suppression (empty-state edge)", () => {
+  // A card whose ONLY content is a map should render iff that map actually
+  // renders — otherwise the card would show an empty heading.
+  function siteWithMapOnly(mapEmbed: Record<string, unknown>): Site {
+    const site = structuredClone(osmFixture) as Site;
+    site.pages[0]!.blocks[0]!.data = { mapEmbed };
+    return site;
+  }
+  const COORDS = [44.1733, 28.6383];
+
+  test("suppresses a card whose only content is a Google map without privacy acknowledgement", () => {
+    const html = renderSite(
+      siteWithMapOnly({ enabled: true, provider: "google", coordinates: COORDS, zoom: 14 }),
+      "stub",
+    );
+    expect(html).not.toMatch(/<section[^>]*data-block="contactCard"/);
+    expect(html).not.toContain("<!-- unknown block");
+  });
+
+  test("suppresses a card whose only content is an enabled map with no coordinates", () => {
+    const html = renderSite(siteWithMapOnly({ enabled: true, provider: "osm" }), "stub");
+    expect(html).not.toMatch(/<section[^>]*data-block="contactCard"/);
+  });
+
+  test("renders a card whose only content is an OSM map", () => {
+    const html = renderSite(
+      siteWithMapOnly({ enabled: true, provider: "osm", coordinates: COORDS, zoom: 14 }),
+      "stub",
+    );
+    expect(html).toMatch(/<section[^>]*data-block="contactCard"/);
+    expect(html).toMatch(/openstreetmap\.org\/export\/embed\.html/);
+  });
+
+  test("renders a card whose only content is an acknowledged Google map", () => {
+    const html = renderSite(
+      siteWithMapOnly({
+        enabled: true,
+        provider: "google",
+        coordinates: COORDS,
+        zoom: 14,
+        acknowledgedPrivacyNotice: true,
+      }),
+      "stub",
+    );
+    expect(html).toMatch(/<section[^>]*data-block="contactCard"/);
+    expect(html).toMatch(/google\.com\/maps\/embed/);
   });
 });

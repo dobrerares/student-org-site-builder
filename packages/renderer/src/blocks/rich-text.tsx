@@ -26,9 +26,15 @@ import { markdownToHtml } from "@sosb/markdown";
  * contract; the renderer's `richtext-block.test.ts` re-asserts it at the
  * page level.
  */
-export function RichText(props: { block: RichTextBlock }): preact.JSX.Element {
+export function RichText(props: { block: RichTextBlock }): preact.JSX.Element | null {
   const { id, data } = props.block;
   const markdownSource = typeof data.markdown === "string" ? data.markdown : "";
+
+  // Empty-state suppression: a richText with no meaningful prose renders
+  // nothing rather than an empty styled container. Whitespace-only markdown
+  // counts as empty.
+  if (markdownSource.trim().length === 0) return null;
+
   const html = markdownToHtml(markdownSource);
 
   return (

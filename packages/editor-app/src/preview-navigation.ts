@@ -38,11 +38,6 @@ import { pagePath } from "@sosb/renderer";
  *     it rather than throw — the iframe already called preventDefault().
  *   - A returned index === current `activePageIndex` is a no-op the host
  *     can elide (no need to re-render for the same page).
- *
- * TODO(user): implement this resolver. The body should be 3–6 lines:
- * iterate `site.pages` and compare each `pagePath(site, page)` against
- * `path`. Return the first matching index, or `null` if none match.
- *
  * Trade-offs to consider:
  *  1. Case sensitivity. Slugs are validated as lowercase ASCII by the
  *     schema — strict equality is correct and matches how a real server

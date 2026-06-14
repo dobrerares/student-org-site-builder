@@ -34,6 +34,16 @@ describe("populateAssetDisplayUrls", () => {
     if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
   });
 
+  test("mints display URLs for supported AVIF image assets", async () => {
+    const vfs = new MemoryDriver();
+    const cache = new Map<string, string>();
+    await vfs.write("assets/photo.avif", new Uint8Array([0, 0, 0, 0]));
+    await populateAssetDisplayUrls(vfs, cache);
+    const url = cache.get("photo");
+    expect(url).toMatch(/^blob:/);
+    if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
+  });
+
   test("also mints URLs for downloadable documents", async () => {
     const vfs = new MemoryDriver();
     const cache = new Map<string, string>();

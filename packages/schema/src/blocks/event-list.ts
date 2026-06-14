@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isAcceptableLinkUrl } from "../url.js";
 import { AssetRefSchema } from "./asset-ref.js";
 
 /**
@@ -60,7 +61,13 @@ export const EventEntrySchema = z.looseObject({
   startsAt: IsoDateTimeWithOffset,
   endsAt: IsoDateTimeWithOffset.optional(),
   location: z.string().optional(),
-  url: z.string().optional(),
+  url: z
+    .string()
+    .refine(isAcceptableLinkUrl, {
+      message:
+        "Event URL is malformed. Use a full URL (https://example.org), a site-relative path (/contact), or mailto:/tel: links.",
+    })
+    .optional(),
 });
 
 const SortBySchema = z.enum(["date-asc", "date-desc"]);

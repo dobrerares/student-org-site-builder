@@ -20,6 +20,14 @@
  *                    #21) that materialises image bytes into the dist Map
  *                    hasn't landed; the metric activates automatically once
  *                    the Map starts carrying binary asset entries.
+ *  - Fonts           <= 180 KB (sum of every `assets/fonts/*.woff2` woff2
+ *                    artefact's byte length). Self-hosted theme fonts are
+ *                    site-level — one shared set referenced by every page — so
+ *                    the same total is attributed to each page. Reports
+ *                    "skipped" when the site ships no fonts (system-font
+ *                    themes). woff2 bytes are deliberately NOT folded into the
+ *                    CSS metric: they are neither inline `<style>` nor linked
+ *                    `.css`, so the CSS logic already ignores them (PR-F2b).
  *
  * The CSS-gzipped measurement uses fflate's `gzipSync`, a browser-pure gzip
  * implementation. This preserves the build pipeline's "no Node-only deps on
@@ -39,6 +47,7 @@ export const BUDGET_LIMITS = {
   cssGzipped: 15 * 1024,
   js: 10 * 1024,
   hero: 200 * 1024,
+  fonts: 180 * 1024,
 } as const;
 
 /**
@@ -76,6 +85,7 @@ export interface PageBudgetReport {
     readonly css: MetricResult;
     readonly js: MetricResult;
     readonly hero: MetricResult;
+    readonly fonts: MetricResult;
   };
 }
 
@@ -97,7 +107,9 @@ export interface BudgetReport {
  * page when the page's HTML contains a `<link>` or `<script src=>`
  * reference to them.
  */
-export function measureBudgets(dist: ReadonlyMap<string, string>): BudgetReport {
+export function measureBudgets(
+  dist: ReadonlyMap<string, string | Uint8Array>,
+): BudgetReport {
   const pages: Record<string, PageBudgetReport> = {};
   const pagePaths: string[] = [];
   for (const path of dist.keys()) {
@@ -139,8 +151,14 @@ export function formatBudgetViolations(report: BudgetReport): string[] {
 
 /* ------------------------- per-metric measurement ------------------------- */
 
-function measurePage(dist: ReadonlyMap<string, string>, path: string): PageBudgetReport {
-  const html = dist.get(path) ?? "";
+function measurePage(
+  dist: ReadonlyMap<string, string | Uint8Array>,
+  path: string,
+): PageBudgetReport {
+  // `.html` artefacts are always text; coerce defensively so the substring
+  // scans below never run against a `Uint8Array`.
+  const htmlValue = dist.get(path);
+  const html = typeof htmlValue === "string" ? htmlValue : "";
 
   const htmlBytes = utf8ByteLength(html);
   const inlineCss = extractInlineCss(html);
@@ -164,19 +182,55 @@ function measurePage(dist: ReadonlyMap<string, string>, path: string): PageBudge
   const css_ = mkResult(cssGzippedBytes, BUDGET_LIMITS.cssGzipped);
   const js_ = mkResult(jsBytes, BUDGET_LIMITS.js);
   const hero_ = measureHero(dist, html);
+  const fonts_ = measureFonts(dist);
 
   const pageStatus: "pass" | "warn" =
     html_.status === "warn" ||
     css_.status === "warn" ||
     js_.status === "warn" ||
-    hero_.status === "warn"
+    hero_.status === "warn" ||
+    fonts_.status === "warn"
       ? "warn"
       : "pass";
 
   return {
     status: pageStatus,
-    metrics: { html: html_, css: css_, js: js_, hero: hero_ },
+    metrics: { html: html_, css: css_, js: js_, hero: hero_, fonts: fonts_ },
   };
+}
+
+/**
+ * Measure the self-hosted font payload: the sum of `.byteLength` over every
+ * dist entry keyed `assets/fonts/*.woff2` (PR-F2b). Fonts are site-level — one
+ * shared set every page references — so the same total is attributed to each
+ * page. Returns "skipped" when the site ships no fonts (system-font themes),
+ * matching how the hero metric reports "nothing to measure".
+ */
+function measureFonts(dist: ReadonlyMap<string, string | Uint8Array>): MetricResult {
+  const limit = BUDGET_LIMITS.fonts;
+  let total = 0;
+  let count = 0;
+  for (const [key, value] of dist) {
+    if (!isFontPath(key)) continue;
+    total += byteLength(value);
+    count += 1;
+  }
+  if (count === 0) {
+    return {
+      status: "skipped",
+      limitBytes: limit,
+      note: "site uses system fonts; no self-hosted woff2 assets to measure",
+    };
+  }
+  return mkResult(total, limit);
+}
+
+/**
+ * Whether a dist key is a self-hosted woff2 font asset (`assets/fonts/*.woff2`).
+ * Matches the renderer's `FONT_ASSET_PREFIX` (`assets/fonts/`) emission path.
+ */
+function isFontPath(key: string): boolean {
+  return key.startsWith("assets/fonts/") && key.endsWith(".woff2");
 }
 
 function mkResult(bytes: number, limit: number): MetricResult {
@@ -193,7 +247,10 @@ function mkResult(bytes: number, limit: number): MetricResult {
  * dist Map, measure its UTF-8 length. If it doesn't live in the Map,
  * return "skipped" with a note pointing at #8 (the asset pipeline issue).
  */
-function measureHero(dist: ReadonlyMap<string, string>, html: string): MetricResult {
+function measureHero(
+  dist: ReadonlyMap<string, string | Uint8Array>,
+  html: string,
+): MetricResult {
   const limit = BUDGET_LIMITS.hero;
   const ref = firstHeroReference(html);
   if (ref === undefined) {
@@ -219,7 +276,7 @@ function measureHero(dist: ReadonlyMap<string, string>, html: string): MetricRes
       note: `hero image '${lookup}' not present in dist Map yet (asset pipeline lands in #8)`,
     };
   }
-  const bytes = utf8ByteLength(asset);
+  const bytes = byteLength(asset);
   return mkResult(bytes, limit);
 }
 
@@ -266,7 +323,7 @@ function extractInlineScript(html: string): string {
  * concatenate the bodies.
  */
 function extractLinkedAssets(
-  dist: ReadonlyMap<string, string>,
+  dist: ReadonlyMap<string, string | Uint8Array>,
   html: string,
   pattern: RegExp,
 ): string {
@@ -279,9 +336,20 @@ function extractLinkedAssets(
     if (/^https?:\/\//i.test(ref) || ref.startsWith("//")) continue;
     const lookup = ref.startsWith("/") ? ref.slice(1) : ref;
     const body = dist.get(lookup);
-    if (body !== undefined) parts.push(body);
+    // `.css`/`.js` artefacts are text; a non-string here would be a misnamed
+    // binary entry, which the CSS/JS budgets deliberately ignore.
+    if (typeof body === "string") parts.push(body);
   }
   return parts.join("\n");
+}
+
+/**
+ * Byte length of a dist value, handling both lanes of the widened
+ * `DistFolder`: a `Uint8Array` reports its own `.byteLength` (binary artefacts
+ * like woff2 fonts); a `string` is measured as UTF-8 (text artefacts).
+ */
+function byteLength(value: string | Uint8Array): number {
+  return typeof value === "string" ? utf8ByteLength(value) : value.byteLength;
 }
 
 /**

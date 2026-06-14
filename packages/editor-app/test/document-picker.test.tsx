@@ -23,6 +23,7 @@ const SAMPLE_PDF: DocumentAssetRefLike = {
   metadataPath: "assets/abc123.metadata.json",
   mime: "application/pdf",
   byteSize: 1024 * 1024 * 2 + 512 * 1024, // 2.5 MB
+  originalName: "membership-guide.pdf",
 };
 
 function freshDocument(): DocumentAssetRefLike {
@@ -32,6 +33,7 @@ function freshDocument(): DocumentAssetRefLike {
     metadataPath: "assets/def456.metadata.json",
     mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     byteSize: 64 * 1024, // 64 KB
+    originalName: "fresh-document.docx",
   };
 }
 
@@ -50,10 +52,10 @@ describe("DocumentPicker", () => {
     );
     // Icon present.
     expect(container.querySelector('[data-testid="document-picker-icon"]')).not.toBeNull();
-    // Filename derived from VFS path (last segment).
+    // Filename uses the original uploaded name when available.
     const filename = container.querySelector('[data-testid="document-picker-filename"]');
     expect(filename).not.toBeNull();
-    expect(filename!.textContent).toBe("abc123.pdf");
+    expect(filename!.textContent).toBe("membership-guide.pdf");
     // Type label is the human-readable MIME shorthand.
     const typeLabel = container.querySelector('[data-testid="document-picker-type"]');
     expect(typeLabel).not.toBeNull();
@@ -66,6 +68,25 @@ describe("DocumentPicker", () => {
     expect(container.querySelector("img")).toBeNull();
     // ADR 0044: no text/number/etc. inputs.
     expect(nonFileInputs(container)).toHaveLength(0);
+  });
+
+  test("falls back to the stored VFS filename for older document refs", () => {
+    const withoutOriginalName: DocumentAssetRefLike = {
+      hash: "abc123",
+      path: "assets/abc123.pdf",
+      metadataPath: "assets/abc123.metadata.json",
+      mime: "application/pdf",
+      byteSize: 1024,
+    };
+    const { container } = render(
+      <DocumentPicker
+        value={withoutOriginalName}
+        onChange={() => {}}
+        uploader={async () => withoutOriginalName}
+      />,
+    );
+    const filename = container.querySelector('[data-testid="document-picker-filename"]');
+    expect(filename?.textContent).toBe("abc123.pdf");
   });
 
   test("with a value, clicking 'Replace document' opens the file picker", () => {

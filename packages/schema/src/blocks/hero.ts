@@ -4,13 +4,12 @@ import { AssetRefSchema } from "./asset-ref.js";
 /**
  * Hero block — the mandatory page-opening block.
  *
- * Per the PRD, the hero contains a title and subtitle and may carry an
- * optional eyebrow and a background image with alt text. The schema is
+ * Per the PRD, the hero contains a title and subtitle and may carry a
+ * background image with alt text. The schema is
  * declared with `looseObject` so unknown fields survive a round-trip
  * read-write-read; this is the v1 forward-compatibility contract.
  */
 export const HeroDataSchema = z.looseObject({
-  eyebrow: z.string().optional(),
   title: z.string().min(1),
   subtitle: z.string().optional(),
   backgroundImage: AssetRefSchema.optional(),

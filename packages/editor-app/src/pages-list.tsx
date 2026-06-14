@@ -67,7 +67,7 @@ export function PagesList(props: PagesListProps): JSX.Element {
     const lang = site.defaultLanguage;
     const taken = site.pages.some((p) => p.lang === lang && p.slug === trimmed);
     if (taken) {
-      setAddError(`A page with slug "${trimmed}" already exists in ${lang}.`);
+      setAddError(`A page with the link "${trimmed}" already exists in ${lang}.`);
       return;
     }
     setAddError(null);
@@ -217,7 +217,7 @@ export function PagesList(props: PagesListProps): JSX.Element {
         }}
       >
         <label>
-          <span>New page slug</span>
+          <span>New page link</span>
           <input
             type="text"
             data-testid="pages-list-add-slug"
@@ -226,7 +226,7 @@ export function PagesList(props: PagesListProps): JSX.Element {
               setNewSlug(event.currentTarget.value);
               if (addError !== null) setAddError(null);
             }}
-            placeholder="despre"
+            placeholder="about"
           />
         </label>
         <button type="submit" data-action="add">

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 
-import { MemoryDriver, ZipDriver } from "@sosb/vfs";
+import { MemoryDriver } from "@sosb/vfs";
+import { ZIP_IMPORT_MAX_ENTRIES, ZipDriver } from "@sosb/vfs/zip-driver";
 
 import historipol from "./fixtures/historipol.json" with { type: "json" };
 import { exportToZip, importFromZip, ZipImportError } from "../src/index.js";
@@ -37,6 +38,24 @@ describe("importFromZip — corrupted input handling", () => {
     } catch (err) {
       expect(err).toBeInstanceOf(ZipImportError);
       expect((err as ZipImportError).code).toBe("zip.invalid");
+    }
+  });
+
+  test("throws ZipImportError with code zip.limitsExceeded when import limits are exceeded", async () => {
+    const driver = new ZipDriver();
+    await driver.write("data.json", bytes("{}"));
+    for (let i = 0; i < ZIP_IMPORT_MAX_ENTRIES; i++) {
+      await driver.write(`assets/${String(i).padStart(4, "0")}.txt`, bytes("x"));
+    }
+
+    const buf = driver.toZipBytes();
+    try {
+      await importFromZip(new Blob([buf]));
+      throw new Error("expected ZipImportError");
+    } catch (err) {
+      expect(err).toBeInstanceOf(ZipImportError);
+      expect((err as ZipImportError).code).toBe("zip.limitsExceeded");
+      expect((err as ZipImportError).code).not.toBe("zip.invalid");
     }
   });
 

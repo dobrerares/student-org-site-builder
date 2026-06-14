@@ -7,12 +7,12 @@
         "html": {
           "status": "pass",
           "limitBytes": 51200,
-          "bytes": 23330
+          "bytes": 24167
         },
         "css": {
           "status": "pass",
           "limitBytes": 15360,
-          "bytes": 3251
+          "bytes": 3547
         },
         "js": {
           "status": "pass",
@@ -23,6 +23,11 @@
           "status": "skipped",
           "limitBytes": 204800,
           "note": "hero image 'assets/hero.jpg' not present in dist Map yet (asset pipeline lands in #8)"
+        },
+        "fonts": {
+          "status": "skipped",
+          "limitBytes": 184320,
+          "note": "site uses system fonts; no self-hosted woff2 assets to measure"
         }
       }
     }

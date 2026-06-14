@@ -7,12 +7,12 @@
         "html": {
           "status": "pass",
           "limitBytes": 51200,
-          "bytes": 23574
+          "bytes": 24411
         },
         "css": {
           "status": "pass",
           "limitBytes": 15360,
-          "bytes": 3251
+          "bytes": 3547
         },
         "js": {
           "status": "pass",
@@ -23,6 +23,11 @@
           "status": "skipped",
           "limitBytes": 204800,
           "note": "hero image is hosted off-site (https://stub.example.org/assets/hero.jpg); cannot measure from dist"
+        },
+        "fonts": {
+          "status": "skipped",
+          "limitBytes": 184320,
+          "note": "site uses system fonts; no self-hosted woff2 assets to measure"
         }
       }
     }

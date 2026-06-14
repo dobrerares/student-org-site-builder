@@ -2,37 +2,62 @@ import { describe, expect, test } from "vitest";
 import type { Site } from "@sosb/schema";
 import heroOnlyEditorial from "./fixtures/hero-only-editorial.json" with { type: "json" };
 import { renderSite } from "../src/index.js";
-import { EDITORIAL_THEME_ID, EDITORIAL_THEME_TOKENS } from "../src/themes/editorial.js";
+import { EDITORIAL_THEME_BASELINE_TOKENS, EDITORIAL_THEME_ID } from "../src/themes/editorial.js";
 
 const fixture = heroOnlyEditorial as unknown as Site;
 
 /**
- * Editorial theme — issue #29.
+ * Editorial theme — "Editorial" identity recast.
  *
- * Print-magazine inspired theme: serif body + sans-serif headlines, ink/cream
- * palette with a single ochre accent, perfect-fourth (1.333) type scale. This
- * suite asserts the token contract and surface-level CSS shape; per-block ×
- * per-theme goldens are deferred until the block matrix lands (#9-#22 +
- * #28/#30/#31/#47).
+ * Magazine-inspired theme: Fraunces serif display + Inter body, terracotta on
+ * a warm cream ground, comfortable density, soft 6px corners, fluid `--type-*`
+ * display scale. Palette/fonts/density/radius ship via the tuple baseline-token
+ * mechanism (so --color-bg/-fg/-muted and the density/radius engine knobs
+ * actually render). This suite asserts the token contract and surface-level CSS
+ * shape; per-block × per-theme goldens are deferred until the block matrix
+ * lands.
  */
+
+/** Look up a CSS-prop value in the editorial baseline tuple list. */
+function baselineToken(prop: string): string | undefined {
+  return EDITORIAL_THEME_BASELINE_TOKENS.find(([key]) => key === prop)?.[1];
+}
 
 describe("editorial theme — token emission", () => {
   test("exports the canonical theme id", () => {
     expect(EDITORIAL_THEME_ID).toBe("editorial");
   });
 
-  test("emits the curated palette on :root when no user overrides are set", () => {
+  test("emits the curated warm palette on :root when no user overrides are set", () => {
     const html = renderSite(fixture, EDITORIAL_THEME_ID);
-    expect(html).toMatch(/:root\s*\{[\s\S]*--color-primary:\s*#0e0c0a/);
-    expect(html).toMatch(/:root\s*\{[\s\S]*--color-accent:\s*#a8732a/);
+    // Recast identity: terracotta accent + warm ink on a cream ground. The
+    // tuple mechanism (unlike the legacy Record) lets the theme set bg/fg/muted
+    // too, so the cream ground actually renders.
+    expect(html).toMatch(/:root\s*\{[\s\S]*--color-primary:\s*#1a1714/);
+    expect(html).toMatch(/:root\s*\{[\s\S]*--color-accent:\s*#c4622d/);
+    expect(html).toMatch(/:root\s*\{[\s\S]*--color-bg:\s*#fbf8f3/);
+    expect(html).toMatch(/:root\s*\{[\s\S]*--color-fg:\s*#1a1714/);
+    expect(html).toMatch(/:root\s*\{[\s\S]*--color-muted:\s*#8a7e72/);
   });
 
-  test("emits a serif body font stack and a sans-serif headline font stack", () => {
+  test("emits a serif headline font stack and a sans-serif body font stack", () => {
     const html = renderSite(fixture, EDITORIAL_THEME_ID);
-    // Body stack must lead with a serif face (Charter / Source Serif / Georgia).
-    expect(html).toMatch(/--font-body:\s*[^;]*Charter[^;]*serif/);
-    // Headline stack must lead with sans for the editorial sans/serif contrast.
-    expect(html).toMatch(/--font-headline:\s*[^;]*sans-serif/);
+    // Recast flips the legacy pairing: the magazine voice is now the Fraunces
+    // serif display, with Inter for body.
+    expect(html).toMatch(/--font-headline:\s*[^;]*Fraunces[^;]*serif/);
+    expect(html).toMatch(/--font-body:\s*[^;]*Inter[^;]*sans-serif/);
+  });
+
+  test("comfortable density + soft radius ship via the engine knobs", () => {
+    const html = renderSite(fixture, EDITORIAL_THEME_ID);
+    expect(html).toMatch(/:root\s*\{[\s\S]*--density-scale:\s*1\.15/);
+    expect(html).toMatch(/:root\s*\{[\s\S]*--radius-base:\s*6px/);
+  });
+
+  test("self-hosts Fraunces + Inter via @font-face (first family in each stack)", () => {
+    const html = renderSite(fixture, EDITORIAL_THEME_ID);
+    expect(html).toMatch(/@font-face\s*\{[^}]*font-family:\s*"Fraunces"/);
+    expect(html).toMatch(/@font-face\s*\{[^}]*font-family:\s*"Inter"/);
   });
 
   test("user-supplied tokens still win over theme defaults", () => {
@@ -51,11 +76,19 @@ describe("editorial theme — token emission", () => {
     expect(positions[positions.length - 1]).toBe("#123456");
   });
 
-  test("EDITORIAL_THEME_TOKENS exposes the same palette + font keys the schema accepts", () => {
-    expect(EDITORIAL_THEME_TOKENS.colorPrimary).toMatch(/^#[0-9a-f]{6}$/);
-    expect(EDITORIAL_THEME_TOKENS.colorAccent).toMatch(/^#[0-9a-f]{6}$/);
-    expect(typeof EDITORIAL_THEME_TOKENS.fontHeadline).toBe("string");
-    expect(typeof EDITORIAL_THEME_TOKENS.fontBody).toBe("string");
+  test("EDITORIAL_THEME_BASELINE_TOKENS ships the palette + fonts + engine knobs as raw [cssProp, value] tuples", () => {
+    // Recast moved editorial onto the uniform tuple mechanism (matching
+    // civic/academic/modern/minimal): raw [cssProp, value] pairs, not a
+    // schema-keyed Record. This is what lets it set bg/fg/muted/density/radius.
+    expect(baselineToken("--color-primary")).toMatch(/^#[0-9a-f]{6}$/);
+    expect(baselineToken("--color-accent")).toMatch(/^#[0-9a-f]{6}$/);
+    expect(baselineToken("--color-bg")).toMatch(/^#[0-9a-f]{6}$/);
+    expect(baselineToken("--color-fg")).toMatch(/^#[0-9a-f]{6}$/);
+    expect(baselineToken("--color-muted")).toMatch(/^#[0-9a-f]{6}$/);
+    expect(typeof baselineToken("--font-headline")).toBe("string");
+    expect(typeof baselineToken("--font-body")).toBe("string");
+    expect(baselineToken("--density-scale")).toBe("1.15");
+    expect(baselineToken("--radius-base")).toBe("6px");
   });
 });
 
@@ -67,8 +100,7 @@ describe("editorial theme — layout-only CSS contract", () => {
     // tokens); every _other_ rule must consume them via var().
     const nonRootRules = styleBlocks.join("\n").replace(/:root\s*\{[^}]*\}/g, "");
     expect(nonRootRules).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
-    expect(nonRootRules).not.toMatch(/\brgb\(/);
-    expect(nonRootRules).not.toMatch(/\brgba\(/);
+    expect(nonRootRules).not.toMatch(/\brgba?\(\s*[#0-9.]/);
     expect(nonRootRules).toContain("var(--");
   });
 
@@ -89,20 +121,25 @@ describe("editorial theme — layout-only CSS contract", () => {
     expect(value).toBeLessThanOrEqual(1.7);
   });
 
-  test("hero h1 has the type-scale's largest size for editorial display contrast", () => {
+  test("display h1 uses the engine's largest fluid type token for editorial display contrast", () => {
     const html = renderSite(fixture, EDITORIAL_THEME_ID);
-    // The 1.333 ratio gives h1 ≈ 3.157rem; we just assert it is meaningfully
-    // larger than 2rem so the contract isn't accidentally flattened later.
-    // Stub baseline + editorial overlay both emit `[data-block="hero"] h1 {…}`
-    // rules; the cascade-winning rule is the last one (editorial's). Match
-    // all and inspect the final one so this test reflects what the browser
-    // would compute, not just whichever rule appeared first.
-    const heroH1Matches = [...html.matchAll(/\[data-block="hero"\]\s+h1\s*\{([\s\S]*?)\}/g)];
-    expect(heroH1Matches.length).toBeGreaterThan(0);
-    const last = heroH1Matches[heroH1Matches.length - 1]!;
-    const fs = last[1]!.match(/font-size:\s*([0-9.]+)rem/);
-    expect(fs).not.toBeNull();
-    expect(Number.parseFloat(fs![1]!)).toBeGreaterThanOrEqual(2.5);
+    // The recast drops the legacy hardcoded rem scale (h1 ≈ 3.157rem) in favour
+    // of the engine's fluid `--type-3xl` clamp (max 3.75rem). Assert the bare
+    // `h1 { font-size }` rule consumes `var(--type-3xl)` rather than a fixed
+    // rem, so display type stays responsive and never overflows on mobile. The
+    // editorial <h1> (incl. the hero's, which also gets var(--type-3xl) from the
+    // shared hero overlay) inherits this contract.
+    // Anchor on the rule boundary (start-of-line, `}`, `;`, or a `*/` comment
+    // close) so we match the standalone `h1 { … }` rule and never the grouped
+    // `h1, h2, …` selector or `.hero__title`.
+    const h1Matches = [...html.matchAll(/(?:^|[};]|\*\/)\s*h1\s*\{([\s\S]*?)\}/g)];
+    expect(h1Matches.length).toBeGreaterThan(0);
+    const usesTypeToken = h1Matches.some((m) => /font-size:\s*var\(--type-3xl\)/.test(m[1]!));
+    expect(usesTypeToken).toBe(true);
+    // And the rule must NOT pin a fixed-rem font-size (the mobile-overflow risk
+    // the fluid switch removes).
+    const usesFixedRem = h1Matches.some((m) => /font-size:\s*[0-9.]+rem/.test(m[1]!));
+    expect(usesFixedRem).toBe(false);
   });
 
   test("output ships no Preact or React runtime", () => {

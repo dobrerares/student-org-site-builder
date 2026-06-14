@@ -82,6 +82,15 @@ describe("SpineForm — Show advanced toggle (ADR 0043, T16)", () => {
     expect(container.querySelector('[data-testid="advanced-toggle"]')).not.toBeNull();
   });
 
+  test("renders friendly labels from field metadata instead of raw field names", () => {
+    const fields: FieldNode[] = [
+      { ...stringNode(["org", "legalName"]), label: "Official organization name" },
+    ];
+    const { container } = render(<SpineForm {...spineProps(fields)} />);
+    expect(container.textContent ?? "").toContain("Official organization name");
+    expect(container.textContent ?? "").not.toContain("legalName");
+  });
+
   test("hides tier=advanced fields by default (toggle off)", () => {
     const fields: FieldNode[] = [
       stringNode(["org", "name"]),

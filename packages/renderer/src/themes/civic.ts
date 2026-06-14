@@ -1,92 +1,89 @@
 /**
- * Civic theme.
+ * Civic theme — "Activist" identity (advocacy / campaigns / student-rights).
  *
- * Archetype: government / community-organisation / institutional.
- * Per the maintainer-expanded scope on #30, this theme leans into the
- * "civic" feel rather than the original PRD brief's warm-red + sun-yellow
- * palette. Civic websites are recognisable: deep blue, warm white, a single
- * warm accent, neutral sans-serif type, strong contrast, rectangular blocks.
+ * Aesthetic brief: bold, direct, unafraid. The identity comes entirely from
+ * fundamentals — palette, type, density, shape — layered over the shared
+ * engine. There are no decorative "signature moves" (no filled nav bar, no
+ * accent rule-bars on cards or blocks). What makes Civic read as Activist:
  *
- * Palette (deep blue + warm white + warm-burgundy accent)
- * ------------------------------------------------------
- *   --color-bg:      #fdfaf3   (warm white / off-cream)
- *   --color-fg:      #0c1b2e   (very dark navy text)
- *   --color-primary: #0c2d5e   (deep institutional blue)
- *   --color-accent:  #9c3a17   (warm burgundy/rust)
- *   --color-muted:   #3b4a5e   (slate grey)
+ *  - Palette: crimson + ink on pure white. A single hot accent (#cb2b2b) does
+ *    all the persuading — links, CTAs, focus, the recolored badge. Everything
+ *    else is near-black ink (#17181c) on white.
+ *  - Type: Archivo for display (a heavy, grotesque, placard-ready sans) paired
+ *    with Inter for body. Both are self-hosted by the renderer (the first
+ *    family in each stack matches the font registry, so `@font-face` is
+ *    auto-emitted). Headings — including the hero title — are set at weight
+ *    800: the loud, declarative voice is the brand.
+ *  - Density: compact — `--density-scale: 0.85` tightens the engine's
+ *    `--space-*` scale. Activist pages are dense and urgent, not airy.
+ *  - Shape: sharp — `--radius-base: 2px`. The engine derives the near-square
+ *    `--radius-sm/md/lg` for cards, badges and buttons.
  *
- * Measured WCAG contrast vs --color-bg (#fdfaf3, relative luminance ~0.957):
- *   - fg (#0c1b2e):        ~15.7:1   (AAA, exceeds 7:1)
- *   - primary (#0c2d5e):   ~12.7:1   (AAA, exceeds 7:1)
- *   - accent (#9c3a17):     ~8.25:1  (AAA, exceeds 7:1)
- *   - muted (#3b4a5e):      ~8.18:1  (AAA, exceeds 7:1)
+ * Measured WCAG contrast (engine-derived `--color-on-accent` is white on the
+ * crimson accent):
+ *   - ink (#17181c) on white:    ~17.7:1  (AAA)
+ *   - crimson (#cb2b2b) on white: ~5.36:1 (AA for links / large text)
+ *   - white on crimson (#cb2b2b): ~5.36:1 (AA — the badge / on-accent)
+ *   - muted (#6b6b6b) on white:   ~5.33:1 (AA)
  *
- * Civic priority on #30 is "AAA contrast where feasible" — this palette
- * clears 7:1 on every body-text combination, which is the AAA bar for
- * normal text. (Large/heading text needs only 4.5:1 for AAA, so all
- * combinations are comfortably over.)
- *
- * Type stack: Source Sans 3 (Public Sans was the PRD's original pick, but
- * the maintainer-expanded scope swapped to a clean institutional sans).
- * Source Sans 3 is widely deployed in civic / government style guides
- * (e.g., USWDS), supports Romanian diacritics across all weights, and
- * falls back gracefully to system sans on any platform that hasn't loaded
- * a webfont.
- *
- * Radius: <= 4px. Civic styling is rectangular and institutional, not
- * playful. The renderer's universal baseline radii (4 / 8 / 16 px) are
- * reduced to 2 / 3 / 4 px here.
- *
- * Density / spacing: inherits the renderer's universal spacing scale —
- * civic doesn't need denser-than-default rhythm in v1.
- *
- * No gradients. Subtle borders OK on dividers and the hero plate.
+ * Contract with the renderer:
+ *  - One id constant, a baseline-token list, and one CSS string, registered by
+ *    id in `index.tsx`. The id stays `civic`.
+ *  - All colour, spacing, typography, and radius values reference
+ *    `var(--token)`. The single exception is the `:root` block (emitted by the
+ *    engine from the baseline tokens), which legitimately *defines* the values
+ *    the rest of the theme consumes.
+ *  - Cards/borders/surfaces come from the shared production base; this theme
+ *    only contributes the fundamentals above plus genuinely-universal polish
+ *    (heavy headings, accent links, a visible focus ring, a recolored badge).
  */
 
 export const CIVIC_THEME_ID = "civic" as const;
 
 /**
- * Civic theme baseline tokens.
+ * Civic ("Activist") tokens as raw [cssProp, value] pairs, routed through
+ * `themeBaselineTokensFor` so the renderer's resolved-palette map (and thus
+ * the derived --color-*-rgb / --color-on-* tokens) reflect civic's colors,
+ * and so the first font family in each stack is gated for self-hosting.
  *
- * The renderer composes :root in this order: universal renderer baseline
- * (see `tokens.ts`), then the active theme's baseline (this list), then
- * the user's `site.theme.tokens` overrides. CSS later-wins resolves the
- * cascade so user customisation always trumps the theme's defaults.
+ * Density: compact — `--density-scale: 0.85` multiplies the engine's
+ * `--space-*` scale (baseline 1). Shape: sharp — `--radius-base: 2px`, from
+ * which the engine derives `--radius-sm/md/lg`. Both ship here as baseline
+ * tokens (not as a hardcoded `:root` override) so the theme stays coupled to
+ * the engine knobs — the legacy direct `--radius-sm/md/lg` overrides are gone.
  */
 export const CIVIC_THEME_BASELINE_TOKENS: ReadonlyArray<readonly [string, string]> = [
-  // Palette — civic deep-blue + warm-white + burgundy accent.
-  ["--color-bg", "#fdfaf3"],
-  ["--color-fg", "#0c1b2e"],
-  ["--color-primary", "#0c2d5e"],
-  ["--color-accent", "#9c3a17"],
-  ["--color-muted", "#3b4a5e"],
-  // Subtle border tone — picked to not introduce a sixth raw colour. We
-  // re-use the muted slate; civic dividers are quiet, not decorative.
-  ["--color-border", "#d6cfc1"],
-
-  // Typography — neutral institutional sans, multi-weight.
-  [
-    "--font-headline",
-    '"Source Sans 3", "Source Sans Pro", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
-  ],
-  [
-    "--font-body",
-    '"Source Sans 3", "Source Sans Pro", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
-  ],
-
-  // Radius — rectangular, civic feel. All <= 4px.
-  ["--radius-sm", "2px"],
-  ["--radius-md", "3px"],
-  ["--radius-lg", "4px"],
+  // Palette — crimson + ink on pure white. Four swatches, no separate border
+  // token: borders use --color-muted, like the other production themes.
+  ["--color-primary", "#17181c"],
+  ["--color-accent", "#cb2b2b"],
+  ["--color-bg", "#ffffff"],
+  ["--color-fg", "#17181c"],
+  ["--color-muted", "#6b6b6b"],
+  // Type — Archivo heavy display + Inter body. The first quoted family in each
+  // stack is self-hosted by the renderer (auto @font-face); the rest are
+  // system fallbacks friendly to Romanian diacritics.
+  ["--font-headline", '"Archivo", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'],
+  ["--font-body", '"Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'],
+  // Density — compact. Multiplies the engine's --space-* scale (baseline 1).
+  ["--density-scale", "0.85"],
+  // Shape — sharp. The engine derives --radius-sm/md/lg from this base.
+  ["--radius-base", "2px"],
 ];
 
 /**
- * Civic theme layout CSS.
+ * Layout-only CSS for the Civic ("Activist") theme. Every value is a structural
+ * primitive (units, dimensions, font-weights) or a `var(--token)` reference —
+ * there is no raw colour anywhere, and the test suite asserts this.
  *
- * Every value MUST be either a structural primitive (numbers, units,
- * keywords like `block`, `block-end`, etc.) or a `var(--token)` reference.
- * Hex / rgb leakage outside `:root` is forbidden and asserted in
- * `civic-theme.test.ts`.
+ * No `:root` block here: the Activist palette ships via the baseline-token
+ * list, spacing flows from the engine's density-scaled `--space-*`
+ * (`--density-scale: 0.85`, compact), and the sharp 2px corners derive from
+ * `--radius-base: 2px`. This overlay keeps only the bold fundamentals — heavy
+ * Archivo headings, accent underlined links, a visible focus ring, and a
+ * recolored crimson badge. No filled nav bar, no accent rule-bars: block
+ * separation comes from the engine's section rhythm; cards get their plain
+ * border from the production base.
  */
 export const CIVIC_THEME_CSS = `
 *, *::before, *::after { box-sizing: border-box; }
@@ -97,72 +94,78 @@ body {
   font-family: var(--font-body);
   font-weight: 400;
   font-size: 1.0625rem;
-  line-height: 1.6;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 main { display: block; }
+/* Heavy Archivo display — the loud Activist voice, incl. the hero title. */
+[data-block="hero"] .hero__title,
+[data-block] :is(
+  .contact-card__heading,
+  .value-list__title,
+  .activities-list__title,
+  .team-grid__title,
+  .faq__title,
+  .document-downloads__title,
+  .event-list__title,
+  .image-gallery__title,
+  .partner-logos__title,
+  .ctaBanner__title
+) {
+  font-weight: 800;
+}
+/* Link text uses the contrast-safe --color-link (here it resolves to the crimson
+   accent, which clears AA on white). The underline still carries the accent via
+   the universal [data-block] a rule in production-base. */
 a {
-  color: var(--color-primary);
+  color: var(--color-link);
   text-decoration: underline;
   text-underline-offset: 0.15em;
 }
 a:hover, a:focus-visible {
-  color: var(--color-accent);
+  text-decoration-thickness: 2px;
 }
+/* Visible keyboard focus ring in the accent colour. */
 :focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-accent);
   outline-offset: 3px;
 }
-
-[data-block="hero"] {
-  padding: var(--space-xl) var(--space-md);
-  border-block-end: 1px solid var(--color-border);
+/* Nav uses the baseline layout — ink links, crimson on active/hover. */
+[data-site-nav] ul,
+[data-language-switcher] ul {
+  max-width: var(--site-max-width);
+  margin-inline: auto;
 }
-[data-block="hero"] .hero__inner {
-  max-width: 64rem;
-  margin: 0 auto;
-}
-[data-block="hero"] .hero__eyebrow {
-  font-family: var(--font-body);
-  font-size: 0.8125rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  /* Use --color-primary (dark, contrast-safe) rather than --color-accent:
-     a user-overridable accent token can easily fall below WCAG AA 4.5:1
-     for small text. Eyebrow then matches the h1 color block, which is
-     the civic theme's already-established headline discipline. */
-  color: var(--color-primary);
-  margin: 0 0 var(--space-sm) 0;
-}
-[data-block="hero"] h1 {
-  font-family: var(--font-headline);
-  font-weight: 700;
-  font-size: 2.5rem;
-  line-height: 1.15;
-  letter-spacing: -0.005em;
-  color: var(--color-primary);
-  margin: 0 0 var(--space-md) 0;
-}
-[data-block="hero"] .hero__subtitle {
-  font-family: var(--font-body);
-  font-weight: 400;
-  font-size: 1.1875rem;
-  line-height: 1.5;
+[data-site-nav] a {
   color: var(--color-fg);
-  margin: 0 0 var(--space-md) 0;
-  max-width: 48rem;
 }
-[data-block="hero"] .hero__media {
-  margin-top: var(--space-lg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
+[data-site-nav] a:hover,
+[data-site-nav] a[data-active="true"] {
+  color: var(--color-accent);
 }
-[data-block="hero"] .hero__media img {
-  display: block;
-  max-width: 100%;
-  height: auto;
+[data-site-nav] a[data-active="true"] {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+}
+[data-block="valueList"] .value-list__items,
+[data-block="activitiesList"] .activities-list__items,
+[data-block="teamGrid"] .team-grid__list,
+[data-block="documentDownloads"] .document-downloads__list,
+[data-block="event-list"] .event-list__items {
+  gap: var(--space-md);
+}
+[data-block="valueList"] .value-list__icon {
+  color: var(--color-accent);
+}
+/* Tasteful badge — recolored to the crimson accent (white on-accent). */
+[data-block="activitiesList"] .activities-list__badge {
+  border-radius: var(--radius-sm);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+[data-block="documentDownloads"] .document-downloads__meta,
+[data-block="event-list"] .event-list__item-time {
+  font-weight: 700;
 }
 `.trim();

@@ -178,7 +178,7 @@ function runSiteRules(site: z.infer<typeof SiteSchema>, result: ValidationResult
         severity: "error",
         path: ["pages", idx, "lang"],
         code: "site.page.lang.notInLanguagesList",
-        message: `Page lang "${page.lang}" is not declared in site.languages.`,
+        message: `Page language "${page.lang}" is not in the site's language list.`,
       });
     }
   });
@@ -193,7 +193,7 @@ function runSiteRules(site: z.infer<typeof SiteSchema>, result: ValidationResult
         severity: "error",
         path: ["pages", idx, "slug"],
         code: "site.page.slug.duplicate",
-        message: `Page slug "${page.slug}" is used twice in language "${page.lang}".`,
+        message: `Page link "${page.slug}" is used twice in language "${page.lang}".`,
       });
     } else {
       seen.set(key, idx);
@@ -236,7 +236,7 @@ function runSiteRules(site: z.infer<typeof SiteSchema>, result: ValidationResult
             severity: "error",
             path: ["pages", idx, "localizedAs", otherLang],
             code: "site.page.localizedAs.selfReference",
-            message: `Page "${page.slug}" lists its own language "${otherLang}" in localizedAs.`,
+            message: `Page "${page.slug}" is linked to itself for language "${otherLang}".`,
           });
           continue;
         }
@@ -245,7 +245,7 @@ function runSiteRules(site: z.infer<typeof SiteSchema>, result: ValidationResult
             severity: "error",
             path: ["pages", idx, "localizedAs", otherLang],
             code: "site.page.localizedAs.unknownLanguage",
-            message: `Page "${page.slug}" references undeclared language "${otherLang}" in localizedAs.`,
+            message: `Page "${page.slug}" links to language "${otherLang}", but that language is not enabled.`,
           });
           continue;
         }
@@ -255,7 +255,7 @@ function runSiteRules(site: z.infer<typeof SiteSchema>, result: ValidationResult
             severity: "error",
             path: ["pages", idx, "localizedAs", otherLang],
             code: "site.page.localizedAs.unknownCounterpart",
-            message: `Page "${page.slug}" references "${counterpartSlug}" in language "${otherLang}", but no such page exists.`,
+            message: `Page "${page.slug}" links to "${counterpartSlug}" in language "${otherLang}", but that page does not exist.`,
           });
         }
       }
@@ -269,7 +269,7 @@ function runSiteRules(site: z.infer<typeof SiteSchema>, result: ValidationResult
           severity: "warning",
           path: ["pages", idx, "localizedAs"],
           code: "site.page.localizedAs.missingCounterpart",
-          message: `Page "${page.slug}" has no counterpart in language(s): ${missing.join(", ")}.`,
+          message: `Page "${page.slug}" is missing version(s) for: ${missing.join(", ")}.`,
         });
       }
     }
@@ -321,7 +321,7 @@ function runSiteRules(site: z.infer<typeof SiteSchema>, result: ValidationResult
       path: ["org", "logoAlt"],
       code: "site.org.logoAlt.missing",
       message:
-        "Organisation logo is set but has no alt text. Add alt text for screen-reader users.",
+        "The organisation logo needs a short image description for people using screen readers.",
     });
   }
 
@@ -331,7 +331,7 @@ function runSiteRules(site: z.infer<typeof SiteSchema>, result: ValidationResult
       severity: "warning",
       path: ["org", "email"],
       code: "site.org.email.missing",
-      message: "Organisation email is empty. Add a contact address.",
+      message: "Add a contact email so visitors can reach the organisation.",
     });
   }
 
@@ -344,7 +344,7 @@ function runSiteRules(site: z.infer<typeof SiteSchema>, result: ValidationResult
       severity: "warning",
       path: ["theme", "id"],
       code: "site.theme.id.unknown",
-      message: `Theme id "${site.theme.id}" is not one of the canonical themes (${KNOWN_THEME_IDS_FOR_VALIDATION.join(", ")}).`,
+      message: `Theme "${site.theme.id}" is not in the built-in theme list (${KNOWN_THEME_IDS_FOR_VALIDATION.join(", ")}).`,
     });
   }
 
@@ -366,7 +366,7 @@ function runThemeContrastRules(site: z.infer<typeof SiteSchema>, result: Validat
       severity: "warning",
       path: ["theme", "tokens", tokenName],
       code: "site.theme.tokens.contrast.low",
-      message: `${tokenName} has ${ratio.toFixed(2)}:1 contrast against the default page background. Use a darker colour for WCAG AA text contrast.`,
+      message: `${tokenName} may be hard to read on the page background. Use a darker colour.`,
     });
   }
 }
@@ -445,7 +445,7 @@ function visitPotentialAsset(
         severity: "warning",
         path,
         code: "site.asset.image.oversized",
-        message: `Image "${record.path}" is ${formatBytes(largest)}, above the ${formatBytes(IMAGE_WARNING_BUDGET_BYTES)} performance budget.`,
+        message: `Image "${record.path}" is ${formatBytes(largest)}. Use an image under ${formatBytes(IMAGE_WARNING_BUDGET_BYTES)} so the page loads faster.`,
       });
     }
     return;
@@ -509,7 +509,7 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
           path: ["data", "backgroundAlt"],
           code: "block.hero.backgroundAlt.missing",
           message:
-            "Hero has a background image but no alt text. Add alt text for screen-reader users.",
+            "The page header image needs a short description for people using screen readers.",
         });
       }
       break;
@@ -523,7 +523,7 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
           severity: "warning",
           path: ["data", "items"],
           code: "block.valueList.items.empty",
-          message: "valueList has no items. Add at least one value to make this block meaningful.",
+          message: "This values section has no items. Add at least one value or remove the section.",
         });
       }
       break;
@@ -540,7 +540,7 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
           path: ["data"],
           code: "block.contactCard.contact.missing",
           message:
-            "contactCard has neither email nor phone. Add at least one contact channel so visitors can reach the organisation.",
+            "This contact section needs an email or phone number so visitors can reach the organisation.",
         });
       }
       break;
@@ -561,7 +561,7 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
           path: ["data", "sanitize"],
           code: "block.customHTML.sanitize.off",
           message:
-            "Custom HTML block has sanitization disabled. Raw HTML will be rendered without protection — only use for trusted content.",
+            "The custom code safety filter is off. Only keep it off for code checked by someone technical.",
         });
       }
       break;
@@ -585,7 +585,7 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
             severity: "warning",
             path: ["data", "people", idx, "photo", "alt"],
             code: "block.teamGrid.photo.alt.missing",
-            message: `Team member "${person.name}" has a photo but no alt text. Add alt text for screen-reader users.`,
+            message: `Team member "${person.name}" has a photo that needs a short image description.`,
           });
         }
       });
@@ -601,7 +601,7 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
           severity: "warning",
           path: ["data", "markdown"],
           code: "block.richText.markdown.empty",
-          message: "richText block has no content. Add prose or remove the block.",
+          message: "This text section is empty. Add content or remove the section.",
         });
       }
       break;
@@ -617,7 +617,7 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
           path: ["data", "authorImageAlt"],
           code: "block.quote.authorImageAlt.missing",
           message:
-            "Quote block has an author image but no alt text. Add alt text for screen-reader users.",
+            "The quote author image needs a short description for people using screen readers.",
         });
       }
       break;
@@ -632,7 +632,7 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
           severity: "warning",
           path: ["data", "items"],
           code: "block.faq.items.empty",
-          message: "FAQ block has no items. Add a question/answer pair or remove the block.",
+          message: "This FAQ section has no questions. Add a question and answer or remove the section.",
         });
       }
       // Warning: any item with an empty answer is a quality nudge — the
@@ -644,7 +644,7 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
             severity: "warning",
             path: ["data", "items", idx, "answer"],
             code: "block.faq.item.answer.empty",
-            message: `FAQ item "${item.question}" has no answer. Fill it in before publishing.`,
+            message: `Question "${item.question}" has no answer. Fill it in before downloading.`,
           });
         }
       });
@@ -662,7 +662,7 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
             path: ["data", "backgroundImage", "alt"],
             code: "block.ctaBanner.backgroundImage.alt.missing",
             message:
-              "ctaBanner background image has no alt text. Add alt text for screen-reader users.",
+              "The action banner background image needs a short description for people using screen readers.",
           });
         }
       }
@@ -698,7 +698,7 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
             severity: "warning",
             path: ["data", "events", idx, "imageAlt"],
             code: "block.eventList.event.imageAlt.missing",
-            message: `Event "${event.title}" has an image but no alt text. Add alt text for screen-reader users.`,
+            message: `Event "${event.title}" has an image that needs a short description.`,
           });
         }
       });

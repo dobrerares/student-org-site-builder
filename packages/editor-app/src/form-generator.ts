@@ -7,10 +7,9 @@
  * is purely a schema change — no editor code change.
  *
  * Scope (per #7): primitives `string`, `number`, `boolean`, `enum`, plus
- * `optional` and nested `object` and `array`. Block forms are out of scope
- * (they live in #9-#22), so the walk SKIPS the `pages[].blocks` array's
- * element schema and surfaces just the path to it. The renderer can show a
- * "blocks editor lives here in a future issue" placeholder.
+ * `optional` and nested `object` and `array`. Page blocks are edited through
+ * `BlockListEditor` / `BlockForm`, so the site-spine walk skips the
+ * `pages[].blocks` array's element schema and surfaces just the path to it.
  *
  * Per ADR 0043, two override mechanisms layer on top of the default
  * introspection walk:
@@ -46,6 +45,7 @@ export type FieldNode =
       optional: boolean;
       label?: string;
       tier?: FieldTier;
+      hint?: string;
     }
   | {
       kind: "number";
@@ -54,6 +54,7 @@ export type FieldNode =
       optional: boolean;
       label?: string;
       tier?: FieldTier;
+      hint?: string;
     }
   | {
       kind: "boolean";
@@ -62,6 +63,7 @@ export type FieldNode =
       optional: boolean;
       label?: string;
       tier?: FieldTier;
+      hint?: string;
     }
   | {
       kind: "enum";
@@ -71,6 +73,7 @@ export type FieldNode =
       options: readonly string[];
       label?: string;
       tier?: FieldTier;
+      hint?: string;
     }
   | {
       kind: "object";
@@ -80,6 +83,7 @@ export type FieldNode =
       fields: FieldNode[];
       label?: string;
       tier?: FieldTier;
+      hint?: string;
     }
   | {
       kind: "array";
@@ -89,6 +93,7 @@ export type FieldNode =
       element: FieldNode;
       label?: string;
       tier?: FieldTier;
+      hint?: string;
     }
   | {
       kind: "custom";
@@ -98,6 +103,7 @@ export type FieldNode =
       renderer: string;
       label?: string;
       tier?: FieldTier;
+      hint?: string;
     };
 
 interface ZodInternalDef {
@@ -270,6 +276,9 @@ function makeCustomNode(
   if (override?.tier !== undefined) {
     node.tier = override.tier;
   }
+  if (override?.hint !== undefined) {
+    node.hint = override.hint;
+  }
   return node;
 }
 
@@ -288,6 +297,9 @@ function withMeta<TNode extends FieldNode>(
   }
   if (override.tier !== undefined) {
     node.tier = override.tier;
+  }
+  if (override.hint !== undefined) {
+    node.hint = override.hint;
   }
   return node;
 }

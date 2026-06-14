@@ -244,12 +244,45 @@ function MapEmbed(props: {
   return null;
 }
 
-export function ContactCard(props: { block: ContactCardBlock }): preact.JSX.Element {
+/** Does the socials array carry at least one entry with a usable URL? */
+function hasRenderableSocial(socials: ContactCardBlock["data"]["socials"]): boolean {
+  if (!Array.isArray(socials)) return false;
+  return socials.some((s) => asString(s.url) !== undefined);
+}
+
+/**
+ * Does the map embed carry content that will ACTUALLY render? Mirrors
+ * MapEmbed's render conditions so an enabled-but-non-rendering map (a Google
+ * map without the privacy acknowledgement, or an unknown provider) does not
+ * keep an otherwise-empty contact card alive with a blank heading.
+ */
+function hasRenderableMap(mapEmbed: MapEmbedShape | undefined): boolean {
+  if (mapEmbed === undefined || mapEmbed.enabled !== true) return false;
+  if (asLatLng(mapEmbed.coordinates) === undefined) return false;
+  if (mapEmbed.provider === "osm") return true;
+  if (mapEmbed.provider === "google") return mapEmbed.acknowledgedPrivacyNotice === true;
+  return false;
+}
+
+export function ContactCard(props: { block: ContactCardBlock }): preact.JSX.Element | null {
   const { id, data } = props.block;
   const address = asString(data.address);
   const email = asString(data.email);
   const phone = asString(data.phone);
   const mapEmbed = (data as { mapEmbed?: MapEmbedShape }).mapEmbed;
+
+  // Empty-state suppression: a contactCard with no contact channels at all
+  // (no address, email, phone, social link, or enabled map) is just a bare
+  // "Contact" heading — render nothing rather than an empty styled card.
+  if (
+    address === undefined &&
+    email === undefined &&
+    phone === undefined &&
+    !hasRenderableSocial(data.socials) &&
+    !hasRenderableMap(mapEmbed)
+  ) {
+    return null;
+  }
 
   // Anti-harvest: split + base64 the email, store on data-* attributes,
   // never put the literal address in any text node or attribute.

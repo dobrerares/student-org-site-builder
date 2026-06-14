@@ -63,68 +63,67 @@ const BLOCK_METADATA: Record<
   activitiesList: {
     category: "optional",
     label: "Activities list",
-    description: "Image-bearing list of recurring projects or activities the org runs.",
+    description: "Show recurring projects, services, or activities with optional images.",
   },
   contactCard: {
     category: "mandatory",
     label: "Contact card",
-    description: "Address, email, phone, social links, and optional opt-in map embed.",
+    description: "Show address, email, phone, social links, and an optional map.",
   },
   ctaBanner: {
     category: "optional",
-    label: "Call-to-action banner",
-    description: "Headline band with a single primary or secondary action button.",
+    label: "Action banner",
+    description: "Add a short message with one clear button.",
   },
   customHTML: {
     category: "advanced",
-    label: "Custom HTML",
-    description:
-      "Power-user escape hatch for niche embeds. Sanitised by default; raw mode is opt-in.",
+    label: "Custom code embed",
+    description: "For trusted embed code that does not fit the ready-made sections.",
   },
   documentDownloads: {
     category: "optional",
     label: "Document downloads",
-    description: "List of downloadable documents (PDF, Office, ZIP) with labels and file sizes.",
+    description: "Add files visitors can download, such as PDFs, forms, or archives.",
   },
   embed: {
     category: "advanced",
     label: "Embed",
-    description: "Lazy-loaded media embed from a closed whitelist of 8 trusted providers.",
+    description: "Add media from a supported service, such as video or audio.",
   },
   eventList: {
     category: "optional",
     label: "Event list",
-    description: "Single-occurrence events with dates, locations, and past-event fade behaviour.",
+    description: "List events with dates, locations, and short details.",
   },
   faq: {
     category: "optional",
-    label: "FAQ",
-    description: "Question/answer accordion for common visitor questions.",
+    label: "Questions and answers",
+    description: "Add common questions with their answers.",
   },
   hero: {
     category: "mandatory",
-    label: "Hero",
-    description: "Page-opening title, subtitle, and optional background image.",
+    label: "Page header",
+    description: "Start a page with a title, subtitle, and optional image.",
   },
   imageGallery: {
     category: "optional",
     label: "Image gallery",
-    description: "Grid or masonry of images with optional captions and click-to-enlarge lightbox.",
+    description: "Show a set of photos with optional captions.",
   },
   partnerLogos: {
     category: "optional",
     label: "Partner logos",
-    description: "Sponsor or partner credit grid with optional outbound links per logo.",
+    description: "Show sponsor or partner logos with optional links.",
   },
   quote: {
     category: "optional",
     label: "Quote",
-    description: "Pull-quote with optional author name, role, and photo.",
+    description: "Highlight a quote with an optional name, role, and photo.",
   },
   richText: {
     category: "optional",
-    label: "Rich text",
-    description: "Markdown prose section using a strict whitelist (headings, lists, links).",
+    label: "Text section",
+    description: "Add longer text with headings, lists, and links.",
   },
   teamGrid: {
     category: "optional",
@@ -134,7 +133,7 @@ const BLOCK_METADATA: Record<
   valueList: {
     category: "optional",
     label: "Value list",
-    description: "Org principles with curated icons in a grid or list layout.",
+    description: "Show values, principles, or benefits with optional icons.",
   },
 };
 

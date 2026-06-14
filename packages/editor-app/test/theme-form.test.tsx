@@ -69,8 +69,24 @@ describe("ThemeForm", () => {
     const headlineSelect = container.querySelector(
       '[data-testid="font-picker"][data-kind="headline"] select',
     ) as HTMLSelectElement;
-    fireEvent.change(headlineSelect, { target: { value: "Lora" } });
-    expect((next as Site | null)?.theme.tokens?.fontHeadline).toBe("Lora");
+    fireEvent.change(headlineSelect, { target: { value: "Fraunces" } });
+    expect((next as Site | null)?.theme.tokens?.fontHeadline).toBe("Fraunces");
+  });
+
+  test("ThemeForm shows an on-color preview chip for each set palette color (Guardrail 2)", () => {
+    // Light accent → dark sample text; dark primary → white sample text.
+    const site = {
+      theme: {
+        id: "academic",
+        tokens: { colorPrimary: "#1a2440", colorAccent: "#ffe14d" },
+      },
+    };
+    const { container } = render(
+      <ThemeForm site={site as unknown as Site} onChange={() => {}} />,
+    );
+    const chips = container.querySelectorAll('[data-testid="color-picker-on-color"]');
+    // One per palette ColorPicker (primary + accent); font pickers don't carry chips.
+    expect(chips.length).toBe(2);
   });
 
   test("ThemeForm preserves existing tokens when updating a single token", () => {

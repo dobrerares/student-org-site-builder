@@ -1,8 +1,10 @@
 import { MemoryDriver } from "@sosb/vfs/memory";
 import { ZipDriver } from "@sosb/vfs/zip-driver";
 import type { Vfs } from "@sosb/vfs/vfs";
+import { build } from "@sosb/build";
+import type { Site } from "@sosb/schema";
 
-import { DEPLOY_MD } from "./deploy-md.js";
+import { generateDeployMd, type DeployLanguage } from "./deploy-md.js";
 
 const enc = new TextEncoder();
 
@@ -31,8 +33,8 @@ export function serializeSiteData(siteData: unknown): Uint8Array {
  * data.json              # canonical site data
  * assets/<hash>.<ext>    # content-addressed assets, copied from `vfs`
  * assets/...metadata     # whatever the asset VFS holds — copied verbatim
- * dist/.gitkeep          # placeholder (real build output lives in #5/#46)
- * DEPLOY.md              # placeholder English deployment guide
+ * dist/                  # built static site ready for Cloudflare Pages
+ * DEPLOY.md              # generated Cloudflare Pages guide
  * ```
  *
  * Only `assets/...` paths are copied from `vfs`. Anything else in the
@@ -60,14 +62,49 @@ export async function exportToZip(siteData: unknown, vfs: Vfs): Promise<Blob> {
     await driver.write(path, bytes);
   }
 
-  // 3. Placeholder `dist/` (real build output lands with #5/#46).
-  await driver.write("dist/.gitkeep", new Uint8Array(0));
+  // 3. Built static site. The editor's export-confirm flow already showed
+  // validation issues; `skipValidation` lets the user's explicit download
+  // choice still produce a self-contained zip.
+  const dist = build(siteData as Site, { skipValidation: true });
+  for (const [path, value] of dist) {
+    // The dist Map carries text artefacts (HTML/XML/JSON) as `string` and
+    // binary artefacts (self-hosted woff2 fonts at `dist/assets/fonts/...`) as
+    // `Uint8Array`. Write bytes through verbatim; encode strings as UTF-8.
+    await driver.write(`dist/${path}`, typeof value === "string" ? enc.encode(value) : value);
+  }
 
   // 4. Deployment guide.
-  await driver.write("DEPLOY.md", enc.encode(DEPLOY_MD));
+  await driver.write(
+    "DEPLOY.md",
+    enc.encode(
+      generateDeployMd({
+        language: deployLanguageFor(siteData),
+        org: { name: orgNameForDeployGuide(siteData) },
+      }),
+    ),
+  );
 
   const zipBytes = driver.toZipBytes();
   return new Blob([zipBytes], { type: "application/zip" });
+}
+
+function deployLanguageFor(siteData: unknown): DeployLanguage {
+  if (siteData !== null && typeof siteData === "object") {
+    const defaultLanguage = (siteData as { defaultLanguage?: unknown }).defaultLanguage;
+    if (defaultLanguage === "en") return "en";
+  }
+  return "ro";
+}
+
+function orgNameForDeployGuide(siteData: unknown): string {
+  if (siteData !== null && typeof siteData === "object") {
+    const org = (siteData as { org?: unknown }).org;
+    if (org !== null && typeof org === "object") {
+      const name = (org as { name?: unknown }).name;
+      if (typeof name === "string" && name.trim().length > 0) return name.trim();
+    }
+  }
+  return "your organisation";
 }
 
 /**

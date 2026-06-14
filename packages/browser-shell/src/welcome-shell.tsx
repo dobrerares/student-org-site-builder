@@ -5,7 +5,13 @@ import type { Vfs } from "@sosb/vfs/vfs";
 import { loadAutosave, saveAutosave } from "@sosb/editor-state";
 import { EditorApp } from "@sosb/editor-app";
 import { TEMPLATES } from "@sosb/themes";
-import { Wizard } from "@sosb/wizard";
+import {
+  clearWizardProgress,
+  loadWizardProgress,
+  saveWizardProgress,
+  Wizard,
+  type WizardState,
+} from "@sosb/wizard";
 
 import { openPreferredPersistentVfs } from "./persistent-vfs/preferred.js";
 import "./welcome-shell-css.js";
@@ -23,6 +29,8 @@ export interface WelcomeShellProps {
   readonly recentSites?: readonly string[];
   /** Import flow supplied by the host; returns a Site or null when cancelled. */
   readonly onImportSite?: () => Promise<Site | WelcomeLoadedSite | null>;
+  /** Optional drag/drop import flow for a user-supplied saved-site zip file. */
+  readonly onImportFile?: (file: File) => Promise<Site | WelcomeLoadedSite | null>;
   /** Recent-site opener supplied by Electron/host shells that can resolve paths. */
   readonly onOpenRecent?: (
     entry: string,
@@ -46,6 +54,7 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
   const [importError, setImportError] = useState<string | null>(null);
   const [draftVfs, setDraftVfs] = useState<Vfs | null>(props.draftVfs ?? null);
   const [draft, setDraft] = useState<WelcomeLoadedSite | null>(null);
+  const [wizardProgress, setWizardProgress] = useState<WizardState | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,11 +66,18 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
         setDraftVfs(vfs);
 
         const rawSite = await loadAutosave(vfs);
-        if (cancelled || rawSite === null) return;
-        const site = parseSite(rawSite);
-        setDraft({ site, assetVfs: vfs, autosaveVfs: vfs });
+        if (!cancelled && rawSite !== null) {
+          const site = parseSite(rawSite);
+          setDraft({ site, assetVfs: vfs, autosaveVfs: vfs });
+        }
+
+        const savedWizardProgress = await loadWizardProgress(vfs);
+        if (!cancelled) setWizardProgress(savedWizardProgress);
       } catch {
-        if (!cancelled) setDraft(null);
+        if (!cancelled) {
+          setDraft(null);
+          setWizardProgress(null);
+        }
       }
     }
 
@@ -80,6 +96,17 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
       if (site !== null) await openEditor(site);
     } catch (err) {
       setImportError(err instanceof Error ? err.message : "Import failed");
+    }
+  }
+
+  async function importFile(file: File): Promise<void> {
+    if (props.onImportFile === undefined) return;
+    setImportError(null);
+    try {
+      const site = await props.onImportFile(file);
+      if (site !== null) await openEditor(site);
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : "Could not open that saved site.");
     }
   }
 
@@ -111,13 +138,42 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
     });
   }
 
+  function persistWizardProgress(state: WizardState): void {
+    setWizardProgress(state);
+    if (draftVfs !== null) {
+      void saveWizardProgress(draftVfs, state);
+    }
+  }
+
+  async function clearSavedWizardProgress(): Promise<void> {
+    setWizardProgress(null);
+    if (draftVfs !== null) {
+      await clearWizardProgress(draftVfs);
+    }
+  }
+
+  async function finishWizard(site: Site): Promise<void> {
+    await clearSavedWizardProgress();
+    await openEditor(site);
+  }
+
+  function cancelWizard(): void {
+    setWizardProgress(null);
+    if (draftVfs !== null) {
+      void clearWizardProgress(draftVfs);
+    }
+    setMode({ kind: "welcome" });
+  }
+
   if (mode.kind === "wizard") {
     return (
       <Wizard
+        {...(wizardProgress === null ? {} : { initial: wizardProgress })}
+        onProgress={persistWizardProgress}
         onComplete={(site) => {
-          void openEditor(site);
+          void finishWizard(site);
         }}
-        onCancel={() => setMode({ kind: "welcome" })}
+        onCancel={cancelWizard}
       />
     );
   }
@@ -133,12 +189,32 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
   }
 
   const primaryTemplate = TEMPLATES[0];
+  const canDropImport = props.onImportFile !== undefined;
 
   return (
-    <main data-testid="welcome-screen">
+    <main
+      data-testid="welcome-screen"
+      onDragOver={(event: JSX.TargetedDragEvent<HTMLElement>) => {
+        if (!canDropImport || !event.dataTransfer?.types.includes("Files")) return;
+        event.preventDefault();
+      }}
+      onDrop={(event: JSX.TargetedDragEvent<HTMLElement>) => {
+        if (!canDropImport) return;
+        const file = firstZipFile(event.dataTransfer?.files);
+        event.preventDefault();
+        if (file === null) {
+          setImportError("Drop a .zip file downloaded from this app.");
+          return;
+        }
+        void importFile(file);
+      }}
+    >
       <header>
         <h1>Build your organisation&apos;s website</h1>
-        <p>No backend, no lock-in, no hosting fees.</p>
+        <p>Make a clean site, keep your files, and download a copy when you are ready.</p>
+        {canDropImport ? (
+          <p data-testid="welcome-drop-hint">Drop a saved .zip here to open it.</p>
+        ) : null}
       </header>
 
       <nav aria-label="Start options">
@@ -154,7 +230,8 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
               });
             }}
           >
-            Continue draft
+            <span data-action-title>Continue draft</span>
+            <span data-action-detail>Saved in this browser</span>
           </button>
         ) : null}
         <button
@@ -162,7 +239,10 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
           data-testid="welcome-action-wizard"
           onClick={() => setMode({ kind: "wizard" })}
         >
-          Start the guided wizard
+          <span data-action-title>
+            {wizardProgress === null ? "Answer a few questions" : "Continue setup"}
+          </span>
+          <span data-action-detail>Best when you are making a new site</span>
         </button>
         <button
           type="button"
@@ -170,11 +250,12 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
           disabled={primaryTemplate === undefined}
           onClick={() => {
             if (primaryTemplate !== undefined) {
-              void openEditor(structuredClone(primaryTemplate.data));
+              void openEditor(templateSiteForEditing(primaryTemplate.data));
             }
           }}
         >
-          Start from a template
+          <span data-action-title>Use a ready-made example</span>
+          <span data-action-detail>Start with useful pages and sections</span>
         </button>
         <button
           type="button"
@@ -184,7 +265,12 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
             void importSite();
           }}
         >
-          Import an existing site
+          <span data-action-title>Open a saved site</span>
+          <span data-action-detail>
+            {props.onImportSite === undefined
+              ? "Saved-site opening is unavailable here"
+              : "Choose the .zip file you downloaded earlier"}
+          </span>
         </button>
         <button
           type="button"
@@ -193,7 +279,8 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
             void openEditor(structuredClone(props.blankSite));
           }}
         >
-          Start blank
+          <span data-action-title>Start from scratch</span>
+          <span data-action-detail>Begin with the minimum site</span>
         </button>
       </nav>
 
@@ -230,6 +317,19 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
   );
 }
 
+function firstZipFile(files: FileList | undefined): File | null {
+  if (files === undefined || files.length === 0) return null;
+  const list = Array.from(files);
+  return (
+    list.find(
+      (file) =>
+        file.name.toLowerCase().endsWith(".zip") ||
+        file.type === "application/zip" ||
+        file.type === "application/x-zip-compressed",
+    ) ?? null
+  );
+}
+
 function normalizeLoadedSite(site: Site | WelcomeLoadedSite): WelcomeLoadedSite {
   if (isWelcomeLoadedSite(site)) return site;
   return { site };
@@ -249,4 +349,83 @@ async function copyAssets(source: Vfs, target: Vfs): Promise<void> {
   for (const path of paths) {
     await target.write(path, await source.read(path));
   }
+}
+
+function templateSiteForEditing(site: Site): Site {
+  const copy = structuredClone(site);
+  const org = copy.org as Record<string, unknown>;
+  removePlaceholderAsset(org, "logo");
+  if (org.logo === undefined) delete org.logoAlt;
+
+  for (const page of copy.pages) {
+    page.blocks = page.blocks.filter((block) => !isPlaceholderTemplateEmbed(block));
+    for (const block of page.blocks) {
+      const data = block.data as Record<string, unknown>;
+      switch (block.type) {
+        case "hero":
+          removePlaceholderAsset(data, "backgroundImage");
+          if (data.backgroundImage === undefined) delete data.backgroundAlt;
+          break;
+        case "activitiesList":
+          removePlaceholderAssetFromItems(data.items, "image");
+          break;
+        case "teamGrid":
+          removePlaceholderAssetFromItems(data.people, "photo");
+          break;
+        case "imageGallery":
+          data.images = withoutPlaceholderAssetItems(data.images, "asset");
+          break;
+        case "quote":
+          removePlaceholderAsset(data, "authorImage");
+          break;
+        case "ctaBanner":
+          removePlaceholderAsset(data, "backgroundImage");
+          break;
+        case "partnerLogos":
+          data.partners = withoutPlaceholderAssetItems(data.partners, "logo");
+          break;
+        case "documentDownloads":
+          data.files = withoutPlaceholderAssetItems(data.files, "asset");
+          break;
+        case "eventList":
+          removePlaceholderAssetFromItems(data.events, "image");
+          break;
+      }
+    }
+  }
+
+  return copy;
+}
+
+function removePlaceholderAsset(record: Record<string, unknown>, key: string): void {
+  if (isPlaceholderTemplateAsset(record[key])) delete record[key];
+}
+
+function removePlaceholderAssetFromItems(items: unknown, key: string): void {
+  if (!Array.isArray(items)) return;
+  for (const item of items) {
+    if (item !== null && typeof item === "object") {
+      removePlaceholderAsset(item as Record<string, unknown>, key);
+    }
+  }
+}
+
+function withoutPlaceholderAssetItems(items: unknown, key: string): unknown[] {
+  if (!Array.isArray(items)) return [];
+  return items.filter((item) => {
+    if (item === null || typeof item !== "object") return true;
+    return !isPlaceholderTemplateAsset((item as Record<string, unknown>)[key]);
+  });
+}
+
+function isPlaceholderTemplateAsset(value: unknown): boolean {
+  if (value === null || typeof value !== "object") return false;
+  const path = (value as { readonly path?: unknown }).path;
+  return typeof path === "string" && path.startsWith("assets/placeholder-");
+}
+
+function isPlaceholderTemplateEmbed(block: Site["pages"][number]["blocks"][number]): boolean {
+  if (block.type !== "embed") return false;
+  const url = (block.data as { readonly url?: unknown }).url;
+  return typeof url === "string" && url.toLowerCase().includes("placeholder");
 }

@@ -48,68 +48,73 @@ export interface ThemeCatalog {
 
 const THEME_METADATA: Record<string, Omit<ThemeCatalogEntry, "id">> = {
   academic: {
-    label: "Academic",
-    description: "Serious, scholarly look — think research society or honors program.",
+    label: "Scholarly",
+    description:
+      "Scholarly and credible — navy and gold with a Source Serif display. For research societies, honors programs and faculty bodies.",
     fonts: {
-      headline: ["Source Serif Pro", "Lora", "Crimson Pro"],
-      body: ["Source Sans Pro", "Inter", "Lato"],
+      headline: ["Source Serif 4", "Fraunces", "Inter"],
+      body: ["Inter"],
     },
     preview: {
-      swatches: ["#1f3a5f", "#c08a3e", "#f7f4ed"],
+      swatches: ["#1e3a5f", "#b8893e", "#f7f3ea"],
       headlineSample: "Cercetare",
-      bodySample: "Serif academic, calm rhythm.",
+      bodySample: "Credible and scholarly.",
     },
   },
   civic: {
-    label: "Civic",
-    description: "Civically engaged feel — campaigns, advocacy, community.",
+    label: "Activist",
+    description:
+      "Bold and direct — heavy Archivo display, a crimson accent, compact and sharp. For advocacy, campaigns and student-rights work.",
     fonts: {
-      headline: ["Public Sans", "IBM Plex Sans", "Inter"],
-      body: ["Public Sans", "Inter", "Roboto"],
+      headline: ["Archivo", "Space Grotesk", "Inter"],
+      body: ["Inter"],
     },
     preview: {
-      swatches: ["#123c69", "#d64045", "#f2f6f8"],
-      headlineSample: "Comunitate",
-      bodySample: "Clear civic action.",
+      swatches: ["#cb2b2b", "#17181c", "#ffffff"],
+      headlineSample: "Acțiune",
+      bodySample: "Bold and direct.",
     },
   },
   editorial: {
     label: "Editorial",
-    description: "Magazine-style typography for storytelling-heavy orgs.",
+    description:
+      "Type-forward and warm — a Fraunces serif display on cream paper. For student publications, cultural and debate societies.",
     fonts: {
-      headline: ["Playfair Display", "Source Serif Pro", "Bodoni Moda"],
-      body: ["Source Serif Pro", "Lora", "Inter"],
+      headline: ["Fraunces", "Source Serif 4", "Inter"],
+      body: ["Inter"],
     },
     preview: {
-      swatches: ["#161616", "#b23a48", "#faf7f2"],
+      swatches: ["#c4622d", "#1a1714", "#fbf8f3"],
       headlineSample: "Revistă",
-      bodySample: "Editorial, story-led.",
+      bodySample: "Type-forward, story-led.",
     },
   },
   minimal: {
-    label: "Minimal",
-    description: "Quiet, neutral, gets out of your content's way.",
+    label: "Calm",
+    description:
+      "Disciplined restraint — monochrome, airy, sharp-edged; lets your photos and writing carry the page.",
     fonts: {
-      headline: ["Inter", "Helvetica Neue", "Arial"],
-      body: ["Inter", "Helvetica Neue", "Arial"],
+      headline: ["Inter"],
+      body: ["Inter"],
     },
     preview: {
-      swatches: ["#111111", "#666666", "#ffffff"],
+      swatches: ["#1a1a1a", "#767676", "#ffffff"],
       headlineSample: "Claritate",
-      bodySample: "Minimal and quiet.",
+      bodySample: "Quiet and restrained.",
     },
   },
   modern: {
-    label: "Modern",
-    description: "Clean, bright, contemporary — fits youth-focused programs.",
+    label: "Tech",
+    description:
+      "Crisp and bright — geometric Space Grotesk, an electric-blue accent, generous space. For hackathons, engineering and tech clubs.",
     fonts: {
-      headline: ["Outfit", "Manrope", "Inter"],
-      body: ["Inter", "Manrope", "Roboto"],
+      headline: ["Space Grotesk", "Archivo", "Inter"],
+      body: ["Inter"],
     },
     preview: {
-      swatches: ["#0f172a", "#2563eb", "#ffffff"],
-      headlineSample: "Program",
-      bodySample: "Modern, bright, direct.",
+      swatches: ["#2563eb", "#0f172a", "#ffffff"],
+      headlineSample: "Hackathon",
+      bodySample: "Crisp, bright, geometric.",
     },
   },
 };

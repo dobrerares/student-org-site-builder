@@ -35,6 +35,7 @@
  */
 import type { JSX } from "preact";
 import type { ValidationIssue, ValidationResult } from "@sosb/schema";
+import { issuePathLabel } from "./field-labels.js";
 import { pathToDotted } from "./issue-navigate.js";
 
 export interface SiteHealthPanelProps {
@@ -99,6 +100,7 @@ interface IssueRowProps {
 
 function IssueRow({ severity, issue, onJump }: IssueRowProps): JSX.Element {
   const dotted = pathToDotted(issue.path);
+  const location = issuePathLabel(issue.path);
   return (
     <button
       type="button"
@@ -109,7 +111,7 @@ function IssueRow({ severity, issue, onJump }: IssueRowProps): JSX.Element {
       onClick={() => onJump(issue)}
     >
       <span data-issue-message>{issue.message}</span>
-      <span data-issue-path> {dotted === "" ? "(site)" : dotted}</span>
+      <span data-issue-path> {location}</span>
     </button>
   );
 }

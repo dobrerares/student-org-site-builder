@@ -87,10 +87,10 @@ const DEFAULT_BUILDERS: Record<string, DefaultBuilder> = {
   ctaBanner: {
     version: CTA_BANNER_BLOCK_VERSION,
     data: () => ({
-      title: "Call-to-action title",
-      subtitle: "Supporting text.",
+      title: "Ready to get involved?",
+      subtitle: "Add a short sentence about what visitors should do next.",
       button: {
-        label: "Action label",
+        label: "Learn more",
         // Site-relative URL — no external dependency, passes the
         // safe-URL refinement on `CtaButtonSchema`.
         url: "/",
@@ -103,7 +103,7 @@ const DEFAULT_BUILDERS: Record<string, DefaultBuilder> = {
     data: () => ({
       // Inert placeholder markup. `sanitize: true` (the default) will pass
       // it through DOMPurify either way, but a `<p>` is safe regardless.
-      html: "<p>Custom HTML goes here.</p>",
+      html: "<p>Paste trusted embed code here.</p>",
       sanitize: true,
     }),
   },
@@ -127,7 +127,7 @@ const DEFAULT_BUILDERS: Record<string, DefaultBuilder> = {
       // Canonical YouTube watch URL that matches `EMBED_URL_PATTERNS.youtube`.
       // The user replaces this with their own embed URL.
       url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-      title: "Embed title",
+      title: "Video title",
     }),
   },
   eventList: {
@@ -193,7 +193,7 @@ const DEFAULT_BUILDERS: Record<string, DefaultBuilder> = {
   },
   richText: {
     version: RICH_TEXT_BLOCK_VERSION,
-    data: () => ({ markdown: "## Heading\n\nParagraph text." }),
+    data: () => ({ markdown: "## Heading\n\nWrite your text here." }),
   },
   teamGrid: {
     version: TEAM_GRID_BLOCK_VERSION,

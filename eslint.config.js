@@ -14,6 +14,10 @@ export default tseslint.config(
       "**/playwright-report/**",
       "**/test-results/**",
       "**/.vite/**",
+      // Transient git worktrees (gitignored) — never lint worktree copies.
+      "**/.claude/**",
+      // Codegen output (scripts/gen-fonts.mjs). Large, machine-written, stable.
+      "**/*.generated.ts",
     ],
   },
   eslint.configs.recommended,

@@ -123,9 +123,20 @@ describe("renderSite — hero block (structural)", () => {
     expect(html).toContain("A fixture for renderer tests");
   });
 
-  test("renders the eyebrow as a small grouping label above the heading", () => {
+  test("hero with a background image marks the section and layers media before the lockup", () => {
     const html = renderSite(fixture, "stub");
-    expect(html).toContain("Bun venit");
+    // The hero fixture (hero-only.json) carries a backgroundImage.
+    expect(html).toMatch(/<section[^>]*data-block="hero"[^>]*class="hero hero--has-image"/);
+    // Media comes before the lockup so it can sit behind the text.
+    const mediaIdx = html.indexOf('class="hero__media"');
+    const innerIdx = html.indexOf('class="hero__inner"');
+    expect(mediaIdx).toBeGreaterThan(-1);
+    expect(innerIdx).toBeGreaterThan(mediaIdx);
+    // Eyebrow is gone from the rendered markup. (The theme stylesheet in <head>
+    // may still carry an orphaned .hero__eyebrow selector until a later CSS task
+    // prunes it, so scope the assertion to the document body.)
+    const body = html.slice(html.indexOf("<body"));
+    expect(body).not.toContain("hero__eyebrow");
   });
 
   test("renders the hero title inside an <h1>", () => {

@@ -37,13 +37,13 @@ describe("EditorApp — i18n integration", () => {
     const { container } = render(<EditorApp initial={structuredClone(baseSite)} translator={t} />);
 
     const importButton = container.querySelector('[data-action="import"]');
-    expect(importButton?.textContent).toBe("Importă");
+    expect(importButton?.textContent).toBe("Deschide site");
 
     const exportButton = container.querySelector('[data-action="export"]');
-    expect(exportButton?.textContent).toBe("Exportă");
+    expect(exportButton?.textContent).toBe("Descarcă o copie");
 
     const resetButton = container.querySelector('[data-action="reset"]');
-    expect(resetButton?.textContent).toBe("Resetează");
+    expect(resetButton?.textContent).toBe("Începe de la capăt");
   });
 
   test("uses EN labels when given an en-locale translator", () => {
@@ -52,13 +52,13 @@ describe("EditorApp — i18n integration", () => {
     const { container } = render(<EditorApp initial={structuredClone(baseSite)} translator={t} />);
 
     const importButton = container.querySelector('[data-action="import"]');
-    expect(importButton?.textContent).toBe("Import");
+    expect(importButton?.textContent).toBe("Open site");
 
     const exportButton = container.querySelector('[data-action="export"]');
-    expect(exportButton?.textContent).toBe("Export");
+    expect(exportButton?.textContent).toBe("Download copy");
 
     const resetButton = container.querySelector('[data-action="reset"]');
-    expect(resetButton?.textContent).toBe("Reset");
+    expect(resetButton?.textContent).toBe("Start over");
   });
 
   test("narrow-layout tab labels are translated", () => {
@@ -77,13 +77,13 @@ describe("EditorApp — i18n integration", () => {
     const t = makeTranslator("en");
     const { container } = render(<EditorApp initial={structuredClone(baseSite)} translator={t} />);
 
-    expect(container.querySelector('[data-action="import"]')?.textContent).toBe("Import");
+    expect(container.querySelector('[data-action="import"]')?.textContent).toBe("Open site");
 
     const select = container.querySelector<HTMLSelectElement>('[data-testid="locale-select"]');
     expect(select).not.toBeNull();
     fireEvent.change(select!, { target: { value: "ro" } });
 
-    expect(container.querySelector('[data-action="import"]')?.textContent).toBe("Importă");
+    expect(container.querySelector('[data-action="import"]')?.textContent).toBe("Deschide site");
   });
 
   test("falls back to a default translator when no translator prop is supplied", () => {
@@ -94,6 +94,6 @@ describe("EditorApp — i18n integration", () => {
     setViewportWidth(1200);
     const { container } = render(<EditorApp initial={structuredClone(baseSite)} />);
     const importButton = container.querySelector('[data-action="import"]');
-    expect(importButton?.textContent).toBe("Import");
+    expect(importButton?.textContent).toBe("Open site");
   });
 });

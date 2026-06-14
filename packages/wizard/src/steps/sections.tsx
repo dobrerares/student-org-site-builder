@@ -16,8 +16,8 @@ export interface SectionsStepProps {
 }
 
 const MANDATORY_BLOCKS: ReadonlyArray<{ id: string; label: string }> = [
-  { id: "hero", label: "Hero (page intro)" },
-  { id: "richText", label: "About (rich text)" },
+  { id: "hero", label: "Top page header" },
+  { id: "richText", label: "About text" },
   { id: "valueList", label: "Values" },
   { id: "activitiesList", label: "Activities" },
   { id: "teamGrid", label: "Team" },
@@ -44,7 +44,7 @@ export function SectionsStep(props: SectionsStepProps): JSX.Element {
   return (
     <fieldset data-testid="sections-step">
       <legend>Sections</legend>
-      <p>Pick the sections to include on your home page.</p>
+      <p>Pick the starter sections to include on your home page.</p>
 
       <ul data-testid="sections-list">
         {MANDATORY_BLOCKS.map((block) => (

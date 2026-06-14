@@ -33,12 +33,12 @@ export function AdvancedToggle({ value, onChange }: AdvancedToggleProps): JSX.El
       <input
         type="checkbox"
         checked={value}
-        aria-label="Show advanced"
+        aria-label="Show expert options"
         onChange={(event: JSX.TargetedEvent<HTMLInputElement>) => {
           onChange(event.currentTarget.checked);
         }}
       />
-      <span>Show advanced</span>
+      <span>Show expert options</span>
     </label>
   );
 }

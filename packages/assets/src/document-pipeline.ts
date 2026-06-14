@@ -115,7 +115,7 @@ export async function uploadDocument(
   };
   await vfs.write(metadataPath, enc.encode(JSON.stringify(metadata, null, 2) + "\n"));
 
-  return { hash, path, metadataPath, mime, byteSize: bytes.byteLength };
+  return { hash, path, metadataPath, mime, byteSize: bytes.byteLength, originalName: name };
 }
 
 /**

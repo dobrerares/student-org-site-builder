@@ -31,26 +31,26 @@ export interface SlugValidationFailure {
  */
 export function checkSlug(value: string): SlugValidationFailure | null {
   if (value.length === 0) {
-    return { code: "slug.empty", message: "Page slug cannot be empty." };
+    return { code: "slug.empty", message: "Page link cannot be empty." };
   }
   if (value.includes("/")) {
     return {
       code: "slug.containsSlash",
-      message: "Page slug cannot contain '/'. Nested page hierarchy is not supported.",
+      message: "Page link cannot contain '/'. Use a short name like about or projects.",
     };
   }
   // Catch obvious garbage early with a friendlier message than the catch-all.
   if (/[^a-zA-Z0-9-]/.test(value)) {
     return {
       code: "slug.invalidCharacters",
-      message: "Page slug must contain only lowercase letters, digits, and hyphens.",
+      message: "Page link must contain only lowercase letters, digits, and hyphens.",
     };
   }
   if (!SLUG_PATTERN.test(value)) {
     return {
       code: "slug.malformed",
       message:
-        "Page slug must be lowercase letters, digits, and single hyphens between segments (e.g. 'despre', 'puterea-cuvintelor').",
+        "Page link must use lowercase letters, digits, and single hyphens between words, such as about or student-projects.",
     };
   }
   return null;

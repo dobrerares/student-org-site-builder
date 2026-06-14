@@ -26,7 +26,8 @@ const dec = new TextDecoder("utf-8", { fatal: false });
  *
  * Steps, in order, each producing a typed `ZipImportError` on failure:
  *
- * 1. Decode the zip bytes via `ZipDriver.fromZipBytes`. Failure → `zip.invalid`.
+ * 1. Decode the zip bytes via `ZipDriver.fromZipBytes`. Failure →
+ *    `zip.invalid` or `zip.limitsExceeded`.
  * 2. Read `data.json`. Missing → `zip.dataJson.missing`.
  * 3. Parse the JSON. Failure → `zip.dataJson.invalidJson`.
  * 4. Run `migrateSite` from `@sosb/schema`. Versions newer than this
@@ -46,6 +47,13 @@ export async function importFromZip(blob: Blob): Promise<ImportResult> {
   try {
     zipDriver = ZipDriver.fromZipBytes(buf);
   } catch (cause) {
+    if (cause instanceof Error && cause.message.startsWith("zip: import limits exceeded")) {
+      throw new ZipImportError(
+        "zip.limitsExceeded",
+        "The zip archive exceeds the import size limits.",
+        { cause },
+      );
+    }
     throw new ZipImportError(
       "zip.invalid",
       "Failed to decode zip bytes — the input is not a valid zip archive.",

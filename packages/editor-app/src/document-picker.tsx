@@ -100,15 +100,17 @@ function formatByteSize(bytes: number): string {
 }
 
 /**
- * Derive a user-facing filename from the VFS path. The pipeline writes
- * documents to `assets/<hash>.<ext>` so the last path segment is a
- * stable, predictable string. We DON'T show the originalName here
- * because the schema doesn't carry it (it lives in the metadata
- * sidecar) — surfacing the canonical filename keeps the editor and
- * preview aligned, and the user can recognise their file from the
- * extension + type-label + byte-size triad.
+ * Derive a user-facing filename. New uploads carry `originalName`
+ * alongside the content-addressed VFS path so the editor can show the
+ * filename the user recognises. Older snapshots may only have
+ * `assets/<hash>.<ext>`, so keep the path fallback for compatibility.
  */
-function filenameFor(path: string | undefined): string {
+function filenameFor(ref: DocumentAssetRefLike | undefined): string {
+  const originalName = ref?.originalName;
+  if (typeof originalName === "string" && originalName.trim().length > 0) {
+    return originalName.trim();
+  }
+  const path = ref?.path;
   if (!path) return "Document";
   const slash = path.lastIndexOf("/");
   return slash >= 0 ? path.slice(slash + 1) : path;
@@ -121,6 +123,7 @@ export function DocumentPicker(props: DocumentPickerProps): JSX.Element {
   // 0044's "never lose user intent silently" spirit, a rejected upload
   // MUST show feedback.
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadingName, setUploadingName] = useState<string | null>(null);
   // In-flight token guards against rapid-fire uploads where the earlier
   // promise resolves AFTER the later one. Only the most recent token
   // wins; superseded resolutions are silently dropped.
@@ -140,20 +143,30 @@ export function DocumentPicker(props: DocumentPickerProps): JSX.Element {
 
     const token = ++uploadTokenRef.current;
     setUploadError(null);
+    setUploadingName(file.name);
     try {
       const next = await props.uploader(file);
       if (token !== uploadTokenRef.current) return; // superseded
+      setUploadingName(null);
       props.onChange(next);
     } catch (err) {
       if (token !== uploadTokenRef.current) return; // superseded
+      setUploadingName(null);
       setUploadError(err instanceof Error ? err.message : "Upload failed");
     }
   };
 
   const hasValue = props.value !== undefined;
+  const isUploading = uploadingName !== null;
 
   return (
-    <div data-testid="document-picker">
+    <div data-testid="document-picker" aria-busy={isUploading}>
+      {isUploading ? (
+        <p data-testid="document-picker-uploading" role="status">
+          Uploading {uploadingName}...
+        </p>
+      ) : null}
+
       {uploadError !== null ? (
         <p data-testid="document-picker-error" role="alert" data-error-message={uploadError}>
           Upload failed: {uploadError}. Please try again.
@@ -181,15 +194,25 @@ export function DocumentPicker(props: DocumentPickerProps): JSX.Element {
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
             <polyline points="14 2 14 8 20 8" />
           </svg>
-          <span data-testid="document-picker-filename">{filenameFor(props.value!.path)}</span>
+          <span data-testid="document-picker-filename">{filenameFor(props.value)}</span>
           <span data-testid="document-picker-type">{typeLabelFor(props.value!.mime)}</span>
           <span data-testid="document-picker-size">{formatByteSize(props.value!.byteSize)}</span>
-          <button type="button" data-testid="document-picker-replace" onClick={triggerFilePicker}>
+          <button
+            type="button"
+            data-testid="document-picker-replace"
+            disabled={isUploading}
+            onClick={triggerFilePicker}
+          >
             Replace document
           </button>
         </div>
       ) : (
-        <button type="button" data-testid="document-picker-add" onClick={triggerFilePicker}>
+        <button
+          type="button"
+          data-testid="document-picker-add"
+          disabled={isUploading}
+          onClick={triggerFilePicker}
+        >
           Add document
         </button>
       )}

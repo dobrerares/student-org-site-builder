@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import type { Site } from "@sosb/schema";
 import singlePageSite from "./fixtures/single-page-site.json" with { type: "json" };
 import { build } from "../src/index.js";
+import { textOf } from "./helpers/dist-text.js";
 
 const fixture = singlePageSite as unknown as Site;
 
@@ -24,25 +25,25 @@ describe("build — end-to-end snapshot", () => {
     const dist = build(fixture, { siteUrl: "https://stub.example.org" });
 
     test("dist/index.html matches its golden file", async () => {
-      await expect(dist.get("index.html")!).toMatchFileSnapshot(
+      await expect(textOf(dist, "index.html")).toMatchFileSnapshot(
         "__golden__/with-site-url/index.html",
       );
     });
 
     test("dist/robots.txt matches its golden file", async () => {
-      await expect(dist.get("robots.txt")!).toMatchFileSnapshot(
+      await expect(textOf(dist, "robots.txt")).toMatchFileSnapshot(
         "__golden__/with-site-url/robots.txt",
       );
     });
 
     test("dist/sitemap.xml matches its golden file", async () => {
-      await expect(dist.get("sitemap.xml")!).toMatchFileSnapshot(
+      await expect(textOf(dist, "sitemap.xml")).toMatchFileSnapshot(
         "__golden__/with-site-url/sitemap.xml",
       );
     });
 
     test("dist/_lighthouse-budget.json matches its golden file", async () => {
-      await expect(dist.get("_lighthouse-budget.json")!).toMatchFileSnapshot(
+      await expect(textOf(dist, "_lighthouse-budget.json")).toMatchFileSnapshot(
         "__golden__/with-site-url/_lighthouse-budget.json",
       );
     });
@@ -52,25 +53,25 @@ describe("build — end-to-end snapshot", () => {
     const dist = build(fixture);
 
     test("dist/index.html matches its golden file", async () => {
-      await expect(dist.get("index.html")!).toMatchFileSnapshot(
+      await expect(textOf(dist, "index.html")).toMatchFileSnapshot(
         "__golden__/no-site-url/index.html",
       );
     });
 
     test("dist/robots.txt matches its golden file", async () => {
-      await expect(dist.get("robots.txt")!).toMatchFileSnapshot(
+      await expect(textOf(dist, "robots.txt")).toMatchFileSnapshot(
         "__golden__/no-site-url/robots.txt",
       );
     });
 
     test("dist/sitemap.xml matches its golden file", async () => {
-      await expect(dist.get("sitemap.xml")!).toMatchFileSnapshot(
+      await expect(textOf(dist, "sitemap.xml")).toMatchFileSnapshot(
         "__golden__/no-site-url/sitemap.xml",
       );
     });
 
     test("dist/_lighthouse-budget.json matches its golden file", async () => {
-      await expect(dist.get("_lighthouse-budget.json")!).toMatchFileSnapshot(
+      await expect(textOf(dist, "_lighthouse-budget.json")).toMatchFileSnapshot(
         "__golden__/no-site-url/_lighthouse-budget.json",
       );
     });

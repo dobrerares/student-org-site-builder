@@ -16,7 +16,7 @@ function bytes(s: string): Uint8Array {
 }
 
 describe("exportToZip", () => {
-  test("produces a Blob containing data.json, DEPLOY.md, dist/, and any asset bytes", async () => {
+  test("produces a Blob containing data.json, DEPLOY.md, built dist/, and any asset bytes", async () => {
     const assets = new MemoryDriver();
     await assets.write("assets/8e3a7f.png", new Uint8Array([0x89, 0x50, 0x4e, 0x47]));
     await assets.write("assets/4a91d2.jpg", new Uint8Array([0xff, 0xd8, 0xff, 0xe0]));
@@ -29,9 +29,50 @@ describe("exportToZip", () => {
     const paths = await inspector.list();
     expect(paths).toContain("data.json");
     expect(paths).toContain("DEPLOY.md");
-    expect(paths.some((p) => p.startsWith("dist/"))).toBe(true);
+    expect(paths).toContain("dist/index.html");
+    expect(paths).toContain("dist/robots.txt");
+    expect(paths).toContain("dist/sitemap.xml");
+    expect(paths).toContain("dist/_lighthouse-budget.json");
+    expect(paths).not.toContain("dist/.gitkeep");
     expect(paths).toContain("assets/8e3a7f.png");
     expect(paths).toContain("assets/4a91d2.jpg");
+  });
+
+  test("ships self-hosted theme fonts as binary woff2 under dist/assets/fonts/ (PR-F2b)", async () => {
+    // The historipol fixture uses the `academic` theme whose body font
+    // (`Inter`) is a self-hosted registered family, so `build()` injects its
+    // woff2 bytes and the zip carries them as real binary.
+    const blob = await exportToZip(historipol, new MemoryDriver());
+    const inspector = ZipDriver.fromZipBytes(await blobToBytes(blob));
+    const paths = await inspector.list();
+    const fontPaths = paths.filter(
+      (p) => p.startsWith("dist/assets/fonts/") && p.endsWith(".woff2"),
+    );
+    expect(fontPaths.length).toBeGreaterThan(0);
+
+    for (const p of fontPaths) {
+      const back = await inspector.read(p);
+      // woff2 signature: first 4 bytes spell 'wOF2'.
+      expect(Array.from(back.subarray(0, 4))).toEqual([0x77, 0x4f, 0x46, 0x32]);
+    }
+  });
+
+  test("dist/index.html is the rendered static site, not a placeholder", async () => {
+    const blob = await exportToZip(historipol, new MemoryDriver());
+    const inspector = ZipDriver.fromZipBytes(await blobToBytes(blob));
+    const html = new TextDecoder().decode(await inspector.read("dist/index.html"));
+    expect(html).toContain("<!doctype html>");
+    expect(html).toContain("HISTORIPOL");
+  });
+
+  test("DEPLOY.md uses the generated Cloudflare guide in the site's language", async () => {
+    const blob = await exportToZip(historipol, new MemoryDriver());
+    const inspector = ZipDriver.fromZipBytes(await blobToBytes(blob));
+    const deployMd = new TextDecoder().decode(await inspector.read("DEPLOY.md"));
+    expect(deployMd).toContain("Asociația Studențească HISTORIPOL");
+    expect(deployMd).toMatch(/încărcare directă/i);
+    expect(deployMd).toMatch(/Cloudflare Pages/);
+    expect(deployMd).not.toMatch(/placeholder/i);
   });
 
   test("data.json in the zip equals JSON.stringify(siteData) (with stable formatting)", async () => {

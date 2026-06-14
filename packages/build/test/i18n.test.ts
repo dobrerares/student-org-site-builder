@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import type { Site } from "@sosb/schema";
 import bilingualSite from "./fixtures/bilingual-site.json" with { type: "json" };
 import { build } from "../src/index.js";
+import { textOf } from "./helpers/dist-text.js";
 
 const fixture = bilingualSite as unknown as Site;
 
@@ -61,7 +62,7 @@ describe("build - per-language URL trees", () => {
       "en/index.html",
       "en/about/index.html",
     ]) {
-      const html = dist.get(path)!;
+      const html = textOf(dist, path);
       expect(html).toMatch(/<nav[^>]*data-language-switcher/);
       expect(html).toContain("Română");
       expect(html).toContain("English");
@@ -76,7 +77,7 @@ describe("build - per-language URL trees", () => {
       "en/index.html",
       "en/about/index.html",
     ]) {
-      const html = dist.get(path)!;
+      const html = textOf(dist, path);
       expect(html).toMatch(/<link rel="alternate" hreflang="ro" href=/);
       expect(html).toMatch(/<link rel="alternate" hreflang="en" href=/);
       expect(html).toMatch(/<link rel="alternate" hreflang="x-default" href=/);
@@ -85,7 +86,7 @@ describe("build - per-language URL trees", () => {
 
   test("hreflang URLs become absolute when siteUrl is provided", () => {
     const dist = build(fixture, { siteUrl: "https://stub.example.org" });
-    const aboutEn = dist.get("en/about/index.html")!;
+    const aboutEn = textOf(dist, "en/about/index.html");
     expect(aboutEn).toMatch(
       /<link rel="alternate" hreflang="ro" href="https:\/\/stub\.example\.org\/despre\/"/,
     );
@@ -99,10 +100,10 @@ describe("build - per-language URL trees", () => {
 
   test("with siteUrl, each page's canonical points at the per-language path", () => {
     const dist = build(fixture, { siteUrl: "https://stub.example.org" });
-    expect(dist.get("en/index.html")!).toMatch(
+    expect(textOf(dist, "en/index.html")).toMatch(
       /<link rel="canonical" href="https:\/\/stub\.example\.org\/en\/"/,
     );
-    expect(dist.get("en/about/index.html")!).toMatch(
+    expect(textOf(dist, "en/about/index.html")).toMatch(
       /<link rel="canonical" href="https:\/\/stub\.example\.org\/en\/about\/"/,
     );
   });
@@ -111,20 +112,20 @@ describe("build - per-language URL trees", () => {
 describe("build - sitemap hreflang alternates", () => {
   test("declares the xhtml namespace on the urlset element", () => {
     const dist = build(fixture);
-    const sitemap = dist.get("sitemap.xml")!;
+    const sitemap = textOf(dist, "sitemap.xml");
     expect(sitemap).toContain('xmlns:xhtml="http://www.w3.org/1999/xhtml"');
   });
 
   test("contains one <url> entry per page (4 in this fixture)", () => {
     const dist = build(fixture);
-    const sitemap = dist.get("sitemap.xml")!;
+    const sitemap = textOf(dist, "sitemap.xml");
     const urlOpens = sitemap.match(/<url>/g) ?? [];
     expect(urlOpens.length).toBe(4);
   });
 
   test("each <url> contains hreflang alternates for every language plus x-default", () => {
     const dist = build(fixture, { siteUrl: "https://stub.example.org" });
-    const sitemap = dist.get("sitemap.xml")!;
+    const sitemap = textOf(dist, "sitemap.xml");
     expect(sitemap).toContain(
       '<xhtml:link rel="alternate" hreflang="ro" href="https://stub.example.org/"/>',
     );
@@ -138,7 +139,7 @@ describe("build - sitemap hreflang alternates", () => {
 
   test("non-home cross-language alternates use the localizedAs counterpart", () => {
     const dist = build(fixture, { siteUrl: "https://stub.example.org" });
-    const sitemap = dist.get("sitemap.xml")!;
+    const sitemap = textOf(dist, "sitemap.xml");
     expect(sitemap).toContain(
       '<xhtml:link rel="alternate" hreflang="ro" href="https://stub.example.org/despre/"/>',
     );
@@ -149,7 +150,7 @@ describe("build - sitemap hreflang alternates", () => {
 
   test("preserves page declaration order (deterministic)", () => {
     const dist = build(fixture);
-    const sitemap = dist.get("sitemap.xml")!;
+    const sitemap = textOf(dist, "sitemap.xml");
     const acasaIdx = sitemap.indexOf("<loc>/</loc>");
     const despreIdx = sitemap.indexOf("<loc>/despre/</loc>");
     const enHomeIdx = sitemap.indexOf("<loc>/en/</loc>");

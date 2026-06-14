@@ -12,6 +12,7 @@ const MIME_BY_EXTENSION: Readonly<Record<string, string>> = {
   csv: "text/csv",
   doc: "application/msword",
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  avif: "image/avif",
   gif: "image/gif",
   jpg: "image/jpeg",
   jpeg: "image/jpeg",

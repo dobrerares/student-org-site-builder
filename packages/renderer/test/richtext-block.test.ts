@@ -62,14 +62,18 @@ describe("renderSite — richText block (structural)", () => {
     expect(html).toMatch(/<h3[^>]*>A second heading<\/h3>/);
   });
 
-  test("tolerates a richText with empty markdown (forward-compat / placeholder)", () => {
+  test("suppresses a richText with empty markdown (empty-state foolproofing)", () => {
+    // Empty-state suppression: a richText with no meaningful prose renders
+    // nothing rather than an empty styled container. (Previously this block
+    // emitted an empty <section>; the suppression guard now drops it so a
+    // non-designer who leaves a richText blank gets no empty box. See
+    // empty-states.test.ts for the cross-block contract.)
     const empty = JSON.parse(JSON.stringify(fixture)) as Site;
     empty.pages[0]!.blocks[0]!.data = { markdown: "" };
     const html = renderSite(empty, "stub");
-    expect(html).toMatch(/<section[^>]*data-block="richText"/);
-    // No paragraph content from empty markdown — the rich-text container is
-    // empty (modulo whitespace inside the section).
-    expect(html).not.toMatch(/<p>(?!<\/p>)[\s\S]+?<\/p>/);
+    // No richText container at all — and no unknown-block fallback comment.
+    expect(html).not.toMatch(/<section[^>]*data-block="richText"/);
+    expect(html).not.toMatch(/<!-- unknown block/);
   });
 
   test("ignores unknown extra fields on richText data (forward-compat)", () => {

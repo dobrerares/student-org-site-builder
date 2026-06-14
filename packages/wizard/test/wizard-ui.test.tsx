@@ -39,6 +39,20 @@ describe("Wizard — six steps render", () => {
     const input = container.querySelector('[data-field="basics.name"]');
     expect(input).not.toBeNull();
   });
+
+  test("sections step uses non-technical labels", () => {
+    const { container } = render(<Wizard />);
+    const input = container.querySelector('[data-field="basics.name"]') as HTMLInputElement;
+    fireEvent.input(input, { target: { value: "Org" } });
+    fireEvent.click(container.querySelector('[data-action="next"]')!);
+    fireEvent.click(container.querySelector('[data-action="skip"]')!);
+
+    const step = container.querySelector('[data-testid="sections-step"]');
+    expect(step?.textContent).toContain("Top page header");
+    expect(step?.textContent).toContain("About text");
+    expect(step?.textContent).not.toContain("Hero");
+    expect(step?.textContent).not.toContain("rich text");
+  });
 });
 
 describe("Wizard — Back/Next navigation", () => {
@@ -159,6 +173,10 @@ describe("Wizard — confirm step + onComplete", () => {
     const summary = container.querySelector('[data-testid="confirm-summary"]');
     expect(summary).not.toBeNull();
     expect(summary?.textContent).toContain("HISTORIPOL");
+    expect(summary?.textContent).toContain("Calm");
+    expect(summary?.textContent).toContain("Română");
+    expect(summary?.textContent).toContain("Top page header");
+    expect(summary?.textContent).not.toContain("richText");
   });
 
   test("clicking Create fires onComplete with a valid Site object", () => {

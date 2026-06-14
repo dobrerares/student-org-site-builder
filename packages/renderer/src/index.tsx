@@ -14,15 +14,19 @@
 import { render } from "preact-render-to-string";
 import type { Site } from "@sosb/schema";
 import { PageShell } from "./page-shell.js";
-import { emitTokenRoot } from "./tokens.js";
+import { emitTokenRoot, resolveFontFamilies } from "./tokens.js";
 import type { AssetUrlForPath } from "./asset-url.js";
+import { resolveAssetUrl } from "./asset-url.js";
+import { FONT_ASSET_PREFIX, FONT_FACE_REGISTRY, woff2Base64 } from "./fonts/registry.js";
+import { base64ToBytes } from "./fonts/bytes.js";
 import { STUB_THEME_CSS, STUB_THEME_ID } from "./themes/stub.js";
-import { MINIMAL_THEME_CSS, MINIMAL_THEME_ID } from "./themes/minimal.js";
-import { MODERN_THEME_CSS, MODERN_THEME_ID } from "./themes/modern.js";
+import { PRODUCTION_SITE_BASE_CSS } from "./themes/production-base.js";
+import { MINIMAL_THEME_BASELINE_TOKENS, MINIMAL_THEME_CSS, MINIMAL_THEME_ID } from "./themes/minimal.js";
+import { MODERN_THEME_BASELINE_TOKENS, MODERN_THEME_CSS, MODERN_THEME_ID } from "./themes/modern.js";
 import {
+  EDITORIAL_THEME_BASELINE_TOKENS,
   EDITORIAL_THEME_CSS,
   EDITORIAL_THEME_ID,
-  EDITORIAL_THEME_TOKENS,
 } from "./themes/editorial.js";
 import { CIVIC_THEME_BASELINE_TOKENS, CIVIC_THEME_CSS, CIVIC_THEME_ID } from "./themes/civic.js";
 import { ACADEMIC_THEME_CSS, ACADEMIC_THEME_ID, ACADEMIC_THEME_TOKENS } from "./themes/academic.js";
@@ -83,7 +87,7 @@ export function renderSite(data: Site, themeId: string, opts?: RenderOptions): s
   }
 
   const mode = opts?.mode ?? "deploy";
-  const css = composeCss(data, themeId);
+  const css = composeCss(data, themeId, opts?.assetUrlForPath);
   const body = render(
     <PageShell
       site={data}
@@ -96,10 +100,76 @@ export function renderSite(data: Site, themeId: string, opts?: RenderOptions): s
   return `<!doctype html>${body}`;
 }
 
-function composeCss(site: Site, themeId: string): string {
+function composeCss(site: Site, themeId: string, assetUrlForPath?: AssetUrlForPath): string {
   const root = emitTokenRoot(site, themeDefaultsFor(themeId), themeBaselineTokensFor(themeId));
   const themeCss = themeCssFor(themeId);
-  return `${root}\n${themeCss}`;
+  const faces = emitFontFaces(usedFamiliesFor(site, themeId), assetUrlForPath);
+  // @font-face rules go first so the browser can begin fetching woff2 assets
+  // before it parses the (much larger) theme CSS. Guard the leading join so an
+  // empty face block never injects a blank line (keeps system-font output and
+  // goldens byte-stable).
+  return faces === "" ? `${root}\n${themeCss}` : `${faces}\n${root}\n${themeCss}`;
+}
+
+/**
+ * The self-hosted font families actually referenced by a site's resolved
+ * `--font-headline` / `--font-body`, gated to those present in the registry.
+ * Unique and sorted for deterministic emission.
+ */
+export function usedFamiliesFor(site: Site, themeId: string): string[] {
+  const { headline, body } = resolveFontFamilies(
+    site,
+    themeDefaultsFor(themeId),
+    themeBaselineTokensFor(themeId),
+  );
+  const used = new Set<string>();
+  for (const family of [headline, body]) {
+    if (family !== undefined && family in FONT_FACE_REGISTRY) used.add(family);
+  }
+  return [...used].sort();
+}
+
+/**
+ * Emit `@font-face` rules for the given (already-gated) families. Each family's
+ * registered defs are emitted sorted by weight then subset so output is
+ * deterministic. Returns `""` when no families are used (no self-hosted fonts).
+ */
+function emitFontFaces(families: readonly string[], assetUrlForPath?: AssetUrlForPath): string {
+  if (families.length === 0) return "";
+  const rules: string[] = [];
+  for (const family of [...families].sort()) {
+    const defs = [...(FONT_FACE_REGISTRY[family] ?? [])].sort(
+      (a, b) => a.weight - b.weight || a.subset.localeCompare(b.subset),
+    );
+    for (const def of defs) {
+      const src = resolveAssetUrl(FONT_ASSET_PREFIX + def.file, assetUrlForPath);
+      rules.push(
+        `@font-face{font-family:"${def.family}";font-style:normal;font-weight:${def.weight};` +
+          `font-display:swap;src:url(${src}) format("woff2");unicode-range:${def.unicodeRange};}`,
+      );
+    }
+  }
+  return rules.join("\n");
+}
+
+/**
+ * The woff2 asset bytes a site needs, keyed by their canonical
+ * `assets/fonts/<file>` VFS path. PR-F2b's `build()` consumes this to write the
+ * self-hosted font files into the output. Deterministic (sorted families/defs).
+ */
+export function fontAssetsFor(site: Site, themeId: string): Map<string, Uint8Array> {
+  const assets = new Map<string, Uint8Array>();
+  for (const family of usedFamiliesFor(site, themeId)) {
+    const defs = [...(FONT_FACE_REGISTRY[family] ?? [])].sort(
+      (a, b) => a.weight - b.weight || a.subset.localeCompare(b.subset),
+    );
+    for (const def of defs) {
+      const b64 = woff2Base64(def.file);
+      if (b64 === undefined) continue;
+      assets.set(`${FONT_ASSET_PREFIX}${def.file}`, base64ToBytes(b64));
+    }
+  }
+  return assets;
 }
 
 /**
@@ -123,18 +193,25 @@ function composeCss(site: Site, themeId: string): string {
  */
 function themeCssFor(themeId: string): string {
   if (themeId === STUB_THEME_ID) return STUB_THEME_CSS;
-  if (themeId === EDITORIAL_THEME_ID) return `${STUB_THEME_CSS}\n${EDITORIAL_THEME_CSS}`;
-  if (themeId === CIVIC_THEME_ID) return `${STUB_THEME_CSS}\n${CIVIC_THEME_CSS}`;
-  if (themeId === ACADEMIC_THEME_ID) return `${STUB_THEME_CSS}\n${ACADEMIC_THEME_CSS}`;
-  if (themeId === MINIMAL_THEME_ID) return `${STUB_THEME_CSS}\n${MINIMAL_THEME_CSS}`;
-  if (themeId === MODERN_THEME_ID) return `${STUB_THEME_CSS}\n${MODERN_THEME_CSS}`;
+  const base = `${STUB_THEME_CSS}\n${PRODUCTION_SITE_BASE_CSS}`;
+  if (themeId === EDITORIAL_THEME_ID) return `${base}\n${EDITORIAL_THEME_CSS}`;
+  if (themeId === CIVIC_THEME_ID) return `${base}\n${CIVIC_THEME_CSS}`;
+  if (themeId === ACADEMIC_THEME_ID) return `${base}\n${ACADEMIC_THEME_CSS}`;
+  if (themeId === MINIMAL_THEME_ID) return `${base}\n${MINIMAL_THEME_CSS}`;
+  if (themeId === MODERN_THEME_ID) return `${base}\n${MODERN_THEME_CSS}`;
   return STUB_THEME_CSS;
 }
 
 function themeDefaultsFor(themeId: string): Readonly<Record<string, string>> | undefined {
-  if (themeId === EDITORIAL_THEME_ID) return EDITORIAL_THEME_TOKENS;
+  // No theme currently ships schema-keyed defaults via this path — every
+  // production theme (incl. editorial, recast onto the tuple mechanism) routes
+  // its palette/fonts/density/radius through `themeBaselineTokensFor`. The
+  // parameter is kept (and the function in the precedence chain: baseline →
+  // defaults → tuple → user) so a future theme can opt back into schema-keyed
+  // defaults without re-threading the emitter.
   // The stub theme deliberately ships no curated defaults — it leans on the
   // baseline values in `tokens.ts` so framework tests stay anchored.
+  void themeId;
   return undefined;
 }
 
@@ -146,8 +223,11 @@ function themeDefaultsFor(themeId: string): Readonly<Record<string, string>> | u
  * `SCHEMA_TOKEN_MAP`.
  */
 function themeBaselineTokensFor(themeId: string): ReadonlyArray<readonly [string, string]> {
+  if (themeId === EDITORIAL_THEME_ID) return EDITORIAL_THEME_BASELINE_TOKENS;
   if (themeId === CIVIC_THEME_ID) return CIVIC_THEME_BASELINE_TOKENS;
   if (themeId === ACADEMIC_THEME_ID) return ACADEMIC_THEME_TOKENS;
+  if (themeId === MODERN_THEME_ID) return MODERN_THEME_BASELINE_TOKENS;
+  if (themeId === MINIMAL_THEME_ID) return MINIMAL_THEME_BASELINE_TOKENS;
   return [];
 }
 
@@ -190,3 +270,17 @@ export type { HreflangEntry, LanguageSwitcherEntry } from "./routing.js";
 export { EMBED_LAZY_LOAD_SCRIPT } from "./blocks/embed-lazy-loader.js";
 export { resolveEmbed } from "./blocks/embed.js";
 export { FAQ_ACCORDION_SCRIPT_SOURCE, FAQ_ENHANCED_ATTR } from "./blocks/faq.script.js";
+
+// Self-hosted font primitives. The editor preview mints blob URLs from these
+// so its in-memory resolver can satisfy the `assets/fonts/<file>.woff2` paths
+// the renderer emits (deploy/zip ship the real bytes; preview has no server).
+// Re-exports of existing internal data — emission logic is untouched.
+export { FONT_ASSET_PREFIX, FONT_FACE_REGISTRY, woff2Base64 } from "./fonts/registry.js";
+export type { FontFaceDef } from "./fonts/registry.js";
+export { base64ToBytes } from "./fonts/bytes.js";
+
+// Contrast-safe color math. Re-exports of the pure helpers the renderer
+// already uses to pick readable on-colors for buttons/badges (tokens.ts).
+// Surfaced so the editor's theme color pickers can preview the SAME
+// derived on-color an author's pick will produce — no logic change here.
+export { onColorFor } from "./color-math.js";
