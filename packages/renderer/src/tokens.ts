@@ -96,6 +96,88 @@ const RESOLVED_COLOR_DEFAULTS: Readonly<Record<string, string>> = {
 };
 
 /**
+ * Resolve a single CSS custom property to its final value under the same
+ * precedence `emitTokenRoot` uses (baseline → themeDefaults via COLOR_FONT_MAP
+ * → themeBaseline raw pairs → user `site.theme.tokens`, last wins). Returns the
+ * baseline default when no layer overrides it, or `undefined` if the prop has no
+ * baseline and no override. Shared by `emitTokenRoot` and `resolveFontFamilies`
+ * so the two never drift.
+ */
+function resolveTokenValue(
+  cssProp: string,
+  site: Site,
+  themeDefaults: Readonly<Record<string, string>> | undefined,
+  themeBaseline: ReadonlyArray<readonly [string, string]>,
+): string | undefined {
+  // Schema key (e.g. `fontHeadline`) for this CSS prop, if any.
+  let schemaKey: string | undefined;
+  for (const [key, prop] of Object.entries(COLOR_FONT_MAP)) {
+    if (prop === cssProp) {
+      schemaKey = key;
+      break;
+    }
+  }
+
+  let value: string | undefined;
+  for (const [name, baselineValue] of BASELINE_TOKENS) {
+    if (name === cssProp) {
+      value = baselineValue;
+      break;
+    }
+  }
+
+  const apply = (raw: unknown): void => {
+    if (typeof raw === "string" && raw.length > 0) value = raw;
+  };
+
+  if (schemaKey !== undefined && themeDefaults !== undefined) {
+    apply((themeDefaults as Record<string, unknown>)[schemaKey]);
+  }
+  for (const [name, raw] of themeBaseline) {
+    if (name === cssProp) apply(raw);
+  }
+  if (schemaKey !== undefined) {
+    apply((site.theme.tokens as Record<string, unknown> | undefined)?.[schemaKey]);
+  }
+  return value;
+}
+
+/**
+ * Extract the first (primary) family name from a CSS `font-family` stack. The
+ * leading token is either `"Quoted Name"` or a bare `comma,separated` token; we
+ * return the unquoted name, or `undefined` for an empty/whitespace stack.
+ */
+function firstFamilyOf(stack: string | undefined): string | undefined {
+  if (stack === undefined) return undefined;
+  const trimmed = stack.trim();
+  if (trimmed.length === 0) return undefined;
+  const quoted = /^\s*"([^"]*)"/.exec(trimmed);
+  if (quoted !== null) return quoted[1];
+  const firstToken = trimmed.split(",")[0]!.trim();
+  return firstToken.length === 0 ? undefined : firstToken;
+}
+
+/**
+ * Resolve the active headline/body font families for a site under the exact
+ * precedence `emitTokenRoot` uses, returning each slot's primary (first) family
+ * name — i.e. the leading quoted (or first comma-token) family of the resolved
+ * `--font-headline` / `--font-body` stack. Returns `undefined` for a slot with
+ * no resolved stack. Pure; the @font-face emission gate (index.tsx) consumes it.
+ */
+export function resolveFontFamilies(
+  site: Site,
+  themeDefaults?: Readonly<Record<string, string>>,
+  themeBaseline: ReadonlyArray<readonly [string, string]> = [],
+): { headline: string | undefined; body: string | undefined } {
+  return {
+    headline: firstFamilyOf(
+      resolveTokenValue("--font-headline", site, themeDefaults, themeBaseline),
+    ),
+    body: firstFamilyOf(resolveTokenValue("--font-body", site, themeDefaults, themeBaseline)),
+  };
+}
+
+/**
  * Push the color/font/density/radius declarations from one token source
  * (theme defaults or user overrides) and track the resolved palette so the
  * derived tokens at the end of `emitTokenRoot` reflect the final values.

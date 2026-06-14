@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import type { Site } from "@sosb/schema";
 import heroOnly from "./fixtures/hero-only.json" with { type: "json" };
-import { emitTokenRoot, densityScale, radiusBase } from "../src/tokens.js";
+import { emitTokenRoot, densityScale, radiusBase, resolveFontFamilies } from "../src/tokens.js";
 import { PRODUCTION_SITE_BASE_CSS } from "../src/themes/production-base.js";
 import { renderSite } from "../src/index.js";
 import { onColorFor } from "../src/color-math.js";
@@ -113,6 +113,43 @@ describe("resolution-dependent derived tokens", () => {
     expect(themeAccent).toBeGreaterThanOrEqual(0);
     expect(userAccent).toBeGreaterThan(themeAccent);
     expect(root).toContain("--color-on-accent: #16181c;");
+  });
+});
+
+describe("resolveFontFamilies — primary family under the cascade", () => {
+  test("falls back to the baseline stacks' primary families", () => {
+    const site = structuredClone(fixture) as Site;
+    site.theme = { id: "stub", tokens: {} };
+    // Baseline: --font-headline "Georgia, serif", --font-body "system-ui, sans-serif".
+    expect(resolveFontFamilies(site)).toEqual({ headline: "Georgia", body: "system-ui" });
+  });
+
+  test("extracts the leading quoted family from a stack", () => {
+    const site = structuredClone(fixture) as Site;
+    site.theme = { id: "stub", tokens: { fontHeadline: '"Space Grotesk", system-ui, sans-serif' } };
+    expect(resolveFontFamilies(site).headline).toBe("Space Grotesk");
+  });
+
+  test("user override beats themeDefaults beats themeBaseline (last wins)", () => {
+    const site = structuredClone(fixture) as Site;
+    site.theme = { id: "stub", tokens: { fontBody: '"Inter", sans-serif' } };
+    const got = resolveFontFamilies(
+      site,
+      { fontBody: '"Source Serif 4", serif' },
+      [["--font-body", '"Fraunces", serif']],
+    );
+    expect(got.body).toBe("Inter");
+  });
+
+  test("themeBaseline raw pair wins over themeDefaults when no user override", () => {
+    const site = structuredClone(fixture) as Site;
+    site.theme = { id: "stub", tokens: {} };
+    const got = resolveFontFamilies(
+      site,
+      { fontHeadline: '"Archivo", sans-serif' },
+      [["--font-headline", '"Fraunces", serif']],
+    );
+    expect(got.headline).toBe("Fraunces");
   });
 });
 

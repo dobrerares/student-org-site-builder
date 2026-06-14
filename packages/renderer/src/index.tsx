@@ -14,8 +14,11 @@
 import { render } from "preact-render-to-string";
 import type { Site } from "@sosb/schema";
 import { PageShell } from "./page-shell.js";
-import { emitTokenRoot } from "./tokens.js";
+import { emitTokenRoot, resolveFontFamilies } from "./tokens.js";
 import type { AssetUrlForPath } from "./asset-url.js";
+import { resolveAssetUrl } from "./asset-url.js";
+import { FONT_ASSET_PREFIX, FONT_FACE_REGISTRY, woff2Base64 } from "./fonts/registry.js";
+import { base64ToBytes } from "./fonts/bytes.js";
 import { STUB_THEME_CSS, STUB_THEME_ID } from "./themes/stub.js";
 import { PRODUCTION_SITE_BASE_CSS } from "./themes/production-base.js";
 import { MINIMAL_THEME_BASELINE_TOKENS, MINIMAL_THEME_CSS, MINIMAL_THEME_ID } from "./themes/minimal.js";
@@ -84,7 +87,7 @@ export function renderSite(data: Site, themeId: string, opts?: RenderOptions): s
   }
 
   const mode = opts?.mode ?? "deploy";
-  const css = composeCss(data, themeId);
+  const css = composeCss(data, themeId, opts?.assetUrlForPath);
   const body = render(
     <PageShell
       site={data}
@@ -97,10 +100,76 @@ export function renderSite(data: Site, themeId: string, opts?: RenderOptions): s
   return `<!doctype html>${body}`;
 }
 
-function composeCss(site: Site, themeId: string): string {
+function composeCss(site: Site, themeId: string, assetUrlForPath?: AssetUrlForPath): string {
   const root = emitTokenRoot(site, themeDefaultsFor(themeId), themeBaselineTokensFor(themeId));
   const themeCss = themeCssFor(themeId);
-  return `${root}\n${themeCss}`;
+  const faces = emitFontFaces(usedFamiliesFor(site, themeId), assetUrlForPath);
+  // @font-face rules go first so the browser can begin fetching woff2 assets
+  // before it parses the (much larger) theme CSS. Guard the leading join so an
+  // empty face block never injects a blank line (keeps system-font output and
+  // goldens byte-stable).
+  return faces === "" ? `${root}\n${themeCss}` : `${faces}\n${root}\n${themeCss}`;
+}
+
+/**
+ * The self-hosted font families actually referenced by a site's resolved
+ * `--font-headline` / `--font-body`, gated to those present in the registry.
+ * Unique and sorted for deterministic emission.
+ */
+export function usedFamiliesFor(site: Site, themeId: string): string[] {
+  const { headline, body } = resolveFontFamilies(
+    site,
+    themeDefaultsFor(themeId),
+    themeBaselineTokensFor(themeId),
+  );
+  const used = new Set<string>();
+  for (const family of [headline, body]) {
+    if (family !== undefined && family in FONT_FACE_REGISTRY) used.add(family);
+  }
+  return [...used].sort();
+}
+
+/**
+ * Emit `@font-face` rules for the given (already-gated) families. Each family's
+ * registered defs are emitted sorted by weight then subset so output is
+ * deterministic. Returns `""` when no families are used (no self-hosted fonts).
+ */
+function emitFontFaces(families: readonly string[], assetUrlForPath?: AssetUrlForPath): string {
+  if (families.length === 0) return "";
+  const rules: string[] = [];
+  for (const family of [...families].sort()) {
+    const defs = [...(FONT_FACE_REGISTRY[family] ?? [])].sort(
+      (a, b) => a.weight - b.weight || a.subset.localeCompare(b.subset),
+    );
+    for (const def of defs) {
+      const src = resolveAssetUrl(FONT_ASSET_PREFIX + def.file, assetUrlForPath);
+      rules.push(
+        `@font-face{font-family:"${def.family}";font-style:normal;font-weight:${def.weight};` +
+          `font-display:swap;src:url(${src}) format("woff2");unicode-range:${def.unicodeRange};}`,
+      );
+    }
+  }
+  return rules.join("\n");
+}
+
+/**
+ * The woff2 asset bytes a site needs, keyed by their canonical
+ * `assets/fonts/<file>` VFS path. PR-F2b's `build()` consumes this to write the
+ * self-hosted font files into the output. Deterministic (sorted families/defs).
+ */
+export function fontAssetsFor(site: Site, themeId: string): Map<string, Uint8Array> {
+  const assets = new Map<string, Uint8Array>();
+  for (const family of usedFamiliesFor(site, themeId)) {
+    const defs = [...(FONT_FACE_REGISTRY[family] ?? [])].sort(
+      (a, b) => a.weight - b.weight || a.subset.localeCompare(b.subset),
+    );
+    for (const def of defs) {
+      const b64 = woff2Base64(def.file);
+      if (b64 === undefined) continue;
+      assets.set(`${FONT_ASSET_PREFIX}${def.file}`, base64ToBytes(b64));
+    }
+  }
+  return assets;
 }
 
 /**
