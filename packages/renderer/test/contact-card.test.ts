@@ -46,11 +46,16 @@ describe("renderSite — contactCard structural", () => {
     expect(html).toContain('href="https://facebook.com/example"');
   });
 
-  test("tolerates a contactCard with no fields at all", () => {
+  test("suppresses a contactCard with no fields at all (empty-state foolproofing)", () => {
+    // Empty-state suppression: a contactCard with no contact channels (no
+    // address, email, phone, social, or enabled map) is just a bare "Contact"
+    // heading — render nothing rather than an empty styled card. (Previously
+    // this emitted the wrapper <section>; the suppression guard now drops it.)
     const minimal = structuredClone(fixture) as Site;
     minimal.pages[0]!.blocks[0]!.data = {};
     const html = renderSite(minimal, "stub");
-    expect(html).toMatch(/<section[^>]*data-block="contactCard"/);
+    expect(html).not.toMatch(/<section[^>]*data-block="contactCard"/);
+    expect(html).not.toMatch(/<!-- unknown block/);
   });
 
   test("tolerates an unknown extra field on contactCard data (forward-compat)", () => {

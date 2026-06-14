@@ -101,12 +101,16 @@ describe("renderSite — eventList block", () => {
     expect(summerIdx).toBeGreaterThan(winterIdx);
   });
 
-  test("renders an empty list cleanly when events: []", () => {
+  test("suppresses the block cleanly when events: [] (empty-state foolproofing)", () => {
     const empty = structuredClone(fixture) as Site;
     (empty.pages[0]!.blocks[0]!.data as Record<string, unknown>).events = [];
-    // Must not throw and must still emit the wrapper section.
+    // Empty-state suppression: an eventList with no events renders nothing
+    // rather than an empty styled container. (Previously this emitted the
+    // wrapper <section>; the suppression guard now drops it so a blank
+    // eventList gives no empty box.) Must not throw.
     const html = renderSite(empty, "stub");
-    expect(html).toMatch(/<section[^>]*data-block="event-list"/);
+    expect(html).not.toMatch(/<section[^>]*data-block="event-list"/);
+    expect(html).not.toMatch(/<!-- unknown block/);
   });
 
   test("emits a single inlined past-fade <script> tag at end of body when an eventList exists", () => {

@@ -104,13 +104,17 @@ describe("renderSite — faq block (structural)", () => {
     }
   });
 
-  test("tolerates an empty items list (placeholder block)", () => {
+  test("suppresses the block on an empty items list (empty-state foolproofing)", () => {
+    // Empty-state suppression: an FAQ with no items renders nothing rather
+    // than an empty styled accordion. (Previously this emitted the wrapper
+    // <section> with no <details>; the suppression guard now drops the whole
+    // block so a blank FAQ gives no empty box.)
     const empty = JSON.parse(JSON.stringify(fixture)) as Site;
     (empty.pages[0]!.blocks[0]!.data as { items: unknown[] }).items = [];
     const html = renderSite(empty, "stub");
-    expect(html).toMatch(/<section[^>]*data-block="faq"/);
-    // No <details> elements are emitted for an empty list.
+    expect(html).not.toMatch(/<section[^>]*data-block="faq"/);
     expect(html).not.toMatch(/<details[\s>]/);
+    expect(html).not.toMatch(/<!-- unknown block/);
   });
 
   test("ignores unknown extra fields on faq data and items (forward-compat)", () => {

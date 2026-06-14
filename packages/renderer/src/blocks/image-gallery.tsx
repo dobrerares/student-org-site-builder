@@ -21,13 +21,20 @@ import { resolveAssetUrl } from "../asset-url.js";
 export function ImageGallery(props: {
   block: ImageGalleryBlock;
   assetUrlForPath?: AssetUrlForPath | undefined;
-}): preact.JSX.Element {
+}): preact.JSX.Element | null {
   const { id, data } = props.block;
+  const images = Array.isArray(data.images) ? data.images : [];
+
+  // Empty-state suppression: an imageGallery with no images renders nothing
+  // rather than an empty styled container. The page-shell's lightbox scaffold
+  // is gated separately by `pageNeedsLightbox`; a suppressed, image-less
+  // gallery contributes no triggers for that script regardless.
+  if (images.length === 0) return null;
+
   const title = typeof data.title === "string" ? data.title : undefined;
   const layout = data.layout;
   const columns = data.columns;
   const lightbox = data.lightbox === true;
-  const images = data.images;
 
   const headerId = `${id}__title`;
   const labelledBy = title !== undefined ? headerId : undefined;

@@ -136,18 +136,24 @@ function readLayout(raw: unknown): "list" | "cards" {
 export function DocumentDownloads(props: {
   block: DocumentDownloadsBlock;
   assetUrlForPath?: AssetUrlForPath | undefined;
-}): preact.JSX.Element {
+}): preact.JSX.Element | null {
   const { id, data } = props.block;
   const safeData = data as DocumentDataShape;
-  const title = readString(safeData.title);
-  const intro = readString(safeData.intro);
-  const layout = readLayout(safeData.layout);
-  const headingId = title !== undefined ? `${id}__title` : undefined;
 
   const rawFiles = Array.isArray(safeData.files) ? safeData.files : [];
   const files = rawFiles
     .map((file) => readFile(file, props.assetUrlForPath))
     .filter((file): file is RenderableFile => file !== null);
+
+  // Empty-state suppression: a documentDownloads block with no resolvable
+  // files (missing/empty array, or every entry lacks a usable path+label)
+  // renders nothing rather than an empty styled container.
+  if (files.length === 0) return null;
+
+  const title = readString(safeData.title);
+  const intro = readString(safeData.intro);
+  const layout = readLayout(safeData.layout);
+  const headingId = title !== undefined ? `${id}__title` : undefined;
 
   const sectionProps: Record<string, string> = {
     "data-block": "documentDownloads",

@@ -111,11 +111,18 @@ export function EventList(props: {
   block: EventListBlock;
   assetUrlForPath?: AssetUrlForPath | undefined;
   lang?: string | undefined;
-}): preact.JSX.Element {
+}): preact.JSX.Element | null {
   const { id, data } = props.block;
   const lang = props.lang ?? "ro";
 
   const eventsRaw = Array.isArray(data.events) ? (data.events as EventEntry[]) : [];
+
+  // Empty-state suppression: an eventList with no events renders nothing
+  // rather than an empty styled container. The past-fade <script> is still
+  // gated separately by the page-shell (`pageHasEventList`); a suppressed,
+  // event-less block contributes no DOM for that script to act on.
+  if (eventsRaw.length === 0) return null;
+
   const sortBy =
     data.sortBy === "date-asc" || data.sortBy === "date-desc" ? data.sortBy : DEFAULT_EVENT_SORT;
   const pastBehavior: EventPastBehavior =

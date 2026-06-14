@@ -33,9 +33,15 @@ import { sanitizeCustomHtml } from "@sosb/renderer/internal/sanitize";
  *    editor warning. This is the documented escape hatch contract from the
  *    PRD's customHTML block.
  */
-export function CustomHtml(props: { block: CustomHtmlBlock }): preact.JSX.Element {
+export function CustomHtml(props: { block: CustomHtmlBlock }): preact.JSX.Element | null {
   const { id, data } = props.block;
   const rawHtml = typeof data.html === "string" ? data.html : "";
+
+  // Empty-state suppression: a customHTML block with no html payload renders
+  // nothing rather than an empty styled container. Whitespace-only input
+  // counts as empty (there is nothing meaningful to embed).
+  if (rawHtml.trim().length === 0) return null;
+
   const sanitize = data.sanitize !== false;
   const html = sanitize ? sanitizeCustomHtml(rawHtml) : rawHtml;
 

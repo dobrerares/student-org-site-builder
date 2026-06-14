@@ -227,8 +227,20 @@ export function resolveEmbed(data: EmbedData): ResolvedEmbed {
   return resolver(data.url, data.privacyMode ?? true);
 }
 
-export function Embed(props: { block: EmbedBlock }): preact.JSX.Element {
+export function Embed(props: { block: EmbedBlock }): preact.JSX.Element | null {
   const { id } = props.block;
+  const rawData = props.block.data as { provider?: unknown; url?: unknown };
+
+  // Empty-state suppression: an embed with no resolvable URL (or no known
+  // provider to resolve it against) renders nothing rather than an empty
+  // styled figure. Both fields are required by the schema; this guards the
+  // loose-data tolerance path so a half-filled embed can't throw or emit a
+  // broken container.
+  const hasUrl = typeof rawData.url === "string" && rawData.url.length > 0;
+  const hasProvider =
+    typeof rawData.provider === "string" && rawData.provider in DEFAULT_ASPECT_RATIO_BY_PROVIDER;
+  if (!hasUrl || !hasProvider) return null;
+
   const data = resolveData(props.block.data);
   const resolved = resolveEmbed(props.block.data);
   const aspectCss = aspectRatioToCss(data.aspectRatio);

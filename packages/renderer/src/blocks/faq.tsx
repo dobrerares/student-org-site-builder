@@ -70,11 +70,16 @@ function FaqItemRow(props: {
   );
 }
 
-export function Faq(props: { block: FaqBlock }): preact.JSX.Element {
+export function Faq(props: { block: FaqBlock }): preact.JSX.Element | null {
   const { id, data } = props.block;
+  const items: FaqItem[] = Array.isArray(data.items) ? data.items : [];
+
+  // Empty-state suppression: an FAQ with no question/answer items renders
+  // nothing rather than an empty styled accordion container.
+  if (items.length === 0) return null;
+
   const title = typeof data.title === "string" && data.title.length > 0 ? data.title : undefined;
   const firstOpen = data.firstOpen === true;
-  const items: FaqItem[] = Array.isArray(data.items) ? data.items : [];
 
   return (
     <section
