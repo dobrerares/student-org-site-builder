@@ -46,29 +46,30 @@ describe("academic theme — registration", () => {
 });
 
 describe("academic theme — palette tokens on :root", () => {
-  test("declares an institutional dark navy as the primary colour", () => {
+  // Scholarly recast: refined navy + library gold on a warm cream ground.
+  test("declares an institutional navy as the primary colour", () => {
     const html = renderSite(fixture, "academic");
-    expect(rootBody(html)).toMatch(/--color-primary:\s*#1a2440/);
+    expect(rootBody(html)).toMatch(/--color-primary:\s*#1e3a5f/);
   });
 
-  test("declares a warm parchment background", () => {
+  test("declares a warm cream background", () => {
     const html = renderSite(fixture, "academic");
-    expect(rootBody(html)).toMatch(/--color-bg:\s*#f7f1e3/);
+    expect(rootBody(html)).toMatch(/--color-bg:\s*#f7f3ea/);
   });
 
-  test("declares a muted gold accent", () => {
+  test("declares a muted library gold accent", () => {
     const html = renderSite(fixture, "academic");
-    expect(rootBody(html)).toMatch(/--color-accent:\s*#a67c2e/);
+    expect(rootBody(html)).toMatch(/--color-accent:\s*#b8893e/);
   });
 
   test("declares an ink-dark foreground for body copy", () => {
     const html = renderSite(fixture, "academic");
-    expect(rootBody(html)).toMatch(/--color-fg:\s*#2a2418/);
+    expect(rootBody(html)).toMatch(/--color-fg:\s*#1f2933/);
   });
 
-  test("declares a desaturated muted token for eyebrow / metadata text", () => {
+  test("declares a slate-grey muted token for metadata text", () => {
     const html = renderSite(fixture, "academic");
-    expect(rootBody(html)).toMatch(/--color-muted:\s*#6b5f4a/);
+    expect(rootBody(html)).toMatch(/--color-muted:\s*#5c6b7a/);
   });
 
   test("user theme tokens still override the academic baseline", () => {
@@ -79,7 +80,7 @@ describe("academic theme — palette tokens on :root", () => {
     };
     const html = renderSite(overridden, "academic");
     const body = rootBody(html);
-    const academicIdx = body.indexOf("#1a2440");
+    const academicIdx = body.indexOf("#1e3a5f");
     const overrideIdx = body.lastIndexOf("#000000");
     expect(academicIdx).toBeGreaterThanOrEqual(0);
     expect(overrideIdx).toBeGreaterThan(academicIdx);
@@ -87,21 +88,38 @@ describe("academic theme — palette tokens on :root", () => {
 });
 
 describe("academic theme — typography tokens on :root", () => {
-  test("declares a serif headline stack", () => {
+  // Scholarly recast: SERIF display (Source Serif 4) + SANS body (Inter). This
+  // flips the legacy serif-throughout pairing — the academic voice now lives in
+  // the Source Serif display, not in a manuscript-style serif body.
+  test("declares a Source Serif 4 serif headline stack", () => {
     const html = renderSite(fixture, "academic");
     const body = rootBody(html);
     const allHeadline = [...body.matchAll(/--font-headline:\s*([^;]+);/g)].map((m) => m[1] ?? "");
     const last = allHeadline[allHeadline.length - 1] ?? "";
     expect(last).toMatch(/serif/);
-    expect(last).toMatch(/Iowan Old Style|Charter|Georgia/);
+    expect(last).toMatch(/Source Serif 4/);
   });
 
-  test("declares a serif body stack (academic palette is serif throughout)", () => {
+  test("declares an Inter sans-serif body stack", () => {
     const html = renderSite(fixture, "academic");
     const body = rootBody(html);
     const allBody = [...body.matchAll(/--font-body:\s*([^;]+);/g)].map((m) => m[1] ?? "");
     expect(allBody.length).toBeGreaterThan(0);
-    expect(allBody[allBody.length - 1] ?? "").toMatch(/serif/);
+    const last = allBody[allBody.length - 1] ?? "";
+    expect(last).toMatch(/Inter/);
+    expect(last).toMatch(/sans-serif/);
+  });
+
+  test("comfortable density + soft radius ship via the engine knobs", () => {
+    const html = renderSite(fixture, "academic");
+    expect(rootBody(html)).toMatch(/--density-scale:\s*1\.15/);
+    expect(rootBody(html)).toMatch(/--radius-base:\s*4px/);
+  });
+
+  test("self-hosts Source Serif 4 + Inter via @font-face (first family in each stack)", () => {
+    const html = renderSite(fixture, "academic");
+    expect(html).toMatch(/@font-face\s*\{[^}]*font-family:\s*"Source Serif 4"/);
+    expect(html).toMatch(/@font-face\s*\{[^}]*font-family:\s*"Inter"/);
   });
 });
 
@@ -124,15 +142,19 @@ describe("academic theme — token-only per-block CSS", () => {
 
   test("body line-height is generous (>=1.6) for academic readability", () => {
     const html = renderSite(fixture, "academic");
-    // The CSS body rule references a `--leading-body` token. Resolve it from
-    // the :root rule and assert the numeric value is generous.
-    const root = rootBody(html);
-    const leading = /--leading-body:\s*([0-9]*\.?[0-9]+)/.exec(root);
-    expect(leading).not.toBeNull();
-    expect(parseFloat(leading![1] ?? "0")).toBeGreaterThanOrEqual(1.6);
-    // And the body rule must actually consume that token.
-    const css = nonRootCss(html);
-    expect(css).toMatch(/\bbody\s*\{[\s\S]*?line-height:\s*var\(--leading-body\)/);
+    // The recast drops the bespoke `--leading-body` token in favour of a literal
+    // generous body line-height (the engine owns the fluid type scale now). The
+    // composed CSS has several `body { font-family: var(--font-body) }` blocks
+    // (stub baseline at line-height 1.5, then the academic overlay) — the
+    // academic rule is the LAST one (later wins per the cascade), so assert on it.
+    const bodyDecls = [
+      ...html.matchAll(/\bbody\s*\{[^}]*font-family:\s*var\(--font-body\)[^}]*\}/g),
+    ];
+    expect(bodyDecls.length).toBeGreaterThan(0);
+    const academicBody = bodyDecls[bodyDecls.length - 1]![0];
+    const lh = academicBody.match(/line-height:\s*([0-9]*\.?[0-9]+)/);
+    expect(lh).not.toBeNull();
+    expect(parseFloat(lh![1] ?? "0")).toBeGreaterThanOrEqual(1.6);
   });
 });
 

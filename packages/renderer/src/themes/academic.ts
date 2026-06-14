@@ -1,109 +1,107 @@
 /**
- * Academic theme.
+ * Academic theme — "Scholarly" identity (research societies / honor
+ * societies / faculty bodies).
  *
- * The brand-bearing skin for the project's canonical reference org
- * (HISTORIPOL — student history society at Universitatea „Ovidius" Constanța)
- * and the default demo. Tone: institutional, restrained, traditional but not
- * dated. Per the PRD, the Academic theme is one of two minimum-viable themes
- * (alongside Modern + Civic in the 3-theme fallback).
+ * Aesthetic brief: credible and warm — but NOT a manuscript costume. The
+ * identity comes entirely from fundamentals — palette, type, density, shape —
+ * layered over the shared engine. There are no decorative "signature moves":
+ * no forced italics, no rules-as-ornament, no parchment mats or accent frames.
+ * What makes Academic read as scholarly:
  *
- * Design intent
- * -------------
- * Issue #47 was triaged `ready-for-human` because the visual is qualitative.
- * This file is the AI-scaffolded first-pass draft per the scope-expansion
- * note: hit the academic archetype well, leave room for the maintainer to
- * curate. Decisions made here are deliberately conservative — see the
- * `// curation:` comments for the reversible knobs.
+ *  - Palette: refined navy + gold on cream. A deep institutional navy
+ *    (#1e3a5f) carries titles, links, and the institutional voice; a muted
+ *    library gold (#b8893e) does the accenting — links, focus, badges. The page
+ *    sits on a warm cream ground (#f7f3ea) with a slate-grey muted (#5c6b7a),
+ *    so the whole thing reads like a credible university body rather than a
+ *    clinical white screen or a faux-antique scroll.
+ *  - Type: SERIF display + SANS body — Source Serif 4 for headlines (a warm,
+ *    readable text serif with academic gravity) paired with Inter for body.
+ *    Both are self-hosted by the renderer (the first family in each stack
+ *    matches the font registry, so `@font-face` is auto-emitted). This reverses
+ *    the legacy serif-throughout pairing: the scholarly voice now lives in the
+ *    Source Serif display, not in a manuscript-style serif body or forced
+ *    italics.
+ *  - Density: comfortable — `--density-scale: 1.15` opens up the engine's
+ *    `--space-*` scale. Scholarly pages breathe.
+ *  - Shape: soft — `--radius-base: 4px`. The engine derives the gently-rounded
+ *    `--radius-sm/md/lg` for cards and badges. (4px is the softest-but-still-
+ *    crisp corner among the five themes — a distinct, restrained fundamental.)
  *
- * Palette
- * -------
- *   Oxford Navy (#1a2440)   — primary; titles, links, the institutional voice
- *   Antique Parchment (#f7f1e3) — background; warm, cream-coloured page
- *   Iron Gall (#2a2418)     — body text; an ink-dark brown, easier on the
- *                             eye against parchment than pure black
- *   Library Gold (#a67c2e)  — accent; muted gold for rules, dates, links
- *   Faded Marginalia (#6b5f4a) — muted; meta text, captions
+ * The one structural fundamental Academic keeps beyond palette/type/density/
+ * shape is a narrower content rail (`--site-readable-width: 64rem`): scholarly
+ * content sits on a tighter, more readable measure than the wider 72rem default
+ * the other themes use. That is a legitimate typographic fundamental, not
+ * ornament, and a layout-distinctness test asserts it.
  *
- * Typography
- * ----------
- * Serif throughout. The unifying choice from the contract. We lean on system
- * serifs that ship with macOS / Windows / Linux so end-user sites need no
- * font-loading: Iowan Old Style (macOS), Georgia (Windows), and Charter
- * (broad fallback). Body and headlines share the family deliberately —
- * traditional academic prints almost always do — but the type scale gives
- * the headline weight and tracking the contrast the design needs.
- *
- * Type scale
- * ----------
- * Modular, ratio ≈ 1.25 (the major-third). Body 1rem, h1 ≈ 2.44rem. Generous
- * line-height (1.65) for body, tighter for display. A comfortable text
- * measure sits inside a wider desktop rail so pages feel like contemporary
- * student-org sites rather than a narrow manuscript column.
- *
- * Ornament
- * --------
- * Modest. A quiet underline on links on hover, and that is it for v1. The
- * hero uses the shared universal overlay. No drop-caps, no ornamental dingbats — those
- * fight Romanian diacritics and the maintainer can add them later if the
- * curation wants more flourish.
- *
- * Curation knobs (reversible without churning the renderer):
- *   curation: palette hex values — five named tokens above.
- *   curation: type stack — `Iowan Old Style, Charter, Georgia, ...` order.
- *   curation: type scale ratio — 1.25 (major third) is the conservative pick.
- *   curation: line-height — 1.65 body, 1.15 display.
- *   curation: rule colour — currently `--color-accent`, could be `--color-muted`.
+ * Contract with the renderer:
+ *  - One id constant, a baseline-token list, and one CSS string, registered by
+ *    id in `index.tsx`. The id stays `academic`.
+ *  - All colour, spacing, typography, and radius values reference
+ *    `var(--token)`. The single exception is the `:root` block (which sets only
+ *    the narrow readable rail), since the rest of the palette/density/radius
+ *    ships via the baseline-token list emitted into the engine's `:root`.
+ *  - Headline sizing flows from the engine's fluid `--type-*` clamp scale, so
+ *    display type is responsive and never overflows on mobile (the legacy
+ *    hardcoded modular rem scale is gone). Cards / borders / surfaces come from
+ *    the shared production base; this theme contributes only the fundamentals
+ *    above plus genuinely-universal polish (Source Serif headings, gold accent
+ *    underlined links, a visible focus ring).
  */
 
 export const ACADEMIC_THEME_ID = "academic" as const;
 
 /**
- * Tokens contributed by the Academic theme. These are appended to the
- * baseline `:root` block by the renderer's token emitter, so later wins —
- * the theme can override any baseline freely, and any user-provided
- * `site.theme.tokens` value still overrides the theme.
+ * Academic tokens as raw [cssProp, value] pairs, routed through
+ * `themeBaselineTokensFor` so the renderer's resolved-palette map (and thus the
+ * derived --color-*-rgb / --color-on-* tokens) reflect academic's navy/gold/
+ * cream palette, and so the first font family in each stack is gated for
+ * self-hosting. The tuple mechanism lets the theme set --color-bg / --color-fg /
+ * --color-muted as well as the density and radius engine knobs — so the warm
+ * cream ground actually renders.
+ *
+ * Density: comfortable — `--density-scale: 1.15` multiplies the engine's
+ * `--space-*` scale (baseline 1). Shape: soft — `--radius-base: 4px`, from which
+ * the engine derives `--radius-sm/md/lg`.
  */
 export const ACADEMIC_THEME_TOKENS: ReadonlyArray<readonly [string, string]> = [
-  // Palette — see header comment for the named-colour rationale.
-  ["--color-primary", "#1a2440"],
-  ["--color-bg", "#f7f1e3"],
-  ["--color-fg", "#2a2418"],
-  ["--color-accent", "#a67c2e"],
-  ["--color-muted", "#6b5f4a"],
+  // Palette — refined navy + gold on cream. Navy for primary, a single muted
+  // library gold accent, a warm cream ground, ink-dark fg, slate-grey muted.
+  ["--color-primary", "#1e3a5f"],
+  ["--color-accent", "#b8893e"],
+  ["--color-bg", "#f7f3ea"],
+  ["--color-fg", "#1f2933"],
+  ["--color-muted", "#5c6b7a"],
 
-  // Typography — serif throughout. System fonts only; no @font-face.
-  [
-    "--font-headline",
-    '"Iowan Old Style", "Charter", "Charis SIL", Georgia, "Palatino Linotype", Palatino, serif',
-  ],
-  [
-    "--font-body",
-    '"Iowan Old Style", "Charter", "Charis SIL", Georgia, "Palatino Linotype", Palatino, serif',
-  ],
+  // Type — Source Serif 4 serif display + Inter body. The first quoted family in
+  // each stack is self-hosted by the renderer (auto @font-face); the rest are
+  // system fallbacks friendly to Romanian diacritics. This flips the legacy
+  // serif-throughout pairing — the scholarly voice is the serif display.
+  ["--font-headline", '"Source Serif 4", Georgia, "Times New Roman", serif'],
+  ["--font-body", '"Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'],
 
-  // Modular type scale (1.25 ratio). Tokens consumable by per-block CSS.
-  ["--type-scale-base", "1rem"],
-  ["--type-scale-sm", "0.8rem"], // 1 / 1.25
-  ["--type-scale-lg", "1.25rem"],
-  ["--type-scale-xl", "1.5625rem"], // 1.25^2
-  ["--type-scale-2xl", "1.953rem"], // 1.25^3
-  ["--type-scale-3xl", "2.441rem"], // 1.25^4 — display
-
-  // Line-height & measure tokens — the academic readability rhythm.
-  ["--leading-body", "1.65"],
-  ["--leading-display", "1.15"],
-  ["--measure-body", "88ch"],
-
-  // Surface / structure tweaks consistent with the parchment-and-rule look.
-  ["--radius-sm", "2px"],
-  ["--radius-md", "4px"],
-  ["--radius-lg", "6px"],
+  // Density — comfortable. Multiplies the engine's --space-* scale (baseline 1).
+  ["--density-scale", "1.15"],
+  // Shape — soft. The engine derives --radius-sm/md/lg from this base. 4px is
+  // unique to academic among the five themes (its distinct shape fundamental).
+  ["--radius-base", "4px"],
 ];
 
 /**
- * Layout-only CSS for the Academic theme. Every value is either a structural
- * primitive or a `var(--token)` reference. The test suite asserts no raw
- * hex / rgb leakage outside `:root`.
+ * Layout-only CSS for the Academic theme. Every value is a structural primitive
+ * (units, dimensions, font-weights) or a `var(--token)` reference — there is no
+ * raw colour anywhere, and the test suite asserts this.
+ *
+ * The only `:root` rule here narrows the content rail to 64rem — academic's
+ * scholarly fundamental (a tighter readable measure than the 72rem default).
+ * Palette/density/radius ship via the baseline-token list, spacing flows from
+ * the engine's density-scaled `--space-*` (`--density-scale: 1.15`,
+ * comfortable), and the soft 4px corners derive from `--radius-base: 4px`.
+ * Heading sizes consume the engine's fluid `--type-*` clamp scale so display
+ * type stays responsive. This overlay keeps only the scholarly fundamentals —
+ * Source Serif serif headings, gold accent underlined links, a visible focus
+ * ring, and the narrow readable rail. No forced italics, no rules-as-ornament,
+ * no frames or mats: the scholarly feel is the Source Serif display +
+ * navy/gold/cream + comfortable density + soft 4px + the narrow rail.
  */
 export const ACADEMIC_THEME_CSS = `
 :root {
@@ -111,53 +109,63 @@ export const ACADEMIC_THEME_CSS = `
 }
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
+html { color: var(--color-fg); background: var(--color-bg); }
 body {
   background: var(--color-bg);
   color: var(--color-fg);
   font-family: var(--font-body);
-  font-size: var(--type-scale-base);
-  line-height: var(--leading-body);
+  font-size: 1rem;
+  line-height: 1.65;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 main { display: block; }
 
-/* Headings — serif display, tighter line-height, slightly tracked. */
+/* Headings — Source Serif display, tighter line-height. Source Serif 4's
+   registry weights are 600/700; 700 gives the headline the scholarly weight. */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-headline);
-  line-height: var(--leading-display);
+  line-height: 1.15;
+  letter-spacing: 0;
   color: var(--color-primary);
   margin: 0 0 var(--space-md) 0;
-  font-weight: 600;
+  font-weight: 700;
 }
-h1 { font-size: var(--type-scale-3xl); letter-spacing: 0; }
-h2 { font-size: var(--type-scale-2xl); }
-h3 { font-size: var(--type-scale-xl); }
-h4 { font-size: var(--type-scale-lg); }
-h5, h6 { font-size: var(--type-scale-base); }
+/* Fluid display scale from the engine's --type-* clamp tokens. The hero title
+   is sized by the shared hero overlay (var(--type-3xl)); the bare h1 below is
+   the academic display-headline contract the hero's <h1> also inherits. */
+h1 { font-size: var(--type-3xl); }
+h2 { font-size: var(--type-2xl); }
+h3 { font-size: var(--type-xl); }
+h4 { font-size: var(--type-lg); }
+h5 { font-size: var(--type-base); }
+h6 { font-size: var(--type-base); }
 
-/* Paragraph rhythm and the academic measure. */
-p {
-  margin: 0 0 var(--space-md) 0;
-  max-width: var(--measure-body);
+/* Paragraph rhythm — the readable measure flows from the engine's default. */
+p { margin: 0 0 var(--space-md) 0; max-width: var(--measure-body); }
+
+a {
+  /* Links carry the library gold accent — the one place colour does the
+     persuading. The underline (always present, thickening on hover) is the
+     scholarly link affordance. */
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  text-decoration-thickness: 1px;
 }
-
-/* Italic emphasis — the academic register prefers italics over bold. */
-em, i, cite { font-style: italic; }
-
-[data-site-nav] {
-  border-top: 4px solid var(--color-primary);
-  border-bottom: 1px solid var(--color-accent);
-  background: var(--color-bg);
+a:hover, a:focus-visible { text-decoration-thickness: 2px; }
+/* Visible keyboard focus ring in the accent colour. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
 }
 [data-site-nav] ul,
 [data-language-switcher] ul {
   max-width: var(--site-readable-width);
   margin-inline: auto;
 }
-[data-site-nav] a {
-  font-style: italic;
-}
+/* Academic narrows its content sections to the tighter scholarly rail. */
 [data-block="valueList"] .value-list__inner,
 [data-block="activitiesList"] .activities-list__inner,
 [data-block="teamGrid"] .team-grid__inner,
@@ -167,25 +175,6 @@ em, i, cite { font-style: italic; }
 [data-block="partnerLogos"] .partner-logos__inner,
 [data-block="event-list"] > :is(.event-list__title, .event-list__intro, .event-list__items) {
   max-width: var(--site-readable-width);
-}
-[data-block="valueList"] .value-list__item,
-[data-block="activitiesList"] .activities-list__item,
-[data-block="teamGrid"] .team-person__figure,
-[data-block="documentDownloads"] .document-downloads__item,
-[data-block="faq"] .faq__item,
-[data-block="partnerLogos"] .partner-logos__item {
-  border: 0;
-  border-block-start: 1px solid var(--color-accent);
-  border-radius: 0;
-  background: transparent;
-  padding: var(--space-md) 0;
-}
-[data-block="event-list"] .event-list__item article {
-  border: 0;
-  border-inline-start: 2px solid var(--color-accent);
-  border-radius: 0;
-  background: transparent;
-  padding: var(--space-md) 0 var(--space-md) var(--space-md);
 }
 [data-block="valueList"] .value-list__items,
 [data-block="activitiesList"] .activities-list__items,
@@ -202,18 +191,5 @@ em, i, cite { font-style: italic; }
   border-radius: var(--radius-sm);
   background: var(--color-primary);
   color: var(--color-bg);
-}
-[data-block="quote"] {
-  border-top: 1px solid var(--color-accent);
-  border-bottom: 1px solid var(--color-accent);
-}
-[data-block="quote"] .quote__text {
-  border-left: 0;
-  padding-left: 0;
-}
-[data-block="imageGallery"] .image-gallery__figure {
-  border: 1px solid var(--color-accent);
-  background: var(--color-bg);
-  padding: var(--space-xs);
 }
 `.trim();

@@ -51,7 +51,12 @@ describe("production themes — generated-site layout polish", () => {
     // card/badge/button radii from — no decorative tint/bar signature.
     ["modern", /--radius-base:\s*12px/],
     ["minimal", /\[data-block="valueList"\][\s\S]*max-width: 56rem/],
-    ["academic", /border-block-start:\s*1px solid var\(--color-accent\)/],
+    // Academic's "Scholarly" identity is fundamentals-only: its distinct
+    // treatment is the soft shape token (--radius-base: 4px) the engine derives
+    // the card/badge radii from — academic is the only theme that ships 4px (the
+    // legacy rule-line costume is gone). The earlier accent rule-line marker was
+    // replaced when the manuscript costume was stripped.
+    ["academic", /--radius-base:\s*4px/],
     // Civic's "Activist" identity is fundamentals-only: its distinct treatment
     // is the compact density token (--density-scale: 0.85) the engine scales
     // --space-* from — civic is the only theme that ships compact density.
