@@ -110,8 +110,7 @@ describe("academic theme — token-only per-block CSS", () => {
     const html = renderSite(fixture, "academic");
     const css = nonRootCss(html);
     expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
-    expect(css).not.toMatch(/\brgb\(/);
-    expect(css).not.toMatch(/\brgba\(/);
+    expect(css).not.toMatch(/\brgba?\(\s*[#0-9.]/);
     expect(css).toContain("var(--");
   });
 

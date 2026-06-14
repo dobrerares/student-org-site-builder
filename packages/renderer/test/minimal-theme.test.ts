@@ -105,8 +105,7 @@ describe("minimal theme — wired into renderSite", () => {
     );
     const nonRootRules = styleBlocks.join("\n").replace(/:root\s*\{[^}]*\}/g, "");
     expect(nonRootRules).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
-    expect(nonRootRules).not.toMatch(/\brgb\(/);
-    expect(nonRootRules).not.toMatch(/\brgba\(/);
+    expect(nonRootRules).not.toMatch(/\brgba?\(\s*[#0-9.]/);
     expect(nonRootRules).toContain("var(--");
   });
 

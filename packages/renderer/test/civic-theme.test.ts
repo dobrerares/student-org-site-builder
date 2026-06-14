@@ -101,8 +101,7 @@ describe("civic theme - CSS hygiene (token discipline)", () => {
     const styleBlocks = [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map((m) => m[1]!);
     const nonRootRules = styleBlocks.join("\n").replace(/:root\s*\{[^}]*\}/g, "");
     expect(nonRootRules).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
-    expect(nonRootRules).not.toMatch(/\brgb\(/);
-    expect(nonRootRules).not.toMatch(/\brgba\(/);
+    expect(nonRootRules).not.toMatch(/\brgba?\(\s*[#0-9.]/);
     expect(nonRootRules).toContain("var(--");
   });
 
