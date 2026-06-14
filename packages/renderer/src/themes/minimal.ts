@@ -45,6 +45,21 @@ export const MINIMAL_THEME_TOKENS = {
 } as const;
 
 /**
+ * Minimal palette as raw [cssProp, value] pairs, routed through
+ * `themeBaselineTokensFor` so the resolved-palette map (and the derived
+ * --color-*-rgb / --color-on-* tokens) reflect minimal's colors.
+ */
+export const MINIMAL_THEME_BASELINE_TOKENS: ReadonlyArray<readonly [string, string]> = [
+  ["--color-bg", MINIMAL_THEME_TOKENS.colorBg],
+  ["--color-fg", MINIMAL_THEME_TOKENS.colorFg],
+  ["--color-primary", MINIMAL_THEME_TOKENS.colorPrimary],
+  ["--color-accent", MINIMAL_THEME_TOKENS.colorAccent],
+  ["--color-muted", MINIMAL_THEME_TOKENS.colorMuted],
+  ["--font-headline", MINIMAL_THEME_TOKENS.fontHeadline],
+  ["--font-body", MINIMAL_THEME_TOKENS.fontBody],
+];
+
+/**
  * Layout-only CSS for the Minimal theme. Every value MUST be `var(--token)`
  * or a structural primitive (units, dimensions, font-weights) — there is no
  * raw colour outside the `:root` rule, and the test suite asserts this.
@@ -56,13 +71,6 @@ export const MINIMAL_THEME_TOKENS = {
  */
 export const MINIMAL_THEME_CSS = `
 :root {
-  --color-bg: ${MINIMAL_THEME_TOKENS.colorBg};
-  --color-fg: ${MINIMAL_THEME_TOKENS.colorFg};
-  --color-primary: ${MINIMAL_THEME_TOKENS.colorPrimary};
-  --color-accent: ${MINIMAL_THEME_TOKENS.colorAccent};
-  --color-muted: ${MINIMAL_THEME_TOKENS.colorMuted};
-  --font-headline: ${MINIMAL_THEME_TOKENS.fontHeadline};
-  --font-body: ${MINIMAL_THEME_TOKENS.fontBody};
   --radius-sm: 0;
   --radius-md: 0;
   --radius-lg: 0;

@@ -4,6 +4,7 @@ import heroOnly from "./fixtures/hero-only.json" with { type: "json" };
 import { emitTokenRoot, densityScale, radiusBase } from "../src/tokens.js";
 import { PRODUCTION_SITE_BASE_CSS } from "../src/themes/production-base.js";
 import { renderSite } from "../src/index.js";
+import { onColorFor } from "../src/color-math.js";
 
 const fixture = heroOnly as unknown as Site;
 
@@ -147,4 +148,39 @@ describe("density/radius reach rendered CSS through renderSite (regression)", ()
     expect(html).toContain("--radius-base: 0px;");
     expect(html).toContain("--radius-md: var(--radius-base);");
   });
+});
+
+function lastDeclaration(html: string, prop: string): string {
+  // Strip CSS comments first: theme CSS prose can legitimately mention token
+  // names (e.g. editorial's `/* ... rather than --color-accent: ... */`), and
+  // a naive scan would otherwise capture the comment body instead of the real
+  // declaration that the cascade actually applies.
+  const css = html.replace(/\/\*[\s\S]*?\*\//g, "");
+  const re = new RegExp(`${prop}:\\s*([^;]+);`, "g");
+  let match: RegExpExecArray | null;
+  let last = "";
+  while ((match = re.exec(css)) !== null) last = match[1]!.trim();
+  return last;
+}
+
+describe("derived on-colors are correct for every production theme (contract)", () => {
+  const PRODUCTION_THEME_IDS = ["minimal", "modern", "editorial", "civic", "academic"];
+  for (const id of PRODUCTION_THEME_IDS) {
+    test(`${id}: --color-on-accent matches onColorFor(resolved accent)`, () => {
+      const site = structuredClone(fixture) as Site;
+      site.theme = { id, tokens: {} };
+      const html = renderSite(site, id);
+      const accent = lastDeclaration(html, "--color-accent");
+      expect(accent).toMatch(/^#[0-9a-fA-F]{3,6}$/);
+      expect(lastDeclaration(html, "--color-on-accent")).toBe(onColorFor(accent));
+    });
+    test(`${id}: --color-on-primary matches onColorFor(resolved primary)`, () => {
+      const site = structuredClone(fixture) as Site;
+      site.theme = { id, tokens: {} };
+      const html = renderSite(site, id);
+      const primary = lastDeclaration(html, "--color-primary");
+      expect(primary).toMatch(/^#[0-9a-fA-F]{3,6}$/);
+      expect(lastDeclaration(html, "--color-on-primary")).toBe(onColorFor(primary));
+    });
+  }
 });

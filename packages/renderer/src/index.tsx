@@ -18,8 +18,8 @@ import { emitTokenRoot } from "./tokens.js";
 import type { AssetUrlForPath } from "./asset-url.js";
 import { STUB_THEME_CSS, STUB_THEME_ID } from "./themes/stub.js";
 import { PRODUCTION_SITE_BASE_CSS } from "./themes/production-base.js";
-import { MINIMAL_THEME_CSS, MINIMAL_THEME_ID } from "./themes/minimal.js";
-import { MODERN_THEME_CSS, MODERN_THEME_ID } from "./themes/modern.js";
+import { MINIMAL_THEME_BASELINE_TOKENS, MINIMAL_THEME_CSS, MINIMAL_THEME_ID } from "./themes/minimal.js";
+import { MODERN_THEME_BASELINE_TOKENS, MODERN_THEME_CSS, MODERN_THEME_ID } from "./themes/modern.js";
 import {
   EDITORIAL_THEME_CSS,
   EDITORIAL_THEME_ID,
@@ -150,6 +150,8 @@ function themeDefaultsFor(themeId: string): Readonly<Record<string, string>> | u
 function themeBaselineTokensFor(themeId: string): ReadonlyArray<readonly [string, string]> {
   if (themeId === CIVIC_THEME_ID) return CIVIC_THEME_BASELINE_TOKENS;
   if (themeId === ACADEMIC_THEME_ID) return ACADEMIC_THEME_TOKENS;
+  if (themeId === MODERN_THEME_ID) return MODERN_THEME_BASELINE_TOKENS;
+  if (themeId === MINIMAL_THEME_ID) return MINIMAL_THEME_BASELINE_TOKENS;
   return [];
 }
 

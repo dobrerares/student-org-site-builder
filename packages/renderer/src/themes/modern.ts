@@ -39,15 +39,23 @@ export const MODERN_THEME_ID = "modern" as const;
  * below; we keep the breakpoint inline rather than introducing a
  * theme-level breakpoint token to keep the contract narrow for v1.
  */
+/**
+ * Modern palette as raw [cssProp, value] pairs, routed through
+ * `themeBaselineTokensFor` so the renderer's resolved-palette map (and thus
+ * the derived --color-*-rgb / --color-on-* tokens) reflect modern's colors.
+ */
+export const MODERN_THEME_BASELINE_TOKENS: ReadonlyArray<readonly [string, string]> = [
+  ["--font-headline", '-apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'],
+  ["--font-body", '-apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'],
+  ["--color-bg", "#ffffff"],
+  ["--color-fg", "#0f172a"],
+  ["--color-muted", "#64748b"],
+  ["--color-primary", "#0f172a"],
+  ["--color-accent", "#2563eb"],
+];
+
 export const MODERN_THEME_CSS = `
 :root {
-  --font-headline: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-body: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --color-bg: #ffffff;
-  --color-fg: #0f172a;
-  --color-muted: #64748b;
-  --color-primary: #0f172a;
-  --color-accent: #2563eb;
   --space-2xl: 6rem;
 }
 *, *::before, *::after { box-sizing: border-box; }
