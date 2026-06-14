@@ -25,7 +25,7 @@ Scope decision: **full fidelity** — self-host all five families, **gated per t
 | Delivery | Self-host woff2 (not Google CDN) |
 | Scope | All five identity families, full fidelity |
 | Per-page | Gated emission — a site emits `@font-face` only for the families its resolved theme/site tokens actually use |
-| Subsetting | `pyftsubset` (fonttools), run **once by a maintainer**, output woff2 committed to the repo; CI never needs Python |
+| Subsetting | Use `@fontsource/*` pre-subset woff2 (OFL, version-pinned devDeps). They ship Google's `latin` + `latin-ext` subsets; `latin-ext` covers the Romanian Ș/Ț (U+0218–021B). `pnpm gen:fonts` copies the needed weight×subset files out of `node_modules` and base64-codegens them — no Python; CI consumes committed bytes. (A custom `pyftsubset` pass is a documented fallback if a smaller combined subset is ever wanted.) |
 | Renderer byte access | woff2 → committed base64 string constants via a `pnpm gen:fonts` codegen step (committed output, like goldens) — keeps the renderer dependency- and Node-builtin-free |
 | Dist transport | Widen `DistFolder` to `Map<string, string \| Uint8Array>` (centralized — Option A) so fonts flow through build → zip/electron/archival uniformly |
 | Emission seam | `@font-face` emitted first in `composeCss` (renderer `index.tsx`), `src: url()` resolved through the existing `resolveAssetUrl` |
@@ -37,10 +37,8 @@ The renderer has **zero precedent for a non-inline sub-resource** today (all CSS
 
 ### 1. Fonts in the repo + codegen
 
-- Subset woff2 committed under `packages/renderer/src/fonts/woff2/<family>-<weight>[-italic].woff2`.
-  Subset unicode ranges (the Romanian comma-below glyphs are mandatory and distinct from cedilla forms):
-  `U+0000-00FF` (Basic Latin + Latin-1), `U+0100-017F` (Latin Extended-A), **`U+0218-021B` (Ș/ș/Ț/ț)**, `U+2018-201F` (quotes), `U+2022,U+2026,U+2122,U+20AC`.
-  Pin the exact `pyftsubset` command + fonttools/brotli versions in `packages/renderer/src/fonts/README.md` so regeneration is reproducible.
+- woff2 sourced from `@fontsource/*` packages (OFL, version-pinned devDependencies): `@fontsource/archivo`, `@fontsource/space-grotesk`, `@fontsource/fraunces`, `@fontsource/source-serif-4`, `@fontsource/inter`. These ship Google's per-subset woff2 split into `latin` and `latin-ext`; the `latin-ext` subset's unicode-range includes **U+0218–021B** (the Romanian Ș/ș/Ț/ț comma-below glyphs — distinct from the cedilla forms). Each weight therefore ships as **two** files/`@font-face` (latin + latin-ext), each carrying its Google unicode-range, so the browser fetches latin-ext only when the page uses those codepoints.
+- `pnpm gen:fonts` copies the needed `<weight>` × {`latin`,`latin-ext`} woff2 from `node_modules/@fontsource/*/files/` into `packages/renderer/src/fonts/woff2/`, recording each file's unicode-range. No Python; CI consumes the committed bytes. Document the source package versions + copied file list in `packages/renderer/src/fonts/README.md` for reproducibility.
 - `pnpm gen:fonts` reads the committed woff2 and writes `packages/renderer/src/fonts/font-bytes.generated.ts` — `export const FONT_WOFF2_BASE64: Record<string, string>` keyed by file name. Committed; a test asserts it is in sync with the woff2 (regenerate-and-diff), mirroring the goldens discipline.
 - `.gitattributes` already marks `*.woff2 binary` — no change needed.
 
@@ -108,7 +106,7 @@ Subset only the weights the identities use (each weight = one woff2 file). The p
 
 ## Decomposition (implementation PRs)
 
-1. **PR-F1 — Subset + codegen:** the `pyftsubset` recipe + committed woff2 + `pnpm gen:fonts` → `font-bytes.generated.ts` + the registry + the sync test. No rendering change yet.
+1. **PR-F1 — Fonts + codegen:** add the `@fontsource/*` devDeps; `pnpm gen:fonts` copies the needed weight×subset woff2 into the repo and writes `font-bytes.generated.ts` (committed base64); the `FONT_FACE_REGISTRY`; the sync test. No rendering change yet.
 2. **PR-F2 — Dist binary + emission:** widen `DistFolder` to `string | Uint8Array`; `emitFontFaces` + `usedFamiliesFor` gated emission in `composeCss`; `build()` injects font bytes for used families; `measureBudgets` handles `Uint8Array` + the new `fonts` metric. Deploy path works end-to-end; goldens regenerated.
 3. **PR-F3 — Preview + archival:** seed the editor preview resolver with font blobs; extend `buildArchival` with woff2 MIME + the CSS-`url()` inliner. Preview + offline parity.
 4. **PR-F4 — Wire themes + catalog:** set each theme's `--font-headline`/`--font-body` to its identity families; reconcile the catalog `ThemeFonts` lists with the loadable families (close the existing "catalog names fonts it never loads" gap). Per-theme font goldens.
