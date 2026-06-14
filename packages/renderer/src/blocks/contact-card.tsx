@@ -250,10 +250,18 @@ function hasRenderableSocial(socials: ContactCardBlock["data"]["socials"]): bool
   return socials.some((s) => asString(s.url) !== undefined);
 }
 
-/** Does the map embed carry renderable content (enabled + coordinates)? */
+/**
+ * Does the map embed carry content that will ACTUALLY render? Mirrors
+ * MapEmbed's render conditions so an enabled-but-non-rendering map (a Google
+ * map without the privacy acknowledgement, or an unknown provider) does not
+ * keep an otherwise-empty contact card alive with a blank heading.
+ */
 function hasRenderableMap(mapEmbed: MapEmbedShape | undefined): boolean {
   if (mapEmbed === undefined || mapEmbed.enabled !== true) return false;
-  return asLatLng(mapEmbed.coordinates) !== undefined;
+  if (asLatLng(mapEmbed.coordinates) === undefined) return false;
+  if (mapEmbed.provider === "osm") return true;
+  if (mapEmbed.provider === "google") return mapEmbed.acknowledgedPrivacyNotice === true;
+  return false;
 }
 
 export function ContactCard(props: { block: ContactCardBlock }): preact.JSX.Element | null {
