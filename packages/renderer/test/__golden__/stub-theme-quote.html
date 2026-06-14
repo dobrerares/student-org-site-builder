@@ -1,12 +1,24 @@
 <!doctype html><html lang="ro"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Stub site — alumni</title><meta name="description" content="Quote fixture for renderer tests."/><meta property="og:title" content="Stub site — alumni"/><meta property="og:description" content="Quote fixture for renderer tests."/><meta property="og:type" content="website"/><meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Stub site — alumni"/><meta name="twitter:description" content="Quote fixture for renderer tests."/><style>:root {
-  --space-xs: 0.25rem;
-  --space-sm: 0.5rem;
-  --space-md: 1rem;
-  --space-lg: 2rem;
-  --space-xl: 4rem;
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 16px;
+  --density-scale: 1;
+  --space-xs: calc(0.25rem * var(--density-scale));
+  --space-sm: calc(0.5rem * var(--density-scale));
+  --space-md: calc(1rem * var(--density-scale));
+  --space-lg: calc(2rem * var(--density-scale));
+  --space-xl: calc(4rem * var(--density-scale));
+  --section-gap: calc(clamp(2.5rem, 1.5rem + 4vw, 5rem) * var(--density-scale));
+  --radius-base: 8px;
+  --radius-sm: calc(var(--radius-base) * 0.5);
+  --radius-md: var(--radius-base);
+  --radius-lg: calc(var(--radius-base) * 1.75);
+  --type-xs: clamp(0.78rem, 0.75rem + 0.15vw, 0.85rem);
+  --type-sm: clamp(0.88rem, 0.84rem + 0.2vw, 1rem);
+  --type-base: clamp(1rem, 0.96rem + 0.3vw, 1.125rem);
+  --type-lg: clamp(1.2rem, 1.1rem + 0.5vw, 1.5rem);
+  --type-xl: clamp(1.5rem, 1.3rem + 1vw, 2.05rem);
+  --type-2xl: clamp(1.85rem, 1.45rem + 1.9vw, 2.75rem);
+  --type-3xl: clamp(2.25rem, 1.6rem + 3.1vw, 3.75rem);
+  --measure-body: 66ch;
+  --measure-title: 20ch;
   --font-headline: Georgia, serif;
   --font-body: system-ui, sans-serif;
   --color-primary: #1f3a5f;
@@ -16,6 +28,12 @@
   --color-muted: #5c5c5c;
   --color-primary: #1f3a5f;
   --color-accent: #c08a3e;
+  --color-primary-rgb: 31, 58, 95;
+  --color-accent-rgb: 192, 138, 62;
+  --color-fg-rgb: 26, 26, 26;
+  --color-bg-rgb: 255, 255, 255;
+  --color-on-primary: #ffffff;
+  --color-on-accent: #16181c;
 }
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
