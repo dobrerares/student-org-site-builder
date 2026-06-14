@@ -5,10 +5,16 @@ import type { Site } from "@sosb/schema";
 import heroOnlyMinimal from "./fixtures/hero-only-minimal.json" with { type: "json" };
 import { renderSite } from "../src/index.js";
 import {
+  MINIMAL_THEME_BASELINE_TOKENS,
   MINIMAL_THEME_CSS,
   MINIMAL_THEME_ID,
   MINIMAL_THEME_TOKENS,
 } from "../src/themes/minimal.js";
+
+/** Resolve a baseline-token value by CSS custom-property name, or undefined. */
+function baselineToken(prop: string): string | undefined {
+  return MINIMAL_THEME_BASELINE_TOKENS.find(([name]) => name === prop)?.[1];
+}
 
 const fixture = heroOnlyMinimal as unknown as Site;
 
@@ -35,7 +41,9 @@ describe("minimal theme — identity", () => {
 describe("minimal theme — palette guidelines", () => {
   test("uses a monochrome base: white background, near-black foreground", () => {
     expect(MINIMAL_THEME_TOKENS.colorBg).toBe("#ffffff");
-    expect(MINIMAL_THEME_TOKENS.colorFg).toMatch(/^#[01][01][01][01][01][01]$/i);
+    // Calm's ink is near-black (#1a1a1a) — a valid 6-digit hex whose channels
+    // are all dark (top nibble 0 or 1), i.e. no bright/coloured foreground.
+    expect(MINIMAL_THEME_TOKENS.colorFg).toMatch(/^#[01][0-9a-f][01][0-9a-f][01][0-9a-f]$/i);
   });
 
   test("uses a single mid-grey for borders/muted text", () => {
@@ -65,11 +73,20 @@ describe("minimal theme — typography", () => {
   });
 });
 
-describe("minimal theme — restraint guarantees on CSS", () => {
-  test("declares a 0px border radius (sharp corners)", () => {
-    expect(MINIMAL_THEME_CSS).toMatch(/--radius-sm:\s*0/);
-    expect(MINIMAL_THEME_CSS).toMatch(/--radius-md:\s*0/);
-    expect(MINIMAL_THEME_CSS).toMatch(/--radius-lg:\s*0/);
+describe("minimal theme — Calm fundamentals on tokens", () => {
+  test("ships sharp corners via the engine knob (--radius-base: 0px)", () => {
+    // Calm = no shape. The theme sets a single radius base; the engine derives
+    // --radius-sm/md/lg: 0 from it, so the theme ships no direct radius
+    // overrides and stays coupled to the engine.
+    expect(baselineToken("--radius-base")).toBe("0px");
+    expect(MINIMAL_THEME_CSS).not.toMatch(/--radius-(sm|md|lg):/);
+  });
+
+  test("ships airy density via the engine knob (--density-scale: 1.25)", () => {
+    // Calm = the airiest of the set. Spacing flows from the engine's
+    // density-scaled --space-* scale, so the theme ships no hardcoded scale.
+    expect(baselineToken("--density-scale")).toBe("1.25");
+    expect(MINIMAL_THEME_CSS).not.toMatch(/--space-(xs|sm|md|lg|xl):/);
   });
 
   test("contains no box-shadows (no decoration)", () => {
@@ -93,9 +110,10 @@ describe("minimal theme — restraint guarantees on CSS", () => {
 describe("minimal theme — wired into renderSite", () => {
   test("renderSite resolves the 'minimal' themeId without falling back to stub", () => {
     const html = renderSite(fixture, "minimal");
-    // The minimal theme must be selectable. Sharp corners (radius: 0) is
-    // the cheapest unique marker that the stub theme does not emit.
-    expect(html).toMatch(/--radius-sm:\s*0/);
+    // The minimal theme must be selectable. Calm's sharp-corner shape token
+    // (--radius-base: 0px) is the cheapest unique marker that the stub theme
+    // does not emit (stub keeps the engine baseline of 8px).
+    expect(html).toMatch(/--radius-base:\s*0px/);
   });
 
   test("output references no raw hex/rgb outside :root (token discipline)", () => {
