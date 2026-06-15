@@ -65,3 +65,21 @@ export function onColorFor(hex: string, darkInk = "#16181c"): string {
   if (onWhite === undefined || onDark === undefined) return "#ffffff";
   return onDark > onWhite ? darkInk : "#ffffff";
 }
+
+/**
+ * Blend hex `a` toward hex `b` by `t` (0..1) and return a `#rrggbb` hex, or
+ * undefined if either is unparseable. Used to derive a subtle card surface (a
+ * faint tint of the background toward the foreground) — theme-aware, so it
+ * darkens a light bg and lightens a dark bg, giving cards quiet definition
+ * without a hard border.
+ */
+export function mixHex(a: string, b: string, t: number): string | undefined {
+  const ta = hexToRgbTriplet(a);
+  const tb = hexToRgbTriplet(b);
+  if (ta === undefined || tb === undefined) return undefined;
+  const [ar, ag, ab] = ta.split(", ").map(Number) as [number, number, number];
+  const [br, bg, bb] = tb.split(", ").map(Number) as [number, number, number];
+  const lerp = (x: number, y: number): number => Math.round(x + (y - x) * t);
+  const hex2 = (n: number): string => n.toString(16).padStart(2, "0");
+  return `#${hex2(lerp(ar, br))}${hex2(lerp(ag, bg))}${hex2(lerp(ab, bb))}`;
+}

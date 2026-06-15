@@ -158,13 +158,13 @@ a:hover, a:focus-visible { text-decoration-thickness: 2px; }
 [data-block="valueList"] .value-list__items {
   gap: var(--space-lg);
 }
-[data-block="valueList"] .value-list__item,
+/* Editorial card treatment: a thin top rule instead of a fill — restrained,
+   classic editorial. Scoped to genuine cards (activities/docs/events); content
+   blocks (value-list, team, faq, partners) lean on the shared clean defaults so
+   we never float a rule above a round avatar or double up faq dividers. */
 [data-block="activitiesList"] .activities-list__item,
-[data-block="teamGrid"] .team-person__figure,
 [data-block="documentDownloads"] .document-downloads__item,
-[data-block="event-list"] .event-list__item article,
-[data-block="faq"] .faq__item,
-[data-block="partnerLogos"] .partner-logos__item {
+[data-block="event-list"] .event-list__item article {
   border: 0;
   border-top: 2px solid var(--color-primary);
   border-radius: var(--radius-sm);
@@ -187,7 +187,7 @@ a:hover, a:focus-visible { text-decoration-thickness: 2px; }
 [data-block="activitiesList"] .activities-list__badge {
   border-radius: var(--radius-sm);
   background: var(--color-primary);
-  color: var(--color-bg);
+  color: var(--color-on-primary);
   font-family: var(--font-headline);
 }
 [data-block="quote"] {

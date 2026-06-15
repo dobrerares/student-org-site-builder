@@ -1,5 +1,5 @@
 import type { Site } from "@sosb/schema";
-import { contrastRatio, hexToRgbTriplet, onColorFor } from "./color-math.js";
+import { contrastRatio, hexToRgbTriplet, mixHex, onColorFor } from "./color-math.js";
 
 /**
  * Tokens-as-CSS-custom-properties.
@@ -259,6 +259,13 @@ export function emitTokenRoot(
   const linkOk =
     (contrastRatio(resolved["--color-accent"]!, resolved["--color-bg"]!) ?? 0) >= 4.5;
   declarations.push(`  --color-link: ${linkOk ? "var(--color-accent)" : "var(--color-primary)"};`);
+
+  // Subtle card surface: a faint tint of the background toward the foreground.
+  // Theme-aware (darkens a light bg, lightens a dark bg), so cards get quiet
+  // definition without a hard slate border. Computed once here; the block CSS
+  // consumes var(--color-surface).
+  const surface = mixHex(resolved["--color-bg"]!, resolved["--color-fg"]!, 0.05);
+  declarations.push(`  --color-surface: ${surface ?? resolved["--color-bg"]!};`);
 
   return `:root {\n${declarations.join("\n")}\n}`;
 }

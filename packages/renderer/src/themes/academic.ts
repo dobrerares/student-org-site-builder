@@ -186,12 +186,4 @@ a:hover, a:focus-visible { text-decoration-thickness: 2px; }
 [data-block="faq"] .faq__list {
   gap: var(--space-lg);
 }
-[data-block="valueList"] .value-list__icon {
-  color: var(--color-accent);
-}
-[data-block="activitiesList"] .activities-list__badge {
-  border-radius: var(--radius-sm);
-  background: var(--color-primary);
-  color: var(--color-bg);
-}
 `.trim();

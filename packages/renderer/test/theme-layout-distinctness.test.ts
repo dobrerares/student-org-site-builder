@@ -18,19 +18,27 @@ describe("production themes — generated-site layout polish", () => {
     expect(styleText(renderSite(fixture, "modern"))).toContain("--site-max-width");
   });
 
-  test("production value grids center incomplete rows without changing the stub contract", () => {
+  test("production value grids use a real CSS grid that left-aligns incomplete rows (not the old centered flex-wrap)", () => {
+    // The legacy flex-wrap + centered-orphan-row system is gone everywhere; its
+    // signature custom property must not survive in any theme.
     expect(styleText(renderSite(fixture, "stub"))).not.toContain("--value-list-item-width");
+    expect(styleText(renderSite(fixture, "academic"))).not.toContain("--value-list-item-width");
 
+    // Production themes pin the grid to the author's column count (fixed
+    // repeat(), not auto-fit) and align rows to the start, so a short final row
+    // sits left instead of centering as floating orphans. These markers are
+    // production-only — the stub baseline ships neither (verified below).
     const productionCss = styleText(renderSite(fixture, "academic"));
     expect(productionCss).toMatch(
-      /\[data-block="valueList"\]\[data-layout="grid"\] \.value-list__items \{[\s\S]*display:\s*flex;[\s\S]*flex-wrap:\s*wrap;[\s\S]*justify-content:\s*center;/,
+      /\[data-block="valueList"\]\[data-layout="grid"\] \.value-list__items \{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\);[^}]*align-items:\s*start;/,
     );
-    expect(productionCss).toMatch(
-      /\[data-block="valueList"\]\[data-layout="grid"\] \.value-list__item \{[\s\S]*flex:\s*0 1 var\(--value-list-item-width, 100%\);/,
-    );
-    expect(productionCss).toMatch(
-      /@media \(max-width: 640px\) \{[\s\S]*\[data-block="valueList"\]\[data-layout="grid"\] \.value-list__item \{[\s\S]*flex:\s*0 1 100%;/,
-    );
+    // Responsive collapse: a dedicated tablet tier (3/4-col → 2-col) the stub
+    // baseline does not define.
+    expect(productionCss).toContain("@media (max-width: 60rem)");
+
+    const stubCss = styleText(renderSite(fixture, "stub"));
+    expect(stubCss).not.toContain("align-items: start");
+    expect(stubCss).not.toContain("@media (max-width: 60rem)");
   });
 
   test("academic narrows its content sections to a tight readable rail", () => {

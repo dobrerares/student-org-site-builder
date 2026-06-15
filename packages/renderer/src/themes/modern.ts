@@ -98,9 +98,6 @@ main { display: block; }
 [data-block="activitiesList"] .activities-list__body {
   padding: var(--space-md);
 }
-[data-block="activitiesList"] .activities-list__badge {
-  justify-self: start;
-}
 [data-block="teamGrid"] .team-person__caption {
   padding: 0 var(--space-md) var(--space-md);
 }
