@@ -30,10 +30,20 @@ export function PartnerLogos(props: {
   assetUrlForPath?: AssetUrlForPath | undefined;
 }): preact.JSX.Element | null {
   const { id, data } = props.block;
-  const partners = Array.isArray(data.partners) ? data.partners : [];
+  // Render only partners that actually have a logo. The editor can momentarily
+  // hold a partner with no logo yet — a row added before its image upload
+  // completes (the schema makes `logo` mandatory, but `logo` cannot be
+  // fabricated per ADR 0044, so a freshly-added partner is logo-less in the
+  // meantime). The renderer IS the live-preview engine, so it must tolerate
+  // that in-flight state: skip such partners instead of dereferencing
+  // `partner.logo.path` and crashing the whole preview.
+  const partners = (Array.isArray(data.partners) ? data.partners : []).filter((partner) => {
+    const logo = (partner as { logo?: { path?: unknown } }).logo;
+    return logo != null && typeof logo.path === "string" && logo.path.length > 0;
+  });
 
-  // Empty-state suppression: a partnerLogos grid with no partners renders
-  // nothing rather than an empty styled container.
+  // Empty-state suppression: a partnerLogos grid with no renderable partner
+  // renders nothing rather than an empty styled container.
   if (partners.length === 0) return null;
 
   const title = typeof data.title === "string" && data.title.length > 0 ? data.title : undefined;
@@ -55,7 +65,7 @@ export function PartnerLogos(props: {
             const name = partner.name;
             const logo = partner.logo;
             const logoSrc = resolveAssetUrl(logo.path, props.assetUrlForPath);
-            const logoAlt = logo.alt;
+            const logoAlt = typeof logo.alt === "string" ? logo.alt : "";
             const url =
               typeof partner.url === "string" && partner.url.length > 0 ? partner.url : undefined;
 
