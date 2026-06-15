@@ -595,7 +595,17 @@
             "email": "contact@demo-asociatie.example",
             "phone": "+40 700 000 000",
             "hours": "Luni–Vineri, 10:00–17:00",
-            "mapUrl": "https://maps.example/demo-asociatie"
+            "socials": [
+              { "platform": "instagram", "url": "https://instagram.com/demo-asociatie" },
+              { "platform": "facebook", "url": "https://facebook.com/demo-asociatie" },
+              { "platform": "linkedin", "url": "https://linkedin.com/company/demo-asociatie" }
+            ],
+            "mapEmbed": {
+              "enabled": true,
+              "provider": "osm",
+              "coordinates": [44.4268, 26.1025],
+              "zoom": 14
+            }
           }
         },
         {

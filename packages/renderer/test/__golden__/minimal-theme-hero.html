@@ -226,27 +226,47 @@ main { display: block; }
   margin: 0 0 var(--space-md) 0;
   color: var(--color-primary);
 }
-[data-block="contactCard"] .contact-card__address {
-  font-style: normal;
-  margin: 0 0 var(--space-sm) 0;
-  color: var(--color-fg);
+[data-block="contactCard"] .contact-card__layout {
+  display: grid;
+  gap: var(--space-lg);
 }
-[data-block="contactCard"] .contact-card__email-row,
-[data-block="contactCard"] .contact-card__phone-row {
-  margin: 0 0 var(--space-sm) 0;
-}
-[data-block="contactCard"] .contact-card__socials {
+[data-block="contactCard"] .contact-card__channels {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
+  flex-direction: column;
   gap: var(--space-sm);
-  flex-wrap: wrap;
+}
+[data-block="contactCard"] .contact-card__channel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+[data-block="contactCard"] .contact-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+[data-block="contactCard"] .contact-card__channel-body {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+[data-block="contactCard"] .contact-card__address {
+  font-style: normal;
+  margin: 0;
+  color: var(--color-fg);
 }
 [data-block="contactCard"] .contact-card__map {
-  margin-top: var(--space-md);
   border-radius: var(--radius-md);
   overflow: hidden;
+  background: var(--color-surface);
 }
 [data-block="contactCard"] .contact-card__map iframe {
   display: block;
@@ -975,33 +995,58 @@ main > [data-block] {
 [data-block="documentDownloads"] .document-downloads__item {
   padding: var(--space-md);
 }
-/* Real CSS grid honoring the author's column count, with incomplete rows
- * LEFT-aligned (no centred-orphan-row look) and a responsive collapse. */
-[data-block="valueList"][data-layout="grid"] .value-list__items {
-  display: grid;
-  gap: var(--space-lg);
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-items: start;
+/* === Centered card grids ===
+ * Multi-item blocks lay out as a flex-wrap that fills full rows edge-to-edge
+ * but CENTERS an incomplete final row — so a leftover item is balanced under
+ * the row above instead of stranded at the left (the orphan problem). Each
+ * container declares its column count (--grid-cols, honoring the author's
+ * choice), a gap, and a per-card minimum; the shared item rule derives the
+ * flex-basis from them. The min inside max() lets columns gracefully reduce on
+ * narrow viewports with no media queries — the grid adapts to the available
+ * space AND the item count. */
+[data-block="valueList"][data-layout="grid"] .value-list__items,
+[data-block="teamGrid"] .team-grid__list,
+[data-block="activitiesList"][data-layout="cards"] .activities-list__items,
+[data-block="documentDownloads"][data-layout="cards"] .document-downloads__list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  --grid-cols: 3;
+  --grid-gap: var(--space-lg);
+  --grid-min: 14rem;
+  gap: var(--grid-gap);
+}
+[data-block="valueList"][data-layout="grid"] .value-list__item,
+[data-block="teamGrid"] .team-person,
+[data-block="activitiesList"][data-layout="cards"] .activities-list__item,
+[data-block="documentDownloads"][data-layout="cards"] .document-downloads__item {
+  flex: 0 1
+    max(
+      var(--grid-min),
+      calc((100% - (var(--grid-cols) - 1) * var(--grid-gap)) / var(--grid-cols))
+    );
+  min-width: 0;
 }
 [data-block="valueList"][data-layout="grid"][data-columns="1"] .value-list__items {
-  grid-template-columns: 1fr;
+  --grid-cols: 1;
 }
 [data-block="valueList"][data-layout="grid"][data-columns="2"] .value-list__items {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  --grid-cols: 2;
 }
 [data-block="valueList"][data-layout="grid"][data-columns="4"] .value-list__items {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  --grid-cols: 4;
 }
-@media (max-width: 60rem) {
-  [data-block="valueList"][data-layout="grid"][data-columns="3"] .value-list__items,
-  [data-block="valueList"][data-layout="grid"][data-columns="4"] .value-list__items {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+[data-block="teamGrid"] .team-grid__list {
+  --grid-cols: var(--team-grid-columns, 3);
+  --grid-min: 13rem;
 }
-@media (max-width: 40rem) {
-  [data-block="valueList"][data-layout="grid"] .value-list__items {
-    grid-template-columns: 1fr;
-  }
+[data-block="activitiesList"][data-layout="cards"] .activities-list__items {
+  --grid-min: 16rem;
+}
+[data-block="documentDownloads"][data-layout="cards"] .document-downloads__list {
+  --grid-gap: var(--space-md);
+  --grid-min: 17rem;
 }
 [data-block="activitiesList"] .activities-list__body,
 [data-block="event-list"] .event-list__item article {
@@ -1065,6 +1110,36 @@ main > [data-block] {
   padding: var(--space-md);
   background: var(--color-surface);
   border-radius: var(--radius-md);
+}
+/* Contact card: map alongside an icon-chip channel list. Two columns when a map
+ * actually renders, a single full-width column otherwise; stacks on narrow
+ * viewports. Chips paint with the theme primary so they carry theme identity. */
+[data-block="contactCard"] .contact-card__layout--with-map {
+  /* fit-content caps the channel column so a long unbreakable value (e.g. the
+   * JS-revealed email, a single space-less token) wraps via overflow-wrap
+   * instead of blowing out the track and crushing/clipping the map. It still
+   * shrinks to content when short, keeping the layout tight. */
+  grid-template-columns: minmax(0, 1fr) fit-content(26rem);
+  align-items: start;
+  gap: var(--space-lg);
+}
+[data-block="contactCard"] .contact-card__channels {
+  gap: var(--space-md);
+}
+[data-block="contactCard"] .contact-card__map {
+  height: 100%;
+}
+[data-block="contactCard"] .contact-card__map iframe {
+  min-height: 20rem;
+  height: 100%;
+}
+@media (max-width: 48rem) {
+  [data-block="contactCard"] .contact-card__layout--with-map {
+    grid-template-columns: 1fr;
+  }
+  [data-block="contactCard"] .contact-card__map iframe {
+    height: auto;
+  }
 }
 [data-block="hero"] .hero__title,
 [data-block] :is(
@@ -1161,8 +1236,7 @@ main > [data-block] {
     padding-right: var(--space-md);
   }
   [data-block="imageGallery"] .image-gallery__grid,
-  [data-block="imageGallery"][data-layout="masonry"] .image-gallery__grid,
-  [data-block="teamGrid"] .team-grid__list {
+  [data-block="imageGallery"][data-layout="masonry"] .image-gallery__grid {
     display: grid;
     grid-template-columns: 1fr;
     column-count: 1;

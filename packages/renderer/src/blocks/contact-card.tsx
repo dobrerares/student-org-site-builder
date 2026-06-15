@@ -1,5 +1,7 @@
 /** @jsxImportSource preact */
+import type { ComponentChildren } from "preact";
 import type { ContactCardBlock } from "@sosb/schema";
+import { ContactIcon, iconNameForPlatform, type IconName } from "./contact-icons.js";
 
 /**
  * `contactCard` block — issue #13.
@@ -174,26 +176,36 @@ function buildGoogleEmbedUrl(coords: readonly [number, number], zoom: number): s
   return `https://www.google.com/maps/embed?pb=!1m1!2m1!1d${lat.toFixed(4)}!2d${lng.toFixed(4)}!3i${zoom}`;
 }
 
-function ContactSocials(props: {
-  socials: ContactCardBlock["data"]["socials"];
-}): preact.JSX.Element | null {
-  const socials = props.socials;
-  if (!Array.isArray(socials) || socials.length === 0) return null;
+/** Human-readable label for a social platform (correct casing for the known set). */
+const PLATFORM_LABELS: Readonly<Record<string, string>> = {
+  instagram: "Instagram",
+  facebook: "Facebook",
+  linkedin: "LinkedIn",
+  twitter: "Twitter",
+  x: "Twitter",
+  youtube: "YouTube",
+  tiktok: "TikTok",
+  github: "GitHub",
+};
+function platformLabel(platform: string): string {
+  const known = PLATFORM_LABELS[platform.trim().toLowerCase()];
+  if (known !== undefined) return known;
+  const t = platform.trim();
+  return t.length === 0 ? "Link" : t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+/**
+ * One contact channel row: a theme-colored icon chip plus its content. The chip
+ * is decorative (`aria-hidden` glyph); the row's text/link carries the meaning.
+ */
+function Channel(props: { icon: IconName; children: ComponentChildren }): preact.JSX.Element {
   return (
-    <ul class="contact-card__socials">
-      {socials.map((s, idx) => {
-        const platform = asString(s.platform) ?? "link";
-        const url = asString(s.url);
-        if (url === undefined) return null;
-        return (
-          <li key={`${platform}-${idx}`} class="contact-card__social">
-            <a href={url} rel="noopener noreferrer">
-              {platform}
-            </a>
-          </li>
-        );
-      })}
-    </ul>
+    <li class="contact-card__channel">
+      <span class="contact-card__icon">
+        <ContactIcon name={props.icon} />
+      </span>
+      <div class="contact-card__channel-body">{props.children}</div>
+    </li>
   );
 }
 
@@ -304,6 +316,18 @@ export function ContactCard(props: { block: ContactCardBlock }): preact.JSX.Elem
   // and the AC scope only obfuscates the email channel.
   const phoneTel = phone !== undefined ? phone.replace(/[^\d+]/g, "") : undefined;
 
+  // Renderable socials (each with a usable URL), preserving author order.
+  const renderableSocials = (Array.isArray(data.socials) ? data.socials : [])
+    .map((s) => ({ platform: asString(s.platform) ?? "link", url: asString(s.url) }))
+    .filter((s): s is { platform: string; url: string } => s.url !== undefined);
+
+  const hasEmail = emailLocalB64 !== undefined && emailDomainB64 !== undefined;
+  const hasChannels =
+    renderableSocials.length > 0 || hasEmail || phoneTel !== undefined || address !== undefined;
+  // Two-column (map | channels) only when a map will actually render; otherwise
+  // the channel list spans the full width as a single column.
+  const showMap = hasRenderableMap(mapEmbed);
+
   return (
     <section
       data-block="contactCard"
@@ -315,39 +339,55 @@ export function ContactCard(props: { block: ContactCardBlock }): preact.JSX.Elem
         <h2 id={`${id}__heading`} class="contact-card__heading">
           Contact
         </h2>
-        {address !== undefined && <address class="contact-card__address">{address}</address>}
-        {emailLocalB64 !== undefined && emailDomainB64 !== undefined && (
-          <p class="contact-card__email-row">
-            <a
-              href="#"
-              class="contact-card__email"
-              data-contact-email=""
-              data-contact-local={emailLocalB64}
-              data-contact-domain={emailDomainB64}
-              aria-label="Reveal contact email and open mail composer"
-              rel="noopener noreferrer"
-            >
-              <span aria-hidden="true">[ click to reveal email ]</span>
-            </a>
-            {emailNoscript !== undefined && (
-              <noscript>
-                <span
-                  class="contact-card__email-fallback"
-                  dangerouslySetInnerHTML={{ __html: emailNoscript }}
-                />
-              </noscript>
-            )}
-          </p>
-        )}
-        {phoneTel !== undefined && (
-          <p class="contact-card__phone-row">
-            <a href={`tel:${phoneTel}`} class="contact-card__phone">
-              {phone}
-            </a>
-          </p>
-        )}
-        <ContactSocials socials={data.socials} />
-        <MapEmbed blockId={id} mapEmbed={mapEmbed} />
+        <div class={`contact-card__layout${showMap ? " contact-card__layout--with-map" : ""}`}>
+          <MapEmbed blockId={id} mapEmbed={mapEmbed} />
+          {hasChannels && (
+            <ul class="contact-card__channels">
+              {renderableSocials.map((s, idx) => (
+                <Channel key={`s-${idx}`} icon={iconNameForPlatform(s.platform)}>
+                  <a class="contact-card__channel-link" href={s.url} rel="noopener noreferrer">
+                    {platformLabel(s.platform)}
+                  </a>
+                </Channel>
+              ))}
+              {hasEmail && (
+                <Channel icon="mail">
+                  <a
+                    href="#"
+                    class="contact-card__channel-link contact-card__email"
+                    data-contact-email=""
+                    data-contact-local={emailLocalB64}
+                    data-contact-domain={emailDomainB64}
+                    aria-label="Reveal contact email and open mail composer"
+                    rel="noopener noreferrer"
+                  >
+                    <span aria-hidden="true">[ click to reveal email ]</span>
+                  </a>
+                  {emailNoscript !== undefined && (
+                    <noscript>
+                      <span
+                        class="contact-card__email-fallback"
+                        dangerouslySetInnerHTML={{ __html: emailNoscript }}
+                      />
+                    </noscript>
+                  )}
+                </Channel>
+              )}
+              {phoneTel !== undefined && (
+                <Channel icon="phone">
+                  <a href={`tel:${phoneTel}`} class="contact-card__channel-link contact-card__phone">
+                    {phone}
+                  </a>
+                </Channel>
+              )}
+              {address !== undefined && (
+                <Channel icon="map-pin">
+                  <address class="contact-card__address">{address}</address>
+                </Channel>
+              )}
+            </ul>
+          )}
+        </div>
       </div>
       {emailLocalB64 !== undefined && (
         <script data-contact-reveal="" dangerouslySetInnerHTML={{ __html: REVEAL_SCRIPT }} />

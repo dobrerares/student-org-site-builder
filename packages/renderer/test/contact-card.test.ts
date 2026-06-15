@@ -66,6 +66,29 @@ describe("renderSite — contactCard structural", () => {
   });
 });
 
+describe("renderSite — contactCard channel structure (icon chips)", () => {
+  test("renders the channels list with each row carrying an aria-hidden decorative glyph chip", () => {
+    const html = renderSite(fixture, "stub");
+    expect(html).toMatch(/<ul class="contact-card__channels">/);
+    // The chip is a contact-card__icon wrapping an inline SVG marked decorative
+    // (the label/link carries the meaning, not the glyph).
+    expect(html).toMatch(/contact-card__icon[\s\S]*?<svg[^>]*aria-hidden="true"/);
+  });
+
+  test("renders an unknown/custom social platform as a row (generic glyph + capitalized label), never dropped", () => {
+    const custom = structuredClone(fixture) as Site;
+    (custom.pages[0]!.blocks[0]!.data as Record<string, unknown>).socials = [
+      { platform: "mastodon", url: "https://mastodon.social/@example" },
+    ];
+    const html = renderSite(custom, "stub");
+    expect(html).toContain('href="https://mastodon.social/@example"');
+    // platformLabel capitalizes an unknown platform rather than leaving it bare.
+    expect(html).toContain(">Mastodon<");
+    // ...and it lives inside a channel row (chip + body), not dropped.
+    expect(html).toMatch(/contact-card__channel[\s\S]*?mastodon\.social/);
+  });
+});
+
 describe("renderSite — contactCard mailto anti-harvest", () => {
   test("does NOT contain the plain-text email substring anywhere in the HTML", () => {
     const html = renderSite(fixture, "stub");
