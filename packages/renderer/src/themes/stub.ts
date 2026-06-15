@@ -326,10 +326,12 @@ main { display: block; }
 }
 [data-block="activitiesList"] .activities-list__badge {
   display: inline-block;
+  justify-self: start;
+  width: fit-content;
   padding: var(--space-xs) var(--space-sm);
   border-radius: var(--radius-lg);
   background: var(--color-accent);
-  color: var(--color-bg);
+  color: var(--color-on-accent);
   font-size: 0.75rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
