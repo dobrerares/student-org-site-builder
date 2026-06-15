@@ -38,6 +38,24 @@ describe("renderSite — partnerLogos block (structural)", () => {
     expect(items.length).toBe(3);
   });
 
+  test("tolerates a partner with no logo yet (editor mid-add) — skips it, no crash", () => {
+    // The editor's "Add partner" creates a logo-less partner before the user
+    // uploads its image (logo is mandatory in the schema but cannot be
+    // fabricated per ADR 0044). The renderer is the live-preview engine, so it
+    // must not crash dereferencing `partner.logo.path` — it skips the partner
+    // until a logo exists.
+    const site = structuredClone(fixture) as unknown as Site;
+    const block = site.pages[0]!.blocks.find((b) => b.type === "partnerLogos")!;
+    (block.data as { partners: unknown[] }).partners.push({ name: "Being added" });
+    let html = "";
+    expect(() => {
+      html = renderSite(site, "stub");
+    }).not.toThrow();
+    // The three real partners still render; the logo-less one is skipped.
+    const items = html.match(/<li[^>]*class="partner-logos__item"/g) ?? [];
+    expect(items.length).toBe(3);
+  });
+
   test("each logo image carries the AssetRef alt text", () => {
     const html = renderSite(fixture, "stub");
     expect(html).toContain('alt="Acme Corp logo"');

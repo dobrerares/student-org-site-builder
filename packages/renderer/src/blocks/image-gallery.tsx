@@ -23,12 +23,21 @@ export function ImageGallery(props: {
   assetUrlForPath?: AssetUrlForPath | undefined;
 }): preact.JSX.Element | null {
   const { id, data } = props.block;
-  const images = Array.isArray(data.images) ? data.images : [];
+  // Render only images that actually have an asset. The editor can momentarily
+  // hold an image with no asset yet — a row added before its upload completes
+  // (the schema makes `asset` mandatory, but it cannot be fabricated per ADR
+  // 0044). The renderer drives the live preview, so it must tolerate that
+  // in-flight state: skip such images instead of dereferencing
+  // `image.asset.path` and crashing the whole preview.
+  const images = (Array.isArray(data.images) ? data.images : []).filter((image) => {
+    const asset = (image as { asset?: { path?: unknown } }).asset;
+    return asset != null && typeof asset.path === "string" && asset.path.length > 0;
+  });
 
-  // Empty-state suppression: an imageGallery with no images renders nothing
-  // rather than an empty styled container. The page-shell's lightbox scaffold
-  // is gated separately by `pageNeedsLightbox`; a suppressed, image-less
-  // gallery contributes no triggers for that script regardless.
+  // Empty-state suppression: an imageGallery with no renderable image renders
+  // nothing rather than an empty styled container. The page-shell's lightbox
+  // scaffold is gated separately by `pageNeedsLightbox`; a suppressed, image-
+  // less gallery contributes no triggers for that script regardless.
   if (images.length === 0) return null;
 
   const title = typeof data.title === "string" ? data.title : undefined;

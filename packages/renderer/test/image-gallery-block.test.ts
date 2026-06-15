@@ -26,6 +26,24 @@ describe("renderSite — imageGallery block (structural)", () => {
     expect(html).toMatch(/<section[^>]*data-block="imageGallery"/);
   });
 
+  test("tolerates an image with no asset yet (editor mid-add) — skips it, no crash", () => {
+    // The editor's "Add image" creates an asset-less image before the upload
+    // completes (asset is mandatory in the schema but cannot be fabricated per
+    // ADR 0044). The renderer drives the live preview, so it must not crash
+    // dereferencing `image.asset.path` — it skips the image until an asset
+    // exists.
+    const site = structuredClone(fixture) as unknown as Site;
+    const block = site.pages[0]!.blocks.find((b) => b.type === "imageGallery")!;
+    (block.data as { images: unknown[] }).images.push({ alt: "Being added" });
+    let html = "";
+    expect(() => {
+      html = renderSite(site, "stub");
+    }).not.toThrow();
+    expect(html).toMatch(/<section[^>]*data-block="imageGallery"/);
+    // The asset-less image is skipped, so its alt never reaches the output.
+    expect(html).not.toContain("Being added");
+  });
+
   test("renders the gallery title and uses it for aria-labelledby", () => {
     const html = renderSite(fixture, "stub");
     expect(html).toContain("Galerie evenimente");
