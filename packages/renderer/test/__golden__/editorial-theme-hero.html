@@ -1054,6 +1054,10 @@ main > [data-block] {
 [data-block="event-list"] .event-list__item article {
   display: grid;
   gap: var(--space-sm);
+  /* Pack content to the top so equal-height cards (a short 2-line title next to
+   * a 3-line one) don't stretch their rows — which otherwise inflates a small
+   * fixed item like the badge to fill the slack. Spare space sits at the bottom. */
+  align-content: start;
 }
 [data-block="hero"] .hero__media img,
 [data-block="activitiesList"] .activities-list__media img,
