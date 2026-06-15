@@ -173,7 +173,20 @@ const ISO_LOCAL_DATE_TIME =
   /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$/;
 
 const MONTH_LABELS: Record<"ro" | "en", readonly string[]> = {
-  ro: ["ian.", "feb.", "mar.", "apr.", "mai", "iun.", "iul.", "aug.", "sept.", "oct.", "nov.", "dec."],
+  ro: [
+    "ian.",
+    "feb.",
+    "mar.",
+    "apr.",
+    "mai",
+    "iun.",
+    "iul.",
+    "aug.",
+    "sept.",
+    "oct.",
+    "nov.",
+    "dec.",
+  ],
   en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"],
 };
 

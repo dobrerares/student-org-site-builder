@@ -50,9 +50,7 @@ describe("EditorApp save status", () => {
       ) as HTMLElement,
     );
 
-    expect(container.querySelector('[data-testid="save-status"]')?.textContent).toContain(
-      "Saving",
-    );
+    expect(container.querySelector('[data-testid="save-status"]')?.textContent).toContain("Saving");
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(400);

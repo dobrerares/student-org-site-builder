@@ -523,7 +523,8 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
           severity: "warning",
           path: ["data", "items"],
           code: "block.valueList.items.empty",
-          message: "This values section has no items. Add at least one value or remove the section.",
+          message:
+            "This values section has no items. Add at least one value or remove the section.",
         });
       }
       break;
@@ -632,7 +633,8 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
           severity: "warning",
           path: ["data", "items"],
           code: "block.faq.items.empty",
-          message: "This FAQ section has no questions. Add a question and answer or remove the section.",
+          message:
+            "This FAQ section has no questions. Add a question and answer or remove the section.",
         });
       }
       // Warning: any item with an empty answer is a quality nudge — the

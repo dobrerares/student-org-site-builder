@@ -11,12 +11,14 @@
 **Base branch:** `feat/theme-engine-base` (`a3b80d9` — contains the Plan 1 engine: fluid type scale, `--color-*-rgb`, contrast-safe on-colors, density/radius wiring). Create the execution worktree from THIS commit (it already includes the engine + the WIP themes).
 
 **Conventions (every task):**
+
 - Single test file: `pnpm vitest run <path>`; by name: `pnpm vitest run <path> -t "<name>"`.
 - Regenerate goldens: `pnpm vitest run -u packages/renderer` (and `pnpm vitest run -u packages/build` for build goldens).
 - Typecheck: `pnpm --filter @sosb/renderer run typecheck` / `pnpm --filter @sosb/schema run typecheck` / `pnpm --filter @sosb/editor-app run typecheck`.
 - Whole repo: `pnpm test`. All commands from repo root.
 
 **Design of the universal hero (no ornament — fundamentals only):**
+
 - **No image:** left-aligned lockup on the page background; title in `--color-primary` at fluid `--type-3xl`; subtitle in `--color-fg` at `--type-lg`; both capped to a readable measure.
 - **With image (`hero--has-image`):** the `<img>` becomes a full-bleed background layer (`position:absolute; inset:0; object-fit:cover`); a bottom-anchored dark scrim (`rgba(var(--color-fg-rgb), …)`) guarantees legibility; the lockup sits bottom-left in white. No CTA (the hero schema has no CTA field; CTAs are separate `ctaBanner` blocks).
 - The scrim tints from the theme's `--color-fg` (dark by contract for every theme), so it's palette-tied yet always dark enough for white text.
@@ -46,6 +48,7 @@
 Do schema + editor + their tests first; the renderer change (Task 2) depends on the field being gone for a clean TS type.
 
 **Files:**
+
 - Modify: `packages/schema/src/blocks/hero.ts`
 - Modify: `packages/schema/test/hero-block.test.ts`
 - Modify: `packages/editor-app/src/field-metadata.ts`
@@ -109,6 +112,7 @@ git commit -m "feat(schema): remove hero eyebrow field + editor metadata"
 ## Task 2: Restructure the hero markup for overlay (and drop eyebrow JSX)
 
 **Files:**
+
 - Modify: `packages/renderer/src/blocks/hero.tsx`
 - Modify: `packages/renderer/test/render-site.test.ts`
 - Test: `packages/renderer/test/render-site.test.ts`
@@ -118,18 +122,18 @@ git commit -m "feat(schema): remove hero eyebrow field + editor metadata"
 In `packages/renderer/test/render-site.test.ts`, replace the test "renders the eyebrow as a small grouping label above the heading" (~lines 126-129) with:
 
 ```ts
-  test("hero with a background image marks the section and layers media before the lockup", () => {
-    const html = renderSite(fixture, "stub");
-    // The hero fixture (hero-only.json) carries a backgroundImage.
-    expect(html).toMatch(/<section[^>]*data-block="hero"[^>]*class="hero hero--has-image"/);
-    // Media comes before the lockup so it can sit behind the text.
-    const mediaIdx = html.indexOf('class="hero__media"');
-    const innerIdx = html.indexOf('class="hero__inner"');
-    expect(mediaIdx).toBeGreaterThan(-1);
-    expect(innerIdx).toBeGreaterThan(mediaIdx);
-    // Eyebrow is gone.
-    expect(html).not.toContain("hero__eyebrow");
-  });
+test("hero with a background image marks the section and layers media before the lockup", () => {
+  const html = renderSite(fixture, "stub");
+  // The hero fixture (hero-only.json) carries a backgroundImage.
+  expect(html).toMatch(/<section[^>]*data-block="hero"[^>]*class="hero hero--has-image"/);
+  // Media comes before the lockup so it can sit behind the text.
+  const mediaIdx = html.indexOf('class="hero__media"');
+  const innerIdx = html.indexOf('class="hero__inner"');
+  expect(mediaIdx).toBeGreaterThan(-1);
+  expect(innerIdx).toBeGreaterThan(mediaIdx);
+  // Eyebrow is gone.
+  expect(html).not.toContain("hero__eyebrow");
+});
 ```
 
 Note: this assumes `hero-only.json` has a `backgroundImage`. Verify with `grep -n backgroundImage packages/renderer/test/fixtures/hero-only.json`. If it does NOT, instead point the test at a fixture that does (e.g. `hero-only-modern.json`) by importing it, or add a `backgroundImage` to the test's cloned fixture. Confirm before writing the assertion.
@@ -211,6 +215,7 @@ git commit -m "feat(renderer): overlay-ready hero markup, drop eyebrow JSX"
 > **EXECUTION ORDER:** The scrim added here introduces `rgba(var(--color-fg-rgb), …)` into production-theme CSS, which trips the `rgb()` hygiene assertions in the five theme tests. **Execute Task 5 (loosen those assertions) IMMEDIATELY BEFORE this task** so the suite never goes red across a commit. Treat Tasks 5 → 3 → 4 as a contiguous run (Task 5 first). The numbering reflects topical grouping, not execution order.
 
 **Files:**
+
 - Modify: `packages/renderer/src/themes/production-base.ts`
 - Test: `packages/renderer/test/hero-overlay.test.ts`
 
@@ -224,20 +229,30 @@ import { PRODUCTION_SITE_BASE_CSS } from "../src/themes/production-base.js";
 
 describe("universal hero treatment (production base)", () => {
   test("base hero title uses the fluid --type-3xl token and primary color", () => {
-    expect(PRODUCTION_SITE_BASE_CSS).toMatch(/\.hero__title\s*\{[^}]*font-size:\s*var\(--type-3xl\)/);
-    expect(PRODUCTION_SITE_BASE_CSS).toMatch(/\.hero__title\s*\{[^}]*color:\s*var\(--color-primary\)/);
+    expect(PRODUCTION_SITE_BASE_CSS).toMatch(
+      /\.hero__title\s*\{[^}]*font-size:\s*var\(--type-3xl\)/,
+    );
+    expect(PRODUCTION_SITE_BASE_CSS).toMatch(
+      /\.hero__title\s*\{[^}]*color:\s*var\(--color-primary\)/,
+    );
   });
 
   test("has-image hero makes media a full-bleed absolute layer", () => {
     expect(PRODUCTION_SITE_BASE_CSS).toContain(".hero--has-image");
-    expect(PRODUCTION_SITE_BASE_CSS).toMatch(/\.hero--has-image\s+\.hero__media\s*\{[^}]*position:\s*absolute/);
-    expect(PRODUCTION_SITE_BASE_CSS).toMatch(/\.hero--has-image\s+\.hero__media\s+img\s*\{[^}]*object-fit:\s*cover/);
+    expect(PRODUCTION_SITE_BASE_CSS).toMatch(
+      /\.hero--has-image\s+\.hero__media\s*\{[^}]*position:\s*absolute/,
+    );
+    expect(PRODUCTION_SITE_BASE_CSS).toMatch(
+      /\.hero--has-image\s+\.hero__media\s+img\s*\{[^}]*object-fit:\s*cover/,
+    );
   });
 
   test("has-image hero applies a token-based dark scrim and white lockup text", () => {
     // Scrim uses rgba(var(--color-fg-rgb), …) — a token, never a literal color.
     expect(PRODUCTION_SITE_BASE_CSS).toMatch(/rgba\(var\(--color-fg-rgb\)/);
-    expect(PRODUCTION_SITE_BASE_CSS).toMatch(/\.hero--has-image[^{]*\.hero__title[^{]*\{[^}]*color:\s*#ffffff/);
+    expect(PRODUCTION_SITE_BASE_CSS).toMatch(
+      /\.hero--has-image[^{]*\.hero__title[^{]*\{[^}]*color:\s*#ffffff/,
+    );
   });
 });
 ```
@@ -263,7 +278,7 @@ In `packages/renderer/src/themes/production-base.ts`, the template currently has
 }
 ```
 
-Leave that rule as-is (it governs non-hero content images and the *stacked, no-image* hero is not affected). Insert the following hero-treatment block **immediately before** the final `@media (max-width: 640px) {` block (i.e. after the image-aspect rule group, before the media query):
+Leave that rule as-is (it governs non-hero content images and the _stacked, no-image_ hero is not affected). Insert the following hero-treatment block **immediately before** the final `@media (max-width: 640px) {` block (i.e. after the image-aspect rule group, before the media query):
 
 ```css
 [data-block="hero"] {
@@ -335,6 +350,7 @@ Leave that rule as-is (it governs non-hero content images and the *stacked, no-i
 ```
 
 Notes:
+
 - The scrim uses `rgba(var(--color-fg-rgb), …)` — the comma-separated triplet the engine emits expands to a valid `rgba(26, 26, 26, 0.8)`. It is a token, not a literal, so it passes the (loosened) no-raw-color hygiene rule in Task 5.
 - `aspect-ratio: auto` on `.hero--has-image .hero__media img` overrides the global `16 / 9` from Plan 1 so the image fills the hero box.
 - The `#ffffff` literal lives in a non-`:root` rule, but the hygiene assertions forbid only `rgb()`/`rgba()` literal channels and bare `#hex` via `/#[0-9a-fA-F]{3,8}\b/` — `#ffffff` WOULD trip the hex check. **Use `var(--color-bg)` is wrong here (bg may be cream/paper).** Instead emit white via a token: the engine already emits `--color-on-primary`/`--color-on-accent`; neither is guaranteed white. So add a dedicated token. See Step 3a.
@@ -350,7 +366,9 @@ In `packages/renderer/src/tokens.ts`, add to `BASELINE_TOKENS` (near the color t
 Then in the production-base hero block above, replace `color: #ffffff;` with `color: var(--color-on-image);` in the `.hero--has-image .hero__title, … .hero__subtitle` rule. Update the Task 3 test's last assertion accordingly:
 
 ```ts
-    expect(PRODUCTION_SITE_BASE_CSS).toMatch(/\.hero--has-image[^{]*\.hero__title[^{]*\{[^}]*color:\s*var\(--color-on-image\)/);
+expect(PRODUCTION_SITE_BASE_CSS).toMatch(
+  /\.hero--has-image[^{]*\.hero__title[^{]*\{[^}]*color:\s*var\(--color-on-image\)/,
+);
 ```
 
 Rationale: the scrim guarantees a dark backdrop, so white is always legible; keeping it a `:root` token avoids a raw `#ffffff` outside `:root`. (A theme could override `--color-on-image` later if it ever wanted a non-white lockup, but none do.)
@@ -379,6 +397,7 @@ git commit -m "feat(renderer): universal full-bleed hero overlay + fluid title i
 Each theme file owns hero rules that would override the shared overlay (theme CSS composes last). Remove ALL hero-related rules from each of the five theme CSS strings. After this, production themes render the shared overlay; only their palette/font tokens differ.
 
 **Files:**
+
 - Modify: `packages/renderer/src/themes/academic.ts`
 - Modify: `packages/renderer/src/themes/civic.ts`
 - Modify: `packages/renderer/src/themes/editorial.ts`
@@ -405,7 +424,9 @@ describe("no theme overrides the shared hero (per-theme hero CSS stripped)", () 
       const site = structuredClone(fixture) as Site;
       site.theme = { id, tokens: {} };
       const html = renderSite(site, id);
-      const styles = [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map((m) => m[1]!).join("\n");
+      const styles = [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)]
+        .map((m) => m[1]!)
+        .join("\n");
       // Count selectors that target the hero block. Shared layers (stub +
       // production-base) legitimately style it; this test guards that THEMES
       // no longer ship their own hero rules. We assert no per-theme hero
@@ -414,7 +435,9 @@ describe("no theme overrides the shared hero (per-theme hero CSS stripped)", () 
       expect(styles).not.toContain(".hero__eyebrow");
       // The theme's own hero h1 font-size override is gone: the only hero
       // font-size declaration is the shared --type-3xl one.
-      const heroTitleSizes = [...styles.matchAll(/\[data-block="hero"\][^{]*h1[^{]*\{[^}]*font-size[^}]*\}/g)];
+      const heroTitleSizes = [
+        ...styles.matchAll(/\[data-block="hero"\][^{]*h1[^{]*\{[^}]*font-size[^}]*\}/g),
+      ];
       expect(heroTitleSizes.length).toBe(0);
     });
   }
@@ -465,6 +488,7 @@ git commit -m "refactor(renderer): strip per-theme hero CSS in favor of the shar
 The scrim adds `rgba(var(--color-fg-rgb), …)` to `production-base.ts`, which is composed into every production theme's CSS. The five rendered-production-theme tests assert `not.toMatch(/\brgb\(/)` / `/\brgba\(/` on non-`:root` CSS — these now fire on the token scrim. Loosen them to forbid only literal-channel color while permitting `var()`.
 
 **Files:**
+
 - Modify: `packages/renderer/test/civic-theme.test.ts`
 - Modify: `packages/renderer/test/academic-theme.test.ts`
 - Modify: `packages/renderer/test/editorial-theme.test.ts`
@@ -489,6 +513,7 @@ In each file, find the adjacent pair:
 Keep the existing `expect(<var>).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);` hex line UNCHANGED. This forbids `rgb(12,…)` / `rgba(0,…)` (literal channels) but permits `rgba(var(--color-fg-rgb), 0.8)`.
 
 Do NOT change:
+
 - `minimal-theme.test.ts` lines 87-89 (they assert the STATIC `MINIMAL_THEME_CSS` constant, which has no scrim).
 - `render-site.test.ts`, `value-list.test.ts`, `team-grid.test.ts`, `activities-list.test.ts`, `cta-banner-css.test.ts` — these render the **stub** theme (no production-base, no scrim), so their assertion never sees `rgba(var())` and stays valid as-is.
 
@@ -509,6 +534,7 @@ git commit -m "test(renderer): permit rgba(var(--token)) scrim in hero hygiene a
 ## Task 6: Strip eyebrow from typed fixtures/seed, regenerate goldens, full green
 
 **Files:**
+
 - Modify: `packages/themes/src/templates/asociatia-studenteasca-demo/data.json`
 - Modify: `packages/renderer/test/a11y-fixture.ts`
 - Modify: `scripts/generate-historipol-site.ts`
@@ -528,7 +554,7 @@ Remove the `"eyebrow": …` line from: `packages/renderer/test/fixtures/{hero-on
 - [ ] **Step 3: Confirm only golden + intended changes remain failing**
 
 Run: `pnpm vitest run packages/renderer`
-Expected: failures are ONLY `toMatchFileSnapshot` golden mismatches (hero markup + overlay CSS changes; eyebrow removed). If any NON-golden test fails, STOP and fix it (it indicates a missed assertion). 
+Expected: failures are ONLY `toMatchFileSnapshot` golden mismatches (hero markup + overlay CSS changes; eyebrow removed). If any NON-golden test fails, STOP and fix it (it indicates a missed assertion).
 
 - [ ] **Step 4: Regenerate renderer goldens + review**
 
@@ -554,16 +580,16 @@ git commit -m "test(renderer): regenerate goldens for hero overlay + eyebrow rem
 
 **1. Spec coverage** (against `2026-06-14-themes-identity-refresh-design.md` → "Schema cleanup — remove eyebrow" + "Hero markup change" + the no-pizzaz universal hero):
 
-| Spec/decision | Task |
-| --- | --- |
-| Remove `eyebrow` from schema | Task 1 |
-| Remove eyebrow renderer branch | Task 2 |
-| Remove eyebrow editor field/metadata | Task 1 |
-| Strip eyebrow from seed/fixtures/goldens | Task 6 |
-| Hero composites text over image + scrim | Tasks 2-3 |
+| Spec/decision                                              | Task            |
+| ---------------------------------------------------------- | --------------- |
+| Remove `eyebrow` from schema                               | Task 1          |
+| Remove eyebrow renderer branch                             | Task 2          |
+| Remove eyebrow editor field/metadata                       | Task 1          |
+| Strip eyebrow from seed/fixtures/goldens                   | Task 6          |
+| Hero composites text over image + scrim                    | Tasks 2-3       |
 | Legible scrim via `--color-*-rgb` (kept strict via tokens) | Task 3 + Task 5 |
-| Fluid hero title (`--type-3xl`, deferred from Plan 1) | Task 3 |
-| No per-theme hero ornament (single universal treatment) | Tasks 3-4 |
+| Fluid hero title (`--type-3xl`, deferred from Plan 1)      | Task 3          |
+| No per-theme hero ornament (single universal treatment)    | Tasks 3-4       |
 
 **2. Placeholder scan:** Every step has exact code or an exact command. The two "verify before writing" notes (Task 2 Step 1 fixture check; Task 4 Step 4 assertion-breakage) are explicit verification instructions, not deferred work.
 

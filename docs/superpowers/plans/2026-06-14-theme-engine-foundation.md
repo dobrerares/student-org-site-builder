@@ -11,6 +11,7 @@
 **Scope note:** This is the first of the spec's PR1 split into two plans. This plan = the token engine (tokens.ts + production-base.ts). The companion plan (Hero overlay + eyebrow removal) covers the hero markup change, the legible scrim that consumes the `--color-*-rgb` tokens this plan emits, and the `eyebrow` schema cleanup. Per-theme identity application (consuming the fluid type scale, measure caps, and on-colors) and section-rhythm application come in the per-theme plans. See `docs/superpowers/specs/2026-06-14-themes-identity-refresh-design.md`.
 
 **Conventions for every task below:**
+
 - Run a single test file: `pnpm vitest run <path>` (e.g. `pnpm vitest run packages/renderer/test/color-math.test.ts`).
 - Run by test name: `pnpm vitest run <path> -t "<name>"`.
 - Regenerate golden snapshots: `pnpm vitest run -u packages/renderer` (vitest `-u` rewrites every `toMatchFileSnapshot` target).
@@ -33,6 +34,7 @@
 ## Task 1: Pure color math (`color-math.ts`)
 
 **Files:**
+
 - Create: `packages/renderer/src/color-math.ts`
 - Test: `packages/renderer/test/color-math.test.ts`
 
@@ -42,7 +44,12 @@ Create `packages/renderer/test/color-math.test.ts`:
 
 ```ts
 import { describe, expect, test } from "vitest";
-import { hexToRgbTriplet, relativeLuminance, contrastRatio, onColorFor } from "../src/color-math.js";
+import {
+  hexToRgbTriplet,
+  relativeLuminance,
+  contrastRatio,
+  onColorFor,
+} from "../src/color-math.js";
 
 describe("hexToRgbTriplet", () => {
   test("parses 6-digit hex into an 'r, g, b' triplet", () => {
@@ -202,6 +209,7 @@ git commit -m "feat(renderer): pure color-math helpers (rgb triplet, luminance, 
 This task reworks `BASELINE_TOKENS` and `emitTokenRoot` together because both change the `:root` output and we want a single golden regeneration (Task 5). The unit tests here assert the new token contract directly against `emitTokenRoot` output, independent of goldens.
 
 **Files:**
+
 - Modify: `packages/renderer/src/tokens.ts`
 - Test: `packages/renderer/test/token-engine.test.ts`
 
@@ -507,9 +515,10 @@ git commit -m "feat(renderer): wire density/radius, fluid type scale, scrim rgb 
 
 ## Task 3: Content-overflow & image-aspect guards (`production-base.ts`)
 
-Purely additive, alignment-neutral safety rules: long words can never cause horizontal scroll, and any image upload renders at a sane aspect ratio. (Measure-cap *application*, section-rhythm, and fluid-title sizing are deliberately deferred to the per-theme plans, where per-theme alignment is known.)
+Purely additive, alignment-neutral safety rules: long words can never cause horizontal scroll, and any image upload renders at a sane aspect ratio. (Measure-cap _application_, section-rhythm, and fluid-title sizing are deliberately deferred to the per-theme plans, where per-theme alignment is known.)
 
 **Files:**
+
 - Modify: `packages/renderer/src/themes/production-base.ts`
 - Test: `packages/renderer/test/token-engine.test.ts` (add a describe block)
 
@@ -550,17 +559,18 @@ In `packages/renderer/src/themes/production-base.ts`, insert the following CSS *
 
 ```css
 [data-block="hero"] .hero__title,
-[data-block] :is(
-  .value-list__title,
-  .activities-list__title,
-  .team-grid__title,
-  .faq__title,
-  .document-downloads__title,
-  .event-list__title,
-  .image-gallery__title,
-  .partner-logos__title,
-  .ctaBanner__title
-) {
+[data-block]
+  :is(
+    .value-list__title,
+    .activities-list__title,
+    .team-grid__title,
+    .faq__title,
+    .document-downloads__title,
+    .event-list__title,
+    .image-gallery__title,
+    .partner-logos__title,
+    .ctaBanner__title
+  ) {
   overflow-wrap: anywhere;
   hyphens: auto;
 }
@@ -597,9 +607,10 @@ git commit -m "feat(renderer): overflow-wrap/hyphens + image aspect normalizatio
 
 ## Task 4: Add an explicit "controls are no longer dead" regression test
 
-The audit's headline foolproofing bug was that `density`/`radius` overrides changed `:root` but were consumed by nothing. Task 2 fixed the emission; this task pins the *consumption* end-to-end through `renderSite` so a future refactor can't silently re-break it.
+The audit's headline foolproofing bug was that `density`/`radius` overrides changed `:root` but were consumed by nothing. Task 2 fixed the emission; this task pins the _consumption_ end-to-end through `renderSite` so a future refactor can't silently re-break it.
 
 **Files:**
+
 - Test: `packages/renderer/test/token-engine.test.ts` (add a describe block)
 
 - [ ] **Step 1: Write the failing test**
@@ -651,12 +662,13 @@ git commit -m "test(renderer): regression-lock density/radius reaching rendered 
 Every golden's `:root` now carries the new tokens, and production-theme goldens carry the new safety rules. Regenerate, then **manually review the diff** to confirm only expected changes landed (new `:root` tokens + the overflow/aspect rules) — never blind-accept a golden regen.
 
 **Files:**
+
 - Regenerate: `packages/renderer/test/__golden__/*.html`
 
 - [ ] **Step 1: Run the full renderer suite to see what drifted**
 
 Run: `pnpm vitest run packages/renderer`
-Expected: golden tests FAIL with snapshot mismatches (the `:root` token additions). Non-golden unit tests should PASS. If any *non-golden* test fails (e.g. a test asserting a literal `--space-md: 1rem`), note it — that assertion needs updating to the new calc() form. Update such assertions to match the new engine output before regenerating.
+Expected: golden tests FAIL with snapshot mismatches (the `:root` token additions). Non-golden unit tests should PASS. If any _non-golden_ test fails (e.g. a test asserting a literal `--space-md: 1rem`), note it — that assertion needs updating to the new calc() form. Update such assertions to match the new engine output before regenerating.
 
 - [ ] **Step 2: Regenerate the golden snapshots**
 
@@ -694,17 +706,17 @@ git commit -m "test(renderer): regenerate goldens for engine token additions"
 
 **1. Spec coverage** (against `2026-06-14-themes-identity-refresh-design.md` → "The bulletproof engine"):
 
-| Spec requirement | Task |
-| --- | --- |
-| Fluid `clamp()` type scale (`--type-*`) | Task 2 (defined/emitted); applied per-theme in a later plan |
-| Owned `--section-gap` rhythm | Task 2 (token defined); applied per-theme in a later plan |
-| Coordinated breakpoints | Deferred to per-theme plans (production-base keeps its single 640px breakpoint here) |
-| Measure caps (`--measure-body/-title`) | Task 2 (defined/emitted); applied per-theme in a later plan |
-| Overflow `overflow-wrap`/`hyphens` guards | Task 3 (live) |
-| Image `aspect-ratio` + `object-fit: cover` | Task 3 (live) |
-| `--color-*-rgb` siblings for scrims | Task 2 (live); consumed by the scrim in the hero plan |
-| Wire dead density/radius controls | Task 2 + Task 4 (live + regression-locked) |
-| Contrast-safe `--color-on-*` derivation | Task 1 + Task 2 (live) |
+| Spec requirement                           | Task                                                                                 |
+| ------------------------------------------ | ------------------------------------------------------------------------------------ |
+| Fluid `clamp()` type scale (`--type-*`)    | Task 2 (defined/emitted); applied per-theme in a later plan                          |
+| Owned `--section-gap` rhythm               | Task 2 (token defined); applied per-theme in a later plan                            |
+| Coordinated breakpoints                    | Deferred to per-theme plans (production-base keeps its single 640px breakpoint here) |
+| Measure caps (`--measure-body/-title`)     | Task 2 (defined/emitted); applied per-theme in a later plan                          |
+| Overflow `overflow-wrap`/`hyphens` guards  | Task 3 (live)                                                                        |
+| Image `aspect-ratio` + `object-fit: cover` | Task 3 (live)                                                                        |
+| `--color-*-rgb` siblings for scrims        | Task 2 (live); consumed by the scrim in the hero plan                                |
+| Wire dead density/radius controls          | Task 2 + Task 4 (live + regression-locked)                                           |
+| Contrast-safe `--color-on-*` derivation    | Task 1 + Task 2 (live)                                                               |
 
 Engine pieces intentionally **out of this plan** (carried by the companion hero plan or the per-theme plans, and stated as such above): hero overlay markup + legible scrim, the `eyebrow` schema removal, the hygiene-assertion loosening for `rgb(var())`, section-rhythm application, fluid-title application, and per-theme measure-cap application.
 

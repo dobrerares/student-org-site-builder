@@ -217,9 +217,7 @@ async function main(): Promise<void> {
       logo: logoRef,
       logoAlt: "Sigla Asociației Studențești HISTORIPOL",
       address: "Universitatea „Ovidius” din Constanța, Facultatea de Istorie și Științe Politice",
-      social: [
-        { platform: "website", url: pages.despre },
-      ],
+      social: [{ platform: "website", url: pages.despre }],
     },
     theme: {
       // Scholarly identity fits a history & political-science association. We
@@ -272,7 +270,7 @@ async function main(): Promise<void> {
             version: 1,
             data: {
               markdown:
-                'Asociația Studențească HISTORIPOL este o organizație non-guvernamentală, apolitică și non-profit, fondată în 2024 de studenți ai Facultății de Istorie și Științe Politice din cadrul Universității „Ovidius” din Constanța. Asociația a luat naștere din dorința de a dezvolta o comunitate academică unită, în care studenții și absolvenții pasionați de istorie, relații internaționale, studii europene și științe politice să se poată dezvolta personal, profesional și civic.\n\n## Misiunea noastră\n\nNe propunem să reprezentăm interesele, nevoile și drepturile studenților FISP și să contribuim la dezvoltarea lor prin proiecte educaționale și culturale. Prin activitățile noastre, promovăm responsabilitatea civică, valorile democratice și implicarea activă în comunitate.\n\n## Viziunea noastră\n\nCredem într-o comunitate academică constănțeană puternică, conectată la instituțiile de profil. Ne dorim ca HISTORIPOL să devină un spațiu de formare pentru tineri care înțeleg rolul istoriei, politicii și culturii în dezvoltarea societății.',
+                "Asociația Studențească HISTORIPOL este o organizație non-guvernamentală, apolitică și non-profit, fondată în 2024 de studenți ai Facultății de Istorie și Științe Politice din cadrul Universității „Ovidius” din Constanța. Asociația a luat naștere din dorința de a dezvolta o comunitate academică unită, în care studenții și absolvenții pasionați de istorie, relații internaționale, studii europene și științe politice să se poată dezvolta personal, profesional și civic.\n\n## Misiunea noastră\n\nNe propunem să reprezentăm interesele, nevoile și drepturile studenților FISP și să contribuim la dezvoltarea lor prin proiecte educaționale și culturale. Prin activitățile noastre, promovăm responsabilitatea civică, valorile democratice și implicarea activă în comunitate.\n\n## Viziunea noastră\n\nCredem într-o comunitate academică constănțeană puternică, conectată la instituțiile de profil. Ne dorim ca HISTORIPOL să devină un spațiu de formare pentru tineri care înțeleg rolul istoriei, politicii și culturii în dezvoltarea societății.",
             },
           },
           {
@@ -398,8 +396,7 @@ async function main(): Promise<void> {
                   badge: "Solidaritate",
                 },
                 {
-                  title:
-                    "Conferința Națională a Studenților, Masteranzilor și Doctoranzilor",
+                  title: "Conferința Națională a Studenților, Masteranzilor și Doctoranzilor",
                   description:
                     "Conferință dedicată domeniilor Istorie, Științe Politice și Relații Internaționale.",
                   badge: "Academic",
@@ -435,8 +432,7 @@ async function main(): Promise<void> {
         showInNav: true,
         seo: {
           title: "Echipa HISTORIPOL",
-          description:
-            "Echipa de conducere și coordonare a Asociației Studențești HISTORIPOL.",
+          description: "Echipa de conducere și coordonare a Asociației Studențești HISTORIPOL.",
         },
         blocks: [
           {
@@ -473,8 +469,7 @@ async function main(): Promise<void> {
         showInNav: true,
         seo: {
           title: "Unde găsești HISTORIPOL",
-          description:
-            "Date de contact și repere pentru Asociația Studențească HISTORIPOL.",
+          description: "Date de contact și repere pentru Asociația Studențească HISTORIPOL.",
         },
         blocks: [
           {

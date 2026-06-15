@@ -31,14 +31,14 @@ differ by feel, not decoration.
 
 The 2026-05-28 pizzaz spec is **superseded**. What carries over, what is dropped:
 
-| From the old spec | Status here |
-| --- | --- |
-| Per-theme "signature move" ornaments (dropcaps, gradient text, glass cards, anchor stripes, three-dot dividers, hanging quote marks) | **Dropped** — "no pizzaz" |
-| Per-theme block-level signatures for rich-text / quote / cta-banner | **Dropped** |
-| Full-bleed hero with text-over-image + scrim | **Kept** — table-stakes layout, every reference site uses it; also a foolproofing win (guaranteed-legible scrim) |
-| `--color-*-rgb` token siblings (for scrims, keep "no raw color outside `:root`" strict) | **Kept** |
-| Remove `eyebrow` from `HeroDataSchema` | **Kept** |
-| Per-theme palette / catalog metadata refresh | **Kept**, but values change to the re-cast identities |
+| From the old spec                                                                                                                    | Status here                                                                                                      |
+| ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| Per-theme "signature move" ornaments (dropcaps, gradient text, glass cards, anchor stripes, three-dot dividers, hanging quote marks) | **Dropped** — "no pizzaz"                                                                                        |
+| Per-theme block-level signatures for rich-text / quote / cta-banner                                                                  | **Dropped**                                                                                                      |
+| Full-bleed hero with text-over-image + scrim                                                                                         | **Kept** — table-stakes layout, every reference site uses it; also a foolproofing win (guaranteed-legible scrim) |
+| `--color-*-rgb` token siblings (for scrims, keep "no raw color outside `:root`" strict)                                              | **Kept**                                                                                                         |
+| Remove `eyebrow` from `HeroDataSchema`                                                                                               | **Kept**                                                                                                         |
+| Per-theme palette / catalog metadata refresh                                                                                         | **Kept**, but values change to the re-cast identities                                                            |
 
 New in this spec (the parts the user emphasized that the pizzaz spec was silent
 on): fluid/responsive typography, owned vertical rhythm, natural alignment via
@@ -50,28 +50,28 @@ states.
 
 From the brainstorming session on 2026-06-14:
 
-| Decision | Choice |
-| --- | --- |
-| Direction | No ornament. Identity via palette + type pairing + density + corner shape only. |
-| Theme set | Re-cast the existing five slots around real student-org **moods** (see below). Slot IDs stay stable. |
-| Foolproof depth | **Engine + content guardrails** — renderer *and* schema/editor. |
-| Architecture | One shared engine; each theme reduced to a uniform identity token table. |
-| Hero | Keep the full-bleed text-over-image + scrim pattern, universally. |
-| Dead controls | **Wire** density/radius (don't remove) — they become real identity levers and safe user knobs. |
+| Decision        | Choice                                                                                               |
+| --------------- | ---------------------------------------------------------------------------------------------------- |
+| Direction       | No ornament. Identity via palette + type pairing + density + corner shape only.                      |
+| Theme set       | Re-cast the existing five slots around real student-org **moods** (see below). Slot IDs stay stable. |
+| Foolproof depth | **Engine + content guardrails** — renderer _and_ schema/editor.                                      |
+| Architecture    | One shared engine; each theme reduced to a uniform identity token table.                             |
+| Hero            | Keep the full-bleed text-over-image + scrim pattern, universally.                                    |
+| Dead controls   | **Wire** density/radius (don't remove) — they become real identity levers and safe user knobs.       |
 
 ### The five re-cast identities
 
 Slot IDs stay stable so `KNOWN_THEME_IDS`, the e2e a11y matrix, the wizard, and
-the per-theme golden tests keep working — only the *contents* of each theme file
+the per-theme golden tests keep working — only the _contents_ of each theme file
 and its catalog metadata change.
 
-| Theme (slot) | Org mood | `--color-primary` | `--color-accent` | `--color-bg` | `--color-fg` | `--color-muted` | Headline / Body | density | radius (base) |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **Activist** (`civic`) | Advocacy, campaigns, student-rights. Bold, direct. | `#17181C` | `#CB2B2B` | `#FFFFFF` | `#17181C` | `#6B6B6B` | Archivo 800 / Inter | compact | 2px |
-| **Tech** (`modern`) | Hackathons, engineering, tech & startup clubs. Crisp, bright. | `#0F172A` | `#2563EB` | `#FFFFFF` | `#0F172A` | `#64748B` | Space Grotesk 700 / Inter | normal | 12px |
-| **Editorial** (`editorial`) | Publications, cultural & debate societies. Type-forward, warm. | `#1A1714` | `#C4622D` | `#FBF8F3` | `#1A1714` | `#8A7E72` | Fraunces 600 / Inter | comfortable | 6px |
-| **Calm** (`minimal`) | Content-first orgs; photos & writing do the work. | `#1A1A1A` | `#1A1A1A` | `#FFFFFF` | `#1A1A1A` | `#767676` | Inter 600 / Inter | airy | 0px |
-| **Scholarly** (`academic`) | Research societies, honors programs, faculty bodies. Credible, warm. | `#1E3A5F` | `#B8893E` | `#F7F3EA` | `#1F2933` | `#5C6B7A` | Source Serif 4 700 / Inter | comfortable | 4px |
+| Theme (slot)                | Org mood                                                             | `--color-primary` | `--color-accent` | `--color-bg` | `--color-fg` | `--color-muted` | Headline / Body            | density     | radius (base) |
+| --------------------------- | -------------------------------------------------------------------- | ----------------- | ---------------- | ------------ | ------------ | --------------- | -------------------------- | ----------- | ------------- |
+| **Activist** (`civic`)      | Advocacy, campaigns, student-rights. Bold, direct.                   | `#17181C`         | `#CB2B2B`        | `#FFFFFF`    | `#17181C`    | `#6B6B6B`       | Archivo 800 / Inter        | compact     | 2px           |
+| **Tech** (`modern`)         | Hackathons, engineering, tech & startup clubs. Crisp, bright.        | `#0F172A`         | `#2563EB`        | `#FFFFFF`    | `#0F172A`    | `#64748B`       | Space Grotesk 700 / Inter  | normal      | 12px          |
+| **Editorial** (`editorial`) | Publications, cultural & debate societies. Type-forward, warm.       | `#1A1714`         | `#C4622D`        | `#FBF8F3`    | `#1A1714`    | `#8A7E72`       | Fraunces 600 / Inter       | comfortable | 6px           |
+| **Calm** (`minimal`)        | Content-first orgs; photos & writing do the work.                    | `#1A1A1A`         | `#1A1A1A`        | `#FFFFFF`    | `#1A1A1A`    | `#767676`       | Inter 600 / Inter          | airy        | 0px           |
+| **Scholarly** (`academic`)  | Research societies, honors programs, faculty bodies. Credible, warm. | `#1E3A5F`         | `#B8893E`        | `#F7F3EA`    | `#1F2933`    | `#5C6B7A`       | Source Serif 4 700 / Inter | comfortable | 4px           |
 
 Font stacks (web-safe fallbacks; web fonts loaded as the renderer already loads
 theme fonts):
@@ -106,12 +106,12 @@ The change is **where work lives**:
    of the five uses it initially.
 
 **Why this is foolproof by construction:** because each theme only overrides the
-four identity tokens and never overrides the safety rules, a theme *physically
-cannot* opt out of fluid type, owned rhythm, overflow guards, measure caps, or
+four identity tokens and never overrides the safety rules, a theme _physically
+cannot_ opt out of fluid type, owned rhythm, overflow guards, measure caps, or
 the legible scrim. Safety is a property of the engine, not of per-theme
 discipline.
 
-*Alternatives considered:* (B) keep per-theme CSS, factor shared rules into a
+_Alternatives considered:_ (B) keep per-theme CSS, factor shared rules into a
 helper string — rejected, themes drift out of sync; (C) pure token-only themes
 with zero per-theme CSS — adopted in spirit, but with the optional escape-hatch
 slot retained.
@@ -142,7 +142,7 @@ directly. Per-theme headline scale can shift one step without leaving the scale.
 
 ### Owned vertical rhythm (kills the "accidental sum of paddings" gap)
 
-A single fluid `--section-gap` owns the space *between* blocks, applied by the
+A single fluid `--section-gap` owns the space _between_ blocks, applied by the
 page shell, instead of each block's padding accidentally summing:
 
 ```
@@ -216,7 +216,7 @@ The renderer maps named control values to numeric tokens when emitting `:root`
   onto `--radius-base`.
 
 Both controls were inert before (emitted but consumed by nothing). Now they are
-real identity levers *and* safe user knobs.
+real identity levers _and_ safe user knobs.
 
 ### Contrast-safe color overrides
 
@@ -228,20 +228,20 @@ on(color) = relativeLuminance(color) > 0.42 ? <theme dark ink> : "#ffffff"
 ```
 
 emitting `--color-on-accent` and `--color-on-primary`. Buttons/badges use these,
-so a bad color pick — by a theme default *or* a user override — can never
+so a bad color pick — by a theme default _or_ a user override — can never
 produce unreadable text. (Scholarly's gold `#B8893E` resolves to dark on-color;
 the same path protects a user who picks pale yellow.)
 
 ## Content guardrails (schema + editor)
 
 - **Graceful empty states** — optional blocks/fields that are empty render
-  *nothing* in production instead of an empty container. Per-block rule (empty
+  _nothing_ in production instead of an empty container. Per-block rule (empty
   `richText` → suppressed; hero with no subtitle → fine; cta-banner with no text
   → suppressed). The editor preview shows a subtle "empty" placeholder so the
   author knows the block exists.
 - **Length guidance** — soft recommended maxes as editor helper text (hero title
   ~60 chars, subtitle ~140) attached via
-  [field-metadata.ts](../../packages/editor-app/src/field-metadata.ts). *Not*
+  [field-metadata.ts](../../packages/editor-app/src/field-metadata.ts). _Not_
   hard validation — the engine's measure caps + wrapping keep over-length
   content clean regardless. Guidance, not a gate.
 - **Derived on-color preview** — the editor color picker shows the auto-derived
@@ -294,8 +294,8 @@ Each PR independently mergeable; PR1 first to unblock parallel theme work.
 1. **PR1 — Engine foundation:** fluid type scale, density/radius wiring,
    `--section-gap` rhythm, measure caps, `--color-*-rgb` siblings, on-color
    derivation, overflow/aspect/scrim rules + hero overlay markup + `eyebrow`
-   removal plumbing. *No identity change yet — existing themes just inherit a
-   safer base.*
+   removal plumbing. _No identity change yet — existing themes just inherit a
+   safer base._
 2. **PR2 — Unify theme shape:** convert all 5 themes to the uniform identity
    token table; delete bespoke per-theme `:root` blocks and media queries now
    owned by the engine. Pure refactor; goldens shift.

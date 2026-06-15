@@ -81,9 +81,7 @@ describe("ThemeForm", () => {
         tokens: { colorPrimary: "#1a2440", colorAccent: "#ffe14d" },
       },
     };
-    const { container } = render(
-      <ThemeForm site={site as unknown as Site} onChange={() => {}} />,
-    );
+    const { container } = render(<ThemeForm site={site as unknown as Site} onChange={() => {}} />);
     const chips = container.querySelectorAll('[data-testid="color-picker-on-color"]');
     // One per palette ColorPicker (primary + accent); font pickers don't carry chips.
     expect(chips.length).toBe(2);

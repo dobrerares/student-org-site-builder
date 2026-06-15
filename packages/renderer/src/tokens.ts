@@ -256,8 +256,7 @@ export function emitTokenRoot(
   // primary fallback automatically. Unparseable colors (contrastRatio undefined)
   // are treated as not-ok → primary. The emitted value is a `var()` ref (no raw
   // hex), keeping the "no raw color outside :root" discipline intact.
-  const linkOk =
-    (contrastRatio(resolved["--color-accent"]!, resolved["--color-bg"]!) ?? 0) >= 4.5;
+  const linkOk = (contrastRatio(resolved["--color-accent"]!, resolved["--color-bg"]!) ?? 0) >= 4.5;
   declarations.push(`  --color-link: ${linkOk ? "var(--color-accent)" : "var(--color-primary)"};`);
 
   // Subtle card surface: a faint tint of the background toward the foreground.

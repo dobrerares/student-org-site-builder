@@ -72,9 +72,7 @@ export function buildFontData() {
   // Deterministic ordering: manifest by family, weight, subset.
   manifest.sort(
     (a, b) =>
-      a.family.localeCompare(b.family) ||
-      a.weight - b.weight ||
-      a.subset.localeCompare(b.subset),
+      a.family.localeCompare(b.family) || a.weight - b.weight || a.subset.localeCompare(b.subset),
   );
 
   // Deterministic ordering: base64 keys sorted.
@@ -173,7 +171,9 @@ function checkGenerated() {
     console.error("Run `pnpm gen:fonts` and commit the result.");
     process.exit(1);
   }
-  console.log(`gen:fonts --check OK (${manifest.length} faces, ${Object.keys(base64).length} woff2)`);
+  console.log(
+    `gen:fonts --check OK (${manifest.length} faces, ${Object.keys(base64).length} woff2)`,
+  );
 }
 
 const isCheck = process.argv.includes("--check");

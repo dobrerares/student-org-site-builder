@@ -375,7 +375,10 @@ export function ContactCard(props: { block: ContactCardBlock }): preact.JSX.Elem
               )}
               {phoneTel !== undefined && (
                 <Channel icon="phone">
-                  <a href={`tel:${phoneTel}`} class="contact-card__channel-link contact-card__phone">
+                  <a
+                    href={`tel:${phoneTel}`}
+                    class="contact-card__channel-link contact-card__phone"
+                  >
                     {phone}
                   </a>
                 </Channel>

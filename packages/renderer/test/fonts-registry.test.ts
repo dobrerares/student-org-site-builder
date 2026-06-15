@@ -27,11 +27,10 @@ const REPO_ROOT = join(__dirname, "..", "..", "..");
 describe("font codegen sync", () => {
   test("committed generated files match `gen:fonts --check`", () => {
     // Throws (non-zero exit) if the committed generated files have drifted.
-    const out = execFileSync(
-      process.execPath,
-      [join("scripts", "gen-fonts.mjs"), "--check"],
-      { cwd: REPO_ROOT, encoding: "utf8" },
-    );
+    const out = execFileSync(process.execPath, [join("scripts", "gen-fonts.mjs"), "--check"], {
+      cwd: REPO_ROOT,
+      encoding: "utf8",
+    });
     expect(out).toContain("OK");
   });
 });

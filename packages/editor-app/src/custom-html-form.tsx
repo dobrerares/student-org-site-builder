@@ -57,8 +57,8 @@ export function CustomHtmlBlockForm(props: CustomHtmlBlockFormProps): JSX.Elemen
 
       <p data-testid="custom-html-explainer">
         Paste trusted embed code when the ready-made sections do not cover what you need. The safety
-        filter is on by default and removes code that can run in visitors' browsers. Turn it off only
-        when someone technical has checked the code.
+        filter is on by default and removes code that can run in visitors' browsers. Turn it off
+        only when someone technical has checked the code.
       </p>
 
       <label data-field-label="data.html">

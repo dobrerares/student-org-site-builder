@@ -215,9 +215,9 @@ describe("WelcomeShell", () => {
       container.querySelector<HTMLButtonElement>('[data-testid="welcome-action-wizard"]')!.click();
     });
 
-    expect(container.querySelector('[data-testid="wizard"]')?.getAttribute("data-wizard-step")).toBe(
-      "identity",
-    );
+    expect(
+      container.querySelector('[data-testid="wizard"]')?.getAttribute("data-wizard-step"),
+    ).toBe("identity");
   });
 
   test("wizard edits are saved to local progress", async () => {
@@ -277,11 +277,7 @@ async function waitForElement<T extends Element>(
   return container.querySelector<T>(selector);
 }
 
-async function waitForText(
-  container: HTMLElement,
-  selector: string,
-  text: string,
-): Promise<void> {
+async function waitForText(container: HTMLElement, selector: string, text: string): Promise<void> {
   for (let i = 0; i < 10; i++) {
     const element = container.querySelector(selector);
     if (element?.textContent?.includes(text) === true) return;

@@ -147,11 +147,7 @@ describe("buildSiteFromWizard — sections → page blocks", () => {
       mandatory: ["hero", "teamGrid", "contactCard"],
     });
     const site = buildSiteFromWizard(state.data);
-    expect(site.pages[0]!.blocks.map((b) => b.type)).toEqual([
-      "hero",
-      "teamGrid",
-      "contactCard",
-    ]);
+    expect(site.pages[0]!.blocks.map((b) => b.type)).toEqual(["hero", "teamGrid", "contactCard"]);
   });
 
   test("an empty section selection keeps a top page header so the site is usable", () => {

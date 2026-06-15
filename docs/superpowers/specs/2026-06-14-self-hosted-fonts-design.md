@@ -20,16 +20,16 @@ Scope decision: **full fidelity** — self-host all five families, **gated per t
 
 ## Locked decisions
 
-| Decision | Choice |
-| --- | --- |
-| Delivery | Self-host woff2 (not Google CDN) |
-| Scope | All five identity families, full fidelity |
-| Per-page | Gated emission — a site emits `@font-face` only for the families its resolved theme/site tokens actually use |
-| Subsetting | Use `@fontsource/*` pre-subset woff2 (OFL, version-pinned devDeps). They ship Google's `latin` + `latin-ext` subsets; `latin-ext` covers the Romanian Ș/Ț (U+0218–021B). `pnpm gen:fonts` copies the needed weight×subset files out of `node_modules` and base64-codegens them — no Python; CI consumes committed bytes. (A custom `pyftsubset` pass is a documented fallback if a smaller combined subset is ever wanted.) |
-| Renderer byte access | woff2 → committed base64 string constants via a `pnpm gen:fonts` codegen step (committed output, like goldens) — keeps the renderer dependency- and Node-builtin-free |
-| Dist transport | Widen `DistFolder` to `Map<string, string \| Uint8Array>` (centralized — Option A) so fonts flow through build → zip/electron/archival uniformly |
-| Emission seam | `@font-face` emitted first in `composeCss` (renderer `index.tsx`), `src: url()` resolved through the existing `resolveAssetUrl` |
-| Budget | New `fonts` metric in `measureBudgets`; woff2 bytes do **not** count against the 15KB CSS-gzipped budget |
+| Decision             | Choice                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Delivery             | Self-host woff2 (not Google CDN)                                                                                                                                                                                                                                                                                                                                                                                            |
+| Scope                | All five identity families, full fidelity                                                                                                                                                                                                                                                                                                                                                                                   |
+| Per-page             | Gated emission — a site emits `@font-face` only for the families its resolved theme/site tokens actually use                                                                                                                                                                                                                                                                                                                |
+| Subsetting           | Use `@fontsource/*` pre-subset woff2 (OFL, version-pinned devDeps). They ship Google's `latin` + `latin-ext` subsets; `latin-ext` covers the Romanian Ș/Ț (U+0218–021B). `pnpm gen:fonts` copies the needed weight×subset files out of `node_modules` and base64-codegens them — no Python; CI consumes committed bytes. (A custom `pyftsubset` pass is a documented fallback if a smaller combined subset is ever wanted.) |
+| Renderer byte access | woff2 → committed base64 string constants via a `pnpm gen:fonts` codegen step (committed output, like goldens) — keeps the renderer dependency- and Node-builtin-free                                                                                                                                                                                                                                                       |
+| Dist transport       | Widen `DistFolder` to `Map<string, string \| Uint8Array>` (centralized — Option A) so fonts flow through build → zip/electron/archival uniformly                                                                                                                                                                                                                                                                            |
+| Emission seam        | `@font-face` emitted first in `composeCss` (renderer `index.tsx`), `src: url()` resolved through the existing `resolveAssetUrl`                                                                                                                                                                                                                                                                                             |
+| Budget               | New `fonts` metric in `measureBudgets`; woff2 bytes do **not** count against the 15KB CSS-gzipped budget                                                                                                                                                                                                                                                                                                                    |
 
 ## Architecture
 
@@ -45,25 +45,28 @@ The renderer has **zero precedent for a non-inline sub-resource** today (all CSS
 ### 2. The registry (renderer-internal)
 
 `packages/renderer/src/fonts/registry.ts`:
+
 ```ts
 interface FontFaceDef {
-  family: string;            // e.g. "Space Grotesk"
-  weight: number;            // 400, 600, 700, 800
+  family: string; // e.g. "Space Grotesk"
+  weight: number; // 400, 600, 700, 800
   style: "normal" | "italic";
-  file: string;              // key into FONT_WOFF2_BASE64 and the canonical path tail
-  unicodeRange: string;      // the subset range string
+  file: string; // key into FONT_WOFF2_BASE64 and the canonical path tail
+  unicodeRange: string; // the subset range string
 }
 const FONT_FACE_REGISTRY: Record<string /*family*/, FontFaceDef[]>;
-const FONT_ASSET_PREFIX = "assets/fonts/";   // canonical output path tail: assets/fonts/<file>
+const FONT_ASSET_PREFIX = "assets/fonts/"; // canonical output path tail: assets/fonts/<file>
 ```
 
 ### 3. Gated `@font-face` emission
 
 In `composeCss(site, themeId, assetUrlForPath?)` (renderer `index.tsx`), emit a new first segment:
+
 ```
 const faces = emitFontFaces(usedFamiliesFor(site, themeId), assetUrlForPath);
 return `${faces}${root}\n${themeCssFor(themeId)}`;
 ```
+
 - `usedFamiliesFor` resolves the **same** font tokens the token emitter resolves (theme defaults/baseline + `site.theme.tokens` overrides, last-wins, mirroring `pushScalarTokens`), takes the **first quoted family** of the resolved `--font-headline` and `--font-body` stacks, and keeps only families present in `FONT_FACE_REGISTRY`. Result is a pure function of resolved tokens → a family a user overrode away is not shipped.
 - For each used family's defs (sorted by family, weight, style for byte-stability) emit:
   `@font-face { font-family:"X"; font-style:..; font-weight:..; font-display:swap; src:url(<resolved>) format("woff2"); unicode-range:..; }`
@@ -84,13 +87,13 @@ return `${faces}${root}\n${themeCssFor(themeId)}`;
 
 Subset only the weights the identities use (each weight = one woff2 file). The per-theme font wiring (setting `--font-headline`/`--font-body`) is done **in this plan** so fonts go live and are tested end-to-end; the palette/density/shape/structural recast is the separate next plan.
 
-| Family | Weights | Used by (headline / body) |
-| --- | --- | --- |
-| Archivo | 700, 800 | Activist headline |
-| Space Grotesk | 500, 700 | Tech headline |
-| Fraunces | 600 (opsz set) | Editorial headline |
-| Source Serif 4 | 600, 700 | Scholarly headline |
-| Inter | 400, 500, 600 | Tech/Editorial/Scholarly body, Calm headline+body |
+| Family         | Weights        | Used by (headline / body)                         |
+| -------------- | -------------- | ------------------------------------------------- |
+| Archivo        | 700, 800       | Activist headline                                 |
+| Space Grotesk  | 500, 700       | Tech headline                                     |
+| Fraunces       | 600 (opsz set) | Editorial headline                                |
+| Source Serif 4 | 600, 700       | Scholarly headline                                |
+| Inter          | 400, 500, 600  | Tech/Editorial/Scholarly body, Calm headline+body |
 
 (Exact weights confirmed against each theme's resolved tokens during plan-writing; trim any unused weight.)
 

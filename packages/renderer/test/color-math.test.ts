@@ -1,5 +1,10 @@
 import { describe, expect, test } from "vitest";
-import { hexToRgbTriplet, relativeLuminance, contrastRatio, onColorFor } from "../src/color-math.js";
+import {
+  hexToRgbTriplet,
+  relativeLuminance,
+  contrastRatio,
+  onColorFor,
+} from "../src/color-math.js";
 
 describe("hexToRgbTriplet", () => {
   test("parses 6-digit hex into an 'r, g, b' triplet", () => {

@@ -79,9 +79,7 @@ describe("ColorPicker — on-color preview (Guardrail 2)", () => {
     // Light yellow → renderer picks dark ink for legibility.
     const value = "#ffe14d";
     expect(onColorFor(value)).toBe("#16181c");
-    const { container } = render(
-      <ColorPicker value={value} previewOnColor onChange={() => {}} />,
-    );
+    const { container } = render(<ColorPicker value={value} previewOnColor onChange={() => {}} />);
     const chip = container.querySelector('[data-testid="color-picker-on-color"]') as HTMLElement;
     expect(chip).not.toBeNull();
     expect(chip.style.background).toBe(hexToRgb(value));
@@ -92,9 +90,7 @@ describe("ColorPicker — on-color preview (Guardrail 2)", () => {
     // Deep navy → renderer picks white for legibility.
     const value = "#1a2440";
     expect(onColorFor(value)).toBe("#ffffff");
-    const { container } = render(
-      <ColorPicker value={value} previewOnColor onChange={() => {}} />,
-    );
+    const { container } = render(<ColorPicker value={value} previewOnColor onChange={() => {}} />);
     const chip = container.querySelector('[data-testid="color-picker-on-color"]') as HTMLElement;
     expect(chip.style.color).toBe(hexToRgb("#ffffff"));
   });
@@ -104,8 +100,6 @@ describe("ColorPicker — on-color preview (Guardrail 2)", () => {
       <ColorPicker value={undefined} previewOnColor onChange={() => {}} />,
     );
     expect(container.querySelector('[data-testid="color-picker-on-color"]')).toBeNull();
-    expect(
-      container.querySelector('[data-testid="color-picker-on-color-default"]'),
-    ).not.toBeNull();
+    expect(container.querySelector('[data-testid="color-picker-on-color-default"]')).not.toBeNull();
   });
 });

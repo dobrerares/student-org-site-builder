@@ -183,9 +183,7 @@ const CASES: readonly Case[] = [
       version: 1,
       data: {
         title: "Events",
-        events: [
-          { id: "ev1", title: "Launch", startsAt: "2026-06-15T18:00:00+03:00" },
-        ],
+        events: [{ id: "ev1", title: "Launch", startsAt: "2026-06-15T18:00:00+03:00" }],
       },
     },
   },

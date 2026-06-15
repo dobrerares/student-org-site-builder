@@ -21,8 +21,16 @@ import { FONT_ASSET_PREFIX, FONT_FACE_REGISTRY, woff2Base64 } from "./fonts/regi
 import { base64ToBytes } from "./fonts/bytes.js";
 import { STUB_THEME_CSS, STUB_THEME_ID } from "./themes/stub.js";
 import { PRODUCTION_SITE_BASE_CSS } from "./themes/production-base.js";
-import { MINIMAL_THEME_BASELINE_TOKENS, MINIMAL_THEME_CSS, MINIMAL_THEME_ID } from "./themes/minimal.js";
-import { MODERN_THEME_BASELINE_TOKENS, MODERN_THEME_CSS, MODERN_THEME_ID } from "./themes/modern.js";
+import {
+  MINIMAL_THEME_BASELINE_TOKENS,
+  MINIMAL_THEME_CSS,
+  MINIMAL_THEME_ID,
+} from "./themes/minimal.js";
+import {
+  MODERN_THEME_BASELINE_TOKENS,
+  MODERN_THEME_CSS,
+  MODERN_THEME_ID,
+} from "./themes/modern.js";
 import {
   EDITORIAL_THEME_BASELINE_TOKENS,
   EDITORIAL_THEME_CSS,

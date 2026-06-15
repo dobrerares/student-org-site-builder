@@ -133,22 +133,18 @@ describe("resolveFontFamilies — primary family under the cascade", () => {
   test("user override beats themeDefaults beats themeBaseline (last wins)", () => {
     const site = structuredClone(fixture) as Site;
     site.theme = { id: "stub", tokens: { fontBody: '"Inter", sans-serif' } };
-    const got = resolveFontFamilies(
-      site,
-      { fontBody: '"Source Serif 4", serif' },
-      [["--font-body", '"Fraunces", serif']],
-    );
+    const got = resolveFontFamilies(site, { fontBody: '"Source Serif 4", serif' }, [
+      ["--font-body", '"Fraunces", serif'],
+    ]);
     expect(got.body).toBe("Inter");
   });
 
   test("themeBaseline raw pair wins over themeDefaults when no user override", () => {
     const site = structuredClone(fixture) as Site;
     site.theme = { id: "stub", tokens: {} };
-    const got = resolveFontFamilies(
-      site,
-      { fontHeadline: '"Archivo", sans-serif' },
-      [["--font-headline", '"Fraunces", serif']],
-    );
+    const got = resolveFontFamilies(site, { fontHeadline: '"Archivo", sans-serif' }, [
+      ["--font-headline", '"Fraunces", serif'],
+    ]);
     expect(got.headline).toBe("Fraunces");
   });
 });
