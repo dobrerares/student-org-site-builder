@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import fs from "node:fs";
 
 /**
  * AC: electron-builder produces .dmg, .exe, .AppImage on respective CI
@@ -40,6 +41,7 @@ interface PublishProvider {
 interface ElectronBuilderConfig {
   readonly appId?: string;
   readonly productName?: string;
+  readonly files?: readonly string[];
   readonly mac?: { readonly target?: TargetSpec; readonly identity?: unknown };
   readonly win?: { readonly target?: TargetSpec };
   readonly linux?: { readonly target?: TargetSpec };
@@ -61,6 +63,11 @@ function targetNames(spec: TargetSpec | undefined): string[] {
 describe("electron-builder config", () => {
   const configPath = path.resolve(here, "..", "electron-builder.config.cjs");
   const config = requireFromHere(configPath) as ElectronBuilderConfig;
+  const packageJsonPath = path.resolve(here, "..", "package.json");
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8")) as {
+    readonly main?: string;
+    readonly files?: readonly string[];
+  };
 
   test("declares an appId", () => {
     expect(typeof config.appId).toBe("string");
@@ -82,6 +89,11 @@ describe("electron-builder config", () => {
 
   test("Linux target includes AppImage", () => {
     expect(targetNames(config.linux?.target)).toContain("AppImage");
+  });
+
+  test("packaged app entry points at compiled JavaScript included in the ASAR", () => {
+    expect(packageJson.main).toBe("./dist/index.js");
+    expect(config.files).toContain("dist/**/*");
   });
 
   test("mac code signing is OUT OF SCOPE for v1 (no identity, no afterSign)", () => {

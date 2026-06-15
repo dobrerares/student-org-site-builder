@@ -5,13 +5,25 @@
   "description": "Main process, IPC bridge to native dialogs, contextBridge preload, cross-platform packaging via electron-builder.",
   "license": "MIT",
   "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./main": "./src/main.ts",
-    "./preload": "./src/preload.ts",
-    "./ipc": "./src/ipc-channels.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./main": {
+      "types": "./dist/main.d.ts",
+      "default": "./dist/main.js"
+    },
+    "./preload": {
+      "types": "./dist/preload.d.ts",
+      "default": "./dist/preload.js"
+    },
+    "./ipc": {
+      "types": "./dist/ipc-channels.d.ts",
+      "default": "./dist/ipc-channels.js"
+    }
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.test.json",
