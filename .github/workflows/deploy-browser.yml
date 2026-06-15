@@ -1,16 +1,11 @@
-# Manual deploy of the browser editor to Cloudflare Pages.
+# Deploy the hosted sitebuilder browser editor to Cloudflare Pages.
 #
 # This workflow is intentionally decoupled from `release.yml`. Use it when:
-#   - You need a first-time / emergency CF Pages deploy without going
-#     through the full tag-driven desktop release.
+#   - Changes land on `main` and should update the hosted sitebuilder
+#     without waiting for the next desktop release tag.
+#   - You need a first-time / emergency CF Pages deploy from the Actions UI.
 #   - The desktop build matrix is broken on a platform you don't care
 #     about right now and would otherwise block the browser deploy.
-#
-# Day-to-day, prefer the tag-driven path in `release.yml` so desktop
-# installers and the hosted browser editor stay version-aligned. Reach
-# for this workflow only when you knowingly want to break that symmetry.
-#
-# Trigger: manual only (`workflow_dispatch`). Dispatch from the Actions UI.
 #
 # Required repository secrets (same as in release.yml):
 #   - CLOUDFLARE_API_TOKEN  (token with Account → Pages → Edit permission)
@@ -21,14 +16,33 @@
 # project already exists, `wrangler pages project create` exits with a
 # "project already exists" error which we tolerate via `|| true`.
 
-name: Deploy browser editor (manual)
+name: Deploy sitebuilder
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/deploy-browser.yml"
+      - "packages/**"
+      - "e2e/**"
+      - "scripts/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "tsconfig*.json"
   workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: write
+
+concurrency:
+  group: deploy-sitebuilder-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   deploy:
-    name: Build + deploy browser editor to Cloudflare Pages
+    name: Build + deploy sitebuilder to Cloudflare Pages
     runs-on: ubuntu-latest
     steps:
       - name: Check out repo
@@ -36,18 +50,19 @@ jobs:
 
       # Node 22: Wrangler 4 requires it; matches the deploy-browser job
       # in release.yml.
+      - name: Enable Corepack (pnpm)
+        run: corepack enable
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-
-      - name: Enable Corepack (pnpm)
-        run: corepack enable
+          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build archival HTML (hosted browser editor)
+      - name: Build archival HTML (hosted sitebuilder)
         run: pnpm --filter @sosb/browser-shell build:archival
 
       # `build:archival` outputs `builder.html` (descriptive name for the
@@ -71,7 +86,8 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           command: >-
             pages deploy packages/browser-shell/dist/archival
             --project-name=student-org-site-builder
-            --branch=main
+            --branch=${{ github.ref_name }}
