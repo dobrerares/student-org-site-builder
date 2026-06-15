@@ -147,13 +147,20 @@ async function main(): Promise<void> {
       throw new Error("No logo image found");
     })();
 
-  const aboutImages = scraped.despre.filter((img) => img.src !== logo.src);
-  const activityImages = scraped.activitati.filter((img) => img.src !== logo.src).slice(0, 4);
+  // Google serves the same image under several `=w<width>` size URLs, so an
+  // exact-src compare lets a logo variant slip through (and become a "portrait").
+  // Compare on the size-stripped key instead.
+  const imageKey = (img: ScrapedImage): string => img.src.replace(/=w\d+.*$/, "");
+  const logoKey = imageKey(logo);
+  const isLogo = (img: ScrapedImage): boolean => imageKey(img) === logoKey;
+
+  const aboutImages = scraped.despre.filter((img) => !isLogo(img));
+  const activityImages = scraped.activitati.filter((img) => !isLogo(img)).slice(0, 4);
   const teamImages = scraped.echipa
-    .filter((img) => img.src !== logo.src)
+    .filter((img) => !isLogo(img))
     .filter((img) => Math.abs(img.width - img.height) <= 8)
     .slice(0, 10);
-  const contactImages = scraped.contact.filter((img) => img.src !== logo.src);
+  const contactImages = scraped.contact.filter((img) => !isLogo(img));
 
   const logoRef = await uploadRemoteImage(
     vfs,
@@ -193,6 +200,11 @@ async function main(): Promise<void> {
     ),
   );
 
+  // The despre/contact pages' only scrapable <img>s are the logo + the ANOSR
+  // banner (the real hero is a CSS background, not an <img>), so they aren't
+  // usable as photos. The landing hero instead borrows a genuine student photo
+  // from the activities so the homepage opens with people behind a scrim.
+  const heroRef = activityRefs[2] ?? activityRefs[1] ?? activityRefs[0];
   void aboutImages;
   void contactImages;
 
@@ -210,14 +222,17 @@ async function main(): Promise<void> {
       ],
     },
     theme: {
+      // Scholarly identity fits a history & political-science association. We
+      // keep academic's AA-tuned navy/gold/cream palette and pair it with the
+      // self-hosted Fraunces display serif for an elegant, characterful
+      // headline (Cormorant Garamond is NOT self-hosted, so it silently fell
+      // back to a generic serif — see self-host-fonts policy).
       id: "academic",
       tokens: {
-        colorPrimary: "#0B1320",
-        colorAccent: "#744511",
-        fontHeadline: "Cormorant Garamond",
+        fontHeadline: "Fraunces",
         fontBody: "Inter",
         density: "comfortable",
-        radius: "sm",
+        radius: "soft",
       },
     },
     defaultLanguage: "ro",
@@ -243,6 +258,12 @@ async function main(): Promise<void> {
               title: 'Asociația Studențească "Historipol"',
               subtitle:
                 "O comunitate academică pentru studenți și absolvenți pasionați de istorie, relații internaționale, studii europene și științe politice.",
+              ...(heroRef !== undefined
+                ? {
+                    backgroundImage: heroRef,
+                    backgroundAlt: "Studenți HISTORIPOL la o activitate a asociației",
+                  }
+                : {}),
             },
           },
           {
@@ -463,30 +484,28 @@ async function main(): Promise<void> {
             data: {
               title: "Unde ne găsești",
               subtitle:
-                "HISTORIPOL activează în jurul Facultății de Istorie și Științe Politice din cadrul Universității „Ovidius” din Constanța.",
+                "HISTORIPOL activează în cadrul Facultății de Istorie și Științe Politice, Universitatea „Ovidius” din Constanța.",
             },
           },
           {
-            id: "blk_contact_note",
-            type: "richText",
+            id: "blk_contact_card",
+            type: "contactCard",
             version: 1,
             data: {
-              markdown:
-                "Pagina publică de referință nu listează o adresă de e-mail sau un număr de telefon dedicate asociației. Pentru informații actualizate, folosește pagina oficială publicată pe Google Sites.\n\n**Adresă orientativă:** Universitatea „Ovidius” din Constanța, Facultatea de Istorie și Științe Politice.",
-            },
-          },
-          {
-            id: "blk_contact_cta",
-            type: "ctaBanner",
-            version: 1,
-            data: {
-              title: "Pagina publică HISTORIPOL",
-              subtitle:
-                "Deschide sursa oficială folosită pentru conținutul acestui site.",
-              button: {
-                label: "Deschide pagina",
-                url: pages.despre,
-                style: "primary",
+              // Contact details and campus coordinates taken from the public
+              // HISTORIPOL "Unde ne găsești" page (the map iframe centred on the
+              // Ovidius campus; social handles + e-mail shown there as widgets).
+              address: "Aleea Universității nr. 1, Campus, Corp A, etaj 1, sala 114, Constanța",
+              email: "asociatia.historipol@gmail.com",
+              socials: [
+                { platform: "instagram", url: "https://www.instagram.com/asociatiahistripol/" },
+                { platform: "facebook", url: "https://www.facebook.com/asociatiahistripol/" },
+              ],
+              mapEmbed: {
+                enabled: true,
+                provider: "osm",
+                coordinates: [44.217041, 28.623704],
+                zoom: 16,
               },
             },
           },
