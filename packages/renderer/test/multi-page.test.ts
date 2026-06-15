@@ -53,6 +53,30 @@ describe("renderSite — multi-page navigation", () => {
     expect(about).toMatch(/<a[^>]*href="\/"[^>]*data-active="false"/);
   });
 
+  test("renders the org logo as a brand link in multi-page nav when present", () => {
+    const withLogo = structuredClone(fixture) as Site;
+    withLogo.org.logo = {
+      hash: "logo",
+      path: "assets/logo.png",
+      metadataPath: "assets/logo.metadata.json",
+      mime: "image/png",
+      width: 512,
+      height: 512,
+      alt: "Stub Org logo",
+    };
+    withLogo.org.logoAlt = "Stub Org logo";
+
+    const html = renderSite(withLogo, "stub");
+    const navMatch = /<nav[^>]*data-site-nav[^>]*>([\s\S]*?)<\/nav>/.exec(html);
+    expect(navMatch).not.toBeNull();
+    const nav = navMatch![1]!;
+    expect(nav).toContain('class="site-nav__brand"');
+    expect(nav).toContain('href="/"');
+    expect(nav).toContain('class="site-nav__logo"');
+    expect(nav).toContain('src="assets/logo.png"');
+    expect(nav).toContain('alt="Stub Org logo"');
+  });
+
   test("does NOT emit nav when only one page is in-nav", () => {
     const html = renderSite(singlePage, "stub");
     expect(html).not.toMatch(/<nav[^>]*data-site-nav/);

@@ -137,6 +137,16 @@ describe("renderSite — imageGallery block (lightbox on/off)", () => {
 });
 
 describe("renderSite — imageGallery layouts", () => {
+  test("production gallery triggers crop images to fill the thumbnail frame", () => {
+    const html = renderSite(fixture, "academic");
+    expect(html).toMatch(
+      /\[data-block="imageGallery"\] \.image-gallery__trigger img,[\s\S]*aspect-ratio:\s*16 \/ 9/,
+    );
+    expect(html).toMatch(
+      /\[data-block="imageGallery"\] \.image-gallery__trigger img,[\s\S]*height:\s*auto/,
+    );
+  });
+
   test("renders a masonry layout with the matching data-layout attribute", () => {
     const masonry = structuredClone(fixture) as Site;
     const block = masonry.pages[0]!.blocks[0]! as { data: Record<string, unknown> };

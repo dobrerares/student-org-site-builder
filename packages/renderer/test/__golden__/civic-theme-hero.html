@@ -917,6 +917,35 @@ main > [data-block] {
   position: relative;
   box-sizing: border-box;
 }
+[data-site-nav] .site-nav__inner {
+  width: min(100%, var(--site-max-width));
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+[data-site-nav] .site-nav__brand {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  text-decoration: none;
+}
+[data-site-nav] .site-nav__logo {
+  display: block;
+  width: 3rem;
+  height: 3rem;
+  object-fit: contain;
+}
+[data-site-nav] ul {
+  margin: 0;
+  padding: 0;
+  justify-content: flex-end;
+}
+[data-site-nav] .site-nav__inner ul {
+  max-width: none;
+  margin-inline: 0;
+}
 /*
  * Universal contrast-safe body links. Text color comes from --color-link (the
  * engine derives this to the accent where it clears WCAG AA on the bg, else the
@@ -1103,9 +1132,10 @@ main > [data-block] {
   content: attr(data-platform);
 }
 [data-block="activitiesList"] .activities-list__media,
-[data-block="event-list"] .event-list__item-media,
-[data-block="imageGallery"] .image-gallery__figure {
+[data-block="event-list"] .event-list__item-media {
+  aspect-ratio: 16 / 9;
   background: var(--color-muted);
+  overflow: hidden;
 }
 [data-block="contactCard"] a,
 [data-block="documentDownloads"] a,
@@ -1169,10 +1199,17 @@ main > [data-block] {
   overflow-wrap: anywhere;
 }
 [data-block="hero"] .hero__media img,
-[data-block="imageGallery"] .image-gallery__figure > img,
-[data-block="imageGallery"] .image-gallery__trigger img,
 [data-block="activitiesList"] .activities-list__media img,
 [data-block="event-list"] .event-list__item-media img {
+  aspect-ratio: auto;
+  object-fit: cover;
+  height: 100%;
+}
+[data-block="imageGallery"] .image-gallery__trigger {
+  overflow: hidden;
+}
+[data-block="imageGallery"] .image-gallery__trigger img,
+[data-block="imageGallery"] .image-gallery__figure > img {
   aspect-ratio: 16 / 9;
   object-fit: cover;
   height: auto;
@@ -1239,6 +1276,13 @@ main > [data-block] {
   text-shadow: 0 1px 3px rgba(var(--color-fg-rgb), 0.5);
 }
 @media (max-width: 640px) {
+  [data-site-nav] .site-nav__inner {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  [data-site-nav] ul {
+    justify-content: center;
+  }
   [data-block] {
     padding-left: var(--space-md);
     padding-right: var(--space-md);

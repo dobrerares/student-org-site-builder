@@ -241,6 +241,13 @@ export function PageShell(props: {
   const hasEventList = pageHasEventList(page);
   const switcherEntries = languageSwitcherEntriesFor(site, page);
   const hreflangs = hreflangEntriesFor(site, page);
+  const navLogo = site.org.logo;
+  const navLogoAlt =
+    typeof site.org.logoAlt === "string" && site.org.logoAlt.length > 0
+      ? site.org.logoAlt
+      : typeof navLogo?.alt === "string" && navLogo.alt.length > 0
+        ? navLogo.alt
+        : site.org.name;
   // Only emit the preview-mode click interceptor when there is actually
   // intra-site navigation to intercept (multi-page nav or language switcher).
   // Single-page sites in preview don't need the script at all.
@@ -278,23 +285,36 @@ export function PageShell(props: {
          * data-active="true" so themes can style without re-ordering DOM. */}
         {navPages.length > 1 && (
           <nav data-site-nav aria-label="Site navigation">
-            <ul>
-              {navPages.map((entry) => {
-                const href = pagePath(site, entry);
-                const isActive = href === activeHref;
-                return (
-                  <li key={`${entry.lang}:${entry.slug}`}>
-                    <a
-                      href={href}
-                      data-active={isActive ? "true" : "false"}
-                      aria-current={isActive ? "page" : undefined}
-                    >
-                      {entry.navLabel}
-                    </a>
-                  </li>
-                );
-              })}
-            </ul>
+            <div class="site-nav__inner">
+              {navLogo !== undefined && (
+                <a class="site-nav__brand" href="/" aria-label={site.org.name}>
+                  <img
+                    class="site-nav__logo"
+                    src={resolveAssetUrl(navLogo.path, assetUrlForPath)}
+                    alt={navLogoAlt}
+                    width={navLogo.width > 0 ? navLogo.width : undefined}
+                    height={navLogo.height > 0 ? navLogo.height : undefined}
+                  />
+                </a>
+              )}
+              <ul>
+                {navPages.map((entry) => {
+                  const href = pagePath(site, entry);
+                  const isActive = href === activeHref;
+                  return (
+                    <li key={`${entry.lang}:${entry.slug}`}>
+                      <a
+                        href={href}
+                        data-active={isActive ? "true" : "false"}
+                        aria-current={isActive ? "page" : undefined}
+                      >
+                        {entry.navLabel}
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           </nav>
         )}
         {/* Language switcher. Rendered when the site has 2+ declared

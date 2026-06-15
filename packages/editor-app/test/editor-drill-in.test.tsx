@@ -81,6 +81,39 @@ function siteWithMultiplePagesAndBlocks(): Site {
   return site;
 }
 
+function siteWithTeamGrid(): Site {
+  const site = structuredClone(baseSite);
+  site.pages[0]!.blocks = [
+    {
+      id: "blk_team",
+      type: "teamGrid",
+      version: 1,
+      data: {
+        title: "Team",
+        columns: 3,
+        people: [{ name: "Member name", role: "Role" }],
+      },
+    } satisfies BlockEnvelope,
+  ];
+  return site;
+}
+
+function siteWithCustomHtml(): Site {
+  const site = structuredClone(baseSite);
+  site.pages[0]!.blocks = [
+    {
+      id: "blk_custom",
+      type: "customHTML",
+      version: 1,
+      data: {
+        html: "<p>Initial custom HTML</p>",
+        sanitize: true,
+      },
+    } satisfies BlockEnvelope,
+  ];
+  return site;
+}
+
 describe("EditorApp drill-in inspector", () => {
   beforeEach(() => setViewportWidth(1200));
   afterEach(() => cleanup());
@@ -161,6 +194,65 @@ describe("EditorApp drill-in inspector", () => {
     const block = last?.pages[0]?.blocks[0];
     expect(block).toBeDefined();
     expect((block?.data as { title?: string }).title).toBe("Edited Title");
+  });
+
+  test("adding a nested team social row creates editable defaults and keeps preview rendering", () => {
+    const { container } = render(<EditorApp initial={siteWithTeamGrid()} />);
+
+    fireEvent.click(
+      container.querySelector<HTMLButtonElement>('[data-testid="block-row-select"]')!,
+    );
+
+    const socialsFieldset = container.querySelector<HTMLElement>(
+      'fieldset[data-field="people.0.socials"]',
+    );
+    expect(socialsFieldset).not.toBeNull();
+    const addSocial = socialsFieldset!.querySelector<HTMLButtonElement>(
+      'button[data-action="add"]',
+    );
+    expect(addSocial).not.toBeNull();
+
+    fireEvent.click(addSocial!);
+
+    const platform = container.querySelector<HTMLInputElement>(
+      '[data-field="people.0.socials.0.platform"]',
+    );
+    const url = container.querySelector<HTMLInputElement>(
+      '[data-field="people.0.socials.0.url"]',
+    );
+    expect(platform?.value).toBe("website");
+    expect(url?.value).toBe("/");
+
+    const iframe = container.querySelector<HTMLIFrameElement>(
+      '[data-testid="preview-pane"] iframe',
+    );
+    expect(iframe?.getAttribute("srcdoc")).toContain("team-person__social--website");
+  });
+
+  test("customHTML drills into the dedicated textarea and safety-warning form", () => {
+    const { container } = render(<EditorApp initial={siteWithCustomHtml()} />);
+
+    fireEvent.click(
+      container.querySelector<HTMLButtonElement>('[data-testid="block-row-select"]')!,
+    );
+
+    expect(container.querySelector('[data-testid="block-form"]')).toBeNull();
+    expect(container.querySelector('[data-block-form="customHTML"]')).not.toBeNull();
+    const textarea = container.querySelector<HTMLTextAreaElement>('[data-field="data.html"]');
+    expect(textarea).not.toBeNull();
+    expect(textarea!.tagName).toBe("TEXTAREA");
+
+    fireEvent.input(textarea!, { target: { value: "<p>Edited custom HTML</p>" } });
+
+    const iframe = container.querySelector<HTMLIFrameElement>(
+      '[data-testid="preview-pane"] iframe',
+    );
+    expect(iframe?.getAttribute("srcdoc")).toContain("Edited custom HTML");
+
+    const sanitize = container.querySelector<HTMLInputElement>('[data-field="data.sanitize"]');
+    expect(sanitize).not.toBeNull();
+    fireEvent.click(sanitize!);
+    expect(container.querySelector('[data-testid="custom-html-danger"]')).not.toBeNull();
   });
 
   test("the back-to-blocks button drills out of the block inspector", () => {

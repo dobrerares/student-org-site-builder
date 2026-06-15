@@ -183,18 +183,43 @@ function Person(props: {
   );
 }
 
-function SocialList(props: { socials: TeamGridSocialLink[] }): preact.JSX.Element {
+interface RenderableSocial {
+  platform: string;
+  url: string;
+  slug: string;
+}
+
+function readString(value: unknown): string | undefined {
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+function readSocial(raw: unknown): RenderableSocial | null {
+  if (raw === null || typeof raw !== "object") return null;
+  const social = raw as Partial<TeamGridSocialLink>;
+  const url = readString(social.url);
+  if (url === undefined) return null;
+  const platform = readString(social.platform) ?? "link";
+  return { platform, url, slug: slugify(platform) || "link" };
+}
+
+function SocialList(props: { socials: TeamGridSocialLink[] }): preact.JSX.Element | null {
+  const socials = props.socials
+    .map((social) => readSocial(social))
+    .filter((social): social is RenderableSocial => social !== null);
+
+  if (socials.length === 0) return null;
+
   return (
     <ul class="team-person__socials">
-      {props.socials.map((s, idx) => (
-        <li key={`${s.platform}-${idx}`} class="team-person__socials-item">
+      {socials.map((social, idx) => (
+        <li key={`${social.platform}-${idx}`} class="team-person__socials-item">
           <a
-            class={`team-person__social team-person__social--${slugify(s.platform)}`}
-            href={s.url}
-            data-platform={s.platform}
+            class={`team-person__social team-person__social--${social.slug}`}
+            href={social.url}
+            data-platform={social.platform}
             rel="noopener noreferrer"
           >
-            <span class="visually-hidden">{s.platform}</span>
+            <span class="visually-hidden">{social.platform}</span>
           </a>
         </li>
       ))}

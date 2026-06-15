@@ -11,6 +11,7 @@ import type {
 } from "@sosb/schema";
 import {
   ActivitiesListDataSchema,
+  ContactCardDataSchema,
   CtaBannerDataSchema,
   DocumentDownloadsDataSchema,
   HeroDataSchema,
@@ -1066,6 +1067,47 @@ describe("BlockForm — asset-picker dispatch covers every AssetRef-bearing bloc
       ).toBeGreaterThan(0);
     });
   }
+});
+
+describe("BlockForm — contact card map coordinates", () => {
+  afterEach(cleanup);
+
+  test("renders coordinates as latitude/longitude number inputs and patches a tuple", () => {
+    const patches: { path: readonly (string | number)[]; value: unknown }[] = [];
+    const { container } = render(
+      <BlockForm
+        schema={ContactCardDataSchema}
+        data={{
+          mapEmbed: {
+            enabled: true,
+            provider: "osm",
+            coordinates: [44.4268, 26.1025],
+          },
+        }}
+        onPatch={(path, value) => patches.push({ path, value })}
+        onArrayChange={() => {}}
+        uploader={noopUploader}
+        documentUploader={noopDocumentUploader}
+        overrides={BLOCK_FIELD_METADATA.contactCard ?? []}
+      />,
+    );
+
+    const coordinates = container.querySelector<HTMLElement>(
+      'fieldset[data-field="mapEmbed.coordinates"][data-kind="lat-lng"]',
+    );
+    expect(coordinates).not.toBeNull();
+    const lat = container.querySelector<HTMLInputElement>('[data-field="mapEmbed.coordinates.0"]');
+    const lng = container.querySelector<HTMLInputElement>('[data-field="mapEmbed.coordinates.1"]');
+    expect(lat).not.toBeNull();
+    expect(lng).not.toBeNull();
+    expect(lat!.value).toBe("44.4268");
+    expect(lng!.value).toBe("26.1025");
+
+    fireEvent.input(lat!, { target: { value: "45.5" } });
+
+    expect(patches[0]?.path).toEqual(["mapEmbed", "coordinates"]);
+    expect(patches[0]?.value).toEqual([45.5, 26.1025]);
+  });
 });
 
 /**
