@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import type { Site } from "@sosb/schema";
 import heroOnly from "./fixtures/hero-only.json" with { type: "json" };
-import { renderSite, usedFamiliesFor, fontAssetsFor } from "../src/index.js";
+import { renderSite, usedFamiliesFor, fontAssetsFor, fontPreloadHrefsFor } from "../src/index.js";
 
 const fixture = heroOnly as unknown as Site;
 
@@ -43,13 +43,33 @@ describe("@font-face emission (gated)", () => {
   test("usedFamiliesFor returns the registry-gated family", () => {
     expect(usedFamiliesFor(spaceGroteskSite, "stub")).toEqual(["Space Grotesk"]);
   });
+
+  test("emits font preload links before the inline stylesheet", () => {
+    const html = renderSite(spaceGroteskSite, "stub");
+    const preload = html.indexOf('rel="preload"');
+    const style = html.indexOf("<style>");
+    expect(preload).toBeGreaterThanOrEqual(0);
+    expect(style).toBeGreaterThan(preload);
+    expect(html).toMatch(
+      /<link rel="preload" href="assets\/fonts\/space-grotesk-[^"]+\.woff2" as="font" type="font\/woff2" crossorigin="anonymous"\/>/,
+    );
+  });
+
+  test("fontPreloadHrefsFor returns the same registry-gated font paths", () => {
+    const hrefs = fontPreloadHrefsFor(spaceGroteskSite, "stub");
+    expect(hrefs.length).toBeGreaterThan(0);
+    expect(hrefs.every((href) => href.startsWith("assets/fonts/space-grotesk-"))).toBe(true);
+    expect(hrefs.every((href) => href.endsWith(".woff2"))).toBe(true);
+  });
 });
 
 describe("@font-face emission (negative — system fonts)", () => {
   test("a system-font site on stub emits zero @font-face and no used families", () => {
     const html = renderSite(fixture, "stub");
     expect(html).not.toContain("@font-face");
+    expect(html).not.toContain('rel="preload"');
     expect(usedFamiliesFor(fixture, "stub")).toEqual([]);
+    expect(fontPreloadHrefsFor(fixture, "stub")).toEqual([]);
   });
 });
 
@@ -84,6 +104,7 @@ describe("preview asset resolver", () => {
       assetUrlForPath: (path) => `blob:fake/${path}`,
     });
     expect(html).toMatch(/src:url\(blob:fake\/assets\/fonts\/space-grotesk-[^)]+\)/);
+    expect(html).toMatch(/href="blob:fake\/assets\/fonts\/space-grotesk-[^"]+\.woff2"/);
     // The canonical (unresolved) path should not leak as a raw src.
     expect(html).not.toMatch(/src:url\(assets\/fonts\//);
   });

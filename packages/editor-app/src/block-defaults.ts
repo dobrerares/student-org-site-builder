@@ -176,6 +176,7 @@ const DEFAULT_BUILDERS: Record<string, DefaultBuilder> = {
     version: PARTNER_LOGOS_BLOCK_VERSION,
     data: () => ({
       title: "Partners",
+      presentation: "grid",
       // Per ADR 0044 Corollary 2: ship an empty partners array — the
       // asset picker (T10) owns the empty state. The user adds partners
       // through the BlockForm's array editor; each entry's `logo` slot
@@ -193,7 +194,11 @@ const DEFAULT_BUILDERS: Record<string, DefaultBuilder> = {
   },
   richText: {
     version: RICH_TEXT_BLOCK_VERSION,
-    data: () => ({ markdown: "## Heading\n\nWrite your text here." }),
+    data: () => ({
+      markdown: "## Heading\n\nWrite your text here.",
+      titleAlign: "left",
+      paragraphAlign: "left",
+    }),
   },
   teamGrid: {
     version: TEAM_GRID_BLOCK_VERSION,

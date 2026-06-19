@@ -65,6 +65,7 @@ export {
   QUOTE_BLOCK_VERSION,
   QuoteBlockSchema,
   QuoteDataSchema,
+  RICH_TEXT_ALIGNMENTS,
   RICH_TEXT_BLOCK_VERSION,
   RichTextBlockSchema,
   RichTextDataSchema,
@@ -79,6 +80,7 @@ export {
   ValueListDataSchema,
   ValueListItemSchema,
   PARTNER_LOGOS_BLOCK_VERSION,
+  PARTNER_LOGOS_PRESENTATIONS,
   PartnerLogosBlockSchema,
   PartnerLogosDataSchema,
   isKnownBlockType,
@@ -132,6 +134,7 @@ export type {
   Partner,
   PartnerLogosBlock,
   PartnerLogosData,
+  PartnerLogosPresentation,
   TeamGridBlock,
   TeamGridData,
   TeamGridPerson,
@@ -150,6 +153,7 @@ export type {
   ActivityItem,
   ActivityLink,
   RichTextBlock,
+  RichTextAlignment,
   RichTextData,
 } from "./blocks/index.js";
 

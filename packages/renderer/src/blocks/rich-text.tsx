@@ -36,10 +36,23 @@ export function RichText(props: { block: RichTextBlock }): preact.JSX.Element | 
   if (markdownSource.trim().length === 0) return null;
 
   const html = markdownToHtml(markdownSource);
+  const titleAlign = readAlignment(data.titleAlign);
+  const paragraphAlign = readAlignment(data.paragraphAlign);
 
   return (
-    <section data-block="richText" data-block-id={id}>
+    <section
+      data-block="richText"
+      data-block-id={id}
+      data-title-align={titleAlign}
+      data-paragraph-align={paragraphAlign}
+    >
       <div class="rich-text" dangerouslySetInnerHTML={{ __html: html }} />
     </section>
   );
+}
+
+function readAlignment(value: unknown): "left" | "center" | "right" | "justify" | undefined {
+  return value === "left" || value === "center" || value === "right" || value === "justify"
+    ? value
+    : undefined;
 }

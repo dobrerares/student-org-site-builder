@@ -34,6 +34,7 @@ export function serializeSiteData(siteData: unknown): Uint8Array {
  * assets/<hash>.<ext>    # content-addressed assets, copied from `vfs`
  * assets/...metadata     # whatever the asset VFS holds — copied verbatim
  * dist/                  # built static site ready for Cloudflare Pages
+ * dist/assets/<hash>...  # deployable copies of referenced user assets
  * DEPLOY.md              # generated Cloudflare Pages guide
  * ```
  *
@@ -57,8 +58,10 @@ export async function exportToZip(siteData: unknown, vfs: Vfs): Promise<Blob> {
 
   // 2. Assets — copied verbatim from the input VFS.
   const assetPaths = await vfs.list("assets/");
+  const assetBytes = new Map<string, Uint8Array>();
   for (const path of assetPaths) {
     const bytes = await vfs.read(path);
+    assetBytes.set(path, bytes);
     await driver.write(path, bytes);
   }
 
@@ -71,6 +74,27 @@ export async function exportToZip(siteData: unknown, vfs: Vfs): Promise<Blob> {
     // binary artefacts (self-hosted woff2 fonts at `dist/assets/fonts/...`) as
     // `Uint8Array`. Write bytes through verbatim; encode strings as UTF-8.
     await driver.write(`dist/${path}`, typeof value === "string" ? enc.encode(value) : value);
+  }
+
+  // The renderer emits relative `assets/...` URLs. Cloudflare Pages serves the
+  // uploaded `dist/` folder as the web root, so user-uploaded assets must also
+  // exist inside `dist/`. Nested pages such as `activitati/index.html` resolve
+  // the same relative URL against their own folder, so mirror assets there too.
+  const pagePrefixes = distAssetPrefixes(dist);
+  for (const [assetPath, bytes] of assetBytes) {
+    for (const prefix of pagePrefixes) {
+      await driver.write(`${prefix}${assetPath}`, bytes);
+    }
+  }
+
+  // Build-owned assets, currently self-hosted fonts, need the same nested-page
+  // mirroring for relative CSS URLs like `url(assets/fonts/inter.woff2)`.
+  for (const [path, value] of dist) {
+    if (!path.startsWith("assets/")) continue;
+    const bytes = typeof value === "string" ? enc.encode(value) : value;
+    for (const prefix of pagePrefixes.slice(1)) {
+      await driver.write(`${prefix}${path}`, bytes);
+    }
   }
 
   // 4. Deployment guide.
@@ -86,6 +110,16 @@ export async function exportToZip(siteData: unknown, vfs: Vfs): Promise<Blob> {
 
   const zipBytes = driver.toZipBytes();
   return new Blob([zipBytes], { type: "application/zip" });
+}
+
+function distAssetPrefixes(dist: Map<string, string | Uint8Array>): string[] {
+  const prefixes = ["dist/"];
+  for (const path of dist.keys()) {
+    if (!path.endsWith("/index.html")) continue;
+    const pageDir = path.slice(0, -"index.html".length);
+    if (pageDir.length > 0) prefixes.push(`dist/${pageDir}`);
+  }
+  return prefixes;
 }
 
 function deployLanguageFor(siteData: unknown): DeployLanguage {

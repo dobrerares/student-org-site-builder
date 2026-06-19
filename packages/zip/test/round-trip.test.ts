@@ -36,6 +36,10 @@ describe("exportToZip", () => {
     expect(paths).not.toContain("dist/.gitkeep");
     expect(paths).toContain("assets/8e3a7f.png");
     expect(paths).toContain("assets/4a91d2.jpg");
+    expect(paths).toContain("dist/assets/8e3a7f.png");
+    expect(paths).toContain("dist/assets/4a91d2.jpg");
+    expect(paths).toContain("dist/despre/assets/8e3a7f.png");
+    expect(paths).toContain("dist/despre/assets/4a91d2.jpg");
   });
 
   test("ships self-hosted theme fonts as binary woff2 under dist/assets/fonts/ (PR-F2b)", async () => {
@@ -55,6 +59,22 @@ describe("exportToZip", () => {
       // woff2 signature: first 4 bytes spell 'wOF2'.
       expect(Array.from(back.subarray(0, 4))).toEqual([0x77, 0x4f, 0x46, 0x32]);
     }
+  });
+
+  test("mirrors build-owned dist assets for nested page-relative URLs", async () => {
+    const blob = await exportToZip(historipol, new MemoryDriver());
+    const inspector = ZipDriver.fromZipBytes(await blobToBytes(blob));
+    const paths = await inspector.list();
+    const rootFont = paths.find(
+      (p) => p.startsWith("dist/assets/fonts/") && p.endsWith(".woff2"),
+    );
+    expect(rootFont).toBeDefined();
+
+    const nestedFont = rootFont!.replace("dist/assets/", "dist/despre/assets/");
+    expect(paths).toContain(nestedFont);
+    expect(Array.from(await inspector.read(nestedFont))).toEqual(
+      Array.from(await inspector.read(rootFont!)),
+    );
   });
 
   test("dist/index.html is the rendered static site, not a placeholder", async () => {

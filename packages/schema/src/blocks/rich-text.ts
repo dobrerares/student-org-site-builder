@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+export const RICH_TEXT_ALIGNMENTS = ["left", "center", "right", "justify"] as const;
+export type RichTextAlignment = (typeof RICH_TEXT_ALIGNMENTS)[number];
+
+const RichTextAlignmentSchema = z.enum(RICH_TEXT_ALIGNMENTS);
+
 /**
  * RichText block — markdown-prose section with the strict whitelist subset.
  *
@@ -17,6 +22,13 @@ import { z } from "zod";
  */
 export const RichTextDataSchema = z.looseObject({
   markdown: z.string(),
+  /**
+   * Optional presentation controls for generated prose. Kept separate so an
+   * org can align headings differently from body copy; themes consume these as
+   * data attributes and old sites without the fields keep their existing flow.
+   */
+  titleAlign: RichTextAlignmentSchema.optional(),
+  paragraphAlign: RichTextAlignmentSchema.optional(),
 });
 
 export const RichTextBlockSchema = z.looseObject({

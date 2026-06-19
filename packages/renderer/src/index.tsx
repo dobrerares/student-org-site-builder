@@ -88,11 +88,13 @@ export function renderSite(data: Site, themeId: string, opts?: RenderOptions): s
 
   const mode = opts?.mode ?? "deploy";
   const css = composeCss(data, themeId, opts?.assetUrlForPath);
+  const fontPreloads = fontPreloadHrefsFor(data, themeId, opts?.assetUrlForPath);
   const body = render(
     <PageShell
       site={data}
       page={page}
       css={css}
+      fontPreloads={fontPreloads}
       mode={mode}
       assetUrlForPath={opts?.assetUrlForPath}
     />,
@@ -150,6 +152,28 @@ function emitFontFaces(families: readonly string[], assetUrlForPath?: AssetUrlFo
     }
   }
   return rules.join("\n");
+}
+
+/**
+ * Font preload hrefs matching the emitted @font-face src URLs. Preloading the
+ * exact same self-hosted files lets the browser start fetching before it
+ * reaches the inline CSS font-face block, which reduces late font swapping.
+ */
+export function fontPreloadHrefsFor(
+  site: Site,
+  themeId: string,
+  assetUrlForPath?: AssetUrlForPath,
+): string[] {
+  const hrefs: string[] = [];
+  for (const family of usedFamiliesFor(site, themeId)) {
+    const defs = [...(FONT_FACE_REGISTRY[family] ?? [])].sort(
+      (a, b) => a.weight - b.weight || a.subset.localeCompare(b.subset),
+    );
+    for (const def of defs) {
+      hrefs.push(resolveAssetUrl(FONT_ASSET_PREFIX + def.file, assetUrlForPath));
+    }
+  }
+  return hrefs;
 }
 
 /**

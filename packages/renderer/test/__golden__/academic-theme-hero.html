@@ -1,4 +1,4 @@
-<!doctype html><html lang="ro"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Stub site — home</title><meta name="description" content="A minimal site for renderer tests."/><meta property="og:title" content="Stub site — home"/><meta property="og:description" content="A minimal site for renderer tests."/><meta property="og:type" content="website"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="Stub site — home"/><meta name="twitter:description" content="A minimal site for renderer tests."/><meta name="twitter:image" content="assets/hero.jpg"/><style>@font-face{font-family:"Inter";font-style:normal;font-weight:400;font-display:swap;src:url(assets/fonts/inter-latin-400-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+<!doctype html><html lang="ro"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Stub site — home</title><link rel="preload" href="assets/fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin="anonymous"/><link rel="preload" href="assets/fonts/inter-latin-ext-400-normal.woff2" as="font" type="font/woff2" crossorigin="anonymous"/><link rel="preload" href="assets/fonts/inter-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin="anonymous"/><link rel="preload" href="assets/fonts/inter-latin-ext-500-normal.woff2" as="font" type="font/woff2" crossorigin="anonymous"/><link rel="preload" href="assets/fonts/inter-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin="anonymous"/><link rel="preload" href="assets/fonts/inter-latin-ext-600-normal.woff2" as="font" type="font/woff2" crossorigin="anonymous"/><link rel="preload" href="assets/fonts/source-serif-4-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin="anonymous"/><link rel="preload" href="assets/fonts/source-serif-4-latin-ext-600-normal.woff2" as="font" type="font/woff2" crossorigin="anonymous"/><link rel="preload" href="assets/fonts/source-serif-4-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin="anonymous"/><link rel="preload" href="assets/fonts/source-serif-4-latin-ext-700-normal.woff2" as="font" type="font/woff2" crossorigin="anonymous"/><meta name="description" content="A minimal site for renderer tests."/><meta property="og:title" content="Stub site — home"/><meta property="og:description" content="A minimal site for renderer tests."/><meta property="og:type" content="website"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="Stub site — home"/><meta name="twitter:description" content="A minimal site for renderer tests."/><meta name="twitter:image" content="assets/hero.jpg"/><style>@font-face{font-family:"Inter";font-style:normal;font-weight:400;font-display:swap;src:url(assets/fonts/inter-latin-400-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
 @font-face{font-family:"Inter";font-style:normal;font-weight:400;font-display:swap;src:url(assets/fonts/inter-latin-ext-400-normal.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
 @font-face{font-family:"Inter";font-style:normal;font-weight:500;font-display:swap;src:url(assets/fonts/inter-latin-500-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
 @font-face{font-family:"Inter";font-style:normal;font-weight:500;font-display:swap;src:url(assets/fonts/inter-latin-ext-500-normal.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
@@ -919,6 +919,12 @@ main > [data-block] {
   position: relative;
   box-sizing: border-box;
 }
+[data-site-nav] {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--color-bg);
+}
 [data-site-nav] .site-nav__inner {
   width: min(100%, var(--site-max-width));
   margin-inline: auto;
@@ -986,6 +992,26 @@ main > [data-block] {
 [data-block="quote"] {
   width: min(100%, var(--site-readable-width));
   margin-inline: auto;
+}
+[data-block="richText"] .rich-text > :is(p, ul, ol, blockquote, h2, h3, h4) {
+  max-width: none;
+}
+[data-block="richText"][data-title-align="left"] .rich-text :is(h2, h3, h4),
+[data-block="richText"][data-paragraph-align="left"] .rich-text :is(p, ul, ol, blockquote) {
+  text-align: left;
+}
+[data-block="richText"][data-title-align="center"] .rich-text :is(h2, h3, h4),
+[data-block="richText"][data-paragraph-align="center"] .rich-text :is(p, ul, ol, blockquote) {
+  text-align: center;
+}
+[data-block="richText"][data-title-align="right"] .rich-text :is(h2, h3, h4),
+[data-block="richText"][data-paragraph-align="right"] .rich-text :is(p, ul, ol, blockquote) {
+  text-align: right;
+}
+[data-block="richText"][data-title-align="justify"] .rich-text :is(h2, h3, h4),
+[data-block="richText"][data-paragraph-align="justify"] .rich-text :is(p, ul, ol, blockquote) {
+  text-align: justify;
+  text-align-last: left;
 }
 [data-block="event-list"] > :is(.event-list__title, .event-list__intro, .event-list__items),
 [data-block="imageGallery"] > :is(.image-gallery__title, .image-gallery__grid) {
@@ -1104,12 +1130,17 @@ main > [data-block] {
 /* Compact circular avatar (photo or initials), not a full-width slab. */
 [data-block="teamGrid"] .team-person__photo,
 [data-block="teamGrid"] .team-person__avatar {
-  width: 4.5rem;
-  height: 4.5rem;
+  width: 7rem;
+  height: 7rem;
   aspect-ratio: 1;
   border-radius: 50%;
   object-fit: cover;
   flex: 0 0 auto;
+}
+[data-block="teamGrid"] .team-person__figure,
+[data-block="teamGrid"] .team-person__caption {
+  align-items: center;
+  text-align: center;
 }
 [data-block="teamGrid"] .team-person__avatar {
   color: var(--color-on-accent);
@@ -1150,6 +1181,40 @@ main > [data-block] {
   padding: var(--space-md);
   background: var(--color-surface);
   border-radius: var(--radius-md);
+}
+[data-block="partnerLogos"][data-presentation="footer"] {
+  padding: var(--space-lg) var(--space-md);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+[data-block="partnerLogos"][data-presentation="footer"] .partner-logos__inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-md) var(--space-lg);
+}
+[data-block="partnerLogos"][data-presentation="footer"] .partner-logos__title {
+  margin: 0;
+  color: var(--color-on-primary);
+  font-size: var(--type-base);
+}
+[data-block="partnerLogos"][data-presentation="footer"] .partner-logos__grid {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+[data-block="partnerLogos"][data-presentation="footer"] .partner-logos__item {
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+}
+[data-block="partnerLogos"][data-presentation="footer"] .partner-logos__logo {
+  height: 2.5rem;
+  filter: brightness(0) invert(1);
 }
 /* Contact card: map alongside an icon-chip channel list. Two columns when a map
  * actually renders, a single full-width column otherwise; stacks on narrow
@@ -1377,4 +1442,13 @@ a:hover, a:focus-visible { text-decoration-thickness: 2px; }
 [data-block="event-list"] .event-list__items,
 [data-block="faq"] .faq__list {
   gap: var(--space-lg);
+}
+[data-block="richText"] .rich-text > :is(p, ul, ol, blockquote, h2, h3, h4) {
+  max-width: none;
+}
+[data-block="valueList"] .value-list__title {
+  margin-bottom: var(--space-xl);
+}
+[data-block="valueList"] .value-list__items {
+  gap: var(--space-xl);
 }</style></head><body><main><section data-block="hero" data-block-id="blk_home_hero" class="hero hero--has-image" aria-labelledby="blk_home_hero__title"><div class="hero__media"><img src="assets/hero.jpg" alt="Studenți la o conferință" loading="lazy"/></div><div class="hero__inner"><h1 id="blk_home_hero__title" class="hero__title">Stub Org</h1><p class="hero__subtitle">A fixture for renderer tests</p></div></section></main></body></html>

@@ -226,10 +226,11 @@ export function PageShell(props: {
   site: Site;
   page: Page;
   css: string;
+  fontPreloads?: readonly string[] | undefined;
   mode?: "deploy" | "preview";
   assetUrlForPath?: AssetUrlForPath | undefined;
 }): preact.JSX.Element {
-  const { site, page, css, mode = "deploy", assetUrlForPath } = props;
+  const { site, page, css, fontPreloads = [], mode = "deploy", assetUrlForPath } = props;
   const title = pageTitle(site, page);
   const description = pageDescription(site, page);
   const ogImage = pageOgImage(page, assetUrlForPath);
@@ -242,6 +243,14 @@ export function PageShell(props: {
   const switcherEntries = languageSwitcherEntriesFor(site, page);
   const hreflangs = hreflangEntriesFor(site, page);
   const navLogo = site.org.logo;
+  const faviconHref =
+    navLogo !== undefined && typeof navLogo.path === "string" && navLogo.path.length > 0
+      ? resolveAssetUrl(navLogo.path, assetUrlForPath)
+      : undefined;
+  const faviconType =
+    navLogo !== undefined && typeof navLogo.mime === "string" && navLogo.mime.length > 0
+      ? navLogo.mime
+      : undefined;
   const navLogoAlt =
     typeof site.org.logoAlt === "string" && site.org.logoAlt.length > 0
       ? site.org.logoAlt
@@ -260,6 +269,17 @@ export function PageShell(props: {
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>{title}</title>
+        {faviconHref !== undefined && <link rel="icon" href={faviconHref} type={faviconType} />}
+        {fontPreloads.map((href) => (
+          <link
+            key={href}
+            rel="preload"
+            href={href}
+            as="font"
+            type="font/woff2"
+            crossOrigin="anonymous"
+          />
+        ))}
         {description !== undefined && <meta name="description" content={description} />}
         {/* Open Graph minimum so theme-agnostic shares render predictably. */}
         <meta property="og:title" content={title} />
