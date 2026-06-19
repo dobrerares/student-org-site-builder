@@ -226,10 +226,11 @@ export function PageShell(props: {
   site: Site;
   page: Page;
   css: string;
+  fontPreloads?: readonly string[] | undefined;
   mode?: "deploy" | "preview";
   assetUrlForPath?: AssetUrlForPath | undefined;
 }): preact.JSX.Element {
-  const { site, page, css, mode = "deploy", assetUrlForPath } = props;
+  const { site, page, css, fontPreloads = [], mode = "deploy", assetUrlForPath } = props;
   const title = pageTitle(site, page);
   const description = pageDescription(site, page);
   const ogImage = pageOgImage(page, assetUrlForPath);
@@ -241,6 +242,21 @@ export function PageShell(props: {
   const hasEventList = pageHasEventList(page);
   const switcherEntries = languageSwitcherEntriesFor(site, page);
   const hreflangs = hreflangEntriesFor(site, page);
+  const navLogo = site.org.logo;
+  const faviconHref =
+    navLogo !== undefined && typeof navLogo.path === "string" && navLogo.path.length > 0
+      ? resolveAssetUrl(navLogo.path, assetUrlForPath)
+      : undefined;
+  const faviconType =
+    navLogo !== undefined && typeof navLogo.mime === "string" && navLogo.mime.length > 0
+      ? navLogo.mime
+      : undefined;
+  const navLogoAlt =
+    typeof site.org.logoAlt === "string" && site.org.logoAlt.length > 0
+      ? site.org.logoAlt
+      : typeof navLogo?.alt === "string" && navLogo.alt.length > 0
+        ? navLogo.alt
+        : site.org.name;
   // Only emit the preview-mode click interceptor when there is actually
   // intra-site navigation to intercept (multi-page nav or language switcher).
   // Single-page sites in preview don't need the script at all.
@@ -253,6 +269,17 @@ export function PageShell(props: {
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>{title}</title>
+        {faviconHref !== undefined && <link rel="icon" href={faviconHref} type={faviconType} />}
+        {fontPreloads.map((href) => (
+          <link
+            key={href}
+            rel="preload"
+            href={href}
+            as="font"
+            type="font/woff2"
+            crossOrigin="anonymous"
+          />
+        ))}
         {description !== undefined && <meta name="description" content={description} />}
         {/* Open Graph minimum so theme-agnostic shares render predictably. */}
         <meta property="og:title" content={title} />
@@ -278,23 +305,36 @@ export function PageShell(props: {
          * data-active="true" so themes can style without re-ordering DOM. */}
         {navPages.length > 1 && (
           <nav data-site-nav aria-label="Site navigation">
-            <ul>
-              {navPages.map((entry) => {
-                const href = pagePath(site, entry);
-                const isActive = href === activeHref;
-                return (
-                  <li key={`${entry.lang}:${entry.slug}`}>
-                    <a
-                      href={href}
-                      data-active={isActive ? "true" : "false"}
-                      aria-current={isActive ? "page" : undefined}
-                    >
-                      {entry.navLabel}
-                    </a>
-                  </li>
-                );
-              })}
-            </ul>
+            <div class="site-nav__inner">
+              {navLogo !== undefined && (
+                <a class="site-nav__brand" href="/" aria-label={site.org.name}>
+                  <img
+                    class="site-nav__logo"
+                    src={resolveAssetUrl(navLogo.path, assetUrlForPath)}
+                    alt={navLogoAlt}
+                    width={navLogo.width > 0 ? navLogo.width : undefined}
+                    height={navLogo.height > 0 ? navLogo.height : undefined}
+                  />
+                </a>
+              )}
+              <ul>
+                {navPages.map((entry) => {
+                  const href = pagePath(site, entry);
+                  const isActive = href === activeHref;
+                  return (
+                    <li key={`${entry.lang}:${entry.slug}`}>
+                      <a
+                        href={href}
+                        data-active={isActive ? "true" : "false"}
+                        aria-current={isActive ? "page" : undefined}
+                      >
+                        {entry.navLabel}
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           </nav>
         )}
         {/* Language switcher. Rendered when the site has 2+ declared

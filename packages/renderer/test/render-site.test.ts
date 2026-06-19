@@ -38,6 +38,21 @@ describe("renderSite — page shell", () => {
     expect(html).toMatch(/<meta name="description" content="A minimal site for renderer tests\."/);
   });
 
+  test("uses the organization logo as the favicon when present", () => {
+    const withLogo = structuredClone(fixture) as Site;
+    withLogo.org.logo = {
+      hash: "logo",
+      path: "assets/logo.png",
+      metadataPath: "assets/logo.metadata.json",
+      mime: "image/png",
+      width: 256,
+      height: 256,
+      alt: "Stub Org logo",
+    };
+    const html = renderSite(withLogo, "stub");
+    expect(html).toContain('<link rel="icon" href="assets/logo.png" type="image/png"/>');
+  });
+
   test("falls back to org.name when no page title is set", () => {
     const noTitleSite = structuredClone(fixture) as Site;
     delete (noTitleSite.pages[0]!.seo as { title?: string }).title;

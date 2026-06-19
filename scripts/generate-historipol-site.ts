@@ -1,7 +1,7 @@
-import { mkdir, rm, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { createRequire } from "node:module";
+import { basename, dirname, join } from "node:path";
 
-import { chromium } from "@playwright/test";
 import { Fragment, h } from "preact";
 
 import { uploadAsset } from "../packages/assets/src/pipeline.ts";
@@ -14,23 +14,11 @@ import { exportToZip } from "../packages/zip/src/export.ts";
 
 Object.assign(globalThis, { React: { createElement: h, Fragment } });
 
-const outDir = join(process.cwd(), "build", "historipol-reference-site");
-
-const pages = {
-  despre: "https://sites.google.com/osubb.ro/historipol/despre-noi",
-  activitati: "https://sites.google.com/osubb.ro/historipol/activit%C4%83%C8%9Bi",
-  echipa: "https://sites.google.com/osubb.ro/historipol/echipa",
-  contact: "https://sites.google.com/osubb.ro/historipol/unde-ne-g%C4%83se%C8%99ti",
-} as const;
-
-type PageKey = keyof typeof pages;
-
-interface ScrapedImage {
-  src: string;
-  alt: string;
-  width: number;
-  height: number;
-}
+const rootDir = process.cwd();
+const sourceDir = join(rootDir, "historipol");
+const outDir = join(rootDir, "build", "historipol-sitebuilder");
+const require = createRequire(import.meta.url);
+const sharp = require("../packages/assets/node_modules/sharp") as typeof import("sharp");
 
 interface AssetRef {
   hash: string;
@@ -42,85 +30,72 @@ interface AssetRef {
   alt: string;
 }
 
-async function scrapeImages(): Promise<Record<PageKey, ScrapedImage[]>> {
-  const browser = await chromium.launch();
-  try {
-    const page = await browser.newPage({ viewport: { width: 1440, height: 1600 } });
-    const result = {} as Record<PageKey, ScrapedImage[]>;
-    for (const [key, url] of Object.entries(pages) as [PageKey, string][]) {
-      await page.goto(url, { waitUntil: "networkidle" });
-      result[key] = await page.$$eval("img", (imgs) =>
-        imgs
-          .map((img) => ({
-            src: img.currentSrc || img.src,
-            alt: img.alt || "",
-            width: img.naturalWidth,
-            height: img.naturalHeight,
-          }))
-          .filter((img) => img.src.startsWith("http") && img.width >= 80 && img.height >= 80),
-      );
-    }
-    return result;
-  } finally {
-    await browser.close();
-  }
+interface CropBox {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
 }
 
-function uniqueBySrc(images: ScrapedImage[]): ScrapedImage[] {
-  const seen = new Set<string>();
-  return images.filter((img) => {
-    const normalised = img.src.replace(/=w\d+.*$/, "");
-    if (seen.has(normalised)) return false;
-    seen.add(normalised);
-    return true;
-  });
-}
-
-async function fetchBytes(url: string): Promise<Uint8Array> {
-  const response = await fetch(url, {
-    headers: {
-      "user-agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126 Safari/537.36",
-    },
-  });
-  if (!response.ok) {
-    throw new Error(`Failed to download ${url}: ${response.status} ${response.statusText}`);
-  }
-  return new Uint8Array(await response.arrayBuffer());
-}
-
-async function uploadRemoteImage(
+async function uploadLocalImage(
   vfs: MemoryDriver,
   processor: Awaited<ReturnType<typeof createSharpImageProcessor>>,
-  image: ScrapedImage,
-  name: string,
+  relativePath: string,
   alt: string,
+  crop?: CropBox,
 ): Promise<AssetRef> {
-  const bytes = await fetchBytes(image.src);
-  const ref = await uploadAsset(
+  const fullPath = join(sourceDir, relativePath);
+  const inputBytes = await readFile(fullPath);
+  const bytes =
+    crop !== undefined
+      ? await sharp(inputBytes)
+          .rotate()
+          .extract({
+            left: Math.round(crop.left),
+            top: Math.round(crop.top),
+            width: Math.round(crop.width),
+            height: Math.round(crop.height),
+          })
+          .jpeg({ quality: 92 })
+          .toBuffer()
+      : await sharp(inputBytes).rotate().toBuffer();
+
+  return uploadAsset(
     {
       kind: "bytes",
-      bytes,
-      name,
-      declaredMime: "image/jpeg",
+      bytes: new Uint8Array(bytes),
+      name: basename(fullPath),
       alt,
     },
     vfs,
     { processor },
   );
-  return ref;
 }
 
 async function writeVfsAssets(vfs: MemoryDriver): Promise<void> {
-  const assetPaths = await vfs.list("assets/");
-  const previewAssetDirs = ["dist", "dist/activitati", "dist/echipa", "dist/unde-ne-gasesti"];
-  for (const dir of previewAssetDirs) {
-    await mkdir(join(outDir, dir, "assets"), { recursive: true });
-  }
-  for (const path of assetPaths) {
+  for (const path of await vfs.list("assets/")) {
     const bytes = await vfs.read(path);
     await writeFile(join(outDir, path), bytes);
-    for (const dir of previewAssetDirs) {
+  }
+}
+
+async function writeDist(dist: Map<string, string>): Promise<void> {
+  for (const [path, text] of dist) {
+    const fullPath = join(outDir, "dist", path);
+    await mkdir(dirname(fullPath), { recursive: true });
+    await writeFile(fullPath, text);
+  }
+}
+
+async function copyAssetsForLocalPreview(vfs: MemoryDriver, site: Site): Promise<void> {
+  const pageDirs = ["dist", ...site.pages.map((page) => join("dist", page.slug))];
+  for (const dir of pageDirs) {
+    await mkdir(join(outDir, dir, "assets"), { recursive: true });
+  }
+
+  for (const path of await vfs.list("assets/")) {
+    const bytes = await vfs.read(path);
+    for (const dir of pageDirs) {
       await writeFile(join(outDir, dir, path), bytes);
     }
   }
@@ -129,84 +104,216 @@ async function writeVfsAssets(vfs: MemoryDriver): Promise<void> {
 async function main(): Promise<void> {
   await rm(outDir, { recursive: true, force: true });
   await mkdir(join(outDir, "assets"), { recursive: true });
-  await mkdir(join(outDir, "dist", "assets"), { recursive: true });
-  await mkdir(join(outDir, "dist"), { recursive: true });
-
-  const scrapedRaw = await scrapeImages();
-  const scraped = Object.fromEntries(
-    Object.entries(scrapedRaw).map(([key, images]) => [key, uniqueBySrc(images)]),
-  ) as Record<PageKey, ScrapedImage[]>;
 
   const vfs = new MemoryDriver();
   const processor = await createSharpImageProcessor();
 
-  const logo =
-    scraped.despre.find((img) => img.width === img.height) ??
-    scraped.despre[0] ??
-    (() => {
-      throw new Error("No logo image found");
-    })();
-
-  // Google serves the same image under several `=w<width>` size URLs, so an
-  // exact-src compare lets a logo variant slip through (and become a "portrait").
-  // Compare on the size-stripped key instead.
-  const imageKey = (img: ScrapedImage): string => img.src.replace(/=w\d+.*$/, "");
-  const logoKey = imageKey(logo);
-  const isLogo = (img: ScrapedImage): boolean => imageKey(img) === logoKey;
-
-  const aboutImages = scraped.despre.filter((img) => !isLogo(img));
-  const activityImages = scraped.activitati.filter((img) => !isLogo(img)).slice(0, 4);
-  const teamImages = scraped.echipa
-    .filter((img) => !isLogo(img))
-    .filter((img) => Math.abs(img.width - img.height) <= 8)
-    .slice(0, 10);
-  const contactImages = scraped.contact.filter((img) => !isLogo(img));
-
-  const logoRef = await uploadRemoteImage(
+  const logoRef = await uploadLocalImage(
     vfs,
     processor,
-    logo,
-    "historipol-logo.png",
+    "historipol-logo-transparent.png",
     "Sigla Asociației Studențești HISTORIPOL",
   );
-
-  const activityRefs = await Promise.all(
-    activityImages.map((img, idx) =>
-      uploadRemoteImage(
-        vfs,
-        processor,
-        img,
-        `historipol-activity-${idx + 1}.jpg`,
-        [
-          "Concursul de discursuri Puterea Cuvintelor",
-          "Zilele Europene ale Arheologiei",
-          "Discuție despre trasee profesionale după studenție",
-          "Campanie de donații pentru copii",
-          "Activitate HISTORIPOL pentru comunitatea studențească",
-        ][idx] ?? "Activitate HISTORIPOL",
-      ),
-    ),
+  const anosrLogoRef = await uploadLocalImage(
+    vfs,
+    processor,
+    "4.-Logo-ANOSR_fundal-alb(sigla-full-negru).png",
+    "Sigla Alianței Naționale a Organizațiilor Studențești din România",
   );
 
-  const teamRefs = await Promise.all(
-    teamImages.map((img, idx) =>
-      uploadRemoteImage(
-        vfs,
-        processor,
-        img,
-        `historipol-team-${idx + 1}.jpg`,
-        `Portret ${teamPeople[idx]?.name ?? "membru HISTORIPOL"}`,
-      ),
+  const activityRefs = await Promise.all([
+    uploadLocalImage(
+      vfs,
+      processor,
+      join("Poze site", "Activități", "Puterea Cuvintelor 2025(1).JPG"),
+      "Participanți la concursul de discursuri Puterea Cuvintelor",
+      { left: 0, top: 220, width: 2040, height: 1148 },
     ),
-  );
+    uploadLocalImage(
+      vfs,
+      processor,
+      join("Poze site", "Activități", "Zilele Europene ale Arheologiei 2024.JPG"),
+      "Studenți HISTORIPOL la Zilele Europene ale Arheologiei",
+      { left: 0, top: 0, width: 1600, height: 900 },
+    ),
+    uploadLocalImage(
+      vfs,
+      processor,
+      join("Poze site", "Activități", "Sesiune de îndrumare despre finalizarea studiilor.JPG"),
+      "Sesiune de îndrumare despre finalizarea studiilor",
+      { left: 0, top: 160, width: 1600, height: 900 },
+    ),
+    uploadLocalImage(
+      vfs,
+      processor,
+      join("Poze site", "Activități", "Activitate caritabilă 2025.JPG"),
+      "Activitate caritabilă HISTORIPOL în 2025",
+      { left: 0, top: 210, width: 2048, height: 1152 },
+    ),
+    uploadLocalImage(
+      vfs,
+      processor,
+      join("Poze site", "Activități", "Conferința HISTORY-SEA, ed1.JPG"),
+      "Conferința HISTORY-SEA organizată de HISTORIPOL",
+      { left: 0, top: 260, width: 1035, height: 582 },
+    ),
+    uploadLocalImage(
+      vfs,
+      processor,
+      join("Poze site", "Activități", "Seară de film la Zbor Hub.JPG"),
+      "Seară de film organizată la Zbor Hub",
+      { left: 0, top: 80, width: 1600, height: 900 },
+    ),
+  ]);
 
-  // The despre/contact pages' only scrapable <img>s are the logo + the ANOSR
-  // banner (the real hero is a CSS background, not an <img>), so they aren't
-  // usable as photos. The landing hero instead borrows a genuine student photo
-  // from the activities so the homepage opens with people behind a scrim.
-  const heroRef = activityRefs[2] ?? activityRefs[1] ?? activityRefs[0];
-  void aboutImages;
-  void contactImages;
+  const teamPhotos = await Promise.all([
+    uploadLocalImage(
+      vfs,
+      processor,
+      join("Poze site", "Echipa", "Președinte-Bianca Maria Nicolae.JPG"),
+      "Portret Bianca Maria Nicolae, președinte HISTORIPOL",
+      { left: 250, top: 760, width: 620, height: 620 },
+    ),
+    uploadLocalImage(
+      vfs,
+      processor,
+      join("Poze site", "Echipa", "VP Irina-Cristina Stoenică.jpg"),
+      "Portret Irina-Cristina Stoenică, vicepreședinte HISTORIPOL",
+      { left: 170, top: 190, width: 380, height: 380 },
+    ),
+    uploadLocalImage(
+      vfs,
+      processor,
+      join("Poze site", "Echipa", "VP Mihaela Stancana.JPG"),
+      "Portret Mihaela Stancana, vicepreședinte HISTORIPOL",
+      { left: 170, top: 170, width: 760, height: 760 },
+    ),
+    uploadLocalImage(
+      vfs,
+      processor,
+      join("Poze site", "Echipa", "VP- Lavinia-Georgiana Marcu.jpg"),
+      "Portret Lavinia-Georgiana Marcu, vicepreședinte HISTORIPOL",
+      { left: 130, top: 130, width: 850, height: 850 },
+    ),
+    uploadLocalImage(
+      vfs,
+      processor,
+      join("Poze site", "Echipa", "Cenzor - Emi Andrei Iacob.JPG"),
+      "Portret Emi Andrei Iacob, cenzor HISTORIPOL",
+      { left: 400, top: 1040, width: 600, height: 600 },
+    ),
+    uploadLocalImage(
+      vfs,
+      processor,
+      join("Poze site", "Echipa", "Director Comunicare-PR – Ana-Maria Tudoran.JPG"),
+      "Portret Ana-Maria Tudoran, director Comunicare-PR HISTORIPOL",
+      { left: 80, top: 70, width: 1100, height: 1100 },
+    ),
+    uploadLocalImage(
+      vfs,
+      processor,
+      join("Poze site", "Echipa", "Director Educațional-Social – Alexandru Stănescu.JPG"),
+      "Portret Alexandru Stănescu, director Educațional-Social HISTORIPOL",
+      { left: 70, top: 260, width: 930, height: 930 },
+    ),
+    uploadLocalImage(
+      vfs,
+      processor,
+      join(
+        "Poze site",
+        "Echipa",
+        "Director Fundrasing – Scriere proiecte - Diana-Violeta Rădulescu .JPG",
+      ),
+      "Portret Diana-Violeta Rădulescu, director Fundraising și Scriere proiecte HISTORIPOL",
+      { left: 0, top: 160, width: 1060, height: 1060 },
+    ),
+    uploadLocalImage(
+      vfs,
+      processor,
+      join("Poze site", "Echipa", "Director HR – Alexandru Marcu.JPG"),
+      "Portret Alexandru Marcu, director HR HISTORIPOL",
+      { left: 310, top: 310, width: 820, height: 820 },
+    ),
+  ]);
+
+  const teamPeople = [
+    {
+      name: "Bianca Maria Nicolae",
+      role: "Președinte",
+      department: "Biroul executiv",
+      photo: teamPhotos[0],
+    },
+    {
+      name: "Irina-Cristina Stoenică",
+      role: "Vicepreședinte",
+      department: "Biroul executiv",
+      photo: teamPhotos[1],
+    },
+    {
+      name: "Mihaela Stancana",
+      role: "Vicepreședinte",
+      department: "Biroul executiv",
+      photo: teamPhotos[2],
+    },
+    {
+      name: "Lavinia-Georgiana Marcu",
+      role: "Vicepreședinte",
+      department: "Biroul executiv",
+      photo: teamPhotos[3],
+    },
+    {
+      name: "Mert Emurla",
+      role: "Secretar",
+      department: "Biroul executiv",
+    },
+    {
+      name: "Emi Andrei Iacob",
+      role: "Cenzor",
+      department: "Control intern",
+      photo: teamPhotos[4],
+    },
+    {
+      name: "Ana-Maria Tudoran",
+      role: "Director Comunicare-PR",
+      department: "Departamente",
+      photo: teamPhotos[5],
+    },
+    {
+      name: "Alexandru Stănescu",
+      role: "Director Educațional-Social",
+      department: "Departamente",
+      photo: teamPhotos[6],
+    },
+    {
+      name: "Diana-Violeta Rădulescu",
+      role: "Director Fundraising - Scriere proiecte",
+      department: "Departamente",
+      photo: teamPhotos[7],
+    },
+    {
+      name: "Alexandru Marcu",
+      role: "Director HR",
+      department: "Departamente",
+      photo: teamPhotos[8],
+    },
+  ];
+
+  const memberFooterBlock = (id: string) => ({
+    id,
+    type: "partnerLogos" as const,
+    version: 1 as const,
+    data: {
+      title: "HISTORIPOL este membră ANOSR",
+      presentation: "footer" as const,
+      partners: [
+        {
+          name: "Alianța Națională a Organizațiilor Studențești din România",
+          url: "https://anosr.ro",
+          logo: anosrLogoRef,
+        },
+      ],
+    },
+  });
 
   const site: Site = {
     schemaVersion: 1,
@@ -216,18 +323,22 @@ async function main(): Promise<void> {
       foundedYear: 2024,
       logo: logoRef,
       logoAlt: "Sigla Asociației Studențești HISTORIPOL",
-      address: "Universitatea „Ovidius” din Constanța, Facultatea de Istorie și Științe Politice",
-      social: [{ platform: "website", url: pages.despre }],
+      address: "Aleea Universității nr. 1, Campus, Corp A, etaj 1, sala 114, Constanța",
+      email: "asociatia.historipol@gmail.com",
+      social: [
+        {
+          platform: "instagram",
+          url: "https://www.instagram.com/asociatia_historipol?igsh=MXcyYTh3YjY3YWxtcw==",
+        },
+        { platform: "facebook", url: "https://www.facebook.com/share/1And48qLPo/?mibextid=wwXIfr" },
+      ],
     },
     theme: {
-      // Scholarly identity fits a history & political-science association. We
-      // keep academic's AA-tuned navy/gold/cream palette and pair it with the
-      // self-hosted Fraunces display serif for an elegant, characterful
-      // headline (Cormorant Garamond is NOT self-hosted, so it silently fell
-      // back to a generic serif — see self-host-fonts policy).
       id: "academic",
       tokens: {
-        fontHeadline: "Fraunces",
+        colorPrimary: "#1f3a5f",
+        colorAccent: "#8f5f18",
+        fontHeadline: "Source Serif 4",
         fontBody: "Inter",
         density: "comfortable",
         radius: "soft",
@@ -253,15 +364,11 @@ async function main(): Promise<void> {
             type: "hero",
             version: 1,
             data: {
-              title: 'Asociația Studențească "Historipol"',
+              title: "Asociația Studențească HISTORIPOL",
               subtitle:
-                "O comunitate academică pentru studenți și absolvenți pasionați de istorie, relații internaționale, studii europene și științe politice.",
-              ...(heroRef !== undefined
-                ? {
-                    backgroundImage: heroRef,
-                    backgroundAlt: "Studenți HISTORIPOL la o activitate a asociației",
-                  }
-                : {}),
+                "O comunitate academică unită pentru studenți și absolvenți pasionați de istorie, relații internaționale, studii europene și științe politice.",
+              backgroundImage: activityRefs[2],
+              backgroundAlt: "Studenți HISTORIPOL la o sesiune de îndrumare academică",
             },
           },
           {
@@ -269,8 +376,10 @@ async function main(): Promise<void> {
             type: "richText",
             version: 1,
             data: {
+              titleAlign: "left",
+              paragraphAlign: "justify",
               markdown:
-                "Asociația Studențească HISTORIPOL este o organizație non-guvernamentală, apolitică și non-profit, fondată în 2024 de studenți ai Facultății de Istorie și Științe Politice din cadrul Universității „Ovidius” din Constanța. Asociația a luat naștere din dorința de a dezvolta o comunitate academică unită, în care studenții și absolvenții pasionați de istorie, relații internaționale, studii europene și științe politice să se poată dezvolta personal, profesional și civic.\n\n## Misiunea noastră\n\nNe propunem să reprezentăm interesele, nevoile și drepturile studenților FISP și să contribuim la dezvoltarea lor prin proiecte educaționale și culturale. Prin activitățile noastre, promovăm responsabilitatea civică, valorile democratice și implicarea activă în comunitate.\n\n## Viziunea noastră\n\nCredem într-o comunitate academică constănțeană puternică, conectată la instituțiile de profil. Ne dorim ca HISTORIPOL să devină un spațiu de formare pentru tineri care înțeleg rolul istoriei, politicii și culturii în dezvoltarea societății.",
+                "## Despre noi\n\nAsociația Studențească HISTORIPOL este o organizație non-guvernamentală, apolitică și non-profit, fondată în 2024 de studenți ai Facultății de Istorie și Științe Politice din cadrul Universității „Ovidius” din Constanța. Asociația a luat naștere din dorința de a dezvolta o comunitate academică unită, în care studenții și absolvenții pasionați de istorie, relații internaționale, studii europene și științe politice să se poată dezvolta personal, profesional și civic.\n\n## Misiunea noastră\n\nNe propunem să reprezentăm interesele, nevoile și drepturile studenților FISP și să contribuim la dezvoltarea lor prin proiecte educaționale și culturale. Prin activitățile noastre, promovăm responsabilitatea civică, valorile democratice și implicarea activă în comunitate.\n\n## Viziunea noastră\n\nCredem într-o comunitate academică constănțeană puternică, conectată la instituțiile de profil. Ne dorim ca HISTORIPOL să devină un spațiu de formare pentru tineri care înțeleg rolul istoriei, politicii și culturii în dezvoltarea societății.",
             },
           },
           {
@@ -286,50 +395,63 @@ async function main(): Promise<void> {
                   icon: "shield",
                   label: "Integritate și responsabilitate",
                   description:
-                    "Construim proiecte publice pe bază de asumare, rigoare și respect față de comunitate.",
+                    "Lucrăm transparent și asumăm deciziile luate pentru comunitatea FISP.",
                 },
                 {
                   icon: "book",
                   label: "Cunoaștere și gândire critică",
-                  description:
-                    "Încurajăm întrebările bine puse, cercetarea și dialogul argumentat.",
+                  description: "Încurajăm cercetarea, argumentarea și dialogul academic deschis.",
                 },
                 {
                   icon: "users",
                   label: "Comunitate și colaborare",
                   description:
-                    "Aducem împreună studenți, absolvenți, profesori și instituții culturale.",
+                    "Aducem împreună studenți, absolvenți, profesori și parteneri instituționali.",
                 },
                 {
                   icon: "scale",
                   label: "Implicare civică și solidaritate",
                   description:
-                    "Promovăm participarea activă la viața comunității și sprijinul reciproc.",
+                    "Transformăm preocupările academice în proiecte utile pentru comunitatea locală.",
                 },
                 {
                   icon: "graduation-cap",
                   label: "Dezvoltare personală și profesională",
                   description:
-                    "Creăm contexte în care studenții își pot forma competențe utile după facultate.",
+                    "Construim contexte prin care studenții își pot testa și forma competențele.",
                 },
               ],
             },
           },
           {
-            id: "blk_about_cta",
-            type: "ctaBanner",
+            id: "blk_about_gallery",
+            type: "imageGallery",
             version: 1,
             data: {
-              title: "Vrei să construiești alături de HISTORIPOL?",
-              subtitle:
-                "Urmărește activitățile noastre și alătură-te comunității studenților FISP.",
-              button: {
-                label: "Vezi activitățile",
-                url: "/activitati/",
-                style: "primary",
-              },
+              title: "Din activitățile noastre",
+              layout: "grid",
+              columns: 3,
+              lightbox: true,
+              images: [
+                {
+                  asset: activityRefs[0],
+                  alt: "Concursul de discursuri Puterea Cuvintelor",
+                  caption: "Puterea Cuvintelor",
+                },
+                {
+                  asset: activityRefs[1],
+                  alt: "Zilele Europene ale Arheologiei",
+                  caption: "Zilele Europene ale Arheologiei",
+                },
+                {
+                  asset: activityRefs[4],
+                  alt: "Conferința HISTORY-SEA",
+                  caption: "Conferința HISTORY-SEA",
+                },
+              ],
             },
           },
+          memberFooterBlock("blk_about_member_footer"),
         ],
       },
       {
@@ -341,7 +463,7 @@ async function main(): Promise<void> {
         seo: {
           title: "Activități HISTORIPOL",
           description:
-            "Concursuri, proiecte educaționale, conferințe, campanii sociale și activități pentru liceeni organizate de HISTORIPOL.",
+            "Concursuri, conferințe, activități educaționale, campanii sociale și proiecte culturale organizate de HISTORIPOL.",
         },
         blocks: [
           {
@@ -351,9 +473,9 @@ async function main(): Promise<void> {
             data: {
               title: "Activități",
               subtitle:
-                "Proiecte academice, culturale și civice prin care studenții FISP învață, dezbat și contribuie la comunitate.",
-              backgroundImage: activityRefs[1],
-              backgroundAlt: "Activitate educațională HISTORIPOL",
+                "Proiecte academice, culturale și civice destinate studenților, liceenilor și comunității locale.",
+              backgroundImage: activityRefs[2],
+              backgroundAlt: "Studenți la o sesiune de îndrumare HISTORIPOL",
             },
           },
           {
@@ -361,15 +483,15 @@ async function main(): Promise<void> {
             type: "activitiesList",
             version: 1,
             data: {
-              title: "Ce organizăm",
+              title: "Activitățile noastre",
               intro:
-                "Proiectele recurente ale asociației combină formarea academică, orientarea profesională și implicarea civică.",
+                "Asociația desfășoară activități diverse, destinate atât studenților, cât și comunității locale.",
               layout: "cards",
               items: [
                 {
                   title: "Concursul de discursuri „Puterea Cuvintelor”",
                   description:
-                    "Un cadru în care studenții își exersează argumentarea, prezența publică și claritatea ideilor.",
+                    "Un proiect dedicat exprimării publice, argumentării și încrederii în propria voce.",
                   image: activityRefs[0],
                   badge: "Comunicare",
                 },
@@ -383,7 +505,7 @@ async function main(): Promise<void> {
                 {
                   title: "Călătorii profesionale: de la studenție la carieră",
                   description:
-                    "Întâlniri și discuții despre trasee profesionale posibile după studiile în domeniile FISP.",
+                    "Întâlniri despre trasee profesionale și pașii de după finalizarea studiilor.",
                   image: activityRefs[2],
                   badge: "Carieră",
                 },
@@ -391,7 +513,7 @@ async function main(): Promise<void> {
                   title:
                     "Campanie anuală de donații pentru copiii din familii cu posibilități financiare reduse",
                   description:
-                    "O inițiativă de solidaritate care conectează comunitatea studențească la nevoi sociale concrete.",
+                    "O inițiativă de solidaritate prin care studenții contribuie la nevoi sociale concrete.",
                   image: activityRefs[3],
                   badge: "Solidaritate",
                 },
@@ -399,29 +521,32 @@ async function main(): Promise<void> {
                   title: "Conferința Națională a Studenților, Masteranzilor și Doctoranzilor",
                   description:
                     "Conferință dedicată domeniilor Istorie, Științe Politice și Relații Internaționale.",
+                  image: activityRefs[4],
                   badge: "Academic",
+                },
+                {
+                  title: "Seri de film și cercuri de lectură",
+                  description:
+                    "Spații de dialog cultural și apropiere între studenții interesați de istorie și politică.",
+                  image: activityRefs[5],
+                  badge: "Comunitate",
                 },
                 {
                   title: "Activități educaționale pentru liceeni",
                   description:
-                    "Programele „Student pentru o zi” și „Student pentru 3 zile” îi ajută pe liceeni să înțeleagă viața universitară.",
+                    "Programele „Student pentru o zi” și „Student pentru 3 zile” îi familiarizează pe liceeni cu viața universitară.",
                   badge: "Orientare",
                 },
                 {
                   title: "Sesiuni de informare despre finalizarea studiilor",
                   description:
-                    "Întâlniri utile pentru studenții care se pregătesc de licență, disertație sau pașii administrativi finali.",
+                    "Întâlniri utile pentru licență, disertație și pașii administrativi finali.",
                   badge: "Sprijin",
                 },
-                {
-                  title: "Seri de film și cercuri de lectură",
-                  description:
-                    "Spații recurente de dialog cultural, lectură critică și apropiere între generații de studenți.",
-                  badge: "Comunitate",
-                },
-              ].filter((item) => item.image !== undefined || !("image" in item)),
+              ],
             },
           },
+          memberFooterBlock("blk_activities_member_footer"),
         ],
       },
       {
@@ -442,7 +567,7 @@ async function main(): Promise<void> {
             data: {
               title: "Echipa",
               subtitle:
-                "Studenții care coordonează reprezentarea, proiectele, comunicarea, fundraising-ul și activitatea internă a asociației.",
+                "HISTORIPOL este formată din 41 de membri și voluntari, organizați în departamente care susțin proiectele și reprezentarea studenților.",
             },
           },
           {
@@ -450,15 +575,15 @@ async function main(): Promise<void> {
             type: "teamGrid",
             version: 1,
             data: {
-              title: "Echipa de coordonare",
-              intro: "Conducerea și coordonatorii menționați pe pagina publică HISTORIPOL.",
+              title: "Echipa noastră",
+              intro:
+                "Conducerea asociației și coordonatorii departamentelor Educațional & Social, Comunicare & PR, Fundraising & Scriere de proiecte și Human Resources.",
               columns: 3,
-              people: teamPeople.map((person, idx) => ({
-                ...person,
-                photo: teamRefs[idx],
-              })),
+              groupBy: "department",
+              people: teamPeople,
             },
           },
+          memberFooterBlock("blk_team_member_footer"),
         ],
       },
       {
@@ -468,8 +593,9 @@ async function main(): Promise<void> {
         navOrder: 3,
         showInNav: true,
         seo: {
-          title: "Unde găsești HISTORIPOL",
-          description: "Date de contact și repere pentru Asociația Studențească HISTORIPOL.",
+          title: "Unde ne găsești - HISTORIPOL",
+          description:
+            "Adresa, emailul și conturile de social media ale Asociației Studențești HISTORIPOL.",
         },
         blocks: [
           {
@@ -479,7 +605,7 @@ async function main(): Promise<void> {
             data: {
               title: "Unde ne găsești",
               subtitle:
-                "HISTORIPOL activează în cadrul Facultății de Istorie și Științe Politice, Universitatea „Ovidius” din Constanța.",
+                "Ne găsești în Campusul Universității „Ovidius” din Constanța și pe canalele sociale ale asociației.",
             },
           },
           {
@@ -487,14 +613,19 @@ async function main(): Promise<void> {
             type: "contactCard",
             version: 1,
             data: {
-              // Contact details and campus coordinates taken from the public
-              // HISTORIPOL "Unde ne găsești" page (the map iframe centred on the
-              // Ovidius campus; social handles + e-mail shown there as widgets).
-              address: "Aleea Universității nr. 1, Campus, Corp A, etaj 1, sala 114, Constanța",
+              headline: "Contact",
+              address:
+                "Aleea Universității nr. 1, Campus, Corp A, etaj 1, sala 114, Constanța, România",
               email: "asociatia.historipol@gmail.com",
               socials: [
-                { platform: "instagram", url: "https://www.instagram.com/asociatiahistripol/" },
-                { platform: "facebook", url: "https://www.facebook.com/asociatiahistripol/" },
+                {
+                  platform: "instagram",
+                  url: "https://www.instagram.com/asociatia_historipol?igsh=MXcyYTh3YjY3YWxtcw==",
+                },
+                {
+                  platform: "facebook",
+                  url: "https://www.facebook.com/share/1And48qLPo/?mibextid=wwXIfr",
+                },
               ],
               mapEmbed: {
                 enabled: true,
@@ -504,6 +635,22 @@ async function main(): Promise<void> {
               },
             },
           },
+          {
+            id: "blk_contact_cta",
+            type: "ctaBanner",
+            version: 1,
+            data: {
+              title: "Vrei să iei legătura cu noi?",
+              subtitle:
+                "Scrie-ne pentru colaborări, întrebări despre activități sau informații despre înscriere.",
+              button: {
+                label: "Trimite email",
+                url: "mailto:asociatia.historipol@gmail.com",
+                style: "primary",
+              },
+            },
+          },
+          memberFooterBlock("blk_contact_member_footer"),
         ],
       },
     ],
@@ -517,44 +664,33 @@ async function main(): Promise<void> {
 
   await writeFile(join(outDir, "data.json"), `${JSON.stringify(site, null, 2)}\n`);
   await writeVfsAssets(vfs);
-
-  const dist = build(site);
-  for (const [path, text] of dist) {
-    const fullPath = join(outDir, "dist", path);
-    await mkdir(fullPath.split(/[\\/]/).slice(0, -1).join("\\"), { recursive: true });
-    await writeFile(fullPath, text);
-  }
+  await writeDist(build(site));
+  await copyAssetsForLocalPreview(vfs, site);
 
   const zip = await exportToZip(site, vfs);
-  await writeFile(join(outDir, "historipol-site.zip"), new Uint8Array(await zip.arrayBuffer()));
+  await writeFile(
+    join(outDir, "historipol-sitebuilder.zip"),
+    new Uint8Array(await zip.arrayBuffer()),
+  );
 
   const manifest = {
     generatedAt: new Date().toISOString(),
-    referencePages: pages,
-    imageCounts: Object.fromEntries(
-      Object.entries(scraped).map(([key, images]) => [key, images.length]),
-    ),
+    sourceDir,
+    output: {
+      dataJson: "data.json",
+      preview: "dist/index.html",
+      zip: "historipol-sitebuilder.zip",
+    },
     validationWarnings: validation.warnings,
+    pages: site.pages.map((page) => page.slug),
+    assets: (await vfs.list("assets/")).length,
   };
   await writeFile(join(outDir, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
 
   console.log(`Wrote ${outDir}`);
   console.log(`Pages: ${site.pages.map((page) => page.slug).join(", ")}`);
-  console.log(`Assets: ${(await vfs.list("assets/")).length}`);
+  console.log(`Assets: ${manifest.assets}`);
   console.log(`Warnings: ${validation.warnings.length}`);
 }
-
-const teamPeople = [
-  { name: "Bianca Maria Nicolae", role: "Președinte" },
-  { name: "Irina-Cristina Stoenică", role: "Vicepreședinte" },
-  { name: "Mihaela Stancana", role: "Vicepreședinte" },
-  { name: "Lavinia-Georgiana Marcu", role: "Vicepreședinte" },
-  { name: "Mert Emurla", role: "Secretar" },
-  { name: "Ana Maria Tudoran", role: "Director Comunicare-PR" },
-  { name: "Alexandru Stanescu", role: "Director Educational-Social" },
-  { name: "Diana-Violeta Radulescu", role: "Director Fundraising" },
-  { name: "Alexandru Marcu", role: "Director HR" },
-  { name: "Emi Andrei Iacob", role: "Cenzor" },
-];
 
 await main();

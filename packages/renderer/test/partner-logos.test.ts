@@ -111,6 +111,15 @@ describe("renderSite — partnerLogos block (structural)", () => {
     const html = renderSite(fixture, "stub");
     expect(html).toContain("Beta University");
   });
+
+  test("can render partner logos as a footer-style credit band", () => {
+    const site = structuredClone(fixture) as unknown as Site;
+    const block = site.pages[0]!.blocks.find((b) => b.type === "partnerLogos")!;
+    (block.data as Record<string, unknown>).presentation = "footer";
+    const html = renderSite(site, "academic");
+    expect(html).toMatch(/<section[^>]*data-block="partnerLogos"[^>]*data-presentation="footer"/);
+    expect(html).toContain('[data-block="partnerLogos"][data-presentation="footer"]');
+  });
 });
 
 describe("renderSite — partnerLogos forward-compat", () => {

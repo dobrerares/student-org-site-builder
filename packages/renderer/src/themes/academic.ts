@@ -186,4 +186,13 @@ a:hover, a:focus-visible { text-decoration-thickness: 2px; }
 [data-block="faq"] .faq__list {
   gap: var(--space-lg);
 }
+[data-block="richText"] .rich-text > :is(p, ul, ol, blockquote, h2, h3, h4) {
+  max-width: none;
+}
+[data-block="valueList"] .value-list__title {
+  margin-bottom: var(--space-xl);
+}
+[data-block="valueList"] .value-list__items {
+  gap: var(--space-xl);
+}
 `.trim();

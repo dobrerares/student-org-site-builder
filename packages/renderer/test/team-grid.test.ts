@@ -179,6 +179,32 @@ describe("renderSite — teamGrid forward-compat", () => {
     const html = renderSite(withExoticSocial, "stub");
     expect(html).toContain("team-person__social--mastodon");
   });
+
+  test("skips incomplete social rows instead of throwing during live preview", () => {
+    const withIncompleteSocial = structuredClone(ungrouped);
+    const block = withIncompleteSocial.pages[0]!.blocks[0]!;
+    const data = block.data as {
+      people: { socials?: unknown[] }[];
+    };
+    data.people[0]!.socials = [{}];
+
+    const html = renderSite(withIncompleteSocial, "stub");
+    expect(html).toContain("Ana Popescu");
+    expect(html).not.toMatch(/<ul class="team-person__socials"/);
+  });
+
+  test("uses a generic link platform when a social URL has no platform", () => {
+    const withUrlOnlySocial = structuredClone(ungrouped);
+    const block = withUrlOnlySocial.pages[0]!.blocks[0]!;
+    const data = block.data as {
+      people: { socials?: unknown[] }[];
+    };
+    data.people[0]!.socials = [{ url: "/team" }];
+
+    const html = renderSite(withUrlOnlySocial, "stub");
+    expect(html).toContain('class="team-person__social team-person__social--link"');
+    expect(html).toContain('href="/team"');
+  });
 });
 
 describe("renderSite — teamGrid CSS hygiene", () => {

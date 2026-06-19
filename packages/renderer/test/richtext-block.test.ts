@@ -62,6 +62,21 @@ describe("renderSite — richText block (structural)", () => {
     expect(html).toMatch(/<h3[^>]*>A second heading<\/h3>/);
   });
 
+  test("emits richText title and paragraph alignment attributes when set", () => {
+    const aligned = JSON.parse(JSON.stringify(fixture)) as Site;
+    aligned.pages[0]!.blocks[0]!.data = {
+      markdown: "## Despre noi\n\nUn paragraf de test.",
+      titleAlign: "left",
+      paragraphAlign: "justify",
+    };
+    const html = renderSite(aligned, "academic");
+    expect(html).toMatch(
+      /<section[^>]*data-block="richText"[^>]*data-title-align="left"[^>]*data-paragraph-align="justify"/,
+    );
+    expect(html).toContain('[data-block="richText"][data-paragraph-align="justify"]');
+    expect(html).toContain("text-align: justify;");
+  });
+
   test("suppresses a richText with empty markdown (empty-state foolproofing)", () => {
     // Empty-state suppression: a richText with no meaningful prose renders
     // nothing rather than an empty styled container. (Previously this block

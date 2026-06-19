@@ -47,14 +47,20 @@ export function findIssueTarget(root: ParentNode, issue: IssueLike): HTMLElement
 export function navigateToIssue(root: ParentNode, issue: IssueLike): boolean {
   const target = findIssueTarget(root, issue);
   if (target === null) return false;
+  const focusTarget = focusableTarget(target);
   // `focus()` already brings the element into view in jsdom (and in real
   // browsers — though `scrollIntoView` is the modern safe-belt for nested
   // scroll containers). jsdom's no-op `scrollIntoView` is harmless.
-  if (typeof target.scrollIntoView === "function") {
-    target.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
+  if (typeof focusTarget.scrollIntoView === "function") {
+    focusTarget.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
   }
-  target.focus();
+  focusTarget.focus();
   return true;
+}
+
+function focusableTarget(target: HTMLElement): HTMLElement {
+  if (target.matches("input, select, textarea, button, [tabindex]")) return target;
+  return target.querySelector<HTMLElement>("input, select, textarea, button, [tabindex]") ?? target;
 }
 
 /**

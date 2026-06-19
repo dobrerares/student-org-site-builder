@@ -14,6 +14,33 @@ describe("richText block schema", () => {
     expect(RichTextBlockSchema.safeParse(block).success).toBe(true);
   });
 
+  test("accepts separate title and paragraph alignment controls", () => {
+    const block = {
+      id: "blk_intro_aligned",
+      type: "richText",
+      version: 1,
+      data: {
+        markdown: "## Mission\n\nWe are **HISTORIPOL**.",
+        titleAlign: "left",
+        paragraphAlign: "justify",
+      },
+    };
+    expect(RichTextBlockSchema.safeParse(block).success).toBe(true);
+  });
+
+  test("rejects unsupported richText alignment values", () => {
+    const block = {
+      id: "blk_intro_bad_align",
+      type: "richText",
+      version: 1,
+      data: {
+        markdown: "## Mission",
+        paragraphAlign: "diagonal",
+      },
+    };
+    expect(RichTextBlockSchema.safeParse(block).success).toBe(false);
+  });
+
   test("validates a richText block with empty markdown (placeholder)", () => {
     // An empty richText is allowed at the schema layer; quality-nudge
     // warnings live in `validate()` if we ever add them. The PRD has empty

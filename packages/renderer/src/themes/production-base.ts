@@ -19,6 +19,41 @@ main > [data-block] {
   position: relative;
   box-sizing: border-box;
 }
+[data-site-nav] {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--color-bg);
+}
+[data-site-nav] .site-nav__inner {
+  width: min(100%, var(--site-max-width));
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+[data-site-nav] .site-nav__brand {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  text-decoration: none;
+}
+[data-site-nav] .site-nav__logo {
+  display: block;
+  width: 3rem;
+  height: 3rem;
+  object-fit: contain;
+}
+[data-site-nav] ul {
+  margin: 0;
+  padding: 0;
+  justify-content: flex-end;
+}
+[data-site-nav] .site-nav__inner ul {
+  max-width: none;
+  margin-inline: 0;
+}
 /*
  * Universal contrast-safe body links. Text color comes from --color-link (the
  * engine derives this to the accent where it clears WCAG AA on the bg, else the
@@ -57,6 +92,26 @@ main > [data-block] {
 [data-block="quote"] {
   width: min(100%, var(--site-readable-width));
   margin-inline: auto;
+}
+[data-block="richText"] .rich-text > :is(p, ul, ol, blockquote, h2, h3, h4) {
+  max-width: none;
+}
+[data-block="richText"][data-title-align="left"] .rich-text :is(h2, h3, h4),
+[data-block="richText"][data-paragraph-align="left"] .rich-text :is(p, ul, ol, blockquote) {
+  text-align: left;
+}
+[data-block="richText"][data-title-align="center"] .rich-text :is(h2, h3, h4),
+[data-block="richText"][data-paragraph-align="center"] .rich-text :is(p, ul, ol, blockquote) {
+  text-align: center;
+}
+[data-block="richText"][data-title-align="right"] .rich-text :is(h2, h3, h4),
+[data-block="richText"][data-paragraph-align="right"] .rich-text :is(p, ul, ol, blockquote) {
+  text-align: right;
+}
+[data-block="richText"][data-title-align="justify"] .rich-text :is(h2, h3, h4),
+[data-block="richText"][data-paragraph-align="justify"] .rich-text :is(p, ul, ol, blockquote) {
+  text-align: justify;
+  text-align-last: left;
 }
 [data-block="event-list"] > :is(.event-list__title, .event-list__intro, .event-list__items),
 [data-block="imageGallery"] > :is(.image-gallery__title, .image-gallery__grid) {
@@ -175,12 +230,17 @@ main > [data-block] {
 /* Compact circular avatar (photo or initials), not a full-width slab. */
 [data-block="teamGrid"] .team-person__photo,
 [data-block="teamGrid"] .team-person__avatar {
-  width: 4.5rem;
-  height: 4.5rem;
+  width: 7rem;
+  height: 7rem;
   aspect-ratio: 1;
   border-radius: 50%;
   object-fit: cover;
   flex: 0 0 auto;
+}
+[data-block="teamGrid"] .team-person__figure,
+[data-block="teamGrid"] .team-person__caption {
+  align-items: center;
+  text-align: center;
 }
 [data-block="teamGrid"] .team-person__avatar {
   color: var(--color-on-accent);
@@ -205,9 +265,10 @@ main > [data-block] {
   content: attr(data-platform);
 }
 [data-block="activitiesList"] .activities-list__media,
-[data-block="event-list"] .event-list__item-media,
-[data-block="imageGallery"] .image-gallery__figure {
+[data-block="event-list"] .event-list__item-media {
+  aspect-ratio: 16 / 9;
   background: var(--color-muted);
+  overflow: hidden;
 }
 [data-block="contactCard"] a,
 [data-block="documentDownloads"] a,
@@ -220,6 +281,40 @@ main > [data-block] {
   padding: var(--space-md);
   background: var(--color-surface);
   border-radius: var(--radius-md);
+}
+[data-block="partnerLogos"][data-presentation="footer"] {
+  padding: var(--space-lg) var(--space-md);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+[data-block="partnerLogos"][data-presentation="footer"] .partner-logos__inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-md) var(--space-lg);
+}
+[data-block="partnerLogos"][data-presentation="footer"] .partner-logos__title {
+  margin: 0;
+  color: var(--color-on-primary);
+  font-size: var(--type-base);
+}
+[data-block="partnerLogos"][data-presentation="footer"] .partner-logos__grid {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+[data-block="partnerLogos"][data-presentation="footer"] .partner-logos__item {
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+}
+[data-block="partnerLogos"][data-presentation="footer"] .partner-logos__logo {
+  height: 2.5rem;
+  filter: brightness(0) invert(1);
 }
 /* Contact card: map alongside an icon-chip channel list. Two columns when a map
  * actually renders, a single full-width column otherwise; stacks on narrow
@@ -271,10 +366,17 @@ main > [data-block] {
   overflow-wrap: anywhere;
 }
 [data-block="hero"] .hero__media img,
-[data-block="imageGallery"] .image-gallery__figure > img,
-[data-block="imageGallery"] .image-gallery__trigger img,
 [data-block="activitiesList"] .activities-list__media img,
 [data-block="event-list"] .event-list__item-media img {
+  aspect-ratio: auto;
+  object-fit: cover;
+  height: 100%;
+}
+[data-block="imageGallery"] .image-gallery__trigger {
+  overflow: hidden;
+}
+[data-block="imageGallery"] .image-gallery__trigger img,
+[data-block="imageGallery"] .image-gallery__figure > img {
   aspect-ratio: 16 / 9;
   object-fit: cover;
   height: auto;
@@ -341,6 +443,13 @@ main > [data-block] {
   text-shadow: 0 1px 3px rgba(var(--color-fg-rgb), 0.5);
 }
 @media (max-width: 640px) {
+  [data-site-nav] .site-nav__inner {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  [data-site-nav] ul {
+    justify-content: center;
+  }
   [data-block] {
     padding-left: var(--space-md);
     padding-right: var(--space-md);

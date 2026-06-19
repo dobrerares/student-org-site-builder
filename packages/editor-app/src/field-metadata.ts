@@ -80,6 +80,13 @@ export const BLOCK_FIELD_METADATA: Partial<
     { path: "backgroundAlt", label: "Image description (for screen readers)" },
   ],
   quote: [{ path: "authorImageAlt", label: "Image description (for screen readers)" }],
+  contactCard: [
+    {
+      path: "mapEmbed.coordinates",
+      label: "Map coordinates",
+      renderer: "lat-lng",
+    },
+  ],
   imageGallery: [{ path: "images.[].alt", label: "Image description (for screen readers)" }],
   teamGrid: [{ path: "people.[].photo.alt", label: "Image description (for screen readers)" }],
   partnerLogos: [{ path: "partners.[].logo.alt", label: "Image description (for screen readers)" }],

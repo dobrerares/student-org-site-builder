@@ -125,6 +125,16 @@ describe("renderSite — activitiesList block (structural)", () => {
 });
 
 describe("renderSite — activitiesList CSS tokens", () => {
+  test("production media frames crop images to fill instead of exposing fallback bars", () => {
+    const html = renderSite(cards, "academic");
+    expect(html).toMatch(
+      /\[data-block="activitiesList"\] \.activities-list__media,[\s\S]*aspect-ratio:\s*16 \/ 9/,
+    );
+    expect(html).toMatch(
+      /\[data-block="activitiesList"\] \.activities-list__media img,[\s\S]*height:\s*100%/,
+    );
+  });
+
   test("activitiesList CSS uses var(--token) and never raw hex/rgb (outside :root)", () => {
     const html = renderSite(cards, "stub");
     const styleBlocks = [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map((m) => m[1]!);

@@ -20,6 +20,25 @@ function cleanExportSite(): Site {
   return site;
 }
 
+function siteWithBlockValidationIssue(): Site {
+  const site = cleanExportSite();
+  site.pages[0]!.blocks = [
+    {
+      id: "blk_contact",
+      type: "contactCard",
+      version: 1,
+      data: {
+        mapEmbed: {
+          enabled: true,
+          provider: "osm",
+          coordinates: "44.4268,26.1025",
+        },
+      },
+    },
+  ];
+  return site;
+}
+
 beforeEach(() => {
   Object.defineProperty(window, "innerWidth", {
     configurable: true,
@@ -81,6 +100,30 @@ describe("EditorApp validation wiring", () => {
     // Allow a microtask for the focus to settle.
     await Promise.resolve();
     expect(document.activeElement).toBe(target);
+  });
+
+  test("clicking a block issue drills into the block and focuses the relative block field", async () => {
+    const { container } = render(<EditorApp initial={siteWithBlockValidationIssue()} />);
+    const toggle = container.querySelector<HTMLElement>('[data-testid="health-footer-toggle"]');
+    fireEvent.click(toggle!);
+
+    const coordinatesIssue = container.querySelector<HTMLElement>(
+      '[data-issue][data-path="pages.0.blocks.0.data.mapEmbed.coordinates"]',
+    );
+    expect(coordinatesIssue).not.toBeNull();
+    fireEvent.click(coordinatesIssue!);
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const inspector = container.querySelector('[data-testid="inspector"]');
+    expect(inspector?.getAttribute("data-inspector-mode")).toBe("block");
+    expect(inspector?.getAttribute("data-block-id")).toBe("blk_contact");
+    const latInput = container.querySelector<HTMLInputElement>(
+      '[data-field="mapEmbed.coordinates.0"]',
+    );
+    expect(latInput).not.toBeNull();
+    expect(document.activeElement).toBe(latInput);
   });
 
   test("clean site (no issues) shows zero counts in the footer", () => {

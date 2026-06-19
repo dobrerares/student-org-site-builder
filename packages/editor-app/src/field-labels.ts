@@ -64,6 +64,9 @@ const FIELD_LABELS: Readonly<Record<string, string>> = {
   author: "Author",
   text: "Text",
   markdown: "Text",
+  titleAlign: "Title alignment",
+  paragraphAlign: "Paragraph alignment",
+  presentation: "Presentation",
   html: "Embed code",
   sanitize: "Keep embed code safe",
 };
@@ -83,6 +86,8 @@ const VALUE_LABELS: Readonly<Record<string, string>> = {
   left: "Left",
   center: "Center",
   right: "Right",
+  justify: "Justify",
+  footer: "Footer",
 };
 
 export function fieldLabel(node: FieldNode): string {

@@ -62,6 +62,7 @@ import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import type {
   AssetRefLike,
   BlockEnvelope,
+  CustomHtmlBlock,
   DocumentAssetRef,
   Site,
   ValidationIssue,
@@ -108,6 +109,8 @@ import { AddBlockDialog } from "./add-block-dialog.js";
 import { BlockListEditor } from "./block-list-editor.js";
 import { BlockForm } from "./block-form.js";
 import { buildBlockCatalog } from "./block-catalog.js";
+import { defaultArrayItemForBlock } from "./block-array-defaults.js";
+import { CustomHtmlBlockForm } from "./custom-html-form.js";
 import { defaultBlockFor } from "./block-defaults.js";
 import { createPreviewHost } from "@sosb/preview-bridge";
 import {
@@ -773,6 +776,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     //                                            drill into Site settings.
     const path = issue.path;
     let nextDrill: DrillMode | null = null;
+    let focusIssue: ValidationIssue = issue;
     if (
       path.length >= 5 &&
       path[0] === "pages" &&
@@ -788,11 +792,12 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       if (targetBlock !== undefined) {
         if (pageIndex !== safeActivePageIndex) setActivePageIndex(pageIndex);
         nextDrill = { kind: "block", blockId: targetBlock.id };
+        focusIssue = { ...issue, path: path.slice(5) };
       }
     }
     if (nextDrill === null) nextDrill = { kind: "settings" };
     setDrillMode(nextDrill);
-    pendingIssueRef.current = issue;
+    pendingIssueRef.current = focusIssue;
   }
 
   // After drill mode settles, attempt the deferred navigation. Runs every
@@ -956,7 +961,17 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
           <span data-testid="inspector-eyebrow">{entry.label}</span>
           <h2>{blockTitle}</h2>
         </header>
-        {dataSchema !== undefined ? (
+        {activeBlock.type === "customHTML" ? (
+          <CustomHtmlBlockForm
+            block={activeBlock as CustomHtmlBlock}
+            onChange={(nextBlock) => {
+              patch(
+                ["pages", safeActivePageIndex, "blocks", activeBlockIndex, "data"],
+                nextBlock.data,
+              );
+            }}
+          />
+        ) : dataSchema !== undefined ? (
           <BlockForm
             schema={dataSchema}
             data={activeBlock.data}
@@ -969,6 +984,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
             uploader={uploadAssetForPicker}
             documentUploader={uploadDocumentForPicker}
             displayUrlFor={displayUrlForAsset}
+            newItem={(subpath) => defaultArrayItemForBlock(activeBlock.type, subpath)}
             overrides={
               BLOCK_FIELD_METADATA[activeBlock.type as keyof typeof BLOCK_FIELD_METADATA] ?? []
             }

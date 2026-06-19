@@ -44,8 +44,17 @@ const PartnerSchema = z.looseObject({
   logo: AssetRefSchema,
 });
 
+export const PARTNER_LOGOS_PRESENTATIONS = ["grid", "footer"] as const;
+export type PartnerLogosPresentation = (typeof PARTNER_LOGOS_PRESENTATIONS)[number];
+
 export const PartnerLogosDataSchema = z.looseObject({
   title: z.string().optional(),
+  /**
+   * `grid` is the default content-section presentation. `footer` renders the
+   * same partner data as a compact full-width site credit band, useful for
+   * membership/umbrella-org marks that should read like a page footer.
+   */
+  presentation: z.enum(PARTNER_LOGOS_PRESENTATIONS).optional(),
   /**
    * The partners array MAY be empty.
    *

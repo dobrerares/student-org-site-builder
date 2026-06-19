@@ -87,8 +87,13 @@ export type {
   TeamGridPersonPhoto,
   TeamGridSocialLink,
 } from "./team-grid.js";
-export { RichTextBlockSchema, RichTextDataSchema, RICH_TEXT_BLOCK_VERSION } from "./rich-text.js";
-export type { RichTextBlock, RichTextData } from "./rich-text.js";
+export {
+  RichTextBlockSchema,
+  RichTextDataSchema,
+  RICH_TEXT_ALIGNMENTS,
+  RICH_TEXT_BLOCK_VERSION,
+} from "./rich-text.js";
+export type { RichTextAlignment, RichTextBlock, RichTextData } from "./rich-text.js";
 export { QuoteBlockSchema, QuoteDataSchema, QUOTE_BLOCK_VERSION } from "./quote.js";
 export type { QuoteBlock, QuoteData } from "./quote.js";
 export { FaqBlockSchema, FaqDataSchema, FaqItemSchema, FAQ_BLOCK_VERSION } from "./faq.js";
@@ -96,6 +101,7 @@ export type { FaqBlock, FaqData, FaqItem } from "./faq.js";
 export { AssetRefSchema } from "./asset-ref.js";
 export type { AssetRef } from "./asset-ref.js";
 export {
+  PARTNER_LOGOS_PRESENTATIONS,
   PARTNER_LOGOS_BLOCK_VERSION,
   PartnerLogosBlockSchema,
   PartnerLogosDataSchema,
@@ -105,6 +111,7 @@ export type {
   Partner,
   PartnerLogosBlock,
   PartnerLogosData,
+  PartnerLogosPresentation,
 } from "./partner-logos.js";
 export {
   GalleryImageSchema,

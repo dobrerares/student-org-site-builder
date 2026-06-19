@@ -60,6 +60,18 @@ describe("partnerLogos block schema", () => {
     expect(PartnerLogosBlockSchema.safeParse(block).success).toBe(true);
   });
 
+  test("accepts the footer presentation for membership logo credits", () => {
+    const block = partnerLogosWithUrl();
+    (block.data as Record<string, unknown>).presentation = "footer";
+    expect(PartnerLogosBlockSchema.safeParse(block).success).toBe(true);
+  });
+
+  test("rejects unsupported partnerLogos presentations", () => {
+    const block = partnerLogosWithUrl();
+    (block.data as Record<string, unknown>).presentation = "marquee";
+    expect(PartnerLogosBlockSchema.safeParse(block).success).toBe(false);
+  });
+
   test.each([
     ["javascript: URL", "javascript:void(0)"],
     ["data: URL", "data:text/plain,hello"],

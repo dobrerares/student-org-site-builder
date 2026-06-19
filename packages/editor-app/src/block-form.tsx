@@ -399,11 +399,56 @@ function FieldRenderer({
       // "asset-picker", `DocumentAssetRefSchema` → "document-picker")
       // and path-keyed dispatch (e.g. `theme.id` → "theme-picker").
       // BlockForm only owns block-data widgets — the theme-picker is
-      // mounted by ThemeForm — so the media pickers (asset + document)
-      // are the only branches wired here today. Unknown renderer names
-      // fall back to a debug span so a future schema-identity
+      // mounted by ThemeForm — so the media pickers plus a small number
+      // of block-specific widgets are wired here today. Unknown renderer
+      // names fall back to a debug span so a future schema-identity
       // registration that forgets to add a renderer arm is loud-in-DOM
       // rather than silent.
+      if (node.renderer === "lat-lng") {
+        const tuple = Array.isArray(value) ? value : [];
+        const lat = typeof tuple[0] === "number" ? tuple[0] : undefined;
+        const lng = typeof tuple[1] === "number" ? tuple[1] : undefined;
+
+        function patchCoordinate(index: 0 | 1, raw: string): void {
+          const current: [number | undefined, number | undefined] = [lat, lng];
+          current[index] = raw === "" ? undefined : Number(raw);
+          if (current[0] === undefined && current[1] === undefined) {
+            onPatch(node.path, undefined);
+            return;
+          }
+          onPatch(node.path, current);
+        }
+
+        return (
+          <fieldset data-field={dottedPath} data-kind="lat-lng">
+            <legend>{label}</legend>
+            <label data-field-label={`${dottedPath}.0`}>
+              <span>Latitude</span>
+              <input
+                type="number"
+                step="any"
+                data-field={`${dottedPath}.0`}
+                value={lat === undefined ? "" : String(lat)}
+                onInput={(event: JSX.TargetedEvent<HTMLInputElement>) => {
+                  patchCoordinate(0, event.currentTarget.value);
+                }}
+              />
+            </label>
+            <label data-field-label={`${dottedPath}.1`}>
+              <span>Longitude</span>
+              <input
+                type="number"
+                step="any"
+                data-field={`${dottedPath}.1`}
+                value={lng === undefined ? "" : String(lng)}
+                onInput={(event: JSX.TargetedEvent<HTMLInputElement>) => {
+                  patchCoordinate(1, event.currentTarget.value);
+                }}
+              />
+            </label>
+          </fieldset>
+        );
+      }
       if (node.renderer === "asset-picker") {
         const suggestedAlt = suggestedAltForAssetPath(data, node.path);
         return (

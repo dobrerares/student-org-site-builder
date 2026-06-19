@@ -47,11 +47,13 @@ export function PartnerLogos(props: {
   if (partners.length === 0) return null;
 
   const title = typeof data.title === "string" && data.title.length > 0 ? data.title : undefined;
+  const presentation = data.presentation === "footer" ? "footer" : "grid";
 
   return (
     <section
       data-block="partnerLogos"
       data-block-id={id}
+      data-presentation={presentation === "footer" ? presentation : undefined}
       aria-labelledby={title !== undefined ? `${id}__title` : undefined}
     >
       <div class="partner-logos__inner">

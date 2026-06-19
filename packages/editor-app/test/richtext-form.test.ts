@@ -15,12 +15,23 @@ import { fieldsFromSchema } from "../src/form-generator.js";
  * the contract this test pins is "the framework already covers richText".
  */
 describe("fieldsFromSchema — richText block data", () => {
-  test("produces a single string field for `markdown`", () => {
+  test("produces markdown and alignment controls", () => {
     const fields = fieldsFromSchema(RichTextDataSchema);
-    expect(fields).toHaveLength(1);
-    const md = fields[0]!;
-    expect(md.name).toBe("markdown");
-    expect(md.kind).toBe("string");
+    expect(fields.map((field) => field.name)).toEqual(["markdown", "titleAlign", "paragraphAlign"]);
+
+    expect(fields[0]).toMatchObject({ name: "markdown", kind: "string" });
+    expect(fields[1]).toMatchObject({
+      name: "titleAlign",
+      kind: "enum",
+      options: ["left", "center", "right", "justify"],
+      optional: true,
+    });
+    expect(fields[2]).toMatchObject({
+      name: "paragraphAlign",
+      kind: "enum",
+      options: ["left", "center", "right", "justify"],
+      optional: true,
+    });
   });
 
   test("the produced field tree is independent of any UI framework", () => {
