@@ -24,7 +24,7 @@ const FONTS = [
   { family: "Space Grotesk", pkg: "space-grotesk", weights: [500, 700] },
   { family: "Fraunces", pkg: "fraunces", weights: [600] },
   { family: "Source Serif 4", pkg: "source-serif-4", weights: [600, 700] },
-  { family: "Inter", pkg: "inter", weights: [400, 500, 600] },
+  { family: "Inter", pkg: "inter", weights: [400, 500, 600, 700] },
 ];
 
 /**

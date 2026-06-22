@@ -17,7 +17,7 @@ const WANT: Record<string, number[]> = {
   "Space Grotesk": [500, 700],
   Fraunces: [600],
   "Source Serif 4": [600, 700],
-  Inter: [400, 500, 600],
+  Inter: [400, 500, 600, 700],
 };
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
