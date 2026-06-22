@@ -149,6 +149,27 @@ describe("resolveFontFamilies — primary family under the cascade", () => {
   });
 });
 
+describe("font token CSS emission", () => {
+  test("quotes user-selected font families that are invalid as bare CSS identifiers", () => {
+    const site = structuredClone(fixture) as Site;
+    site.theme = {
+      id: "academic",
+      tokens: { fontHeadline: "Source Serif 4", fontBody: "Inter" },
+    };
+    const root = emitTokenRoot(site);
+    expect(root).toContain('--font-headline: "Source Serif 4";');
+    expect(root).toContain("--font-body: Inter;");
+  });
+
+  test("rendered academic pages keep Source Serif 4 usable for headings", () => {
+    const site = structuredClone(fixture) as Site;
+    site.theme = { id: "academic", tokens: { fontHeadline: "Source Serif 4" } };
+    const html = renderSite(site, "academic");
+    expect(html).toContain('--font-headline: "Source Serif 4";');
+    expect(html).toMatch(/@font-face\{font-family:"Source Serif 4"/);
+  });
+});
+
 describe("production base — overflow & aspect guards", () => {
   test("titles and prose wrap long words (no horizontal scroll)", () => {
     expect(PRODUCTION_SITE_BASE_CSS).toMatch(/overflow-wrap:\s*anywhere/);

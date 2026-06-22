@@ -346,7 +346,7 @@ async function main(): Promise<void> {
       tokens: {
         colorPrimary: "#1f3a5f",
         colorAccent: "#8f5f18",
-        fontHeadline: "Source Serif 4",
+        fontHeadline: "Inter",
         fontBody: "Inter",
         density: "comfortable",
         radius: "soft",

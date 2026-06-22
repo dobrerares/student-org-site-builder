@@ -25,6 +25,24 @@ const COLOR_FONT_MAP: Readonly<Record<string, string>> = {
   fontBody: "--font-body",
 };
 
+const FONT_CUSTOM_PROPS = new Set(["--font-headline", "--font-body"]);
+
+const GENERIC_FONT_FAMILIES = new Set([
+  "serif",
+  "sans-serif",
+  "monospace",
+  "cursive",
+  "fantasy",
+  "system-ui",
+  "ui-serif",
+  "ui-sans-serif",
+  "ui-monospace",
+  "ui-rounded",
+  "emoji",
+  "math",
+  "fangsong",
+]);
+
 /** Map a named density to a spacing multiplier. Unknown/absent → "1". */
 export function densityScale(name: string | undefined): string {
   switch (name) {
@@ -51,6 +69,35 @@ export function radiusBase(name: string | undefined): string {
     default:
       return "6px";
   }
+}
+
+function normaliseTokenValue(cssProp: string, raw: string): string {
+  if (!FONT_CUSTOM_PROPS.has(cssProp)) return raw;
+  return normaliseFontStack(raw);
+}
+
+function normaliseFontStack(stack: string): string {
+  const parts = stack.split(",");
+  const normalised = parts.map((part) => normaliseFontFamilySegment(part));
+  return normalised.join(", ");
+}
+
+function normaliseFontFamilySegment(segment: string): string {
+  const family = segment.trim();
+  if (family.length === 0) return family;
+  if (family.startsWith('"') || family.startsWith("'")) return family;
+  if (/^var\(/i.test(family)) return family;
+  if (GENERIC_FONT_FAMILIES.has(family.toLowerCase())) return family;
+  if (hasInvalidUnquotedFontToken(family)) return `"${escapeCssString(family)}"`;
+  return family;
+}
+
+function hasInvalidUnquotedFontToken(family: string): boolean {
+  return family.split(/\s+/).some((token) => /^-?\d/.test(token));
+}
+
+function escapeCssString(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
 /**
@@ -129,7 +176,9 @@ function resolveTokenValue(
   }
 
   const apply = (raw: unknown): void => {
-    if (typeof raw === "string" && raw.length > 0) value = raw;
+    if (typeof raw === "string" && raw.length > 0) {
+      value = normaliseTokenValue(cssProp, raw);
+    }
   };
 
   if (schemaKey !== undefined && themeDefaults !== undefined) {
@@ -192,8 +241,9 @@ function pushScalarTokens(
   for (const [schemaKey, cssProp] of Object.entries(COLOR_FONT_MAP)) {
     const raw = source[schemaKey];
     if (typeof raw === "string" && raw.length > 0) {
-      declarations.push(`  ${cssProp}: ${raw};`);
-      if (cssProp in resolved) resolved[cssProp] = raw;
+      const value = normaliseTokenValue(cssProp, raw);
+      declarations.push(`  ${cssProp}: ${value};`);
+      if (cssProp in resolved) resolved[cssProp] = value;
     }
   }
   const density = source.density;
@@ -230,8 +280,9 @@ export function emitTokenRoot(
   }
 
   for (const [name, value] of themeBaseline) {
-    declarations.push(`  ${name}: ${value};`);
-    if (name in resolved) resolved[name] = value;
+    const normalised = normaliseTokenValue(name, value);
+    declarations.push(`  ${name}: ${normalised};`);
+    if (name in resolved) resolved[name] = normalised;
   }
 
   const userTokens = (site.theme.tokens ?? {}) as Record<string, unknown>;
