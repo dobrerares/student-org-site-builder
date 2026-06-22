@@ -984,6 +984,20 @@ main { display: block; }
   --site-wide-width: 84rem;
   --site-readable-width: 46rem;
 }
+html {
+  min-height: 100%;
+}
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+body > main {
+  flex: 1 0 auto;
+}
+body > [data-block="siteFooter"] {
+  flex: 0 0 auto;
+}
 main {
   display: block;
   overflow: hidden;

@@ -62,6 +62,13 @@ describe("renderSite — siteFooter", () => {
     expect(html).toContain('data-block-id="blk_footer"');
   });
 
+  test("keeps the footer at the bottom of short production pages", () => {
+    const html = renderSite(site, "academic");
+    expect(html).toContain("body {\n  min-height: 100vh;\n  display: flex;");
+    expect(html).toContain("body > main {\n  flex: 1 0 auto;");
+    expect(html).toContain('body > [data-block="siteFooter"] {\n  flex: 0 0 auto;');
+  });
+
   test("renders social links and membership logo", () => {
     const html = renderSite(site, "academic");
     expect(html).toContain('href="https://instagram.com/example"');
