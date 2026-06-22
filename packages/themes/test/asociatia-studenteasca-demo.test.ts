@@ -56,7 +56,9 @@ describe("Asociația Studențească Demo template — content shape", () => {
   });
 
   test("exercises the full v1 block surface across pages", () => {
-    // Per the PRD, v1 ships 15 block types (#9-#22). The demo seeds an
+    // Per the PRD, v1 shipped 15 block types (#9-#22). The demo also seeds
+    // later additive blocks such as the site footer so the template continues
+    // to exercise the full known block surface.
     // instance of each so once the corresponding implementations land, the
     // template lights up automatically. Forward-compat unknown blocks are
     // still valid envelopes today.
@@ -76,6 +78,7 @@ describe("Asociația Studențească Demo template — content shape", () => {
       "embed",
       "documentDownloads",
       "eventList",
+      "siteFooter",
     ];
     const observed = new Set<string>();
     for (const page of asociatiaStudenteascaDemoData.pages) {

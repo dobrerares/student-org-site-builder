@@ -8,6 +8,10 @@ describe("defaultArrayItemForBlock", () => {
       platform: "website",
       url: "/",
     });
+    expect(defaultArrayItemForBlock("siteFooter", ["socials"])).toEqual({
+      platform: "website",
+      url: "/",
+    });
   });
 
   test("creates required fields for common block arrays", () => {

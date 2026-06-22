@@ -29,6 +29,7 @@ import {
   PARTNER_LOGOS_BLOCK_VERSION,
   QUOTE_BLOCK_VERSION,
   RICH_TEXT_BLOCK_VERSION,
+  SITE_FOOTER_BLOCK_VERSION,
   TEAM_GRID_BLOCK_VERSION,
   VALUE_LIST_BLOCK_VERSION,
   type BlockEnvelope,
@@ -198,6 +199,14 @@ const DEFAULT_BUILDERS: Record<string, DefaultBuilder> = {
       markdown: "## Heading\n\nWrite your text here.",
       titleAlign: "left",
       paragraphAlign: "left",
+    }),
+  },
+  siteFooter: {
+    version: SITE_FOOTER_BLOCK_VERSION,
+    data: () => ({
+      contactTitle: "Contact",
+      email: "contact@example.org",
+      socials: [],
     }),
   },
   teamGrid: {

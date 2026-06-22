@@ -1,0 +1,90 @@
+import { describe, expect, test } from "vitest";
+import type { Site } from "@sosb/schema";
+
+import { renderSite } from "../src/index.js";
+
+const site: Site = {
+  schemaVersion: 1,
+  org: { name: "HISTORIPOL" },
+  theme: { id: "academic" },
+  defaultLanguage: "ro",
+  languages: ["ro"],
+  pages: [
+    {
+      slug: "index",
+      lang: "ro",
+      navLabel: "Acasă",
+      navOrder: 0,
+      showInNav: true,
+      blocks: [
+        {
+          id: "blk_hero",
+          type: "hero",
+          version: 1,
+          data: { title: "HISTORIPOL" },
+        },
+        {
+          id: "blk_footer",
+          type: "siteFooter",
+          version: 1,
+          data: {
+            contactTitle: "Contact",
+            email: "contact@example.org",
+            socials: [
+              { platform: "instagram", url: "https://instagram.com/example" },
+              { platform: "facebook", url: "https://facebook.com/example" },
+            ],
+            membership: {
+              text: "HISTORIPOL este membră ANOSR",
+              name: "ANOSR",
+              url: "https://anosr.ro",
+              logo: {
+                hash: "abc123",
+                path: "assets/anosr.png",
+                metadataPath: "assets/anosr.json",
+                mime: "image/png",
+                width: 780,
+                height: 400,
+                alt: "ANOSR logo",
+              },
+            },
+          },
+        },
+      ],
+    },
+  ],
+};
+
+describe("renderSite — siteFooter", () => {
+  test("renders the footer as a semantic footer after main", () => {
+    const html = renderSite(site, "academic");
+    expect(html).toMatch(/<\/main><footer[^>]*data-block="siteFooter"/);
+    expect(html).toContain('data-block-id="blk_footer"');
+  });
+
+  test("renders social links and membership logo", () => {
+    const html = renderSite(site, "academic");
+    expect(html).toContain('href="https://instagram.com/example"');
+    expect(html).toContain('href="https://facebook.com/example"');
+    expect(html).toContain("HISTORIPOL este membră ANOSR");
+    expect(html).toMatch(
+      /<img[^>]*class="site-footer__membership-logo"[^>]*src="assets\/anosr\.png"/,
+    );
+  });
+
+  test("does not expose the footer email as plain text", () => {
+    const html = renderSite(site, "academic");
+    expect(html).not.toContain("contact@example.org");
+    expect(html).not.toContain("@example.org");
+    expect(html).not.toMatch(/mailto:contact@example\.org/);
+    expect(html).toMatch(/data-site-footer-email\b/);
+    expect(html).toMatch(/data-site-footer-reveal\b/);
+  });
+
+  test("suppresses empty footer data", () => {
+    const empty = structuredClone(site) as Site;
+    empty.pages[0]!.blocks[1]!.data = {};
+    const html = renderSite(empty, "academic");
+    expect(html).not.toMatch(/<footer[^>]*data-block="siteFooter"/);
+  });
+});

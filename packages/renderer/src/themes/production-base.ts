@@ -83,7 +83,8 @@ main > [data-block] {
   .team-grid__inner,
   .faq__inner,
   .partner-logos__inner,
-  .document-downloads__inner
+  .document-downloads__inner,
+  .site-footer__inner
 ) {
   width: min(100%, var(--site-max-width));
   margin-inline: auto;
@@ -128,6 +129,8 @@ main > [data-block] {
   .event-list__title,
   .image-gallery__title,
   .partner-logos__title,
+  .site-footer__title,
+  .site-footer__heading,
   .ctaBanner__title
 ) {
   line-height: 1.15;
@@ -198,6 +201,26 @@ main > [data-block] {
 [data-block="valueList"][data-layout="grid"][data-columns="4"] .value-list__items {
   --grid-cols: 4;
 }
+[data-block="valueList"] .value-list__item {
+  text-align: center;
+}
+[data-block="valueList"] .value-list__icon {
+  display: flex;
+  justify-content: center;
+  margin-inline: auto;
+}
+[data-block="valueList"] .value-list__label {
+  max-width: 18rem;
+  margin-inline: auto;
+  font-size: var(--type-md);
+  line-height: 1.2;
+  text-wrap: balance;
+}
+[data-block="valueList"] .value-list__description {
+  margin-inline: auto;
+  max-width: 18rem;
+  text-align: center;
+}
 [data-block="teamGrid"] .team-grid__list {
   --grid-cols: var(--team-grid-columns, 3);
   --grid-min: 13rem;
@@ -217,6 +240,28 @@ main > [data-block] {
    * a 3-line one) don't stretch their rows — which otherwise inflates a small
    * fixed item like the badge to fill the slack. Spare space sits at the bottom. */
   align-content: start;
+}
+[data-block="activitiesList"] .activities-list__body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+[data-block="activitiesList"] .activities-list__item-title {
+  order: 1;
+}
+[data-block="activitiesList"] .activities-list__description {
+  order: 2;
+}
+[data-block="activitiesList"] .activities-list__badge {
+  order: 10;
+  align-self: center;
+  justify-self: center;
+  margin-top: auto;
+  text-align: center;
+}
+[data-block="activitiesList"] .activities-list__cta {
+  order: 11;
+  align-self: center;
 }
 [data-block="hero"] .hero__media img,
 [data-block="activitiesList"] .activities-list__media img,
@@ -338,12 +383,87 @@ main > [data-block] {
   min-height: 20rem;
   height: 100%;
 }
+[data-block="ctaBanner"].ctaBanner--solid {
+  background: var(--color-bg);
+  color: var(--color-fg);
+}
+[data-block="ctaBanner"].ctaBanner--solid .ctaBanner__title {
+  color: var(--color-primary);
+}
+[data-block="ctaBanner"].ctaBanner--solid .ctaBanner__subtitle {
+  color: var(--color-fg);
+}
+[data-block="ctaBanner"].ctaBanner--solid .ctaBanner__button--primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+[data-block="ctaBanner"].ctaBanner--solid .ctaBanner__button--secondary {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+[data-block="siteFooter"] {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+[data-block="siteFooter"] .site-footer__inner {
+  align-items: center;
+}
+[data-block="siteFooter"] .site-footer__title,
+[data-block="siteFooter"] .site-footer__heading {
+  color: var(--color-on-primary);
+}
+[data-block="siteFooter"] .site-footer__contact {
+  min-width: min(100%, 26rem);
+}
+[data-block="siteFooter"] .site-footer__contact-list {
+  justify-content: flex-start;
+  gap: var(--space-sm) var(--space-md);
+}
+[data-block="siteFooter"] .site-footer__contact-item {
+  min-width: 0;
+}
+[data-block="siteFooter"] .site-footer__contact-icon {
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-on-primary) 14%, transparent);
+  color: var(--color-on-primary);
+}
+[data-block="siteFooter"] .site-footer__link,
+[data-block="siteFooter"] .site-footer__membership-link {
+  color: var(--color-on-primary);
+  text-decoration-color: color-mix(in srgb, var(--color-on-primary) 65%, transparent);
+}
+[data-block="siteFooter"] .site-footer__address {
+  color: var(--color-on-primary);
+}
+[data-block="siteFooter"] .site-footer__membership {
+  margin-inline-start: auto;
+}
+[data-block="siteFooter"] .site-footer__membership-link {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+[data-block="siteFooter"] .site-footer__membership-text {
+  font-weight: 700;
+}
+[data-block="siteFooter"] .site-footer__membership-logo {
+  height: 3rem;
+}
 @media (max-width: 48rem) {
   [data-block="contactCard"] .contact-card__layout--with-map {
     grid-template-columns: 1fr;
   }
   [data-block="contactCard"] .contact-card__map iframe {
     height: auto;
+  }
+  [data-block="siteFooter"] .site-footer__inner,
+  [data-block="siteFooter"] .site-footer__membership-link,
+  [data-block="siteFooter"] .site-footer__contact-list {
+    justify-content: center;
+    text-align: center;
+  }
+  [data-block="siteFooter"] .site-footer__membership {
+    margin-inline-start: 0;
   }
 }
 [data-block="hero"] .hero__title,
@@ -357,6 +477,8 @@ main > [data-block] {
   .event-list__title,
   .image-gallery__title,
   .partner-logos__title,
+  .site-footer__title,
+  .site-footer__heading,
   .ctaBanner__title
 ) {
   overflow-wrap: anywhere;
@@ -374,6 +496,12 @@ main > [data-block] {
 }
 [data-block="imageGallery"] .image-gallery__trigger {
   overflow: hidden;
+}
+[data-block="imageGallery"] {
+  text-align: center;
+}
+[data-block="imageGallery"] .image-gallery__caption {
+  text-align: center;
 }
 [data-block="imageGallery"] .image-gallery__trigger img,
 [data-block="imageGallery"] .image-gallery__figure > img {

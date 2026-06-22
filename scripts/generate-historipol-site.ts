@@ -117,7 +117,7 @@ async function main(): Promise<void> {
   const anosrLogoRef = await uploadLocalImage(
     vfs,
     processor,
-    "4.-Logo-ANOSR_fundal-alb(sigla-full-negru).png",
+    "3.-Logo-ANOSR_fundal-negru(sigla-full-alb).png",
     "Sigla Alianței Naționale a Organizațiilor Studențești din România",
   );
 
@@ -298,20 +298,29 @@ async function main(): Promise<void> {
     },
   ];
 
-  const memberFooterBlock = (id: string) => ({
+  const footerBlock = (id: string) => ({
     id,
-    type: "partnerLogos" as const,
+    type: "siteFooter" as const,
     version: 1 as const,
     data: {
-      title: "HISTORIPOL este membră ANOSR",
-      presentation: "footer" as const,
-      partners: [
+      contactTitle: "Contact",
+      email: "asociatia.historipol@gmail.com",
+      socials: [
         {
-          name: "Alianța Națională a Organizațiilor Studențești din România",
-          url: "https://anosr.ro",
-          logo: anosrLogoRef,
+          platform: "instagram",
+          url: "https://www.instagram.com/asociatia_historipol?igsh=MXcyYTh3YjY3YWxtcw==",
+        },
+        {
+          platform: "facebook",
+          url: "https://www.facebook.com/share/1And48qLPo/?mibextid=wwXIfr",
         },
       ],
+      membership: {
+        text: "HISTORIPOL este membră ANOSR",
+        name: "Alianța Națională a Organizațiilor Studențești din România",
+        url: "https://anosr.ro",
+        logo: anosrLogoRef,
+      },
     },
   });
 
@@ -451,7 +460,7 @@ async function main(): Promise<void> {
               ],
             },
           },
-          memberFooterBlock("blk_about_member_footer"),
+          footerBlock("blk_about_footer"),
         ],
       },
       {
@@ -546,7 +555,7 @@ async function main(): Promise<void> {
               ],
             },
           },
-          memberFooterBlock("blk_activities_member_footer"),
+          footerBlock("blk_activities_footer"),
         ],
       },
       {
@@ -583,7 +592,7 @@ async function main(): Promise<void> {
               people: teamPeople,
             },
           },
-          memberFooterBlock("blk_team_member_footer"),
+          footerBlock("blk_team_footer"),
         ],
       },
       {
@@ -650,7 +659,7 @@ async function main(): Promise<void> {
               },
             },
           },
-          memberFooterBlock("blk_contact_member_footer"),
+          footerBlock("blk_contact_footer"),
         ],
       },
     ],

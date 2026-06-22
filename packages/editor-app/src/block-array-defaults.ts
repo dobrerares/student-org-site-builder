@@ -24,6 +24,8 @@ export function defaultArrayItemForBlock(
       return { title: "New activity" };
     case "contactCard:socials":
       return { platform: "website", url: "/" };
+    case "siteFooter:socials":
+      return { platform: "website", url: "/" };
     case "eventList:events":
       return {
         id: makeItemId("evt"),

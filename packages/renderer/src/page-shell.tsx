@@ -15,6 +15,7 @@ import type {
   RichTextBlock,
   PartnerLogosBlock,
   ImageGalleryBlock,
+  SiteFooterBlock,
   TeamGridBlock,
   ValueListBlock,
   ActivitiesListBlock,
@@ -34,6 +35,7 @@ import { CustomHtml } from "./blocks/custom-html.js";
 import { ActivitiesList } from "./blocks/activities-list.js";
 import { PartnerLogos } from "./blocks/partner-logos.js";
 import { ImageGallery } from "./blocks/image-gallery.js";
+import { SiteFooter } from "./blocks/site-footer.js";
 import { LIGHTBOX_SCRIPT } from "./lightbox-script.js";
 import { DocumentDownloads } from "./blocks/document-downloads.js";
 import { EventList } from "./blocks/event-list.js";
@@ -198,6 +200,11 @@ function renderBlock(
       />
     );
   }
+  if (block.type === "siteFooter") {
+    return (
+      <SiteFooter block={block as unknown as SiteFooterBlock} assetUrlForPath={assetUrlForPath} />
+    );
+  }
   return null;
 }
 
@@ -240,6 +247,8 @@ export function PageShell(props: {
   const hasLazyEmbed = pageHasLazyEmbed(page.blocks);
   const needsLightbox = pageNeedsLightbox(page);
   const hasEventList = pageHasEventList(page);
+  const contentBlocks = page.blocks.filter((block) => block.type !== "siteFooter");
+  const footerBlocks = page.blocks.filter((block) => block.type === "siteFooter");
   const switcherEntries = languageSwitcherEntriesFor(site, page);
   const hreflangs = hreflangEntriesFor(site, page);
   const navLogo = site.org.logo;
@@ -363,7 +372,7 @@ export function PageShell(props: {
           </nav>
         )}
         <main>
-          {page.blocks.map((block) => {
+          {contentBlocks.map((block) => {
             const rendered = renderBlock(block, assetUrlForPath, page.lang);
             if (rendered !== null) return rendered;
             return (
@@ -376,6 +385,7 @@ export function PageShell(props: {
             );
           })}
         </main>
+        {footerBlocks.map((block) => renderBlock(block, assetUrlForPath, page.lang))}
         {hasLazyEmbed && (
           <script
             {...{ [EMBED_LOADER_MARKER]: "" }}

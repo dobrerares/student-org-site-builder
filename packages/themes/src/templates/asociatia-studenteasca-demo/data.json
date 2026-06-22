@@ -303,6 +303,33 @@
               }
             ]
           }
+        },
+        {
+          "id": "blk_home_footer",
+          "type": "siteFooter",
+          "version": 1,
+          "data": {
+            "contactTitle": "Contact",
+            "email": "contact@demo-asociatie.example",
+            "socials": [
+              { "platform": "instagram", "url": "https://instagram.com/demo-asociatie" },
+              { "platform": "facebook", "url": "https://facebook.com/demo-asociatie" }
+            ],
+            "membership": {
+              "text": "Asociația Demo este membră a Federației Demo",
+              "name": "Federația Demo",
+              "url": "https://federatie.example",
+              "logo": {
+                "hash": "placeholder-logo",
+                "path": "assets/placeholder-logo.svg",
+                "metadataPath": "assets/placeholder-logo.metadata.json",
+                "mime": "image/svg+xml",
+                "width": 400,
+                "height": 100,
+                "alt": "Logo Federația Demo"
+              }
+            }
+          }
         }
       ]
     },
@@ -615,6 +642,33 @@
           "data": {
             "html": "<aside class=\"newsletter-note\"><p>Abonează-te la newsletterul nostru lunar pentru a primi anunțurile despre evenimente. Acesta este un bloc HTML personalizat — folosește-l doar când celelalte blocuri nu acoperă cazul tău.</p></aside>",
             "sanitize": true
+          }
+        },
+        {
+          "id": "blk_about_footer",
+          "type": "siteFooter",
+          "version": 1,
+          "data": {
+            "contactTitle": "Contact",
+            "email": "contact@demo-asociatie.example",
+            "socials": [
+              { "platform": "instagram", "url": "https://instagram.com/demo-asociatie" },
+              { "platform": "facebook", "url": "https://facebook.com/demo-asociatie" }
+            ],
+            "membership": {
+              "text": "Asociația Demo este membră a Federației Demo",
+              "name": "Federația Demo",
+              "url": "https://federatie.example",
+              "logo": {
+                "hash": "placeholder-logo",
+                "path": "assets/placeholder-logo.svg",
+                "metadataPath": "assets/placeholder-logo.metadata.json",
+                "mime": "image/svg+xml",
+                "width": 400,
+                "height": 100,
+                "alt": "Logo Federația Demo"
+              }
+            }
           }
         }
       ]

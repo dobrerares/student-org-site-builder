@@ -90,6 +90,7 @@ export const BLOCK_FIELD_METADATA: Partial<
   imageGallery: [{ path: "images.[].alt", label: "Image description (for screen readers)" }],
   teamGrid: [{ path: "people.[].photo.alt", label: "Image description (for screen readers)" }],
   partnerLogos: [{ path: "partners.[].logo.alt", label: "Image description (for screen readers)" }],
+  siteFooter: [{ path: "membership.logo.alt", label: "Image description (for screen readers)" }],
   ctaBanner: [{ path: "backgroundImage.alt", label: "Image description (for screen readers)" }],
   eventList: [{ path: "events.[].imageAlt", label: "Image description (for screen readers)" }],
 };

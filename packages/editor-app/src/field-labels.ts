@@ -58,6 +58,8 @@ const FIELD_LABELS: Readonly<Record<string, string>> = {
   phone: "Phone",
   socials: "Social links",
   socialLinks: "Social links",
+  contactTitle: "Contact heading",
+  membership: "Membership",
   question: "Question",
   answer: "Answer",
   quote: "Quote",

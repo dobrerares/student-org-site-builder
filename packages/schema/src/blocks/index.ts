@@ -14,6 +14,7 @@ import { PartnerLogosBlockSchema } from "./partner-logos.js";
 import { ImageGalleryBlockSchema } from "./image-gallery.js";
 import { DocumentDownloadsBlockSchema } from "./document-downloads.js";
 import { EventListBlockSchema } from "./event-list.js";
+import { SiteFooterBlockSchema } from "./site-footer.js";
 
 export { HeroBlockSchema, HeroDataSchema, HERO_BLOCK_VERSION } from "./hero.js";
 export type { HeroBlock, HeroData } from "./hero.js";
@@ -169,6 +170,17 @@ export type {
   EventSortBy,
   EventPastBehavior,
 } from "./event-list.js";
+export {
+  SITE_FOOTER_BLOCK_VERSION,
+  SiteFooterBlockSchema,
+  SiteFooterDataSchema,
+} from "./site-footer.js";
+export type {
+  SiteFooterBlock,
+  SiteFooterData,
+  SiteFooterMembership,
+  SiteFooterSocialLink,
+} from "./site-footer.js";
 
 /**
  * The block envelope is `{ id, type, version, data }`. This generic envelope
@@ -208,6 +220,7 @@ export const KnownBlockSchemas = {
   imageGallery: ImageGalleryBlockSchema,
   documentDownloads: DocumentDownloadsBlockSchema,
   eventList: EventListBlockSchema,
+  siteFooter: SiteFooterBlockSchema,
 } as const;
 
 export type KnownBlockType = keyof typeof KnownBlockSchemas;

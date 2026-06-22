@@ -384,6 +384,11 @@ function templateSiteForEditing(site: Site): Site {
         case "partnerLogos":
           data.partners = withoutPlaceholderAssetItems(data.partners, "logo");
           break;
+        case "siteFooter":
+          if (data.membership !== null && typeof data.membership === "object") {
+            removePlaceholderAsset(data.membership as Record<string, unknown>, "logo");
+          }
+          break;
         case "documentDownloads":
           data.files = withoutPlaceholderAssetItems(data.files, "asset");
           break;

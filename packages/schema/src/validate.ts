@@ -706,6 +706,11 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
       });
       break;
     }
+    case "siteFooter": {
+      // No quality nudges in v1. The footer may intentionally contain only
+      // contact links, only a membership mark, or both.
+      break;
+    }
     default: {
       // Exhaustiveness assertion: every known block must have a case branch.
       const _exhaustive: never = block;

@@ -175,6 +175,7 @@ a:hover, a:focus-visible { text-decoration-thickness: 2px; }
 [data-block="faq"] .faq__inner,
 [data-block="documentDownloads"] .document-downloads__inner,
 [data-block="partnerLogos"] .partner-logos__inner,
+[data-block="siteFooter"] .site-footer__inner,
 [data-block="event-list"] > :is(.event-list__title, .event-list__intro, .event-list__items) {
   max-width: var(--site-readable-width);
 }

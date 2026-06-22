@@ -69,6 +69,9 @@ export {
   RICH_TEXT_BLOCK_VERSION,
   RichTextBlockSchema,
   RichTextDataSchema,
+  SITE_FOOTER_BLOCK_VERSION,
+  SiteFooterBlockSchema,
+  SiteFooterDataSchema,
   TEAM_GRID_BLOCK_VERSION,
   TeamGridBlockSchema,
   TeamGridDataSchema,
@@ -155,6 +158,10 @@ export type {
   RichTextBlock,
   RichTextAlignment,
   RichTextData,
+  SiteFooterBlock,
+  SiteFooterData,
+  SiteFooterMembership,
+  SiteFooterSocialLink,
 } from "./blocks/index.js";
 
 // Validation

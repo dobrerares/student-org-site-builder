@@ -125,6 +125,11 @@ const BLOCK_METADATA: Record<
     label: "Text section",
     description: "Add longer text with headings, lists, and links.",
   },
+  siteFooter: {
+    category: "optional",
+    label: "Site footer",
+    description: "Show contact links and membership or umbrella-organisation credit.",
+  },
   teamGrid: {
     category: "optional",
     label: "Team grid",
