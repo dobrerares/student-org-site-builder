@@ -26,7 +26,7 @@ describe("@font-face emission (gated)", () => {
   test("a self-hosted family override emits matching @font-face rules", () => {
     const html = renderSite(spaceGroteskSite, "stub");
     expect(html).toContain('@font-face{font-family:"Space Grotesk"');
-    expect(html).toContain("font-display:optional");
+    expect(html).toContain("font-display:swap");
     expect(html).toMatch(/src:url\(assets\/fonts\/space-grotesk-[^)]+\) format\("woff2"\)/);
     // The latin-ext face carries the Romanian Ș/Ț range.
     expect(html).toContain("U+0100-02BA");

@@ -157,15 +157,17 @@ describe("font token CSS emission", () => {
       tokens: { fontHeadline: "Source Serif 4", fontBody: "Inter" },
     };
     const root = emitTokenRoot(site);
-    expect(root).toContain('--font-headline: "Source Serif 4";');
-    expect(root).toContain("--font-body: Inter;");
+    expect(root).toContain('--font-headline: "Source Serif 4", Georgia, "Times New Roman", serif;');
+    expect(root).toContain(
+      '--font-body: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;',
+    );
   });
 
   test("rendered academic pages keep Source Serif 4 usable for headings", () => {
     const site = structuredClone(fixture) as Site;
     site.theme = { id: "academic", tokens: { fontHeadline: "Source Serif 4" } };
     const html = renderSite(site, "academic");
-    expect(html).toContain('--font-headline: "Source Serif 4";');
+    expect(html).toContain('--font-headline: "Source Serif 4", Georgia, "Times New Roman", serif;');
     expect(html).toMatch(/@font-face\{font-family:"Source Serif 4"/);
   });
 });

@@ -43,6 +43,14 @@ const GENERIC_FONT_FAMILIES = new Set([
   "fangsong",
 ]);
 
+const FONT_FALLBACK_STACKS: Readonly<Record<string, readonly string[]>> = {
+  Archivo: ["system-ui", "-apple-system", '"Segoe UI"', "Roboto", "sans-serif"],
+  Fraunces: ["Georgia", '"Times New Roman"', "serif"],
+  Inter: ["system-ui", "-apple-system", '"Segoe UI"', "Roboto", "sans-serif"],
+  "Source Serif 4": ["Georgia", '"Times New Roman"', "serif"],
+  "Space Grotesk": ["system-ui", "-apple-system", '"Segoe UI"', "Roboto", "sans-serif"],
+};
+
 /** Map a named density to a spacing multiplier. Unknown/absent → "1". */
 export function densityScale(name: string | undefined): string {
   switch (name) {
@@ -79,7 +87,29 @@ function normaliseTokenValue(cssProp: string, raw: string): string {
 function normaliseFontStack(stack: string): string {
   const parts = stack.split(",");
   const normalised = parts.map((part) => normaliseFontFamilySegment(part));
+  if (normalised.length === 1 && !fontStackHasGeneric(normalised)) {
+    const primaryFamily = unquoteFontFamily(normalised[0]!);
+    const fallbacks = FONT_FALLBACK_STACKS[primaryFamily];
+    if (fallbacks !== undefined) {
+      return [normalised[0]!, ...fallbacks].join(", ");
+    }
+  }
   return normalised.join(", ");
+}
+
+function fontStackHasGeneric(parts: readonly string[]): boolean {
+  return parts.some((part) => GENERIC_FONT_FAMILIES.has(unquoteFontFamily(part).toLowerCase()));
+}
+
+function unquoteFontFamily(family: string): string {
+  const trimmed = family.trim();
+  if (trimmed.length >= 2) {
+    const quote = trimmed[0];
+    if ((quote === '"' || quote === "'") && trimmed[trimmed.length - 1] === quote) {
+      return trimmed.slice(1, -1);
+    }
+  }
+  return trimmed;
 }
 
 function normaliseFontFamilySegment(segment: string): string {

@@ -155,7 +155,7 @@ function emitFontFaces(families: readonly string[], assetUrlForPath?: AssetUrlFo
       const src = resolveAssetUrl(FONT_ASSET_PREFIX + def.file, assetUrlForPath);
       rules.push(
         `@font-face{font-family:"${def.family}";font-style:normal;font-weight:${def.weight};` +
-          `font-display:optional;src:url(${src}) format("woff2");unicode-range:${def.unicodeRange};}`,
+          `font-display:swap;src:url(${src}) format("woff2");unicode-range:${def.unicodeRange};}`,
       );
     }
   }
@@ -165,9 +165,9 @@ function emitFontFaces(families: readonly string[], assetUrlForPath?: AssetUrlFo
 /**
  * Font preload hrefs matching the emitted @font-face src URLs. Preloading the
  * exact same self-hosted files lets the browser start fetching before it
- * reaches the inline CSS font-face block. Combined with `font-display:optional`
- * this avoids late text repaint while still using the self-hosted face when it
- * is ready immediately or already cached.
+ * reaches the inline CSS font-face block. Combined with `font-display:swap`
+ * this avoids permanent fallback text while still letting the page render if a
+ * font request is slow.
  */
 export function fontPreloadHrefsFor(
   site: Site,

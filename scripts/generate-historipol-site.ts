@@ -346,8 +346,8 @@ async function main(): Promise<void> {
       tokens: {
         colorPrimary: "#1f3a5f",
         colorAccent: "#8f5f18",
-        fontHeadline: "Inter",
-        fontBody: "Inter",
+        fontHeadline: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+        fontBody: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
         density: "comfortable",
         radius: "soft",
       },
