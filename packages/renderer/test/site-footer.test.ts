@@ -72,6 +72,20 @@ describe("renderSite — siteFooter", () => {
     );
   });
 
+  test("allows the visible contact heading to be removed", () => {
+    const withoutHeading = structuredClone(site) as Site;
+    delete withoutHeading.pages[0]!.blocks[1]!.data.contactTitle;
+    const html = renderSite(withoutHeading, "academic");
+    expect(html).not.toContain('class="site-footer__heading"');
+    expect(html).toContain('class="site-footer__contact" aria-label="Contact"');
+
+    const blankHeading = structuredClone(site) as Site;
+    blankHeading.pages[0]!.blocks[1]!.data.contactTitle = "";
+    const blankHtml = renderSite(blankHeading, "academic");
+    expect(blankHtml).not.toContain('class="site-footer__heading"');
+    expect(blankHtml).toContain('class="site-footer__contact" aria-label="Contact"');
+  });
+
   test("does not expose the footer email as plain text", () => {
     const html = renderSite(site, "academic");
     expect(html).not.toContain("contact@example.org");

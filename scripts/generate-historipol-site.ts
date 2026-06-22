@@ -303,7 +303,6 @@ async function main(): Promise<void> {
     type: "siteFooter" as const,
     version: 1 as const,
     data: {
-      contactTitle: "Contact",
       email: "asociatia.historipol@gmail.com",
       socials: [
         {

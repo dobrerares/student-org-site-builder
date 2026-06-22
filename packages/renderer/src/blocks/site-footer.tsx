@@ -98,7 +98,7 @@ export function SiteFooter(props: {
 }): preact.JSX.Element | null {
   const { id, data } = props.block;
   const title = asString(data.title);
-  const contactTitle = asString(data.contactTitle) ?? "Contact";
+  const contactTitle = asString(data.contactTitle);
   const address = asString(data.address);
   const email = asString(data.email);
   const phone = asString(data.phone);
@@ -136,6 +136,7 @@ export function SiteFooter(props: {
   if (!hasContact && !hasMembership) return null;
 
   const labelledBy = title !== undefined ? `${id}__title` : undefined;
+  const contactLabelledBy = contactTitle !== undefined ? `${id}__contact-title` : undefined;
 
   return (
     <footer
@@ -151,10 +152,16 @@ export function SiteFooter(props: {
           </h2>
         )}
         {hasContact && (
-          <section class="site-footer__contact" aria-labelledby={`${id}__contact-title`}>
-            <h3 id={`${id}__contact-title`} class="site-footer__heading">
-              {contactTitle}
-            </h3>
+          <section
+            class="site-footer__contact"
+            aria-labelledby={contactLabelledBy}
+            aria-label={contactLabelledBy === undefined ? "Contact" : undefined}
+          >
+            {contactTitle !== undefined && (
+              <h3 id={`${id}__contact-title`} class="site-footer__heading">
+                {contactTitle}
+              </h3>
+            )}
             <ul class="site-footer__contact-list">
               {socials.map((social, idx) => (
                 <FooterContactItem
