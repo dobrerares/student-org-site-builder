@@ -407,18 +407,24 @@ main > [data-block] {
   color: var(--color-on-primary);
 }
 [data-block="siteFooter"] .site-footer__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
+  gap: var(--space-lg) var(--space-xl);
 }
 [data-block="siteFooter"] .site-footer__title,
 [data-block="siteFooter"] .site-footer__heading {
   color: var(--color-on-primary);
+}
+[data-block="siteFooter"] .site-footer__title {
+  grid-column: 1 / -1;
 }
 [data-block="siteFooter"] .site-footer__contact {
   min-width: min(100%, 26rem);
 }
 [data-block="siteFooter"] .site-footer__contact-list {
   justify-content: flex-start;
-  gap: var(--space-sm) var(--space-md);
+  gap: var(--space-xs) var(--space-md);
 }
 [data-block="siteFooter"] .site-footer__contact-item {
   min-width: 0;
@@ -438,16 +444,20 @@ main > [data-block] {
 }
 [data-block="siteFooter"] .site-footer__membership {
   margin-inline-start: auto;
+  max-width: min(100%, 28rem);
+  text-align: right;
 }
 [data-block="siteFooter"] .site-footer__membership-link {
   flex-wrap: wrap;
   justify-content: flex-end;
+  gap: var(--space-sm) var(--space-md);
 }
 [data-block="siteFooter"] .site-footer__membership-text {
   font-weight: 700;
+  max-width: 16rem;
 }
 [data-block="siteFooter"] .site-footer__membership-logo {
-  height: 3rem;
+  height: clamp(2.5rem, 5vw, 3.5rem);
 }
 @media (max-width: 48rem) {
   [data-block="contactCard"] .contact-card__layout--with-map {
@@ -456,7 +466,9 @@ main > [data-block] {
   [data-block="contactCard"] .contact-card__map iframe {
     height: auto;
   }
-  [data-block="siteFooter"] .site-footer__inner,
+  [data-block="siteFooter"] .site-footer__inner {
+    grid-template-columns: 1fr;
+  }
   [data-block="siteFooter"] .site-footer__membership-link,
   [data-block="siteFooter"] .site-footer__contact-list {
     justify-content: center;
@@ -464,6 +476,11 @@ main > [data-block] {
   }
   [data-block="siteFooter"] .site-footer__membership {
     margin-inline-start: 0;
+    max-width: 100%;
+    text-align: center;
+  }
+  [data-block="siteFooter"] .site-footer__membership-text {
+    max-width: 100%;
   }
 }
 [data-block="hero"] .hero__title,
