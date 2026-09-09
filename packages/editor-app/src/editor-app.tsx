@@ -104,6 +104,18 @@ import { resolvePathToPageIndex } from "./preview-navigation.js";
 // once, before any component renders. Guarded for SSR / non-DOM tooling.
 import "./editor-app-css.js";
 import { PagesList } from "./pages-list.js";
+import { rebaseElement } from "./rebase-element.js";
+import {
+  IconArrowLeft,
+  IconChevronRight,
+  IconClose,
+  IconGlobe,
+  IconLayout,
+  IconPalette,
+  IconRedo,
+  IconSettings,
+  IconUndo,
+} from "./icons.js";
 import { addLanguageVersion, addPage, clonePage, deletePage, movePage } from "./pages-ops.js";
 import { AddBlockDialog } from "./add-block-dialog.js";
 import { BlockListEditor } from "./block-list-editor.js";
@@ -201,7 +213,27 @@ type DrillMode =
   | { readonly kind: "blocks" }
   | { readonly kind: "block"; readonly blockId: string }
   | { readonly kind: "settings" }
-  | { readonly kind: "theme" };
+  | { readonly kind: "theme" }
+  | { readonly kind: "page" };
+
+/** localStorage key remembering that the getting-started tip was dismissed. */
+const TIP_DISMISSED_KEY = "sosb.editor.tipDismissed";
+
+function readTipDismissed(): boolean {
+  try {
+    return typeof localStorage !== "undefined" && localStorage.getItem(TIP_DISMISSED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeTipDismissed(): void {
+  try {
+    if (typeof localStorage !== "undefined") localStorage.setItem(TIP_DISMISSED_KEY, "1");
+  } catch {
+    /* private mode / quota — the tip simply shows again next time */
+  }
+}
 
 type SaveStatus = "localOnly" | "saving" | "saved" | "error";
 
@@ -795,7 +827,20 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
         focusIssue = { ...issue, path: path.slice(5) };
       }
     }
-    if (nextDrill === null) nextDrill = { kind: "settings" };
+    if (
+      nextDrill === null &&
+      path.length >= 2 &&
+      path[0] === "pages" &&
+      typeof path[1] === "number" &&
+      snapshot.pages[path[1]] !== undefined
+    ) {
+      // A page-level issue (menu label, link name, SEO) → per-page settings.
+      if (path[1] !== safeActivePageIndex) setActivePageIndex(path[1]);
+      nextDrill = { kind: "page" };
+    }
+    if (nextDrill === null) {
+      nextDrill = path[0] === "theme" ? { kind: "theme" } : { kind: "settings" };
+    }
     setDrillMode(nextDrill);
     pendingIssueRef.current = focusIssue;
   }
@@ -877,6 +922,30 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     setExportDialog(null);
   }
 
+  function handleResetClick(): void {
+    if (props.onReset !== undefined) {
+      props.onReset();
+      return;
+    }
+    // No host-provided reset: the browser shell keeps the draft in this
+    // browser, so going back to the start screen is safe and reversible
+    // ("Continue draft" brings it back).
+    if (
+      typeof window !== "undefined" &&
+      window.confirm(
+        "Go back to the start screen? Your work stays saved in this browser and you can continue it later.",
+      )
+    ) {
+      window.location.reload();
+    }
+  }
+
+  const [tipDismissed, setTipDismissed] = useState<boolean>(() => readTipDismissed());
+  function dismissTip(): void {
+    setTipDismissed(true);
+    writeTipDismissed();
+  }
+
   const pagesListNode = (
     <PagesList
       site={snapshot}
@@ -899,20 +968,60 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       data-action="drill-back"
       onClick={() => setDrillMode({ kind: "blocks" })}
     >
-      Back to page sections
+      <IconArrowLeft size={16} />
+      <span>Back to page sections</span>
     </button>
   );
+
+  // Per-page settings form: the `pages.[]` element node from the spine
+  // walk, rebased onto the active page index so `data-field` paths read
+  // `pages.<n>.navLabel` etc. (issue navigation relies on that).
+  const pagesArrayNode = fields.find((node) => node.name === "pages");
+  const pageSettingsNode =
+    pagesArrayNode !== undefined && pagesArrayNode.kind === "array"
+      ? rebaseElement(pagesArrayNode.element, ["pages", safeActivePageIndex])
+      : undefined;
+  const pageSettingsFields =
+    pageSettingsNode !== undefined && pageSettingsNode.kind === "object"
+      ? pageSettingsNode.fields
+      : [];
 
   // The inspector's eyebrow + title use the same catalog as the
   // BlockListEditor row that drilled in, keeping visual register aligned.
   let editorPaneBody: JSX.Element;
-  if (drillMode.kind === "settings") {
+  if (drillMode.kind === "page" && activePage !== undefined) {
+    editorPaneBody = (
+      <div data-testid="inspector" data-inspector-mode="page" data-page-index={safeActivePageIndex}>
+        {backToBlocksButton}
+        <header data-testid="inspector-header">
+          <span data-testid="inspector-eyebrow">Page settings</span>
+          <h2>{activePage.navLabel}</h2>
+          <p data-inspector-lead>
+            How this page appears in the menu and in search results. The sections themselves are
+            edited from the page sections list.
+          </p>
+        </header>
+        <SpineForm
+          fields={pageSettingsFields}
+          site={snapshot}
+          onPatch={patch}
+          uploader={uploadAssetForPicker}
+          documentUploader={uploadDocumentForPicker}
+          displayUrlFor={displayUrlForAsset}
+        />
+      </div>
+    );
+  } else if (drillMode.kind === "settings") {
     editorPaneBody = (
       <div data-testid="inspector" data-inspector-mode="settings">
         {backToBlocksButton}
         <header data-testid="inspector-header">
           <span data-testid="inspector-eyebrow">Site</span>
           <h2>Site settings</h2>
+          <p data-inspector-lead>
+            Your organisation’s details, shown across every page, plus the languages the site
+            offers.
+          </p>
         </header>
         <SpineForm
           fields={fields}
@@ -931,6 +1040,9 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
         <header data-testid="inspector-header">
           <span data-testid="inspector-eyebrow">Site</span>
           <h2>Theme</h2>
+          <p data-inspector-lead>
+            The look of the whole site. Changes show in the preview right away.
+          </p>
         </header>
         <ThemeForm site={snapshot} onChange={applySite} />
       </div>
@@ -1012,30 +1124,90 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
             onSelect={(blockId) => setDrillMode({ kind: "block", blockId })}
           />
         ) : null}
-        <button
-          type="button"
-          data-testid="site-settings-link"
-          data-action="drill-settings"
-          onClick={() => setDrillMode({ kind: "settings" })}
-        >
-          <span data-testid="site-settings-link-label">Site settings</span>
-          <span data-testid="site-settings-link-hint">name, logo, languages</span>
-        </button>
-        <button
-          type="button"
-          data-testid="drill-in-theme"
-          data-action="drill-theme"
-          onClick={() => setDrillMode({ kind: "theme" })}
-        >
-          <span data-testid="drill-in-theme-label">Theme</span>
-          <span data-testid="drill-in-theme-hint">colors and style</span>
-        </button>
+        <nav data-testid="drill-links" aria-label="More settings">
+          {activePage !== undefined ? (
+            <button
+              type="button"
+              data-testid="page-settings-link"
+              data-action="drill-page"
+              onClick={() => setDrillMode({ kind: "page" })}
+            >
+              <span data-drill-icon>
+                <IconLayout size={18} />
+              </span>
+              <span data-drill-text>
+                <span data-testid="page-settings-link-label">Page settings</span>
+                <span data-testid="page-settings-link-hint">
+                  “{activePage.navLabel}” — menu label, link, search preview
+                </span>
+              </span>
+              <IconChevronRight size={16} />
+            </button>
+          ) : null}
+          <button
+            type="button"
+            data-testid="site-settings-link"
+            data-action="drill-settings"
+            onClick={() => setDrillMode({ kind: "settings" })}
+          >
+            <span data-drill-icon>
+              <IconSettings size={18} />
+            </span>
+            <span data-drill-text>
+              <span data-testid="site-settings-link-label">Site settings</span>
+              <span data-testid="site-settings-link-hint">
+                Organisation name, logo, contact details, languages
+              </span>
+            </span>
+            <IconChevronRight size={16} />
+          </button>
+          <button
+            type="button"
+            data-testid="drill-in-theme"
+            data-action="drill-theme"
+            onClick={() => setDrillMode({ kind: "theme" })}
+          >
+            <span data-drill-icon>
+              <IconPalette size={18} />
+            </span>
+            <span data-drill-text>
+              <span data-testid="drill-in-theme-label">Theme</span>
+              <span data-testid="drill-in-theme-hint">Look, colours, fonts and spacing</span>
+            </span>
+            <IconChevronRight size={16} />
+          </button>
+        </nav>
       </>
     );
   }
 
   const editorPane = (
     <section data-testid="editor-pane" aria-label={t("pane.editor.label")}>
+      {!tipDismissed ? (
+        <aside data-testid="getting-started-tip" data-tip>
+          <span data-tip-icon>
+            <IconGlobe size={18} />
+          </span>
+          <div data-tip-body>
+            <strong>How this works</strong>
+            <p>
+              Pick a page, then click a section to change its text and images. The preview on the
+              right updates as you type. When you are happy, use <b>Download copy</b> to get your
+              site as a folder ready to publish.
+            </p>
+          </div>
+          <button
+            type="button"
+            data-icon-button
+            data-testid="getting-started-dismiss"
+            aria-label="Hide this tip"
+            title="Hide this tip"
+            onClick={dismissTip}
+          >
+            <IconClose size={16} />
+          </button>
+        </aside>
+      ) : null}
       {pagesListNode}
       {editorPaneBody}
       <LocaleToggle />
@@ -1103,7 +1275,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       <TopBar
         onImport={handleImportClick}
         onExport={handleExportClick}
-        onReset={props.onReset}
+        onReset={handleResetClick}
         onUndo={doUndo}
         onRedo={doRedo}
         canUndo={canUndo}
@@ -1179,43 +1351,74 @@ function TopBar(props: TopBarProps): JSX.Element {
   const t = useTranslator();
   return (
     <header data-testid="top-bar">
+      <div data-brand>
+        <span data-brand-mark aria-hidden="true">
+          <IconLayout size={18} />
+        </span>
+        <span data-brand-name>Site Builder</span>
+      </div>
       <p
         data-testid="save-status"
         data-status={props.saveStatus}
         aria-live="polite"
         role={props.saveStatus === "error" ? "alert" : "status"}
+        title={t(saveStatusMessageKey(props.saveStatus))}
       >
-        {t(saveStatusMessageKey(props.saveStatus))}
+        <span data-save-status-text>{t(saveStatusMessageKey(props.saveStatus))}</span>
       </p>
-      <button type="button" data-action="import" onClick={props.onImport}>
-        {t("topbar.import")}
-      </button>
-      <button type="button" data-action="export" onClick={props.onExport}>
-        {t("topbar.export")}
-      </button>
-      <button type="button" data-action="reset" onClick={props.onReset}>
-        {t("topbar.reset")}
-      </button>
-      <button
-        type="button"
-        data-testid="undo-button"
-        data-action="undo"
-        aria-label="Undo (Ctrl+Z)"
-        disabled={!props.canUndo}
-        onClick={props.onUndo}
-      >
-        Undo
-      </button>
-      <button
-        type="button"
-        data-testid="redo-button"
-        data-action="redo"
-        aria-label="Redo (Ctrl+Shift+Z)"
-        disabled={!props.canRedo}
-        onClick={props.onRedo}
-      >
-        Redo
-      </button>
+      <div data-topbar-actions>
+        <span data-button-group role="group" aria-label="History">
+          <button
+            type="button"
+            data-testid="undo-button"
+            data-action="undo"
+            data-icon-button
+            aria-label="Undo (Ctrl+Z)"
+            title="Undo (Ctrl+Z)"
+            disabled={!props.canUndo}
+            onClick={props.onUndo}
+          >
+            <IconUndo size={16} />
+          </button>
+          <button
+            type="button"
+            data-testid="redo-button"
+            data-action="redo"
+            data-icon-button
+            aria-label="Redo (Ctrl+Shift+Z)"
+            title="Redo (Ctrl+Shift+Z)"
+            disabled={!props.canRedo}
+            onClick={props.onRedo}
+          >
+            <IconRedo size={16} />
+          </button>
+        </span>
+        <button
+          type="button"
+          data-action="import"
+          title="Open a .zip you downloaded earlier"
+          onClick={props.onImport}
+        >
+          {t("topbar.import")}
+        </button>
+        <button
+          type="button"
+          data-action="reset"
+          title="Go back to the start screen"
+          onClick={props.onReset}
+        >
+          {t("topbar.reset")}
+        </button>
+        <button
+          type="button"
+          data-action="export"
+          data-variant="primary"
+          title="Download your site as a .zip"
+          onClick={props.onExport}
+        >
+          {t("topbar.export")}
+        </button>
+      </div>
     </header>
   );
 }

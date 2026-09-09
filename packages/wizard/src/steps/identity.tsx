@@ -28,7 +28,7 @@ export function IdentityStep(props: IdentityStepProps): JSX.Element {
   return (
     <fieldset data-testid="identity-step">
       <legend>Identity</legend>
-      <p>Pick a starting theme. You can switch later in the editor.</p>
+      <p>Pick a starting look. You can switch any time in the editor — your content stays.</p>
 
       <ul data-testid="theme-list">
         {THEMES.map((theme) => (
@@ -42,8 +42,15 @@ export function IdentityStep(props: IdentityStepProps): JSX.Element {
                 checked={props.data.themeId === theme.id}
                 onChange={() => props.onPatch({ themeId: theme.id })}
               />
-              <span>{theme.label}</span>
-              <span>{theme.description}</span>
+              <span data-theme-card-body>
+                <span data-theme-card-swatches aria-hidden="true">
+                  {theme.preview.swatches.map((swatch) => (
+                    <span key={swatch} style={{ backgroundColor: swatch }} />
+                  ))}
+                </span>
+                <span data-theme-card-label>{theme.label}</span>
+                <span data-theme-card-description>{theme.description}</span>
+              </span>
             </label>
           </li>
         ))}

@@ -543,11 +543,11 @@ describe("BlockForm — imageGallery wires AssetPicker per image (ADR 0043, T11)
  * state. The toggle state is per-component-instance: mounting a second
  * BlockForm starts hidden again, with no module-level coupling.
  *
- * Tests drive the integration by injecting ad-hoc `overrides` (rather
- * than relying on the production `BLOCK_FIELD_METADATA`, which today
- * carries only `label` rewrites and no tier markers for block fields).
+ * Most tests inject ad-hoc `overrides`; one uses the production
+ * `BLOCK_FIELD_METADATA` to lock in that layout knobs live under
+ * "More options".
  */
-describe("BlockForm — Show advanced toggle (ADR 0043, T16)", () => {
+describe("BlockForm — More options section (ADR 0043, T16)", () => {
   afterEach(cleanup);
 
   function makeValueListData(): ValueListData {
@@ -561,12 +561,49 @@ describe("BlockForm — Show advanced toggle (ADR 0043, T16)", () => {
   }
 
   function clickAdvancedToggle(container: ParentNode): void {
-    const checkbox = container.querySelector<HTMLInputElement>(
-      '[data-testid="advanced-toggle"] input[type="checkbox"]',
-    );
-    expect(checkbox, "advanced toggle should be present in BlockForm").not.toBeNull();
-    fireEvent.click(checkbox!);
+    const toggle = container.querySelector<HTMLButtonElement>('[data-testid="advanced-toggle"]');
+    expect(toggle, "More options toggle should be present in BlockForm").not.toBeNull();
+    fireEvent.click(toggle!);
   }
+
+  test("renders no More options section when the block has no advanced fields", () => {
+    const { container } = render(
+      <BlockForm
+        schema={ValueListDataSchema}
+        data={makeValueListData()}
+        onPatch={() => {}}
+        onArrayChange={() => {}}
+        newItem={newValueListItem}
+        uploader={noopUploader}
+        documentUploader={noopDocumentUploader}
+      />,
+    );
+    expect(container.querySelector('[data-testid="more-options"]')).toBeNull();
+  });
+
+  test("production metadata moves valueList layout knobs into More options", () => {
+    const { container } = render(
+      <BlockForm
+        schema={ValueListDataSchema}
+        data={makeValueListData()}
+        onPatch={() => {}}
+        onArrayChange={() => {}}
+        newItem={newValueListItem}
+        uploader={noopUploader}
+        documentUploader={noopDocumentUploader}
+        overrides={BLOCK_FIELD_METADATA.valueList ?? []}
+      />,
+    );
+    expect(container.querySelector('[data-field="title"]')).not.toBeNull();
+    expect(container.querySelector('[data-field="layout"]')).toBeNull();
+    const toggle = container.querySelector('[data-testid="advanced-toggle"]');
+    expect(toggle!.textContent ?? "").toContain("Layout");
+    expect(toggle!.textContent ?? "").toContain("Columns");
+    clickAdvancedToggle(container);
+    const panel = container.querySelector('[data-testid="more-options-panel"]');
+    expect(panel!.querySelector('[data-field="layout"]')).not.toBeNull();
+    expect(panel!.querySelector('[data-field="columns"]')).not.toBeNull();
+  });
 
   test("hides tier=advanced fields by default (toggle off)", () => {
     const overrides: readonly FieldOverride[] = [{ path: "intro", tier: "advanced" }];
@@ -610,7 +647,10 @@ describe("BlockForm — Show advanced toggle (ADR 0043, T16)", () => {
   });
 
   test("never renders tier=hidden fields regardless of toggle state", () => {
-    const overrides: readonly FieldOverride[] = [{ path: "intro", tier: "hidden" }];
+    const overrides: readonly FieldOverride[] = [
+      { path: "intro", tier: "hidden" },
+      { path: "layout", tier: "advanced" },
+    ];
     const { container } = render(
       <BlockForm
         schema={ValueListDataSchema}

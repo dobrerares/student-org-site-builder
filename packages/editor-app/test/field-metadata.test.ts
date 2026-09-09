@@ -41,7 +41,7 @@ describe("field-metadata", () => {
   });
 
   test("lookupFieldOverride returns undefined for paths with no override", () => {
-    const result = lookupFieldOverride(SPINE_FIELD_METADATA, ["org", "name"]);
+    const result = lookupFieldOverride(SPINE_FIELD_METADATA, ["org", "notARealField"]);
     expect(result).toBeUndefined();
   });
 

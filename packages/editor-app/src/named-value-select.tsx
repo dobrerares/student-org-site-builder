@@ -31,6 +31,7 @@
  * unambiguously via `[data-name-key="density"]`.
  */
 import type { JSX } from "preact";
+import { useId } from "preact/hooks";
 
 export interface NamedValueOption {
   readonly value: string;
@@ -42,11 +43,14 @@ export interface NamedValueSelectProps {
   readonly onChange: (next: string | undefined) => void;
   readonly options: readonly NamedValueOption[];
   readonly label?: string;
+  /** Optional one-line explanation rendered under the label. */
+  readonly hint?: string;
   /** Test/data-attribute hook so multiple instances in one form can be differentiated. */
   readonly nameKey?: string;
 }
 
 export function NamedValueSelect(props: NamedValueSelectProps): JSX.Element {
+  const selectId = useId();
   // The empty-string value carries `undefined` semantics through the
   // select (no `selected` attribute is needed — the underlying
   // `value=""` matches when `props.value` is undefined).
@@ -59,9 +63,20 @@ export function NamedValueSelect(props: NamedValueSelectProps): JSX.Element {
   };
 
   return (
-    <div data-testid="named-value-select" data-name-key={props.nameKey ?? ""}>
-      <select value={trimmed} onChange={handleChange} aria-label={props.label ?? undefined}>
-        <option value="">(use theme default)</option>
+    <div data-testid="named-value-select" data-name-key={props.nameKey ?? ""} data-picker-field>
+      {props.label !== undefined ? (
+        <label data-picker-field-label for={selectId}>
+          {props.label}
+        </label>
+      ) : null}
+      {props.hint !== undefined ? <p class="field-hint">{props.hint}</p> : null}
+      <select
+        id={selectId}
+        value={trimmed}
+        onChange={handleChange}
+        aria-label={props.label ?? undefined}
+      >
+        <option value="">Theme default</option>
         {props.options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}

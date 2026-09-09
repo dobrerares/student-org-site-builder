@@ -47,61 +47,80 @@ export function ExportConfirmDialog({
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={headingId}
-      aria-describedby={descId}
-      data-testid="export-confirm-dialog"
+      data-testid="dialog-backdrop"
+      data-dialog-backdrop
+      onClick={(event: JSX.TargetedMouseEvent<HTMLDivElement>) => {
+        if (event.target === event.currentTarget) onCancel();
+      }}
     >
-      <h2 id={headingId}>
-        {hasErrors ? "Fix these before downloading" : "Download with warnings?"}
-      </h2>
-      <p id={descId}>
-        {hasErrors
-          ? `${result.errors.length} issue(s) need attention and ${result.warnings.length} warning(s) were found. Fixing them first is best, but you can still download a copy.`
-          : `${result.warnings.length} warning(s) found. These won't break your site, but addressing them will improve quality.`}
-      </p>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={headingId}
+        aria-describedby={descId}
+        data-testid="export-confirm-dialog"
+        data-tone={hasErrors ? "error" : "warning"}
+        onKeyDown={(event: JSX.TargetedKeyboardEvent<HTMLDivElement>) => {
+          if (event.key === "Escape") {
+            event.stopPropagation();
+            onCancel();
+          }
+        }}
+      >
+        <h2 id={headingId}>
+          {hasErrors ? "Some things need fixing first" : "Download with warnings?"}
+        </h2>
+        <p id={descId}>
+          {hasErrors
+            ? `${count(result.errors.length, "problem")} and ${count(result.warnings.length, "warning")} were found. Fixing them first is best, but you can still download a copy.`
+            : `${count(result.warnings.length, "warning")} found. These won't break your site, but fixing them will make it better.`}
+        </p>
 
-      {hasErrors ? <IssueList severity="error" issues={result.errors} /> : null}
-      {result.warnings.length > 0 ? (
-        <IssueList severity="warning" issues={result.warnings} />
-      ) : null}
+        {hasErrors ? <IssueList severity="error" issues={result.errors} /> : null}
+        {result.warnings.length > 0 ? (
+          <IssueList severity="warning" issues={result.warnings} />
+        ) : null}
 
-      {hasErrors ? (
-        <label data-testid="export-confirm-input-label">
-          <span>
-            Type <strong>{CONFIRM_PHRASE}</strong> to override:
-          </span>
-          <input
-            type="text"
-            data-testid="export-confirm-input"
-            value={phrase}
-            onInput={(event: JSX.TargetedEvent<HTMLInputElement>) =>
-              setPhrase(event.currentTarget.value)
-            }
-            autoComplete="off"
-            spellcheck={false}
-          />
-        </label>
-      ) : null}
+        {hasErrors ? (
+          <label data-testid="export-confirm-input-label">
+            <span>
+              To download anyway, type <strong>{CONFIRM_PHRASE}</strong> below:
+            </span>
+            <input
+              type="text"
+              data-testid="export-confirm-input"
+              value={phrase}
+              onInput={(event: JSX.TargetedEvent<HTMLInputElement>) =>
+                setPhrase(event.currentTarget.value)
+              }
+              autoComplete="off"
+              spellcheck={false}
+            />
+          </label>
+        ) : null}
 
-      <div data-testid="export-confirm-actions">
-        <button type="button" data-testid="export-cancel-button" onClick={() => onCancel()}>
-          {hasErrors ? "Fix first" : "Cancel"}
-        </button>
-        <button
-          type="button"
-          data-testid="export-confirm-button"
-          disabled={!confirmEnabled}
-          onClick={() => {
-            if (confirmEnabled) onConfirm();
-          }}
-        >
-          {hasErrors ? "Download anyway" : "Download anyway"}
-        </button>
+        <div data-testid="export-confirm-actions">
+          <button type="button" data-testid="export-cancel-button" onClick={() => onCancel()}>
+            {hasErrors ? "Go back and fix" : "Cancel"}
+          </button>
+          <button
+            type="button"
+            data-testid="export-confirm-button"
+            disabled={!confirmEnabled}
+            onClick={() => {
+              if (confirmEnabled) onConfirm();
+            }}
+          >
+            Download anyway
+          </button>
+        </div>
       </div>
     </div>
   );
+}
+
+function count(n: number, noun: string): string {
+  return `${n} ${noun}${n === 1 ? "" : "s"}`;
 }
 
 interface IssueListProps {

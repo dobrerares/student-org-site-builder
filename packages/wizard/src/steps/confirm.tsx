@@ -19,7 +19,7 @@ export function ConfirmStep(props: ConfirmStepProps): JSX.Element {
   return (
     <fieldset data-testid="confirm-step">
       <legend>Ready to create</legend>
-      <p>Review your starter site, then click "Create site" to open the editor.</p>
+      <p>Here is what we will set up. Click “Create site” to open it in the editor.</p>
 
       <dl data-testid="confirm-summary">
         <dt>Organization</dt>

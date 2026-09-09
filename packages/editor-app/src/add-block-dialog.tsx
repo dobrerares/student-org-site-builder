@@ -12,17 +12,25 @@
  *
  * Accessibility: `role="dialog"` + `aria-modal="true"` + an accessible
  * label, focus on the search box on open, every entry is a real
- * `<button type="button">` so keyboard activation works.
+ * `<button type="button">` so keyboard activation works. A backdrop sits
+ * behind the dialog; clicking it dismisses, matching the Escape key.
  */
 import type { JSX } from "preact";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 
 import { buildBlockCatalog, type BlockCatalogEntry } from "./block-catalog.js";
+import { IconClose } from "./icons.js";
 
 const CATEGORY_LABELS: Record<string, string> = {
-  mandatory: "Must-have",
-  optional: "Extra sections",
+  mandatory: "Essentials",
+  optional: "More sections",
   advanced: "For experts",
+};
+
+const CATEGORY_HINTS: Record<string, string> = {
+  mandatory: "Most pages need these.",
+  optional: "Pick what fits your page.",
+  advanced: "Only if someone technical is helping.",
 };
 
 export interface AddBlockDialogProps {
@@ -69,70 +77,88 @@ export function AddBlockDialog(props: AddBlockDialogProps): JSX.Element | null {
 
   return (
     <div
-      data-testid="add-block-dialog"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Add a page section"
-      tabIndex={-1}
-      onKeyDown={(event: JSX.TargetedKeyboardEvent<HTMLDivElement>): void => {
-        if (event.key === "Escape") {
-          event.stopPropagation();
-          props.onClose();
-        }
+      data-testid="dialog-backdrop"
+      data-dialog-backdrop
+      onClick={(event: JSX.TargetedMouseEvent<HTMLDivElement>) => {
+        if (event.target === event.currentTarget) props.onClose();
       }}
     >
-      <header>
-        <h2>Add a page section</h2>
-        <button
-          type="button"
-          data-testid="add-block-close"
-          aria-label="Close add-section dialog"
-          onClick={props.onClose}
-        >
-          Close
-        </button>
-      </header>
+      <div
+        data-testid="add-block-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Add a page section"
+        tabIndex={-1}
+        onKeyDown={(event: JSX.TargetedKeyboardEvent<HTMLDivElement>): void => {
+          if (event.key === "Escape") {
+            event.stopPropagation();
+            props.onClose();
+          }
+        }}
+      >
+        <header>
+          <div>
+            <h2>Add a page section</h2>
+            <p data-dialog-lead>
+              Pick a section. It lands at the bottom of the page; you can move it after.
+            </p>
+          </div>
+          <button
+            type="button"
+            data-testid="add-block-close"
+            data-icon-button
+            aria-label="Close add-section dialog"
+            title="Close"
+            onClick={props.onClose}
+          >
+            <IconClose size={18} />
+          </button>
+        </header>
 
-      <label data-testid="add-block-search-label">
-        <span>Search</span>
-        <input
-          ref={searchRef}
-          type="search"
-          data-testid="add-block-search"
-          value={query}
-          placeholder="Search sections..."
-          onInput={(event: JSX.TargetedEvent<HTMLInputElement>): void => {
-            setQuery(event.currentTarget.value);
-          }}
-        />
-      </label>
+        <label data-testid="add-block-search-label">
+          <span>Search</span>
+          <input
+            ref={searchRef}
+            type="search"
+            data-testid="add-block-search"
+            value={query}
+            placeholder="Search sections, e.g. team, gallery, contact"
+            onInput={(event: JSX.TargetedEvent<HTMLInputElement>): void => {
+              setQuery(event.currentTarget.value);
+            }}
+          />
+        </label>
 
-      {visibleGroups.length === 0 ? (
-        <p data-testid="add-block-empty">No sections match "{query}".</p>
-      ) : (
-        <ul data-testid="add-block-groups">
-          {visibleGroups.map((group) => (
-            <li key={group.category} data-testid="add-block-group" data-category={group.category}>
-              <h3>{CATEGORY_LABELS[group.category] ?? group.category}</h3>
-              <ul>
-                {group.entries.map((entry) => (
-                  <li key={entry.type}>
-                    <button
-                      type="button"
-                      data-testid="add-block-entry"
-                      data-block-type={entry.type}
-                      onClick={() => props.onPick(entry.type)}
-                    >
-                      <span data-testid="add-block-entry-label">{entry.label}</span>
-                      <span data-testid="add-block-entry-description">{entry.description}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </li>
-          ))}
-        </ul>
-      )}
+        {visibleGroups.length === 0 ? (
+          <p data-testid="add-block-empty">No sections match “{query}”.</p>
+        ) : (
+          <ul data-testid="add-block-groups">
+            {visibleGroups.map((group) => (
+              <li key={group.category} data-testid="add-block-group" data-category={group.category}>
+                <h3>
+                  <span>{CATEGORY_LABELS[group.category] ?? group.category}</span>
+                  <small>{CATEGORY_HINTS[group.category] ?? ""}</small>
+                </h3>
+                <ul>
+                  {group.entries.map((entry) => (
+                    <li key={entry.type}>
+                      <button
+                        type="button"
+                        data-testid="add-block-entry"
+                        data-block-type={entry.type}
+                        onClick={() => props.onPick(entry.type)}
+                      >
+                        <span data-testid="add-block-entry-label">{entry.label}</span>
+                        <span data-testid="add-block-entry-description">{entry.description}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

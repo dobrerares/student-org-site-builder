@@ -48,23 +48,67 @@ export const SPINE_FIELD_METADATA: readonly FieldOverride[] = [
   // theme tokens — covered by ThemeForm (T13); not in the spine walk
   // because theme is carved out (T5)
 
-  // Page-level advanced fields
-  { path: "pages.[].slug", tier: "advanced", label: "Page link name" },
-  { path: "pages.[].localizedAs", tier: "advanced", label: "Linked translation" },
+  // Languages — never typed as raw codes (ADR 0044): a checklist for the
+  // declared set and a select over that set for the main language.
+  { path: "languages", renderer: "language-list", label: "Languages" },
+  {
+    path: "defaultLanguage",
+    renderer: "language-select",
+    label: "Main language",
+    hint: "Visitors see this language first. It needs at least one page.",
+  },
+
+  // Pages are managed through the Pages list and the per-page settings
+  // drill-in, not as an inline array in the site form.
+  { path: "pages", tier: "hidden" },
+
+  // Page-level fields (rendered by the per-page settings form, which
+  // rebases `pages.[]` onto the active page index).
+  { path: "pages.[].navLabel", label: "Menu label", hint: "Shown in the site menu." },
+  { path: "pages.[].showInNav", label: "Show this page in the menu" },
+  {
+    path: "pages.[].slug",
+    tier: "advanced",
+    label: "Page link name",
+    hint: "The last part of the page address, e.g. /about. Lowercase letters, numbers and dashes.",
+  },
   { path: "pages.[].seo.title", tier: "advanced", label: "Google result title" },
   { path: "pages.[].seo.description", tier: "advanced", label: "Google result description" },
+  { path: "pages.[].seo", label: "Search engines" },
 
-  // Hidden — managed by reorder UI in pages-ops.ts
+  // Hidden — managed by reorder UI in pages-ops.ts, by the language
+  // version flow, or fixed at page creation.
   { path: "pages.[].navOrder", tier: "hidden" },
+  { path: "pages.[].lang", tier: "hidden" },
+  { path: "pages.[].localizedAs", tier: "hidden" },
 
   // Org label rewrites
+  { path: "org", label: "Organization" },
+  { path: "org.name", label: "Organization name", hint: "Shown in the site header and title." },
   { path: "org.legalName", label: "Official organization name" },
   { path: "org.shortName", label: "Display name (used in nav)" },
+  { path: "org.logo", label: "Logo" },
   { path: "org.logoAlt", label: "Logo description (for screen readers)" },
+  {
+    path: "org.foundedYear",
+    label: "Founded (year)",
+    tier: "advanced",
+    hint: "Some themes show it in the footer.",
+  },
+  { path: "org.address", label: "Address" },
+  { path: "org.email", label: "Email" },
+  { path: "org.phone", label: "Phone" },
+  {
+    path: "org.social",
+    label: "Social links",
+    hint: "Add the networks where people can find you.",
+  },
+  { path: "org.social.[].platform", label: "Network", hint: "e.g. instagram, facebook, linkedin" },
+  { path: "org.social.[].url", label: "Profile link" },
 
   // Advisory length nudge — the tagline reads best as a short phrase.
   // Soft guidance only; nothing here validates or truncates.
-  { path: "org.tagline", hint: "A short phrase — ~60 characters reads best." },
+  { path: "org.tagline", label: "Tagline", hint: "A short phrase — ~60 characters reads best." },
 ];
 
 export const BLOCK_FIELD_METADATA: Partial<
@@ -74,22 +118,98 @@ export const BLOCK_FIELD_METADATA: Partial<
   // Hero title/subtitle carry advisory length nudges (soft guidance, not
   // validation): the engine already keeps over-length copy from breaking
   // layout, so these just help authors aim for punchy, scannable lengths.
+  //
+  // `tier: "advanced"` marks presentation knobs (layout, columns, privacy
+  // switches…) that most authors never touch. They are lifted out of the
+  // content fields into the form's collapsible "More options" section
+  // (see `field-tiers.ts`), which keeps each block form focused on the
+  // words and pictures that actually change.
   hero: [
     { path: "title", hint: "Aim for ~60 characters — short and punchy reads best." },
     { path: "subtitle", hint: "~140 characters keeps the intro scannable." },
     { path: "backgroundAlt", label: "Image description (for screen readers)" },
   ],
   quote: [{ path: "authorImageAlt", label: "Image description (for screen readers)" }],
+  richText: [
+    { path: "titleAlign", tier: "advanced", label: "Heading alignment" },
+    { path: "paragraphAlign", tier: "advanced", label: "Paragraph alignment" },
+  ],
+  activitiesList: [
+    {
+      path: "layout",
+      tier: "advanced",
+      hint: "Cards show a grid of tiles. List stacks them. Alternating swaps image and text sides.",
+    },
+  ],
   contactCard: [
     {
       path: "mapEmbed.coordinates",
       label: "Map coordinates",
       renderer: "lat-lng",
     },
+    {
+      path: "mapEmbed.zoom",
+      tier: "advanced",
+      label: "Map zoom",
+      hint: "1 shows the whole world, 20 a single street. Around 15 suits most addresses.",
+    },
   ],
-  imageGallery: [{ path: "images.[].alt", label: "Image description (for screen readers)" }],
-  teamGrid: [{ path: "people.[].photo.alt", label: "Image description (for screen readers)" }],
-  partnerLogos: [{ path: "partners.[].logo.alt", label: "Image description (for screen readers)" }],
+  embed: [
+    {
+      path: "aspectRatio",
+      tier: "advanced",
+      label: "Shape (width:height)",
+      hint: "e.g. 16:9 for video, 4:3 for older clips, 1:1 for a square.",
+    },
+    {
+      path: "lazyLoad",
+      tier: "advanced",
+      label: "Load only when scrolled into view",
+      hint: "Keeps the page fast. On by default.",
+    },
+    {
+      path: "privacyMode",
+      tier: "advanced",
+      label: "Privacy mode",
+      hint: "Blocks the provider's cookies until the visitor presses play. On by default.",
+    },
+  ],
+  imageGallery: [
+    { path: "images.[].alt", label: "Image description (for screen readers)" },
+    {
+      path: "layout",
+      tier: "advanced",
+      hint: "Grid keeps images in even rows. Masonry packs them by height.",
+    },
+    { path: "columns", tier: "advanced", label: "Columns on wide screens" },
+    { path: "lightbox", tier: "advanced" },
+  ],
+  teamGrid: [
+    { path: "people.[].photo.alt", label: "Image description (for screen readers)" },
+    { path: "columns", tier: "advanced", label: "Columns on wide screens" },
+    {
+      path: "groupBy",
+      tier: "advanced",
+      label: "Group people by",
+      hint: "Type department to show people under department headings. Leave empty for one list.",
+    },
+  ],
+  valueList: [
+    { path: "layout", tier: "advanced", hint: "Grid shows tiles side by side. List stacks them." },
+    { path: "columns", tier: "advanced", label: "Columns on wide screens" },
+  ],
+  faq: [{ path: "firstOpen", tier: "advanced", label: "Show the first answer open" }],
+  documentDownloads: [
+    { path: "layout", tier: "advanced", hint: "List is compact. Cards give each file more room." },
+  ],
+  partnerLogos: [
+    { path: "partners.[].logo.alt", label: "Image description (for screen readers)" },
+    {
+      path: "presentation",
+      tier: "advanced",
+      hint: "Grid is a normal section. Footer turns it into a slim credit band.",
+    },
+  ],
   siteFooter: [{ path: "membership.logo.alt", label: "Image description (for screen readers)" }],
   ctaBanner: [{ path: "backgroundImage.alt", label: "Image description (for screen readers)" }],
   eventList: [{ path: "events.[].imageAlt", label: "Image description (for screen readers)" }],

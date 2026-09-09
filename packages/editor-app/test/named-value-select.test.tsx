@@ -20,16 +20,16 @@ const DENSITY_OPTIONS = [
 ];
 
 describe("NamedValueSelect", () => {
-  test("renders one option per provided entry plus '(use theme default)'", () => {
+  test("renders one option per provided entry plus 'Theme default'", () => {
     const { container } = render(
       <NamedValueSelect value={undefined} onChange={() => {}} options={DENSITY_OPTIONS} />,
     );
     const select = container.querySelector("select") as HTMLSelectElement;
     const optionTexts = Array.from(select.options).map((o) => o.text);
-    expect(optionTexts).toEqual(["(use theme default)", "Compact", "Normal", "Comfortable"]);
+    expect(optionTexts).toEqual(["Theme default", "Compact", "Normal", "Comfortable"]);
   });
 
-  test("'(use theme default)' is selected when value is undefined", () => {
+  test("'Theme default' is selected when value is undefined", () => {
     const { container } = render(
       <NamedValueSelect value={undefined} onChange={() => {}} options={DENSITY_OPTIONS} />,
     );

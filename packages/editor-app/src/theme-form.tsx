@@ -27,7 +27,8 @@
  * drill-in inspector, which renders its own
  * `<header data-testid="inspector-header">` with eyebrow + `<h2>`.
  * Re-stating "Theme" inside this form would compete with the
- * inspector chrome (T7 review).
+ * inspector chrome (T7 review). The three groups below (look, colours,
+ * type & spacing) are sub-headings, not a title.
  */
 import type { JSX } from "preact";
 import type { Site } from "@sosb/schema";
@@ -49,9 +50,9 @@ type ThemeTokens = NonNullable<Site["theme"]["tokens"]>;
 // renders (NamedValueSelect compares by `value`, not by array
 // reference, but stable identity keeps render diffs cheaper).
 const DENSITY_OPTIONS = [
-  { value: "compact", label: "Compact" },
+  { value: "compact", label: "Compact — tighter spacing" },
   { value: "normal", label: "Normal" },
-  { value: "comfortable", label: "Comfortable" },
+  { value: "comfortable", label: "Comfortable — more breathing room" },
 ] as const;
 
 const RADIUS_OPTIONS = [
@@ -97,47 +98,69 @@ export function ThemeForm(props: ThemeFormProps): JSX.Element {
 
   return (
     <div data-testid="theme-form">
-      <ThemePicker value={props.site.theme.id} onChange={handleThemeChange} />
-      <ColorPicker
-        label="Primary color"
-        previewOnColor
-        value={props.site.theme.tokens?.colorPrimary}
-        onChange={(next) => props.onChange(updateToken(props.site, "colorPrimary", next))}
-      />
-      <ColorPicker
-        label="Accent color"
-        previewOnColor
-        value={props.site.theme.tokens?.colorAccent}
-        onChange={(next) => props.onChange(updateToken(props.site, "colorAccent", next))}
-      />
-      <FontPicker
-        kind="headline"
-        themeId={props.site.theme.id}
-        label="Headline font"
-        value={props.site.theme.tokens?.fontHeadline}
-        onChange={(next) => props.onChange(updateToken(props.site, "fontHeadline", next))}
-      />
-      <FontPicker
-        kind="body"
-        themeId={props.site.theme.id}
-        label="Body font"
-        value={props.site.theme.tokens?.fontBody}
-        onChange={(next) => props.onChange(updateToken(props.site, "fontBody", next))}
-      />
-      <NamedValueSelect
-        label="Density"
-        options={DENSITY_OPTIONS}
-        nameKey="density"
-        value={props.site.theme.tokens?.density}
-        onChange={(next) => props.onChange(updateToken(props.site, "density", next))}
-      />
-      <NamedValueSelect
-        label="Corner radius"
-        options={RADIUS_OPTIONS}
-        nameKey="radius"
-        value={props.site.theme.tokens?.radius}
-        onChange={(next) => props.onChange(updateToken(props.site, "radius", next))}
-      />
+      <section data-theme-group="look" aria-labelledby="theme-group-look">
+        <h3 id="theme-group-look">Look</h3>
+        <p data-group-hint>
+          Every look works with any content. Switch freely — your text and images stay.
+        </p>
+        <ThemePicker value={props.site.theme.id} onChange={handleThemeChange} />
+      </section>
+
+      <section data-theme-group="colors" aria-labelledby="theme-group-colors">
+        <h3 id="theme-group-colors">Colours</h3>
+        <p data-group-hint>
+          Leave these on the theme default unless your organisation has brand colours. The “Aa” chip
+          shows the text colour the site will use on top of your pick.
+        </p>
+        <ColorPicker
+          label="Primary colour"
+          hint="Headings, buttons, links."
+          previewOnColor
+          value={props.site.theme.tokens?.colorPrimary}
+          onChange={(next) => props.onChange(updateToken(props.site, "colorPrimary", next))}
+        />
+        <ColorPicker
+          label="Accent colour"
+          hint="Highlights and small details."
+          previewOnColor
+          value={props.site.theme.tokens?.colorAccent}
+          onChange={(next) => props.onChange(updateToken(props.site, "colorAccent", next))}
+        />
+      </section>
+
+      <section data-theme-group="type" aria-labelledby="theme-group-type">
+        <h3 id="theme-group-type">Fonts and spacing</h3>
+        <FontPicker
+          kind="headline"
+          themeId={props.site.theme.id}
+          label="Headline font"
+          value={props.site.theme.tokens?.fontHeadline}
+          onChange={(next) => props.onChange(updateToken(props.site, "fontHeadline", next))}
+        />
+        <FontPicker
+          kind="body"
+          themeId={props.site.theme.id}
+          label="Body font"
+          value={props.site.theme.tokens?.fontBody}
+          onChange={(next) => props.onChange(updateToken(props.site, "fontBody", next))}
+        />
+        <NamedValueSelect
+          label="Spacing"
+          hint="How much room sections and cards get."
+          options={DENSITY_OPTIONS}
+          nameKey="density"
+          value={props.site.theme.tokens?.density}
+          onChange={(next) => props.onChange(updateToken(props.site, "density", next))}
+        />
+        <NamedValueSelect
+          label="Corners"
+          hint="How rounded cards, buttons and images are."
+          options={RADIUS_OPTIONS}
+          nameKey="radius"
+          value={props.site.theme.tokens?.radius}
+          onChange={(next) => props.onChange(updateToken(props.site, "radius", next))}
+        />
+      </section>
     </div>
   );
 }

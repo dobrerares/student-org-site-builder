@@ -47,7 +47,8 @@ import type { ZodType } from "zod";
 import type { AssetRefLike, DocumentAssetRef } from "@sosb/schema";
 
 import { expandAltSyncPatches, suggestedAltForAssetPath } from "./alt-sync.js";
-import { AdvancedToggle } from "./advanced-toggle.js";
+import { partitionByTier, tierSummaryLabels } from "./field-tiers.js";
+import { MoreOptions } from "./more-options.js";
 import { FieldHint } from "./field-hint.js";
 import type { FieldOverride } from "./field-metadata.js";
 import { fieldsFromSchema, type FieldNode } from "./form-generator.js";
@@ -56,6 +57,8 @@ import { AssetPicker } from "./asset-picker.js";
 import { DocumentPicker, type DocumentAssetRefLike } from "./document-picker.js";
 import { fieldLabel, optionLabel } from "./field-labels.js";
 import { MEDIA_PICKER_RENDERERS } from "./media-picker-renderers.js";
+import { rebaseElement } from "./rebase-element.js";
+import { IconArrowDown, IconArrowUp, IconPlus, IconTrash } from "./icons.js";
 
 /**
  * Schema-identity registry consumed by the form-generator walk.
@@ -138,30 +141,52 @@ export interface BlockFormProps<TData> {
 }
 
 export function BlockForm<TData>(props: BlockFormProps<TData>): JSX.Element {
-  // Per-form local "Show advanced" toggle state (ADR 0043). No
-  // persistence; remounting the form starts hidden again.
+  // Per-form local "More options" state (ADR 0043). No persistence;
+  // remounting the form starts collapsed again.
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const fields = fieldsFromSchema(props.schema, {
     schemaRenderers: MEDIA_PICKER_RENDERERS,
     overrides: props.overrides ?? [],
   });
+  // Advanced-tier fields are lifted out of the schema order and rendered
+  // together in a "More options" section at the end, so opening it
+  // reveals them right beneath the button (see `field-tiers.ts`).
+  const { basic, advanced } = partitionByTier(fields);
+  const rendererProps = {
+    data: props.data,
+    onPatch: props.onPatch,
+    onArrayChange: props.onArrayChange,
+    newItem: props.newItem,
+    uploader: props.uploader,
+    documentUploader: props.documentUploader,
+    displayUrlFor: props.displayUrlFor,
+  };
   return (
     <form data-testid="block-form" onSubmit={(event) => event.preventDefault()}>
-      <AdvancedToggle value={showAdvanced} onChange={setShowAdvanced} />
-      {fields.map((field) => (
+      {basic.map((field) => (
         <FieldRenderer
           key={field.path.join(".")}
           node={field}
-          data={props.data}
-          onPatch={props.onPatch}
-          onArrayChange={props.onArrayChange}
-          newItem={props.newItem}
-          uploader={props.uploader}
-          documentUploader={props.documentUploader}
-          displayUrlFor={props.displayUrlFor}
+          {...rendererProps}
           showAdvanced={showAdvanced}
         />
       ))}
+      {advanced.length > 0 ? (
+        <MoreOptions
+          open={showAdvanced}
+          onToggle={setShowAdvanced}
+          labels={tierSummaryLabels(advanced)}
+        >
+          {advanced.map((field) => (
+            <FieldRenderer
+              key={field.path.join(".")}
+              node={field}
+              {...rendererProps}
+              showAdvanced={true}
+            />
+          ))}
+        </MoreOptions>
+      ) : null}
     </form>
   );
 }
@@ -284,56 +309,95 @@ function FieldRenderer({
                     displayUrlFor={displayUrlFor}
                     showAdvanced={showAdvanced}
                   />
-                  <div class="block-form__item-controls">
+                  <div
+                    class="block-form__item-controls"
+                    role="group"
+                    aria-label={`${label} item ${idx + 1} actions`}
+                  >
+                    <span class="block-form__item-index" aria-hidden="true">
+                      {idx + 1} of {items.length}
+                    </span>
                     <button
                       type="button"
                       data-action="move-up"
+                      data-icon-button
+                      aria-label="Move item up"
+                      title="Move up"
                       disabled={idx === 0}
                       onClick={() => move(idx, idx - 1)}
                     >
-                      Move up
+                      <IconArrowUp size={15} />
                     </button>
                     <button
                       type="button"
                       data-action="move-down"
+                      data-icon-button
+                      aria-label="Move item down"
+                      title="Move down"
                       disabled={idx === items.length - 1}
                       onClick={() => move(idx, idx + 1)}
                     >
-                      Move down
+                      <IconArrowDown size={15} />
                     </button>
-                    <button type="button" data-action="remove" onClick={() => remove(idx)}>
-                      Remove
+                    <button
+                      type="button"
+                      data-action="remove"
+                      data-tone="danger"
+                      aria-label="Remove item"
+                      title="Remove this item"
+                      onClick={() => remove(idx)}
+                    >
+                      <IconTrash size={15} />
+                      <span>Remove</span>
                     </button>
                   </div>
                 </li>
               );
             })}
           </ol>
-          <button type="button" data-action="add" onClick={add}>
-            Add item
+          {items.length === 0 ? <p data-array-empty>Nothing here yet.</p> : null}
+          <button type="button" data-action="add" data-variant="secondary" onClick={add}>
+            <IconPlus size={15} />
+            <span>Add item</span>
           </button>
         </fieldset>
       );
     }
 
-    case "string":
+    case "string": {
+      const multiline = isLongTextField(node.name);
       return (
-        <label data-field-label={dottedPath}>
+        <label data-field-label={dottedPath} data-multiline={multiline}>
           <span>{label}</span>
-          <input
-            type="text"
-            data-field={dottedPath}
-            value={typeof value === "string" ? value : ""}
-            onInput={(event: JSX.TargetedEvent<HTMLInputElement>) => {
-              const next = event.currentTarget.value;
-              for (const patch of expandAltSyncPatches(data, node.path, next)) {
-                onPatch(patch.path, patch.value);
-              }
-            }}
-          />
+          {multiline ? (
+            <textarea
+              data-field={dottedPath}
+              rows={4}
+              value={typeof value === "string" ? value : ""}
+              onInput={(event: JSX.TargetedEvent<HTMLTextAreaElement>) => {
+                const next = event.currentTarget.value;
+                for (const patch of expandAltSyncPatches(data, node.path, next)) {
+                  onPatch(patch.path, patch.value);
+                }
+              }}
+            />
+          ) : (
+            <input
+              type="text"
+              data-field={dottedPath}
+              value={typeof value === "string" ? value : ""}
+              onInput={(event: JSX.TargetedEvent<HTMLInputElement>) => {
+                const next = event.currentTarget.value;
+                for (const patch of expandAltSyncPatches(data, node.path, next)) {
+                  onPatch(patch.path, patch.value);
+                }
+              }}
+            />
+          )}
           <FieldHint hint={node.hint} />
         </label>
       );
+    }
 
     case "number":
       return (
@@ -493,27 +557,24 @@ function FieldRenderer({
 }
 
 /**
- * Rewrite the synthetic `[]` segment inside an element-template node so its
- * path points at a concrete array index. The traversal recurses through
- * nested objects/arrays so deeply-nested item subtrees still resolve.
+ * Field names whose values are paragraphs rather than single lines. These
+ * get a `<textarea>` so authors can see and edit multi-sentence copy
+ * without scrolling inside a one-line input.
  */
-function rebaseElement(node: FieldNode, basePath: (string | number)[]): FieldNode {
-  function rebase(n: FieldNode, prefix: (string | number)[]): FieldNode {
-    const newPath = prefix;
-    switch (n.kind) {
-      case "object":
-        return {
-          ...n,
-          path: newPath,
-          fields: n.fields.map((c) => rebase(c, [...newPath, c.name])),
-        };
-      case "array":
-        return { ...n, path: newPath, element: rebase(n.element, [...newPath, "[]"]) };
-      default:
-        return { ...n, path: newPath };
-    }
-  }
-  return rebase(node, basePath);
+const LONG_TEXT_FIELDS: ReadonlySet<string> = new Set([
+  "markdown",
+  "text",
+  "body",
+  "description",
+  "bio",
+  "answer",
+  "quote",
+  "intro",
+  "subtitle",
+]);
+
+export function isLongTextField(name: string): boolean {
+  return LONG_TEXT_FIELDS.has(name);
 }
 
 function expandDocumentAssetPatches(

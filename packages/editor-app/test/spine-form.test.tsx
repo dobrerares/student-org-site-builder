@@ -41,22 +41,20 @@ function spineProps(fields: FieldNode[], site: Site = baseSite) {
 }
 
 /**
- * SpineForm + "Show advanced" toggle (ADR 0043, T16).
+ * SpineForm + "More options" section (ADR 0043, T16; progressive
+ * disclosure revision).
  *
  * The SpineForm holds a per-instance `showAdvanced` flag. It reads the
  * pre-walked `FieldNode[]` (the editor-app composes them via
  * `fieldsFromSchema(SiteSchema, { overrides: SPINE_FIELD_METADATA })`)
  * and respects each node's `tier`:
- *   - default → always rendered
- *   - advanced → rendered only when the toggle is on
+ *   - default → always rendered inline
+ *   - advanced → rendered only inside the "More options" section, and
+ *                only once that section is open
  *   - hidden  → never rendered
  *
- * Production-wired SPINE_FIELD_METADATA today only marks fields under
- * `pages.[].*` as advanced/hidden, and SpineForm renders array shapes as
- * a read-only summary count (no per-item inputs). To exercise the
- * renderer's tier gate at the leaf level we construct ad-hoc field
- * trees with explicit `tier` markers — the editor's array-summary
- * rendering is intentionally out of scope for tier coverage.
+ * To exercise the tier gate at the leaf level we construct ad-hoc field
+ * trees with explicit `tier` markers.
  */
 const baseSite = minimal as unknown as Site;
 
@@ -73,13 +71,67 @@ function stringNode(path: (string | number)[], tier?: "advanced" | "hidden"): Fi
   return node;
 }
 
-describe("SpineForm — Show advanced toggle (ADR 0043, T16)", () => {
+describe("SpineForm — More options section (ADR 0043, T16)", () => {
   afterEach(cleanup);
 
-  test("renders the AdvancedToggle control", () => {
+  test("renders the More options control when the site spine has advanced fields", () => {
     const fields = fieldsFromSchema(SiteSchema, { overrides: SPINE_FIELD_METADATA });
     const { container } = render(<SpineForm {...spineProps(fields)} />);
-    expect(container.querySelector('[data-testid="advanced-toggle"]')).not.toBeNull();
+    const toggle = container.querySelector('[data-testid="advanced-toggle"]');
+    expect(toggle).not.toBeNull();
+    expect(toggle!.getAttribute("aria-expanded")).toBe("false");
+    // The collapsed summary tells the author what is inside.
+    expect(toggle!.textContent ?? "").toContain("Founded (year)");
+  });
+
+  test("renders no More options section when nothing is advanced", () => {
+    const fields: FieldNode[] = [stringNode(["org", "name"])];
+    const { container } = render(<SpineForm {...spineProps(fields)} />);
+    expect(container.querySelector('[data-testid="more-options"]')).toBeNull();
+    expect(container.querySelector('[data-testid="advanced-toggle"]')).toBeNull();
+  });
+
+  test("advanced fields render inside the panel, after the basic fields", () => {
+    const fields: FieldNode[] = [
+      stringNode(["org", "legalName"], "advanced"),
+      stringNode(["org", "name"]),
+    ];
+    const { container } = render(<SpineForm {...spineProps(fields)} />);
+    fireEvent.click(container.querySelector('[data-testid="advanced-toggle"]')!);
+    const panel = container.querySelector('[data-testid="more-options-panel"]');
+    expect(panel).not.toBeNull();
+    expect(panel!.querySelector('[data-field="org.legalName"]')).not.toBeNull();
+    expect(panel!.querySelector('[data-field="org.name"]')).toBeNull();
+    // Schema order put the advanced field first; the form moves it last.
+    const all = Array.from(container.querySelectorAll("[data-field]")).map((el) =>
+      el.getAttribute("data-field"),
+    );
+    expect(all.indexOf("org.name")).toBeLessThan(all.indexOf("org.legalName"));
+  });
+
+  test("an object whose children are all advanced leaves no empty card behind", () => {
+    const seo: FieldNode = {
+      kind: "object",
+      name: "seo",
+      path: ["pages", 0, "seo"],
+      optional: true,
+      label: "Search engines",
+      fields: [
+        stringNode(["pages", 0, "seo", "title"], "advanced"),
+        stringNode(["pages", 0, "seo", "description"], "advanced"),
+      ],
+    };
+    const fields: FieldNode[] = [stringNode(["pages", 0, "navLabel"]), seo];
+    const { container } = render(<SpineForm {...spineProps(fields)} />);
+    // Collapsed: the "Search engines" fieldset must not render at all.
+    expect(container.querySelector('[data-field="pages.0.seo"]')).toBeNull();
+    expect(container.querySelector('[data-testid="advanced-toggle"]')!.textContent).toContain(
+      "Search engines",
+    );
+    fireEvent.click(container.querySelector('[data-testid="advanced-toggle"]')!);
+    const panel = container.querySelector('[data-testid="more-options-panel"]');
+    expect(panel!.querySelector('[data-field="pages.0.seo"]')).not.toBeNull();
+    expect(panel!.querySelector('[data-field="pages.0.seo.title"]')).not.toBeNull();
   });
 
   test("renders friendly labels from field metadata instead of raw field names", () => {
@@ -107,9 +159,7 @@ describe("SpineForm — Show advanced toggle (ADR 0043, T16)", () => {
       stringNode(["org", "legalName"], "advanced"),
     ];
     const { container } = render(<SpineForm {...spineProps(fields)} />);
-    const checkbox = container.querySelector<HTMLInputElement>(
-      '[data-testid="advanced-toggle"] input[type="checkbox"]',
-    );
+    const checkbox = container.querySelector<HTMLButtonElement>('[data-testid="advanced-toggle"]');
     expect(checkbox).not.toBeNull();
     expect(container.querySelector('[data-field="org.legalName"]')).toBeNull();
 
@@ -120,14 +170,13 @@ describe("SpineForm — Show advanced toggle (ADR 0043, T16)", () => {
   test("never renders tier=hidden fields regardless of toggle state", () => {
     const fields: FieldNode[] = [
       stringNode(["org", "name"]),
+      stringNode(["org", "legalName"], "advanced"),
       stringNode(["org", "internalNote"], "hidden"),
     ];
     const { container } = render(<SpineForm {...spineProps(fields)} />);
     expect(container.querySelector('[data-field="org.internalNote"]')).toBeNull();
 
-    const checkbox = container.querySelector<HTMLInputElement>(
-      '[data-testid="advanced-toggle"] input[type="checkbox"]',
-    );
+    const checkbox = container.querySelector<HTMLButtonElement>('[data-testid="advanced-toggle"]');
     fireEvent.click(checkbox!);
     expect(container.querySelector('[data-field="org.internalNote"]')).toBeNull();
   });
@@ -146,8 +195,8 @@ describe("SpineForm — Show advanced toggle (ADR 0043, T16)", () => {
     expect(second.container.querySelector('[data-field="org.legalName"]')).toBeNull();
 
     // Toggle the first form on; the second must stay off.
-    const firstCheckbox = first.container.querySelector<HTMLInputElement>(
-      '[data-testid="advanced-toggle"] input[type="checkbox"]',
+    const firstCheckbox = first.container.querySelector<HTMLButtonElement>(
+      '[data-testid="advanced-toggle"]',
     );
     fireEvent.click(firstCheckbox!);
     expect(first.container.querySelector('[data-field="org.legalName"]')).not.toBeNull();

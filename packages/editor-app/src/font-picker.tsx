@@ -25,6 +25,7 @@
  * change the font slot from the editor.
  */
 import type { JSX } from "preact";
+import { useId } from "preact/hooks";
 
 import { buildThemeCatalog } from "./theme-catalog.js";
 
@@ -34,9 +35,12 @@ export interface FontPickerProps {
   readonly value: string | undefined;
   readonly onChange: (next: string | undefined) => void;
   readonly label?: string;
+  /** Optional one-line explanation rendered under the label. */
+  readonly hint?: string;
 }
 
 export function FontPicker(props: FontPickerProps): JSX.Element {
+  const selectId = useId();
   const catalog = buildThemeCatalog();
   const entry = catalog.entryFor(props.themeId);
   const catalogFonts = entry.fonts[props.kind];
@@ -54,11 +58,23 @@ export function FontPicker(props: FontPickerProps): JSX.Element {
   };
 
   return (
-    <div data-testid="font-picker" data-kind={props.kind}>
-      <select value={trimmed} onChange={handleChange} aria-label={props.label ?? undefined}>
-        <option value="">(use theme default)</option>
+    <div data-testid="font-picker" data-kind={props.kind} data-picker-field>
+      {props.label !== undefined ? (
+        <label data-picker-field-label for={selectId}>
+          {props.label}
+        </label>
+      ) : null}
+      {props.hint !== undefined ? <p class="field-hint">{props.hint}</p> : null}
+      <select
+        id={selectId}
+        value={trimmed}
+        onChange={handleChange}
+        aria-label={props.label ?? undefined}
+        style={trimmed !== "" ? { fontFamily: `"${trimmed}", sans-serif` } : undefined}
+      >
+        <option value="">Theme default</option>
         {catalogFonts.map((font) => (
-          <option key={font} value={font}>
+          <option key={font} value={font} style={{ fontFamily: `"${font}", sans-serif` }}>
             {font}
           </option>
         ))}

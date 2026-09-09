@@ -216,17 +216,24 @@ not by schema-identity — `theme.id` is a plain `z.string().min(1)` (a
 deliberate looseness for forward-compat round-trip) and has no
 distinctive Zod object to dispatch on.
 
-**"Show advanced" toggle** (planned):
-The per-form disclosure affordance that reveals fields whose
-field-override metadata declares `tier: "advanced"`. Rendered once per
-`SpineForm` / `BlockForm` instance. **Scope is per-form** (toggling the
-hero block's advanced view does not affect the contact-card form).
-**Default state is hidden, session-scoped, never persisted** — reopening
-a form starts hidden every time. The wizard does not render the toggle
-and hard-suppresses all advanced fields. Rationale: the editor's audience
-is yearly-rotating student-org leadership (per README), not a returning
-power user; persistence here would serve an audience that isn't the
-project's audience.
+**"More options" section** (formerly the "Show advanced" toggle):
+The per-form disclosure affordance for fields whose field-override
+metadata declares `tier: "advanced"`. `partitionByTier`
+(`field-tiers.ts`) lifts those fields out of schema order and
+`MoreOptions` (`more-options.tsx`) renders them together in a collapsible
+section at the _end_ of each `SpineForm` / `BlockForm`, so opening it
+reveals the fields directly beneath the button; the collapsed header
+lists what is inside ("Page link name and Search engines"). An object
+whose children are all advanced (e.g. `pages.[].seo`) moves into the
+section wholesale rather than leaving an empty card behind. A form with
+no advanced fields renders no section. **Scope is per-form** (opening
+the gallery block's section does not affect the contact-card form).
+**Default state is collapsed, session-scoped, never persisted** —
+reopening a form starts collapsed every time. The wizard does not render
+the section and hard-suppresses all advanced fields. Rationale: the
+editor's audience is yearly-rotating student-org leadership (per
+README), not a returning power user; persistence here would serve an
+audience that isn't the project's audience.
 
 ### The pipeline
 
