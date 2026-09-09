@@ -9,6 +9,10 @@
  * remove / reorder controls — the same affordance `BlockForm` gives block
  * arrays — so nothing in the spine is read-only-by-accident.
  *
+ * Fields tagged `tier: "advanced"` are split out by `partitionByTier` and
+ * rendered together inside a collapsible "More options" section at the
+ * end of the form (see `field-tiers.ts` for why).
+ *
  * Two site-level custom widgets live here (dispatched by `renderer` name
  * from `SPINE_FIELD_METADATA`):
  *   - `language-list`   → checkbox list for `languages`
@@ -17,12 +21,11 @@
  * Both exist so a non-technical author never has to type a language code.
  */
 import type { JSX } from "preact";
-import { useState } from "preact/hooks";
+import { useMemo, useState } from "preact/hooks";
 import type { AssetRefLike, DocumentAssetRef, Site } from "@sosb/schema";
 import { nativeLanguageName } from "@sosb/renderer";
 
 import { expandAltSyncPatches, suggestedAltForAssetPath } from "./alt-sync.js";
-import { AdvancedToggle } from "./advanced-toggle.js";
 import { AssetPicker } from "./asset-picker.js";
 import { FieldHint } from "./field-hint.js";
 import { DocumentPicker, type DocumentAssetRefLike } from "./document-picker.js";
@@ -31,6 +34,8 @@ import type { FieldNode } from "./form-generator.js";
 import { getAtPath, setAtPath } from "./get-set-path.js";
 import { useTranslator } from "./i18n-context.js";
 import { IconArrowDown, IconArrowUp, IconPlus, IconTrash } from "./icons.js";
+import { partitionByTier, tierSummaryLabels } from "./field-tiers.js";
+import { MoreOptions } from "./more-options.js";
 import { rebaseElement } from "./rebase-element.js";
 import { isLongTextField } from "./block-form.js";
 
@@ -73,22 +78,37 @@ export function SpineForm({
   documentUploader,
   displayUrlFor,
 }: SpineFormProps): JSX.Element {
+  // Per-form "More options" state (ADR 0043). No persistence; remounting
+  // the form starts collapsed again.
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
+  const { basic, advanced } = useMemo(() => partitionByTier(fields), [fields]);
+  const rendererProps = { site, onPatch, uploader, documentUploader, displayUrlFor };
   return (
     <form data-testid="spine-form" onSubmit={(event) => event.preventDefault()}>
-      {fields.map((field) => (
+      {basic.map((field) => (
         <FieldRenderer
           key={field.path.join(".")}
           node={field}
-          site={site}
-          onPatch={onPatch}
-          uploader={uploader}
-          documentUploader={documentUploader}
-          displayUrlFor={displayUrlFor}
+          {...rendererProps}
           showAdvanced={showAdvanced}
         />
       ))}
-      <AdvancedToggle value={showAdvanced} onChange={setShowAdvanced} />
+      {advanced.length > 0 ? (
+        <MoreOptions
+          open={showAdvanced}
+          onToggle={setShowAdvanced}
+          labels={tierSummaryLabels(advanced)}
+        >
+          {advanced.map((field) => (
+            <FieldRenderer
+              key={field.path.join(".")}
+              node={field}
+              {...rendererProps}
+              showAdvanced={true}
+            />
+          ))}
+        </MoreOptions>
+      ) : null}
     </form>
   );
 }

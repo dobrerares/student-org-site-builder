@@ -89,7 +89,12 @@ export const SPINE_FIELD_METADATA: readonly FieldOverride[] = [
   { path: "org.shortName", label: "Display name (used in nav)" },
   { path: "org.logo", label: "Logo" },
   { path: "org.logoAlt", label: "Logo description (for screen readers)" },
-  { path: "org.foundedYear", label: "Founded (year)", tier: "advanced" },
+  {
+    path: "org.foundedYear",
+    label: "Founded (year)",
+    tier: "advanced",
+    hint: "Some themes show it in the footer.",
+  },
   { path: "org.address", label: "Address" },
   { path: "org.email", label: "Email" },
   { path: "org.phone", label: "Phone" },
@@ -113,22 +118,98 @@ export const BLOCK_FIELD_METADATA: Partial<
   // Hero title/subtitle carry advisory length nudges (soft guidance, not
   // validation): the engine already keeps over-length copy from breaking
   // layout, so these just help authors aim for punchy, scannable lengths.
+  //
+  // `tier: "advanced"` marks presentation knobs (layout, columns, privacy
+  // switches…) that most authors never touch. They are lifted out of the
+  // content fields into the form's collapsible "More options" section
+  // (see `field-tiers.ts`), which keeps each block form focused on the
+  // words and pictures that actually change.
   hero: [
     { path: "title", hint: "Aim for ~60 characters — short and punchy reads best." },
     { path: "subtitle", hint: "~140 characters keeps the intro scannable." },
     { path: "backgroundAlt", label: "Image description (for screen readers)" },
   ],
   quote: [{ path: "authorImageAlt", label: "Image description (for screen readers)" }],
+  richText: [
+    { path: "titleAlign", tier: "advanced", label: "Heading alignment" },
+    { path: "paragraphAlign", tier: "advanced", label: "Paragraph alignment" },
+  ],
+  activitiesList: [
+    {
+      path: "layout",
+      tier: "advanced",
+      hint: "Cards show a grid of tiles. List stacks them. Alternating swaps image and text sides.",
+    },
+  ],
   contactCard: [
     {
       path: "mapEmbed.coordinates",
       label: "Map coordinates",
       renderer: "lat-lng",
     },
+    {
+      path: "mapEmbed.zoom",
+      tier: "advanced",
+      label: "Map zoom",
+      hint: "1 shows the whole world, 20 a single street. Around 15 suits most addresses.",
+    },
   ],
-  imageGallery: [{ path: "images.[].alt", label: "Image description (for screen readers)" }],
-  teamGrid: [{ path: "people.[].photo.alt", label: "Image description (for screen readers)" }],
-  partnerLogos: [{ path: "partners.[].logo.alt", label: "Image description (for screen readers)" }],
+  embed: [
+    {
+      path: "aspectRatio",
+      tier: "advanced",
+      label: "Shape (width:height)",
+      hint: "e.g. 16:9 for video, 4:3 for older clips, 1:1 for a square.",
+    },
+    {
+      path: "lazyLoad",
+      tier: "advanced",
+      label: "Load only when scrolled into view",
+      hint: "Keeps the page fast. On by default.",
+    },
+    {
+      path: "privacyMode",
+      tier: "advanced",
+      label: "Privacy mode",
+      hint: "Blocks the provider's cookies until the visitor presses play. On by default.",
+    },
+  ],
+  imageGallery: [
+    { path: "images.[].alt", label: "Image description (for screen readers)" },
+    {
+      path: "layout",
+      tier: "advanced",
+      hint: "Grid keeps images in even rows. Masonry packs them by height.",
+    },
+    { path: "columns", tier: "advanced", label: "Columns on wide screens" },
+    { path: "lightbox", tier: "advanced" },
+  ],
+  teamGrid: [
+    { path: "people.[].photo.alt", label: "Image description (for screen readers)" },
+    { path: "columns", tier: "advanced", label: "Columns on wide screens" },
+    {
+      path: "groupBy",
+      tier: "advanced",
+      label: "Group people by",
+      hint: "Type department to show people under department headings. Leave empty for one list.",
+    },
+  ],
+  valueList: [
+    { path: "layout", tier: "advanced", hint: "Grid shows tiles side by side. List stacks them." },
+    { path: "columns", tier: "advanced", label: "Columns on wide screens" },
+  ],
+  faq: [{ path: "firstOpen", tier: "advanced", label: "Show the first answer open" }],
+  documentDownloads: [
+    { path: "layout", tier: "advanced", hint: "List is compact. Cards give each file more room." },
+  ],
+  partnerLogos: [
+    { path: "partners.[].logo.alt", label: "Image description (for screen readers)" },
+    {
+      path: "presentation",
+      tier: "advanced",
+      hint: "Grid is a normal section. Footer turns it into a slim credit band.",
+    },
+  ],
   siteFooter: [{ path: "membership.logo.alt", label: "Image description (for screen readers)" }],
   ctaBanner: [{ path: "backgroundImage.alt", label: "Image description (for screen readers)" }],
   eventList: [{ path: "events.[].imageAlt", label: "Image description (for screen readers)" }],

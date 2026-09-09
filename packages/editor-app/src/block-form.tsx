@@ -47,7 +47,8 @@ import type { ZodType } from "zod";
 import type { AssetRefLike, DocumentAssetRef } from "@sosb/schema";
 
 import { expandAltSyncPatches, suggestedAltForAssetPath } from "./alt-sync.js";
-import { AdvancedToggle } from "./advanced-toggle.js";
+import { partitionByTier, tierSummaryLabels } from "./field-tiers.js";
+import { MoreOptions } from "./more-options.js";
 import { FieldHint } from "./field-hint.js";
 import type { FieldOverride } from "./field-metadata.js";
 import { fieldsFromSchema, type FieldNode } from "./form-generator.js";
@@ -140,30 +141,52 @@ export interface BlockFormProps<TData> {
 }
 
 export function BlockForm<TData>(props: BlockFormProps<TData>): JSX.Element {
-  // Per-form local "Show advanced" toggle state (ADR 0043). No
-  // persistence; remounting the form starts hidden again.
+  // Per-form local "More options" state (ADR 0043). No persistence;
+  // remounting the form starts collapsed again.
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const fields = fieldsFromSchema(props.schema, {
     schemaRenderers: MEDIA_PICKER_RENDERERS,
     overrides: props.overrides ?? [],
   });
+  // Advanced-tier fields are lifted out of the schema order and rendered
+  // together in a "More options" section at the end, so opening it
+  // reveals them right beneath the button (see `field-tiers.ts`).
+  const { basic, advanced } = partitionByTier(fields);
+  const rendererProps = {
+    data: props.data,
+    onPatch: props.onPatch,
+    onArrayChange: props.onArrayChange,
+    newItem: props.newItem,
+    uploader: props.uploader,
+    documentUploader: props.documentUploader,
+    displayUrlFor: props.displayUrlFor,
+  };
   return (
     <form data-testid="block-form" onSubmit={(event) => event.preventDefault()}>
-      <AdvancedToggle value={showAdvanced} onChange={setShowAdvanced} />
-      {fields.map((field) => (
+      {basic.map((field) => (
         <FieldRenderer
           key={field.path.join(".")}
           node={field}
-          data={props.data}
-          onPatch={props.onPatch}
-          onArrayChange={props.onArrayChange}
-          newItem={props.newItem}
-          uploader={props.uploader}
-          documentUploader={props.documentUploader}
-          displayUrlFor={props.displayUrlFor}
+          {...rendererProps}
           showAdvanced={showAdvanced}
         />
       ))}
+      {advanced.length > 0 ? (
+        <MoreOptions
+          open={showAdvanced}
+          onToggle={setShowAdvanced}
+          labels={tierSummaryLabels(advanced)}
+        >
+          {advanced.map((field) => (
+            <FieldRenderer
+              key={field.path.join(".")}
+              node={field}
+              {...rendererProps}
+              showAdvanced={true}
+            />
+          ))}
+        </MoreOptions>
+      ) : null}
     </form>
   );
 }

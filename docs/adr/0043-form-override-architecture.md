@@ -184,6 +184,15 @@ discouraged — every bespoke form is a divergent file to maintain.
 - The "Show advanced" toggle, per-form, hidden by default, session-scoped:
   a per-form local component-state flag; no localStorage; not surfaced
   in the wizard.
+- **Revision (2026-09):** the toggle became a "More options" section.
+  Gating advanced fields _in place_ meant they appeared wherever the
+  schema walk put them — sometimes far from the toggle — and an object
+  whose children were all advanced still rendered an empty card. Forms
+  now partition the field tree by tier (`field-tiers.ts`) and render
+  the advanced half inside one collapsible section at the end of the
+  form, whose collapsed header names its contents. The tier semantics
+  and the per-form / session-scoped / wizard-excluded rules above are
+  unchanged.
 
 ## Alternatives considered
 

@@ -1304,35 +1304,90 @@ body {
   font-size: var(--step--1) !important;
 }
 
-/* Advanced toggle — sits at the end of each form */
-[data-testid="editor-pane"] .advanced-toggle {
-  flex-direction: row;
-  align-items: center;
-  gap: var(--sp-2);
+/* "More options" — collapsible section at the end of each form. Holds
+ * the advanced-tier fields so they always appear right under the button. */
+[data-testid="editor-pane"] [data-more-options] {
+  display: flex;
+  flex-direction: column;
   margin-top: var(--sp-1);
-  padding: 10px 12px;
   border: 1px dashed var(--rule-strong);
   border-radius: var(--r-md);
   background: transparent;
-  cursor: pointer;
+  overflow: hidden;
 }
-[data-testid="editor-pane"] .advanced-toggle[data-on="true"] {
+[data-testid="editor-pane"] [data-more-options][data-open="true"] {
   border-style: solid;
   background: var(--paper-raised);
 }
-[data-testid="editor-pane"] .advanced-toggle__text {
+[data-testid="editor-app"] [data-more-options-toggle] {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  width: 100%;
+  min-height: 0;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+}
+[data-testid="editor-app"] [data-more-options-toggle]:hover:not(:disabled) {
+  background: var(--paper-sunken);
+  border-color: transparent;
+}
+[data-testid="editor-app"] [data-more-options][data-open="true"] > [data-more-options-toggle] {
+  border-bottom: 1px solid var(--rule);
+}
+[data-testid="editor-pane"] [data-more-options-chevron] {
+  display: inline-flex;
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--ink-3);
+  transition: transform 120ms ease;
+}
+[data-testid="editor-pane"] [data-more-options][data-open="true"] [data-more-options-chevron] {
+  transform: rotate(90deg);
+}
+[data-testid="editor-pane"] [data-more-options-text] {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
+  min-width: 0;
 }
-[data-testid="editor-pane"] .advanced-toggle__text > span {
+[data-testid="editor-pane"] [data-more-options-title] {
   font-size: var(--step--1);
   font-weight: 600;
   color: var(--ink-2);
 }
-[data-testid="editor-pane"] .advanced-toggle__text > small {
+[data-testid="editor-pane"] [data-more-options-summary] {
   font-size: var(--step--2);
+  line-height: 1.4;
   color: var(--ink-3);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+[data-testid="editor-pane"] [data-more-options-panel] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+}
+/* Nested cards inside the panel sit on the raised paper already; keep
+ * them flat so the panel reads as one group. */
+[data-testid="editor-pane"] [data-more-options-panel] > fieldset[data-kind="object"] {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+[data-testid="editor-pane"] [data-more-options-panel] > fieldset[data-kind="object"] > legend {
+  font-size: var(--step--1);
+  color: var(--ink-2);
+  padding-top: var(--sp-1);
+  border-top: 1px solid var(--rule-soft);
 }
 
 /* Custom HTML block — expert marker + danger notice */
