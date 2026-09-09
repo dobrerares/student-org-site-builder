@@ -210,10 +210,25 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
       }}
     >
       <header>
+        <p data-welcome-kicker>
+          <span data-welcome-mark aria-hidden="true" />
+          Site Builder
+        </p>
         <h1>Build your organisation&apos;s website</h1>
-        <p>Make a clean site, keep your files, and download a copy when you are ready.</p>
+        <p data-welcome-lead>
+          A clean, professional site for your student organisation — no coding, no hosting fees, no
+          account. Everything stays on your computer and you download a copy when you are ready to
+          publish.
+        </p>
+        <ul data-welcome-points aria-label="What you get">
+          <li>Ready-made sections: about, team, activities, events, contact</li>
+          <li>Five looks you can switch between at any time</li>
+          <li>Romanian and English, side by side if you need both</li>
+        </ul>
         {canDropImport ? (
-          <p data-testid="welcome-drop-hint">Drop a saved .zip here to open it.</p>
+          <p data-testid="welcome-drop-hint">
+            Have a saved .zip? Drop it anywhere on this page to open it.
+          </p>
         ) : null}
       </header>
 
@@ -230,8 +245,8 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
               });
             }}
           >
-            <span data-action-title>Continue draft</span>
-            <span data-action-detail>Saved in this browser</span>
+            <span data-action-title>Continue where you left off</span>
+            <span data-action-detail>Your draft is saved in this browser</span>
           </button>
         ) : null}
         <button
@@ -242,7 +257,11 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
           <span data-action-title>
             {wizardProgress === null ? "Answer a few questions" : "Continue setup"}
           </span>
-          <span data-action-detail>Best when you are making a new site</span>
+          <span data-action-detail>
+            {wizardProgress === null
+              ? "The easiest start: we build the first version for you"
+              : "Pick up the setup you started earlier"}
+          </span>
         </button>
         <button
           type="button"
@@ -254,8 +273,8 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
             }
           }}
         >
-          <span data-action-title>Use a ready-made example</span>
-          <span data-action-detail>Start with useful pages and sections</span>
+          <span data-action-title>Start from an example site</span>
+          <span data-action-detail>A full demo site you replace with your own content</span>
         </button>
         <button
           type="button"
@@ -269,7 +288,7 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
           <span data-action-detail>
             {props.onImportSite === undefined
               ? "Saved-site opening is unavailable here"
-              : "Choose the .zip file you downloaded earlier"}
+              : "Pick the .zip you downloaded from this app"}
           </span>
         </button>
         <button
@@ -280,7 +299,7 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
           }}
         >
           <span data-action-title>Start from scratch</span>
-          <span data-action-detail>Begin with the minimum site</span>
+          <span data-action-detail>One empty page, you add the rest</span>
         </button>
       </nav>
 
@@ -290,29 +309,34 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
         </p>
       ) : null}
 
-      <section data-testid="welcome-recent-sites" aria-labelledby="welcome-recent-title">
-        <h2 id="welcome-recent-title">Recent sites</h2>
-        {props.recentSites !== undefined && props.recentSites.length > 0 ? (
-          <ol>
-            {props.recentSites.map((entry) => (
-              <li key={entry}>
-                <button
-                  type="button"
-                  data-testid="welcome-recent-site"
-                  disabled={props.onOpenRecent === undefined}
-                  onClick={() => {
-                    void openRecent(entry);
-                  }}
-                >
-                  {entry}
-                </button>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <p>No recent sites yet.</p>
-        )}
-      </section>
+      {props.recentSites !== undefined ? (
+        <section data-testid="welcome-recent-sites" aria-labelledby="welcome-recent-title">
+          <h2 id="welcome-recent-title">Recent sites</h2>
+          {props.recentSites.length > 0 ? (
+            <ol>
+              {props.recentSites.map((entry) => (
+                <li key={entry}>
+                  <button
+                    type="button"
+                    data-testid="welcome-recent-site"
+                    disabled={props.onOpenRecent === undefined}
+                    onClick={() => {
+                      void openRecent(entry);
+                    }}
+                  >
+                    {entry}
+                  </button>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p>No recent sites yet.</p>
+          )}
+        </section>
+      ) : null}
+      <footer data-welcome-footer>
+        <p>Free and open source. No account, no tracking — your site is a folder you own.</p>
+      </footer>
     </main>
   );
 }

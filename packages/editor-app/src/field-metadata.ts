@@ -48,23 +48,62 @@ export const SPINE_FIELD_METADATA: readonly FieldOverride[] = [
   // theme tokens — covered by ThemeForm (T13); not in the spine walk
   // because theme is carved out (T5)
 
-  // Page-level advanced fields
-  { path: "pages.[].slug", tier: "advanced", label: "Page link name" },
-  { path: "pages.[].localizedAs", tier: "advanced", label: "Linked translation" },
+  // Languages — never typed as raw codes (ADR 0044): a checklist for the
+  // declared set and a select over that set for the main language.
+  { path: "languages", renderer: "language-list", label: "Languages" },
+  {
+    path: "defaultLanguage",
+    renderer: "language-select",
+    label: "Main language",
+    hint: "Visitors see this language first. It needs at least one page.",
+  },
+
+  // Pages are managed through the Pages list and the per-page settings
+  // drill-in, not as an inline array in the site form.
+  { path: "pages", tier: "hidden" },
+
+  // Page-level fields (rendered by the per-page settings form, which
+  // rebases `pages.[]` onto the active page index).
+  { path: "pages.[].navLabel", label: "Menu label", hint: "Shown in the site menu." },
+  { path: "pages.[].showInNav", label: "Show this page in the menu" },
+  {
+    path: "pages.[].slug",
+    tier: "advanced",
+    label: "Page link name",
+    hint: "The last part of the page address, e.g. /about. Lowercase letters, numbers and dashes.",
+  },
   { path: "pages.[].seo.title", tier: "advanced", label: "Google result title" },
   { path: "pages.[].seo.description", tier: "advanced", label: "Google result description" },
+  { path: "pages.[].seo", label: "Search engines" },
 
-  // Hidden — managed by reorder UI in pages-ops.ts
+  // Hidden — managed by reorder UI in pages-ops.ts, by the language
+  // version flow, or fixed at page creation.
   { path: "pages.[].navOrder", tier: "hidden" },
+  { path: "pages.[].lang", tier: "hidden" },
+  { path: "pages.[].localizedAs", tier: "hidden" },
 
   // Org label rewrites
+  { path: "org", label: "Organization" },
+  { path: "org.name", label: "Organization name", hint: "Shown in the site header and title." },
   { path: "org.legalName", label: "Official organization name" },
   { path: "org.shortName", label: "Display name (used in nav)" },
+  { path: "org.logo", label: "Logo" },
   { path: "org.logoAlt", label: "Logo description (for screen readers)" },
+  { path: "org.foundedYear", label: "Founded (year)", tier: "advanced" },
+  { path: "org.address", label: "Address" },
+  { path: "org.email", label: "Email" },
+  { path: "org.phone", label: "Phone" },
+  {
+    path: "org.social",
+    label: "Social links",
+    hint: "Add the networks where people can find you.",
+  },
+  { path: "org.social.[].platform", label: "Network", hint: "e.g. instagram, facebook, linkedin" },
+  { path: "org.social.[].url", label: "Profile link" },
 
   // Advisory length nudge — the tagline reads best as a short phrase.
   // Soft guidance only; nothing here validates or truncates.
-  { path: "org.tagline", hint: "A short phrase — ~60 characters reads best." },
+  { path: "org.tagline", label: "Tagline", hint: "A short phrase — ~60 characters reads best." },
 ];
 
 export const BLOCK_FIELD_METADATA: Partial<

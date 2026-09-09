@@ -25,12 +25,6 @@
  * latest hex as the user drags inside the OS colour wheel, matching
  * the responsive feel of the native control.
  *
- * Hex normalisation: browsers report the picked value in lowercase
- * (`#ff00aa`), but spec-wise it is case-insensitive. We pass it
- * through unchanged so the test assertion on `"#ff0000"` holds. If a
- * future browser surprises us with uppercase output we can wrap in
- * `.toLowerCase()` here without rippling.
- *
  * On-color preview (Guardrail 2): when `previewOnColor` is set, the
  * picker renders a small swatch chip showing the author's chosen colour
  * with sample text painted in `onColorFor(<chosen>)` — the SAME
@@ -43,6 +37,7 @@
  * `#ffffff` for unparseable input, so the chip degrades gracefully.
  */
 import type { JSX } from "preact";
+import { useId } from "preact/hooks";
 import { onColorFor } from "@sosb/renderer";
 
 export interface ColorPickerProps {
@@ -50,6 +45,8 @@ export interface ColorPickerProps {
   readonly onChange: (next: string | undefined) => void;
   /** Optional label rendered above the picker. */
   readonly label?: string;
+  /** Optional one-line explanation rendered under the label. */
+  readonly hint?: string;
   /**
    * When `true`, render an on-color preview chip (Guardrail 2) showing
    * the chosen colour with sample text in the renderer-derived readable
@@ -64,6 +61,7 @@ export interface ColorPickerProps {
 const FALLBACK_HEX = "#000000";
 
 export function ColorPicker(props: ColorPickerProps): JSX.Element {
+  const inputId = useId();
   const hasValue = props.value !== undefined;
   const swatchValue = hasValue ? props.value! : FALLBACK_HEX;
 
@@ -76,37 +74,56 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
   };
 
   return (
-    <div data-testid="color-picker">
-      {props.label !== undefined ? <label data-color-picker-label>{props.label}</label> : null}
-      <input type="color" value={swatchValue} aria-label={props.label} onInput={handleInput} />
-      {hasValue ? (
-        <button type="button" data-testid="color-picker-reset" onClick={handleReset}>
-          Reset to default
-        </button>
-      ) : (
-        <span data-testid="color-picker-default-note" role="status">
-          (using theme default)
-        </span>
-      )}
-      {props.previewOnColor === true ? (
-        hasValue ? (
-          <span
-            data-testid="color-picker-on-color"
-            class="color-picker__on-color"
-            style={{ background: props.value!, color: onColorFor(props.value!) }}
-            title="Readable text color the renderer will use on this color"
-          >
-            Aa
-          </span>
-        ) : (
-          <span
-            data-testid="color-picker-on-color-default"
-            class="color-picker__on-color color-picker__on-color--default"
-          >
-            Aa
-          </span>
-        )
+    <div data-testid="color-picker" data-has-value={hasValue}>
+      {props.label !== undefined ? (
+        <label data-color-picker-label for={inputId}>
+          {props.label}
+        </label>
       ) : null}
+      {props.hint !== undefined ? <p class="field-hint">{props.hint}</p> : null}
+      <div data-color-picker-row>
+        <span data-color-swatch style={hasValue ? { background: props.value! } : undefined}>
+          <input
+            id={inputId}
+            type="color"
+            value={swatchValue}
+            aria-label={props.label}
+            title="Pick a colour"
+            onInput={handleInput}
+          />
+        </span>
+        {props.previewOnColor === true ? (
+          hasValue ? (
+            <span
+              data-testid="color-picker-on-color"
+              class="color-picker__on-color"
+              style={{ background: props.value!, color: onColorFor(props.value!) }}
+              title="Readable text color the renderer will use on this color"
+            >
+              Aa
+            </span>
+          ) : (
+            <span
+              data-testid="color-picker-on-color-default"
+              class="color-picker__on-color color-picker__on-color--default"
+            >
+              Aa
+            </span>
+          )
+        ) : null}
+        <span data-color-picker-value>
+          {hasValue ? props.value!.toUpperCase() : "Theme default"}
+        </span>
+        {hasValue ? (
+          <button type="button" data-testid="color-picker-reset" onClick={handleReset}>
+            Reset to default
+          </button>
+        ) : (
+          <span data-testid="color-picker-default-note" role="status">
+            (using theme default)
+          </span>
+        )}
+      </div>
     </div>
   );
 }

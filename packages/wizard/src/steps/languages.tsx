@@ -31,7 +31,7 @@ export function LanguagesStep(props: LanguagesStepProps): JSX.Element {
   return (
     <fieldset data-testid="languages-step">
       <legend>Languages</legend>
-      <p>Pick the default language. Add a second language now or later.</p>
+      <p>Pick the main language of the site. You can add a second language now or later.</p>
 
       <label>
         <span>Mode</span>
@@ -80,7 +80,7 @@ export function LanguagesStep(props: LanguagesStepProps): JSX.Element {
               })
             }
           >
-            <option value="">— pick one —</option>
+            <option value="">Choose a language</option>
             {LANGUAGES.filter((l) => l.id !== defaultLanguage).map((l) => (
               <option key={l.id} value={l.id}>
                 {l.label}

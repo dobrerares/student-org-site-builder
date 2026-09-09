@@ -21,7 +21,7 @@ export function ContentStep(props: ContentStepProps): JSX.Element {
   return (
     <fieldset data-testid="content-step">
       <legend>Content</legend>
-      <p>Add the headline content now, or skip and write it in the editor.</p>
+      <p>Write the headline for your home page now, or skip and do it in the editor.</p>
 
       <label>
         <input

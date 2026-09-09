@@ -116,6 +116,13 @@ export function Wizard(props: WizardProps): JSX.Element {
 
   return (
     <div data-testid="wizard" data-wizard-step={onCurrentStep}>
+      <header data-wizard-header>
+        <p data-wizard-kicker>New site</p>
+        <h1>Set up your site in a few steps</h1>
+        <p data-wizard-progress>
+          Step {stepIndex + 1} of {STEPS.length}
+        </p>
+      </header>
       <StepIndicator state={state} onJumpTo={handleJumpTo} />
 
       <div data-wizard-step={onCurrentStep} data-testid="wizard-step">
@@ -152,12 +159,13 @@ export function Wizard(props: WizardProps): JSX.Element {
         <button type="button" data-action="cancel" onClick={handleCancel}>
           Cancel
         </button>
+        <span data-wizard-nav-spacer aria-hidden="true" />
         <button type="button" data-action="back" disabled={isFirstStep} onClick={handleBack}>
           Back
         </button>
         {canSkip && !isFinalStep && (
           <button type="button" data-action="skip" onClick={handleSkip}>
-            Skip
+            Skip for now
           </button>
         )}
         {!isFinalStep && (
@@ -181,21 +189,28 @@ interface StepIndicatorProps {
 }
 
 function StepIndicator(props: StepIndicatorProps): JSX.Element {
+  const activeIndex = STEPS.indexOf(props.state.step);
   return (
-    <ol data-testid="step-indicator">
-      {STEPS.map((step, idx) => (
-        <li key={step}>
-          <button
-            type="button"
-            data-wizard-step-indicator={step}
-            data-active={props.state.step === step ? "true" : "false"}
-            onClick={() => props.onJumpTo(step)}
-          >
-            <span>{idx + 1}.</span>
-            <span>{STEP_LABELS[step]}</span>
-          </button>
-        </li>
-      ))}
+    <ol data-testid="step-indicator" aria-label="Setup steps">
+      {STEPS.map((step, idx) => {
+        const status = idx < activeIndex ? "done" : idx === activeIndex ? "active" : "todo";
+        return (
+          <li key={step} data-step-status={status}>
+            <button
+              type="button"
+              data-wizard-step-indicator={step}
+              data-active={props.state.step === step ? "true" : "false"}
+              aria-current={status === "active" ? "step" : undefined}
+              onClick={() => props.onJumpTo(step)}
+            >
+              <span data-step-number aria-hidden="true">
+                {status === "done" ? "✓" : idx + 1}
+              </span>
+              <span data-step-label>{STEP_LABELS[step]}</span>
+            </button>
+          </li>
+        );
+      })}
     </ol>
   );
 }

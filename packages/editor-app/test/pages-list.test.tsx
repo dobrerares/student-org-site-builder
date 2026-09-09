@@ -122,12 +122,33 @@ describe("PagesList component", () => {
       />,
     );
     const input = container.querySelector<HTMLInputElement>('[data-testid="pages-list-add-slug"]');
-    fireEvent.input(input!, { target: { value: "Bad Slug!" } });
+    // Human names are slugified ("Bad Slug!" → "bad-slug"); only input with
+    // no usable characters at all is rejected.
+    fireEvent.input(input!, { target: { value: "!!!" } });
     const submit = container.querySelector<HTMLButtonElement>('[data-action="add"]');
     fireEvent.click(submit!);
     expect(onAdd).not.toHaveBeenCalled();
     const error = container.querySelector('[data-testid="pages-list-add-error"]');
     expect(error).not.toBeNull();
+  });
+
+  test("a human page name is turned into a slug before onAdd", () => {
+    const onAdd = vi.fn();
+    const { container } = render(
+      <PagesList
+        site={makeSite()}
+        activeIndex={0}
+        onSelect={vi.fn()}
+        onAdd={onAdd}
+        onClone={vi.fn()}
+        onDelete={vi.fn()}
+        onMove={vi.fn()}
+      />,
+    );
+    const input = container.querySelector<HTMLInputElement>('[data-testid="pages-list-add-slug"]');
+    fireEvent.input(input!, { target: { value: "Despre noi și Evenimente" } });
+    fireEvent.click(container.querySelector<HTMLButtonElement>('[data-action="add"]')!);
+    expect(onAdd).toHaveBeenCalledWith("despre-noi-si-evenimente");
   });
 
   test("submitting a duplicate slug for the default language shows an error", () => {

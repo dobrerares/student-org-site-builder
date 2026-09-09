@@ -32,6 +32,7 @@ import type { Page, Site } from "@sosb/schema";
 import { checkSlug } from "@sosb/schema";
 import { nativeLanguageName } from "@sosb/renderer";
 import { missingTranslationLanguages } from "./pages-ops.js";
+import { IconArrowDown, IconArrowUp, IconCopy, IconPlus, IconTrash } from "./icons.js";
 
 export interface PagesListProps {
   readonly site: Site;
@@ -48,6 +49,19 @@ export interface PagesListProps {
   readonly onAddLanguageVersion?: (index: number, targetLang: string) => void;
 }
 
+/**
+ * Turn free text ("Despre noi") into a slug candidate ("despre-noi") so
+ * non-technical users can type a page name and still get a valid link.
+ */
+function slugify(raw: string): string {
+  return raw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 export function PagesList(props: PagesListProps): JSX.Element {
   const { site, activeIndex, onSelect, onAdd, onClone, onDelete, onMove, onAddLanguageVersion } =
     props;
@@ -56,7 +70,9 @@ export function PagesList(props: PagesListProps): JSX.Element {
   const [confirmIndex, setConfirmIndex] = useState<number | null>(null);
 
   function attemptAdd(): void {
-    const trimmed = newSlug.trim();
+    const raw = newSlug.trim();
+    // Accept either a ready slug ("about") or a human name ("About us").
+    const trimmed = checkSlug(raw) === null ? raw : slugify(raw);
     const failure = checkSlug(trimmed);
     if (failure !== null) {
       setAddError(failure.message);
@@ -106,56 +122,90 @@ export function PagesList(props: PagesListProps): JSX.Element {
     const canMoveUp = idx > 0;
     const canMoveDown = idx < site.pages.length - 1;
     const missing = isMultiLanguage ? missingTranslationLanguages(site, page) : [];
+    const confirming = confirmIndex === idx;
     return (
       <li
         key={`${page.lang}:${page.slug}:${idx}`}
         data-testid="pages-list-item"
         data-index={idx}
         data-active={isActive}
+        aria-current={isActive ? "true" : undefined}
       >
-        <button type="button" data-action="select" data-index={idx} onClick={() => onSelect(idx)}>
+        <button
+          type="button"
+          data-action="select"
+          data-index={idx}
+          title={isActive ? "You are editing this page" : "Edit this page"}
+          onClick={() => onSelect(idx)}
+        >
           <span data-field="navLabel">{page.navLabel}</span>
-          <span data-field="slug">/{page.slug}</span>
-          <span data-field="lang">[{page.lang}]</span>
+          <span data-page-meta>
+            <span data-field="slug">/{page.slug}</span>
+            {isMultiLanguage ? <span data-field="lang">{page.lang}</span> : null}
+            {!page.showInNav ? <span data-page-hidden>hidden from menu</span> : null}
+          </span>
         </button>
-        <button
-          type="button"
-          data-action="move-up"
-          data-index={idx}
-          disabled={!canMoveUp}
-          onClick={() => onMove(idx, "up")}
-          aria-label={`Move ${page.navLabel} up`}
-        >
-          ↑
-        </button>
-        <button
-          type="button"
-          data-action="move-down"
-          data-index={idx}
-          disabled={!canMoveDown}
-          onClick={() => onMove(idx, "down")}
-          aria-label={`Move ${page.navLabel} down`}
-        >
-          ↓
-        </button>
-        <button
-          type="button"
-          data-action="clone"
-          data-index={idx}
-          onClick={() => attemptClone(idx)}
-        >
-          Clone
-        </button>
-        <button
-          type="button"
-          data-action="delete"
-          data-index={idx}
-          disabled={!canDelete}
-          data-confirming={confirmIndex === idx}
-          onClick={() => attemptDelete(idx)}
-        >
-          {confirmIndex === idx ? "Confirm delete" : "Delete"}
-        </button>
+        <span data-row-actions role="group" aria-label={`Actions for ${page.navLabel}`}>
+          <button
+            type="button"
+            data-action="move-up"
+            data-icon-button
+            data-index={idx}
+            disabled={!canMoveUp}
+            onClick={() => onMove(idx, "up")}
+            aria-label={`Move ${page.navLabel} up`}
+            title="Move up in the menu"
+          >
+            <IconArrowUp size={15} />
+          </button>
+          <button
+            type="button"
+            data-action="move-down"
+            data-icon-button
+            data-index={idx}
+            disabled={!canMoveDown}
+            onClick={() => onMove(idx, "down")}
+            aria-label={`Move ${page.navLabel} down`}
+            title="Move down in the menu"
+          >
+            <IconArrowDown size={15} />
+          </button>
+          <button
+            type="button"
+            data-action="clone"
+            data-icon-button
+            data-index={idx}
+            onClick={() => attemptClone(idx)}
+            aria-label={`Duplicate ${page.navLabel}`}
+            title="Duplicate this page"
+          >
+            <IconCopy size={15} />
+          </button>
+          <button
+            type="button"
+            data-action="delete"
+            data-icon-button={confirming ? undefined : true}
+            data-tone="danger"
+            data-index={idx}
+            disabled={!canDelete}
+            data-confirming={confirming}
+            onClick={() => attemptDelete(idx)}
+            onBlur={() => {
+              if (confirming) setConfirmIndex(null);
+            }}
+            aria-label={confirming ? `Confirm delete ${page.navLabel}` : `Delete ${page.navLabel}`}
+            title={
+              canDelete
+                ? confirming
+                  ? "Click again to delete this page"
+                  : "Delete this page"
+                : "A site needs at least one page"
+            }
+          >
+            <IconTrash size={15} />
+            {confirming ? <span>Confirm delete</span> : null}
+          </button>
+        </span>
         {missing.length > 0 && (
           <span data-testid="missing-translation-indicator" role="status">
             Missing: {missing.map((lng) => nativeLanguageName(lng)).join(", ")}
@@ -172,7 +222,8 @@ export function PagesList(props: PagesListProps): JSX.Element {
             onClick={() => onAddLanguageVersion?.(idx, lng)}
             aria-label={`Add ${nativeLanguageName(lng)} version of ${page.navLabel}`}
           >
-            Add {nativeLanguageName(lng)} version
+            <IconPlus size={14} />
+            <span>Add {nativeLanguageName(lng)} version</span>
           </button>
         ))}
       </li>
@@ -181,7 +232,12 @@ export function PagesList(props: PagesListProps): JSX.Element {
 
   return (
     <section data-testid="pages-list" aria-label="Pages">
-      <h3>Pages</h3>
+      <header>
+        <div data-section-heading>
+          <h3>Pages</h3>
+          <p data-section-hint>Each page becomes an entry in your site menu.</p>
+        </div>
+      </header>
       {isMultiLanguage ? (
         <div data-testid="pages-list-grouped">
           {site.languages.map((lang) => {
@@ -217,7 +273,7 @@ export function PagesList(props: PagesListProps): JSX.Element {
         }}
       >
         <label>
-          <span>New page link</span>
+          <span>Add a page</span>
           <input
             type="text"
             data-testid="pages-list-add-slug"
@@ -226,12 +282,18 @@ export function PagesList(props: PagesListProps): JSX.Element {
               setNewSlug(event.currentTarget.value);
               if (addError !== null) setAddError(null);
             }}
-            placeholder="about"
+            placeholder="e.g. Events, About us, Contact"
+            autoComplete="off"
           />
         </label>
-        <button type="submit" data-action="add">
-          Add page
+        <button type="submit" data-action="add" data-variant="primary">
+          Create page
         </button>
+        <p data-form-help>
+          {newSlug.trim().length > 0 && checkSlug(newSlug.trim()) !== null
+            ? `Link will be /${slugify(newSlug) || "…"}`
+            : "You can rename it or change its link later in Page settings."}
+        </p>
         {addError !== null && (
           <p data-testid="pages-list-add-error" role="alert">
             {addError}

@@ -29,7 +29,7 @@ export interface AdvancedToggleProps {
 
 export function AdvancedToggle({ value, onChange }: AdvancedToggleProps): JSX.Element {
   return (
-    <label data-testid="advanced-toggle" class="advanced-toggle">
+    <label data-testid="advanced-toggle" class="advanced-toggle" data-on={value}>
       <input
         type="checkbox"
         checked={value}
@@ -38,7 +38,10 @@ export function AdvancedToggle({ value, onChange }: AdvancedToggleProps): JSX.El
           onChange(event.currentTarget.checked);
         }}
       />
-      <span>Show expert options</span>
+      <span class="advanced-toggle__text">
+        <span>Show expert options</span>
+        <small>Extra fields most people never need.</small>
+      </span>
     </label>
   );
 }

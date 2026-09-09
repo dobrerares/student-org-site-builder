@@ -24,6 +24,8 @@
 import type { JSX } from "preact";
 import type { ValidationResult } from "@sosb/schema";
 
+import { IconCheck, IconChevronUp } from "./icons.js";
+
 export interface HealthFooterProps {
   readonly result: ValidationResult;
   readonly onToggle: () => void;
@@ -41,8 +43,14 @@ export function HealthFooter({
   onToggle,
   expanded = false,
 }: HealthFooterProps): JSX.Element {
+  const errors = result.errors.length;
+  const warnings = result.warnings.length;
+  const info = result.info.length;
+  const allClear = errors === 0 && warnings === 0;
+  const tone = errors > 0 ? "error" : warnings > 0 ? "warning" : "ok";
+
   return (
-    <footer data-testid="health-footer">
+    <footer data-testid="health-footer" data-tone={tone}>
       <button
         type="button"
         data-testid="health-footer-toggle"
@@ -50,11 +58,24 @@ export function HealthFooter({
         aria-expanded={expanded ? "true" : "false"}
         onClick={() => onToggle()}
       >
-        <span data-count="error">{pluralize(result.errors.length, "error")}</span>
-        {", "}
-        <span data-count="warning">{pluralize(result.warnings.length, "warning")}</span>
-        {", "}
-        <span data-count="info">{result.info.length} info</span>
+        <span data-health-summary>
+          {allClear ? <IconCheck size={14} /> : null}
+          <span data-health-title>{allClear ? "Site check: all good" : "Site check"}</span>
+        </span>
+        <span data-health-counts>
+          <span data-count="error" data-zero={errors === 0}>
+            {pluralize(errors, "error")}
+          </span>
+          <span data-count="warning" data-zero={warnings === 0}>
+            {pluralize(warnings, "warning")}
+          </span>
+          <span data-count="info" data-zero={info === 0}>
+            {info} info
+          </span>
+        </span>
+        <span data-health-chevron>
+          <IconChevronUp size={14} />
+        </span>
       </button>
     </footer>
   );

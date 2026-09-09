@@ -4,7 +4,7 @@
  * `theme.tokens.fontHeadline` and `theme.tokens.fontBody` (ADR 0043).
  *
  * The picker reads the per-theme curated font list from the theme
- * catalog and exposes a "(use theme default)" option for the
+ * catalog and exposes a "Theme default" option for the
  * `undefined` case. Per ADR 0044, an out-of-catalog value is preserved
  * as a "Custom: <value>" option instead of being silently dropped.
  */
@@ -27,14 +27,14 @@ describe("FontPicker", () => {
     expect(optionTexts).toContain("Fraunces");
   });
 
-  test("includes a '(use theme default)' option that is selected when value is undefined", () => {
+  test("includes a 'Theme default' option that is selected when value is undefined", () => {
     const { container } = render(
       <FontPicker themeId="academic" kind="body" value={undefined} onChange={() => {}} />,
     );
     const select = container.querySelector("select") as HTMLSelectElement;
     expect(select.value).toBe(""); // default option uses empty string value
     const defaultOption = Array.from(select.options).find((o) => o.value === "");
-    expect(defaultOption?.text).toBe("(use theme default)");
+    expect(defaultOption?.text).toBe("Theme default");
   });
 
   test("when value matches a catalogued font, that option is selected", () => {
@@ -55,7 +55,7 @@ describe("FontPicker", () => {
     expect(customOption?.text).toContain("Custom");
   });
 
-  test("onChange fires undefined when '(use theme default)' is selected", () => {
+  test("onChange fires undefined when 'Theme default' is selected", () => {
     const onChange = vi.fn();
     const { container } = render(
       <FontPicker themeId="academic" kind="headline" value="Fraunces" onChange={onChange} />,

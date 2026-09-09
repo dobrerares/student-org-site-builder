@@ -28,9 +28,11 @@
  * carries the source index so the drop handler knows what moved.
  */
 import type { JSX } from "preact";
+import { useState } from "preact/hooks";
 import type { Site } from "@sosb/schema";
 
 import { buildBlockCatalog, type BlockCatalogEntry } from "./block-catalog.js";
+import { IconArrowDown, IconArrowUp, IconGrip, IconPlus, IconTrash } from "./icons.js";
 
 const DRAG_MIME = "application/x-sosb-block-index";
 
@@ -55,6 +57,8 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
   const page = props.site.pages.find((p) => p.slug === props.pageSlug);
   const blocks = page?.blocks ?? [];
   const catalog = buildBlockCatalog();
+  // Index of the row currently hovered by a drag, for the drop indicator.
+  const [dropIndex, setDropIndex] = useState<number | null>(null);
 
   function entryFor(type: string): BlockCatalogEntry {
     return catalog.entryFor(type);
@@ -63,26 +67,53 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
   return (
     <section data-testid="block-list" data-page-slug={props.pageSlug}>
       <header>
-        <h2>Page sections</h2>
-        <button type="button" data-testid="block-add" onClick={props.onAddBlock}>
-          Add section
+        <div data-section-heading>
+          <h2>Page sections</h2>
+          <p data-section-hint>
+            {page !== undefined
+              ? `Sections on “${page.navLabel}”, top to bottom. Click one to edit it.`
+              : "Click a section to edit it."}
+          </p>
+        </div>
+        <button
+          type="button"
+          data-testid="block-add"
+          data-variant="primary"
+          onClick={props.onAddBlock}
+        >
+          <IconPlus size={16} />
+          <span>Add section</span>
         </button>
       </header>
 
-      <ol data-testid="block-list-ol">
+      {blocks.length === 0 ? (
+        <div data-testid="block-list-empty" data-empty-state>
+          <p>
+            <strong>This page is empty.</strong> Add a section to start building it — a page header
+            is a good first pick.
+          </p>
+          <button type="button" data-variant="primary" onClick={props.onAddBlock}>
+            <IconPlus size={16} />
+            <span>Add your first section</span>
+          </button>
+        </div>
+      ) : null}
+
+      <ol data-testid="block-list-ol" onDragLeave={() => setDropIndex(null)}>
         {blocks.map((block, index) => {
           const entry = entryFor(block.type);
+          const rawTitle = (block.data as { title?: unknown })?.title;
           const blockTitle =
-            (block.data as { title?: unknown })?.title !== undefined &&
-            typeof (block.data as { title?: unknown }).title === "string"
-              ? (block.data as { title: string }).title
-              : entry.label;
+            typeof rawTitle === "string" && rawTitle.trim().length > 0 ? rawTitle : entry.label;
+          const showLabelAsEyebrow = blockTitle !== entry.label;
           return (
             <li
               key={block.id}
               data-testid="block-row"
               data-block-id={block.id}
               data-block-index={index}
+              data-block-type={block.type}
+              data-drop-target={dropIndex === index}
               onDragOver={(event: JSX.TargetedDragEvent<HTMLLIElement>): void => {
                 // We allow dropping if the dataTransfer carries our payload.
                 // Browsers expose `types` (a `DOMStringList`); some test
@@ -114,9 +145,11 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
                 }
                 if (carriesOurDrag) {
                   event.preventDefault();
+                  if (dropIndex !== index) setDropIndex(index);
                 }
               }}
               onDrop={(event: JSX.TargetedDragEvent<HTMLLIElement>): void => {
+                setDropIndex(null);
                 if (event.dataTransfer === null) return;
                 const raw = event.dataTransfer.getData(DRAG_MIME);
                 if (raw === "" || raw === undefined) return;
@@ -129,6 +162,7 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
               <span
                 data-testid="block-drag-handle"
                 aria-label={`Drag to reorder ${entry.label}`}
+                title="Drag to reorder"
                 draggable={true}
                 role="button"
                 tabIndex={0}
@@ -137,10 +171,13 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
                   event.dataTransfer.effectAllowed = "move";
                   event.dataTransfer.setData(DRAG_MIME, String(index));
                 }}
+                onDragEnd={() => setDropIndex(null)}
               >
-                {/* A simple textual handle keeps the markup framework-free.
-                  Actual visual styling lands with the editor's design pass. */}
-                <span aria-hidden="true">⋮⋮</span>
+                <IconGrip size={16} />
+              </span>
+
+              <span data-block-position aria-hidden="true">
+                {index + 1}
               </span>
 
               {props.onSelect !== undefined ? (
@@ -149,44 +186,58 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
                   data-testid="block-row-select"
                   data-action="select"
                   aria-label={`Edit ${entry.label}`}
+                  title="Edit this section"
                   onClick={(): void => props.onSelect?.(block.id)}
                 >
-                  <span data-testid="block-row-label">{entry.label}</span>
+                  <span data-testid="block-row-label" data-eyebrow={showLabelAsEyebrow}>
+                    {entry.label}
+                  </span>
                   <span data-testid="block-row-title">{blockTitle}</span>
                 </button>
               ) : (
-                <>
-                  <span data-testid="block-row-label">{entry.label}</span>
+                <span data-block-row-text>
+                  <span data-testid="block-row-label" data-eyebrow={showLabelAsEyebrow}>
+                    {entry.label}
+                  </span>
                   <span data-testid="block-row-title">{blockTitle}</span>
-                </>
+                </span>
               )}
 
-              <button
-                type="button"
-                data-testid="block-move-up"
-                aria-label={`Move ${entry.label} up`}
-                disabled={index === 0}
-                onClick={(): void => props.onMove(index, Math.max(0, index - 1))}
-              >
-                Move up
-              </button>
-              <button
-                type="button"
-                data-testid="block-move-down"
-                aria-label={`Move ${entry.label} down`}
-                disabled={index === blocks.length - 1}
-                onClick={(): void => props.onMove(index, Math.min(blocks.length - 1, index + 1))}
-              >
-                Move down
-              </button>
-              <button
-                type="button"
-                data-testid="block-remove"
-                aria-label={`Remove ${entry.label}`}
-                onClick={(): void => props.onRemove(block.id)}
-              >
-                Remove
-              </button>
+              <span data-row-actions role="group" aria-label={`Actions for ${entry.label}`}>
+                <button
+                  type="button"
+                  data-testid="block-move-up"
+                  data-icon-button
+                  aria-label={`Move ${entry.label} up`}
+                  title="Move up"
+                  disabled={index === 0}
+                  onClick={(): void => props.onMove(index, Math.max(0, index - 1))}
+                >
+                  <IconArrowUp size={16} />
+                </button>
+                <button
+                  type="button"
+                  data-testid="block-move-down"
+                  data-icon-button
+                  aria-label={`Move ${entry.label} down`}
+                  title="Move down"
+                  disabled={index === blocks.length - 1}
+                  onClick={(): void => props.onMove(index, Math.min(blocks.length - 1, index + 1))}
+                >
+                  <IconArrowDown size={16} />
+                </button>
+                <button
+                  type="button"
+                  data-testid="block-remove"
+                  data-icon-button
+                  data-tone="danger"
+                  aria-label={`Remove ${entry.label}`}
+                  title="Remove section (you can undo)"
+                  onClick={(): void => props.onRemove(block.id)}
+                >
+                  <IconTrash size={16} />
+                </button>
+              </span>
             </li>
           );
         })}

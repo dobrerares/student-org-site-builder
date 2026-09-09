@@ -44,7 +44,7 @@ export function SectionsStep(props: SectionsStepProps): JSX.Element {
   return (
     <fieldset data-testid="sections-step">
       <legend>Sections</legend>
-      <p>Pick the starter sections to include on your home page.</p>
+      <p>Pick the sections for your home page. You can add, remove or reorder them later.</p>
 
       <ul data-testid="sections-list">
         {MANDATORY_BLOCKS.map((block) => (

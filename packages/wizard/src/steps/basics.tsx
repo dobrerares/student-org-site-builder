@@ -17,7 +17,10 @@ export function BasicsStep(props: BasicsStepProps): JSX.Element {
   return (
     <fieldset data-testid="basics-step">
       <legend>Basics</legend>
-      <p>Tell us about your organization.</p>
+      <p>
+        Tell us about your organization. Only the name is required — everything else can be added
+        later.
+      </p>
 
       <label>
         <span>Organization name *</span>
