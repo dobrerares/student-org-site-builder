@@ -219,9 +219,9 @@ data-testid="missing-translation-indicator">` listing the languages
   because the `/<lang>/` prefix resolves the collision structurally,
   but within a single language the schema validator still requires
   uniqueness),
-- the source's `navLabel` as a placeholder ("to be translated" copy
-  is the user's job),
-- a fresh hero block so the new page has something to render,
+- the source page's metadata and complete block structure/content as
+  placeholders for translation, with fresh block ids and independent nested
+  data,
 - `localizedAs` wired both ways so the switcher resolves the
   cross-reference immediately.
 

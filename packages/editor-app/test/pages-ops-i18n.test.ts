@@ -76,16 +76,65 @@ describe("addLanguageVersion", () => {
     expect(newPage.localizedAs?.ro).toBe(sourceAfter.slug);
   });
 
-  test("the new counterpart inherits the source's slug + a hero placeholder block", () => {
+  test("copies the source page's complete block content and structure", () => {
     const site = bilingualSite();
+    site.pages[1]!.seo = {
+      title: "Despre organizație",
+      description: "Cine suntem și ce facem.",
+    };
+    site.pages[1]!.blocks = [
+      {
+        id: "blk_about_ro",
+        type: "hero",
+        version: 1,
+        data: { title: "Despre", subtitle: "Povestea organizației" },
+      },
+      {
+        id: "blk_about_faq_ro",
+        type: "faq",
+        version: 1,
+        data: {
+          title: "Întrebări frecvente",
+          items: [{ question: "Cum mă înscriu?", answer: "Completează formularul." }],
+        },
+      },
+    ];
     const next = addLanguageVersion(site, 1, "en");
     const newPage = next.pages[next.pages.length - 1]!;
     // Slug equals the source slug by default (cross-language slug collisions are
     // OK because the URL trees are language-prefixed).
     expect(newPage.slug).toBe("despre");
     expect(newPage.navLabel).toBe("Despre");
-    expect(newPage.blocks.length).toBeGreaterThan(0);
-    expect(newPage.blocks[0]!.type).toBe("hero");
+    expect(newPage.seo).toEqual({
+      title: "Despre organizație",
+      description: "Cine suntem și ce facem.",
+    });
+    expect(newPage.blocks).toEqual([
+      {
+        id: expect.not.stringMatching(/^blk_about_ro$/),
+        type: "hero",
+        version: 1,
+        data: { title: "Despre", subtitle: "Povestea organizației" },
+      },
+      {
+        id: expect.not.stringMatching(/^blk_about_faq_ro$/),
+        type: "faq",
+        version: 1,
+        data: {
+          title: "Întrebări frecvente",
+          items: [{ question: "Cum mă înscriu?", answer: "Completează formularul." }],
+        },
+      },
+    ]);
+
+    // Translating nested fields in the counterpart must not edit the source.
+    const counterpartFaq = newPage.blocks[1]!.data as {
+      items: { question: string; answer: string }[];
+    };
+    counterpartFaq.items[0]!.answer = "Fill in the form.";
+    expect(
+      (site.pages[1]!.blocks[1]!.data as { items: { answer: string }[] }).items[0]!.answer,
+    ).toBe("Completează formularul.");
   });
 
   test("if the source slug is already used in the target language, picks a unique slug", () => {

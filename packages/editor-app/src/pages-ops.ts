@@ -8,6 +8,14 @@
 import type { BlockEnvelope, Page, Site } from "@sosb/schema";
 import { isValidSlug } from "@sosb/schema";
 
+/** Deep-copy blocks and assign page-unique ids to every cloned envelope. */
+function cloneBlocks(blocks: readonly BlockEnvelope[], idSuffix: string): BlockEnvelope[] {
+  return structuredClone(blocks).map((block, index) => ({
+    ...block,
+    id: `${block.id}_${idSuffix}_${index}`,
+  }));
+}
+
 /**
  * Add a brand-new page in the site's default language. The new page lands
  * at the end of `pages[]` with `navOrder` one greater than the current
@@ -56,10 +64,7 @@ export function clonePage(site: Site, sourceIndex: number, newSlug: string): Sit
   // Re-id every block in the clone so ARIA `aria-labelledby` references
   // stay unique across the site.
   const blockSuffix = newSlug.replace(/-/g, "_");
-  const clonedBlocks: BlockEnvelope[] = source.blocks.map((b, i) => ({
-    ...b,
-    id: `${b.id}_${blockSuffix}_${i}`,
-  }));
+  const clonedBlocks = cloneBlocks(source.blocks, blockSuffix);
   const clone: Page = {
     ...source,
     slug: newSlug,
@@ -131,9 +136,9 @@ export function missingTranslationLanguages(site: Site, page: Page): string[] {
  * Creates a new page in the target language with:
  *   - the source's slug (preferred), falling back to a unique suffix when
  *     the source slug is already used in the target language,
- *   - the source's navLabel as a placeholder (the editor will surface this
- *     as "to be translated" text, not in scope for #24's renderer),
- *   - a fresh hero block so the new page renders something on first visit,
+ *   - the source page's metadata and complete block structure/content as
+ *     translation-ready placeholders,
+ *   - fresh block ids and independent nested block data,
  *   - `localizedAs` wired both ways so the language switcher can resolve
  *     the cross-reference.
  *
@@ -171,24 +176,14 @@ export function addLanguageVersion(site: Site, sourceIndex: number, targetLang: 
   const langPages = site.pages.filter((p) => p.lang === targetLang);
   const maxOrder = langPages.reduce((max, p) => (p.navOrder > max ? p.navOrder : max), -1);
 
-  const blockSuffix = counterpartSlug.replace(/-/g, "_");
-  const counterpartBlocks: BlockEnvelope[] = [
-    {
-      id: `blk_${blockSuffix}_${targetLang}_hero`,
-      type: "hero",
-      version: 1,
-      data: {
-        title: source.navLabel,
-      },
-    },
-  ];
+  const blockSuffix = `${counterpartSlug}_${targetLang}`.replace(/-/g, "_");
+  const counterpartBlocks = cloneBlocks(source.blocks, blockSuffix);
 
   const counterpart: Page = {
+    ...structuredClone(source),
     slug: counterpartSlug,
     lang: targetLang,
-    navLabel: source.navLabel,
     navOrder: maxOrder + 1,
-    showInNav: source.showInNav,
     blocks: counterpartBlocks,
     localizedAs: { [source.lang]: source.slug },
   };
