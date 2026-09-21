@@ -50,21 +50,15 @@ interface Normaliser {
 const NORMALISERS: readonly Normaliser[] = [
   {
     why: "preview-only link interceptor — never emitted into a built site",
-    apply: (html) =>
-      html.replace(/<script data-sosb-preview-nav[^>]*>[\s\S]*?<\/script>/g, ""),
+    apply: (html) => html.replace(/<script data-sosb-preview-nav[^>]*>[\s\S]*?<\/script>/g, ""),
   },
   {
     why: "preview-only in-place update receiver — never emitted into a built site",
-    apply: (html) =>
-      html.replace(/<script data-sosb-preview-morph[^>]*>[\s\S]*?<\/script>/g, ""),
+    apply: (html) => html.replace(/<script data-sosb-preview-morph[^>]*>[\s\S]*?<\/script>/g, ""),
   },
   {
     why: "build-only SEO overlay: JSON-LD blobs injected by @sosb/build",
-    apply: (html) =>
-      html.replace(
-        /<script type="application\/ld\+json">[\s\S]*?<\/script>/g,
-        "",
-      ),
+    apply: (html) => html.replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g, ""),
   },
   {
     why: "asset URLs: the preview resolves to blob: object URLs, the build emits VFS paths",

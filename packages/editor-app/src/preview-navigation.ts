@@ -54,11 +54,7 @@ import { pagePath } from "@sosb/renderer";
  *     home? The simplest answer is "no — return null and let the host
  *     decide." That keeps this function pure and testable.
  */
-export function resolvePathToPageIndex(
-  site: Site,
-  path: string,
-  fromPageIndex = 0,
-): number | null {
+export function resolvePathToPageIndex(site: Site, path: string, fromPageIndex = 0): number | null {
   const resolved = rootPath(site, path, fromPageIndex);
   if (resolved === null) return null;
   for (let i = 0; i < site.pages.length; i++) {

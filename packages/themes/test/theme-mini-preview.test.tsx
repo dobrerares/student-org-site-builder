@@ -75,9 +75,7 @@ describe("ThemeMiniPreview", () => {
     // jsdom has none; falling back to mounting immediately is better than
     // showing nothing at all.
     const { container } = render(<ThemeMiniPreview themeId="academic" />);
-    const frame = container.querySelector<HTMLIFrameElement>(
-      "[data-theme-mini-preview-frame]",
-    );
+    const frame = container.querySelector<HTMLIFrameElement>("[data-theme-mini-preview-frame]");
     expect(frame).not.toBeNull();
     expect(frame!.getAttribute("srcdoc")).toContain("<!doctype html>");
   });
@@ -86,9 +84,7 @@ describe("ThemeMiniPreview", () => {
     const { container } = render(<ThemeMiniPreview themeId="civic" />);
     const root = container.querySelector("[data-theme-mini-preview]")!;
     expect(root.getAttribute("aria-hidden")).toBe("true");
-    const frame = container.querySelector<HTMLIFrameElement>(
-      "[data-theme-mini-preview-frame]",
-    )!;
+    const frame = container.querySelector<HTMLIFrameElement>("[data-theme-mini-preview-frame]")!;
     expect(frame.getAttribute("tabindex")).toBe("-1");
     // Empty sandbox: no scripts, no forms, no navigation.
     expect(frame.getAttribute("sandbox")).toBe("");
@@ -100,9 +96,7 @@ describe("ThemeMiniPreview", () => {
     expect(root.style.width).toBe("300px");
     expect(root.style.height).toBe("200px");
 
-    const frame = container.querySelector<HTMLIFrameElement>(
-      "[data-theme-mini-preview-frame]",
-    )!;
+    const frame = container.querySelector<HTMLIFrameElement>("[data-theme-mini-preview-frame]")!;
     // Laid out at the full viewport width, then scaled — so the miniature
     // shows the theme's desktop composition, not its mobile stack.
     expect(frame.style.width).toBe(`${THEME_PREVIEW_VIEWPORT_WIDTH}px`);
@@ -132,9 +126,7 @@ describe("ThemeMiniPreview", () => {
         <ThemeMiniPreview themeId="civic" />
       </>,
     );
-    const first = container.querySelector<HTMLIFrameElement>(
-      "[data-theme-mini-preview-frame]",
-    )!;
+    const first = container.querySelector<HTMLIFrameElement>("[data-theme-mini-preview-frame]")!;
     act(() => {
       first.dispatchEvent(new Event("load"));
     });

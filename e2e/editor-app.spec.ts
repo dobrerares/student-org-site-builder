@@ -112,9 +112,11 @@ test("the iframe preview's srcdoc is a complete HTML document with the org name"
   expect(srcdoc!.startsWith("<!doctype html>")).toBe(true);
   // Expect the fixture's org name to round-trip into the rendered preview.
   expect(srcdoc!).toContain("Stub Org");
+  // `allow-popups` lets the preview's link interceptor open an external link
+  // in a new tab instead of navigating the preview away from the editor.
   await expect(page.locator('[data-testid="preview-pane"] iframe')).toHaveAttribute(
     "sandbox",
-    "allow-scripts allow-same-origin",
+    "allow-scripts allow-same-origin allow-popups",
   );
 });
 

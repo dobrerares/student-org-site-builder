@@ -44,14 +44,15 @@ function mount(site: Site = structuredClone(baseSite)): {
   const { container } = render(<EditorApp initial={site} />);
   return {
     container,
-    frame: () =>
-      container.querySelector<HTMLIFrameElement>('[data-testid="preview-pane"] iframe')!,
+    frame: () => container.querySelector<HTMLIFrameElement>('[data-testid="preview-pane"] iframe')!,
   };
 }
 
 /** Drill into Site settings and type a new organisation name. */
 function editOrgName(container: HTMLElement, value: string): void {
-  fireEvent.click(container.querySelector<HTMLButtonElement>('[data-testid="site-settings-link"]')!);
+  fireEvent.click(
+    container.querySelector<HTMLButtonElement>('[data-testid="site-settings-link"]')!,
+  );
   fireEvent.input(container.querySelector<HTMLInputElement>('[data-field="org.name"]')!, {
     target: { value },
   });

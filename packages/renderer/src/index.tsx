@@ -17,11 +17,7 @@ import type { Site } from "@sosb/schema";
 import { PageShell } from "./page-shell.js";
 import { emitTokenRoot, resolveFontFamilies } from "./tokens.js";
 import type { AssetUrlForPath } from "./asset-url.js";
-import {
-  assetPrefixForDistPath,
-  depthAwareAssetResolver,
-  resolveAssetUrl,
-} from "./asset-url.js";
+import { assetPrefixForDistPath, depthAwareAssetResolver, resolveAssetUrl } from "./asset-url.js";
 import { pageDistPath } from "./routing.js";
 import { FONT_ASSET_PREFIX, FONT_FACE_REGISTRY, woff2Base64 } from "./fonts/registry.js";
 import { base64ToBytes } from "./fonts/bytes.js";

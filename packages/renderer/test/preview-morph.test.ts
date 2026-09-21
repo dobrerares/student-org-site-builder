@@ -17,10 +17,7 @@ import type { Site } from "@sosb/schema";
 import faqOnly from "./fixtures/faq-only.json" with { type: "json" };
 import heroOnly from "./fixtures/hero-only.json" with { type: "json" };
 import { renderSite } from "../src/index.js";
-import {
-  PREVIEW_MORPH_SCRIPT,
-  PREVIEW_MORPH_SCRIPT_MARKER,
-} from "../src/preview-morph-script.js";
+import { PREVIEW_MORPH_SCRIPT, PREVIEW_MORPH_SCRIPT_MARKER } from "../src/preview-morph-script.js";
 
 interface Harness {
   readonly dom: JSDOM;
@@ -86,12 +83,20 @@ describe("PREVIEW_MORPH_SCRIPT — protocol coupling", () => {
     const h = boot(page("<main><h1>Vechi</h1></main>"));
     h.dom.window.dispatchEvent(
       new h.dom.window.MessageEvent("message", {
-        data: { channel: "other", version: 1, payload: { type: "previewHtml", html: page("<main><h1>X</h1></main>") } },
+        data: {
+          channel: "other",
+          version: 1,
+          payload: { type: "previewHtml", html: page("<main><h1>X</h1></main>") },
+        },
       }),
     );
     h.dom.window.dispatchEvent(
       new h.dom.window.MessageEvent("message", {
-        data: { channel: "sosb:preview", version: 99, payload: { type: "previewHtml", html: page("<main><h1>X</h1></main>") } },
+        data: {
+          channel: "sosb:preview",
+          version: 99,
+          payload: { type: "previewHtml", html: page("<main><h1>X</h1></main>") },
+        },
       }),
     );
     expect(h.doc.querySelector("h1")!.textContent).toBe("Vechi");
@@ -180,7 +185,7 @@ describe("morph — structural changes", () => {
 
   test("converges on the target markup", () => {
     const h = boot(page("<main><p>1</p><p>2</p><p>3</p></main>"));
-    h.apply(page('<main><section><p>x</p></section><p>3</p></main>'));
+    h.apply(page("<main><section><p>x</p></section><p>3</p></main>"));
     expect(h.doc.querySelector("main")!.innerHTML).toBe("<section><p>x</p></section><p>3</p>");
   });
 });
@@ -292,14 +297,14 @@ describe("morph — scripts are never re-run", () => {
   test("a script is never removed, even when the new HTML drops it", () => {
     // Removing the bootstrap would not un-bind its listeners, so the morph
     // leaves it in place rather than pretending the removal took effect.
-    const h = boot(page('<main></main><script data-sosb-lightbox-script>/*lb*/</script>'));
+    const h = boot(page("<main></main><script data-sosb-lightbox-script>/*lb*/</script>"));
     h.apply(page("<main></main>"));
     expect(h.doc.querySelectorAll("script[data-sosb-lightbox-script]")).toHaveLength(1);
   });
 
   test("scripts do not desynchronise the positional walk of their siblings", () => {
-    const h = boot(page('<nav>n</nav><script data-a>/*a*/</script><main>m</main>'));
-    h.apply(page('<nav>N</nav><script data-a>/*a*/</script><main>M</main>'));
+    const h = boot(page("<nav>n</nav><script data-a>/*a*/</script><main>m</main>"));
+    h.apply(page("<nav>N</nav><script data-a>/*a*/</script><main>M</main>"));
     expect(h.doc.querySelector("nav")!.textContent).toBe("N");
     expect(h.doc.querySelector("main")!.textContent).toBe("M");
     expect(h.doc.querySelectorAll("script")).toHaveLength(1);

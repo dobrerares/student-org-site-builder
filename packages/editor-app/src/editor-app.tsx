@@ -529,7 +529,6 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   const [panelOpen, setPanelOpen] = useState<boolean>(false);
   const [exportDialog, setExportDialog] = useState<ValidationResult | null>(null);
 
-
   /**
    * Device-simulation scaling.
    *
@@ -557,8 +556,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     function measure(): void {
       const node = previewCanvasRef.current;
       if (node === null) return;
-      const style =
-        typeof getComputedStyle === "function" ? getComputedStyle(node) : undefined;
+      const style = typeof getComputedStyle === "function" ? getComputedStyle(node) : undefined;
       const padX =
         (Number.parseFloat(style?.paddingLeft ?? "0") || 0) +
         (Number.parseFloat(style?.paddingRight ?? "0") || 0);
@@ -747,11 +745,11 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
    * page the section being edited jumped out of view on every character.
    */
   const previewHtml = useMemo(
-    () =>
-      iframeSrcdoc(snapshot, snapshot.theme.id, safeActivePageIndex, displayUrlForAssetPath),
-    // `displayUrlForAssetPath` reads a ref-held cache; `assetEpoch` is what
-    // actually changes when that cache gains an entry.
-    [snapshot, safeActivePageIndex, assetEpoch], // eslint-disable-line react-hooks/exhaustive-deps
+    () => iframeSrcdoc(snapshot, snapshot.theme.id, safeActivePageIndex, displayUrlForAssetPath),
+    // `displayUrlForAssetPath` reads a ref-held cache rather than state, so it
+    // is deliberately not a dependency; `assetEpoch` is what actually changes
+    // when that cache gains an entry.
+    [snapshot, safeActivePageIndex, assetEpoch],
   );
 
   /**
@@ -1415,9 +1413,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
               onClick={() => setPreviewViewport(option.id)}
             >
               <span data-testid="viewport-preview-label">{option.label}</span>
-              <span data-testid="viewport-preview-size">
-                {previewViewportSizeLabel(option)}
-              </span>
+              <span data-testid="viewport-preview-size">{previewViewportSizeLabel(option)}</span>
             </Button>
           ))}
         </div>
@@ -1438,35 +1434,35 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
                 }
           }
         >
-        <div
-          data-testid="preview-frame-shell"
-          data-preview-viewport={previewViewport}
-          data-preview-scaled={previewScale < 1 ? "true" : "false"}
-          style={
-            previewViewportWidth === null || previewViewportHeight === null
-              ? undefined
-              : {
-                  width: `${previewViewportWidth}px`,
-                  height: `${previewViewportHeight}px`,
-                  transform: `scale(${previewScale})`,
-                }
-          }
-        >
-          {/* Scripts power renderer-owned preview interactions; same-origin keeps blob uploads visible. */}
-          <iframe
-            // Remounting on the reload key gives the new page/theme/language a
-            // fresh document; every other edit is applied in place over the
-            // bridge, so this element is deliberately stable across keystrokes.
-            key={previewReloadKey}
-            ref={iframeRef}
-            title={t("pane.preview.label")}
-            srcDoc={previewBootHtmlRef.current}
-            // `allow-popups` lets the preview-nav interceptor open external
-            // links (a partner site, a social profile) in a new tab instead of
-            // replacing the preview document.
-            sandbox="allow-scripts allow-same-origin allow-popups"
-          />
-        </div>
+          <div
+            data-testid="preview-frame-shell"
+            data-preview-viewport={previewViewport}
+            data-preview-scaled={previewScale < 1 ? "true" : "false"}
+            style={
+              previewViewportWidth === null || previewViewportHeight === null
+                ? undefined
+                : {
+                    width: `${previewViewportWidth}px`,
+                    height: `${previewViewportHeight}px`,
+                    transform: `scale(${previewScale})`,
+                  }
+            }
+          >
+            {/* Scripts power renderer-owned preview interactions; same-origin keeps blob uploads visible. */}
+            <iframe
+              // Remounting on the reload key gives the new page/theme/language a
+              // fresh document; every other edit is applied in place over the
+              // bridge, so this element is deliberately stable across keystrokes.
+              key={previewReloadKey}
+              ref={iframeRef}
+              title={t("pane.preview.label")}
+              srcDoc={previewBootHtmlRef.current}
+              // `allow-popups` lets the preview-nav interceptor open external
+              // links (a partner site, a social profile) in a new tab instead of
+              // replacing the preview document.
+              sandbox="allow-scripts allow-same-origin allow-popups"
+            />
+          </div>
         </div>
       </div>
     </section>
