@@ -9,7 +9,7 @@
  */
 
 import { describe, expect, test } from "vitest";
-import { ThemePackageError, loadThemePackage } from "../src/index.js";
+import { THEME_PACKAGE_MAX_BYTES, ThemePackageError, loadThemePackage } from "../src/index.js";
 
 const enc = new TextEncoder();
 
@@ -326,6 +326,28 @@ describe("duplicate declarations", () => {
       },
       { "theme.css": "body{color:red}", "a.woff2": "x", "b.woff2": "y" },
     );
+    expect(() => loadThemePackage(files)).not.toThrow();
+  });
+});
+
+describe("size limit", () => {
+  test("an oversized package is rejected before anything else is read", () => {
+    // Checked ahead of the manifest on purpose: the point of the ceiling is to
+    // avoid chewing through a hostile or accidental 500 MB archive, and
+    // parsing first would defeat it. The fixture here has a perfectly valid
+    // manifest, so a rejection can only come from the size check.
+    const files = pkg(VALID_MANIFEST, {
+      "theme.css": "body{color:red}",
+      "fonts/huge.woff2": new Uint8Array(THEME_PACKAGE_MAX_BYTES + 1),
+    });
+    expectRejection(files, "package-too-large", /over the .* limit/);
+  });
+
+  test("a package just under the ceiling still loads", () => {
+    const files = pkg(VALID_MANIFEST, {
+      "theme.css": "body{color:red}",
+      "fonts/big.woff2": new Uint8Array(1024),
+    });
     expect(() => loadThemePackage(files)).not.toThrow();
   });
 });
