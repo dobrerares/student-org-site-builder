@@ -19,6 +19,19 @@
   },
   "devDependencies": {
     "@sosb/build": "workspace:*",
-    "@sosb/themes": "workspace:*"
+    "@sosb/themes": "workspace:*",
+    "@types/jsdom": "^21.1.7",
+    "axe-core": "^4.11.4",
+    "jsdom": "^25.0.1"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./node": {
+      "types": "./src/node.ts",
+      "default": "./src/node.ts"
+    }
   }
 }

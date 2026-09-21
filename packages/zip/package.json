@@ -17,5 +17,9 @@
     "@sosb/schema": "workspace:*",
     "@sosb/theme-package": "workspace:*",
     "@sosb/vfs": "workspace:*"
+  },
+  "devDependencies": {
+    "@sosb/theme-package": "workspace:*",
+    "@sosb/themes": "workspace:*"
   }
 }
