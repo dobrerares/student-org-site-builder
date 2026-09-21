@@ -24,10 +24,13 @@ import { pagePath } from "@sosb/renderer";
  * Map a path (as emitted by `pagePath`) back to a page index.
  *
  * @param site The current site snapshot.
- * @param path A path string from a navigate message — always starts with
- *   `/` and (per `pagePath` contract) ends with `/`. Hash fragments and
- *   query strings have already been filtered out by the iframe-side
- *   script.
+ * @param path A path string from a navigate message. Renderer-emitted nav
+ *   and language-switcher links are canonical `pagePath` values (leading and
+ *   trailing `/`), but author-written link fields may be relative
+ *   (`despre/`, `../contact/`) or carry a hash / query, so the path is
+ *   normalised before matching.
+ * @param fromPageIndex The page currently being previewed — the base a
+ *   relative path resolves against. Defaults to `0` (the home page).
  * @returns The matching index in `site.pages`, or `null` when no page in
  *   the current site has this canonical path.
  *
@@ -51,10 +54,57 @@ import { pagePath } from "@sosb/renderer";
  *     home? The simplest answer is "no — return null and let the host
  *     decide." That keeps this function pure and testable.
  */
-export function resolvePathToPageIndex(site: Site, path: string): number | null {
+export function resolvePathToPageIndex(
+  site: Site,
+  path: string,
+  fromPageIndex = 0,
+): number | null {
+  const resolved = rootPath(site, path, fromPageIndex);
+  if (resolved === null) return null;
   for (let i = 0; i < site.pages.length; i++) {
     const page = site.pages[i];
-    if (page !== undefined && pagePath(site, page) === path) return i;
+    if (page !== undefined && pagePath(site, page) === resolved) return i;
   }
   return null;
+}
+
+/**
+ * Normalise a clicked href into a canonical, root-anchored `pagePath` form.
+ *
+ * The iframe forwards the href verbatim. Absolute paths (`/despre/`) arrive
+ * ready to compare. Relative ones (`despre/`, `../contact/`) must be resolved
+ * against the page the user is currently looking at — the iframe cannot do
+ * that itself, because a `srcdoc` document's `document.baseURI` is the
+ * editor's own URL, not the previewed page's path.
+ *
+ * Query strings and hash fragments are dropped: they never distinguish two
+ * pages in this site model, and a link to `/despre/#echipa` should still
+ * resolve to the "despre" page.
+ *
+ * Returns `null` for anything that cannot be a page path.
+ */
+function rootPath(site: Site, href: string, fromPageIndex: number): string | null {
+  if (href.length === 0) return null;
+  const withoutFragment = href.split("#")[0]!.split("?")[0]!;
+  if (withoutFragment.length === 0) return null;
+
+  let segments: string[];
+  if (withoutFragment.startsWith("/")) {
+    segments = withoutFragment.split("/");
+  } else {
+    const from = site.pages[fromPageIndex];
+    const base = from === undefined ? "/" : pagePath(site, from);
+    segments = `${base}${withoutFragment}`.split("/");
+  }
+
+  const out: string[] = [];
+  for (const segment of segments) {
+    if (segment === "" || segment === ".") continue;
+    if (segment === "..") {
+      out.pop();
+      continue;
+    }
+    out.push(segment);
+  }
+  return out.length === 0 ? "/" : `/${out.join("/")}/`;
 }

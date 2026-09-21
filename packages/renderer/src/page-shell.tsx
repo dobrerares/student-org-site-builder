@@ -266,11 +266,12 @@ export function PageShell(props: {
       : typeof navLogo?.alt === "string" && navLogo.alt.length > 0
         ? navLogo.alt
         : site.org.name;
-  // Only emit the preview-mode click interceptor when there is actually
-  // intra-site navigation to intercept (multi-page nav or language switcher).
-  // Single-page sites in preview don't need the script at all.
-  const needsPreviewNavScript =
-    mode === "preview" && (navPages.length > 1 || switcherEntries.length > 0);
+  // Always emit the preview-mode click interceptor in preview mode. Gating it
+  // on "has multi-page nav or a language switcher" missed every other link on
+  // the page — hero CTAs, CTA banners, footer and rich-text links — so on a
+  // single-page site the first CTA click navigated the preview iframe off the
+  // editor's origin.
+  const needsPreviewNavScript = mode === "preview";
 
   return (
     <html lang={page.lang}>

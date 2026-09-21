@@ -509,7 +509,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       iframe,
       onPreviewEvent(message) {
         if (message.type !== "navigate") return;
-        const nextIndex = resolvePathToPageIndex(snapshot, message.path);
+        const nextIndex = resolvePathToPageIndex(snapshot, message.path, safeActivePageIndex);
         if (nextIndex === null || nextIndex === safeActivePageIndex) return;
         setActivePageIndex(nextIndex);
       },
@@ -1258,7 +1258,10 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
             ref={iframeRef}
             title={t("pane.preview.label")}
             srcDoc={previewSrcdoc}
-            sandbox="allow-scripts allow-same-origin"
+            // `allow-popups` lets the preview-nav interceptor open external
+            // links (a partner site, a social profile) in a new tab instead of
+            // replacing the preview document.
+            sandbox="allow-scripts allow-same-origin allow-popups"
           />
         </div>
       </div>
