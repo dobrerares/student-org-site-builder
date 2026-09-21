@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 // @vitest-environment jsdom
 /**
  * Tests for the "Add Block" dialog.
@@ -12,7 +13,7 @@
  *   `onClose`.
  */
 import { describe, expect, test, afterEach, vi } from "vitest";
-import { render, fireEvent, cleanup } from "@testing-library/preact";
+import { render, fireEvent, cleanup } from "@testing-library/react";
 import { KnownBlockSchemas } from "@sosb/schema";
 
 import { AddBlockDialog } from "../src/add-block-dialog.js";

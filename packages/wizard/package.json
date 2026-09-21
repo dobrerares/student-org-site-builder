@@ -2,7 +2,7 @@
   "name": "@sosb/wizard",
   "version": "0.0.0",
   "private": true,
-  "description": "6-step state machine + Preact UI for guided onboarding.",
+  "description": "6-step state machine + React UI for guided onboarding.",
   "license": "MIT",
   "type": "module",
   "main": "./src/index.tsx",
@@ -12,15 +12,20 @@
     "build": "tsc --build"
   },
   "dependencies": {
+    "@sosb/i18n": "workspace:*",
     "@sosb/schema": "workspace:*",
     "@sosb/themes": "workspace:*",
+    "@sosb/ui": "workspace:*",
     "@sosb/vfs": "workspace:*",
-    "@sosb/i18n": "workspace:*",
-    "preact": "^10.29.1"
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
   },
   "devDependencies": {
-    "@testing-library/preact": "^3.2.4",
+    "@testing-library/dom": "10.4.1",
+    "@testing-library/react": "16.3.3",
     "@types/jsdom": "^21.1.7",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
     "jsdom": "^25.0.1"
   }
 }

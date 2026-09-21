@@ -1,7 +1,9 @@
+/** @jsxImportSource react */
 // @vitest-environment jsdom
 import { afterEach, describe, expect, test } from "vitest";
-import { render } from "preact";
-import { act } from "preact/test-utils";
+import type { ReactNode } from "react";
+import { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
 import type { Site } from "@sosb/schema";
 import { loadAutosave, saveAutosave } from "@sosb/editor-state";
 import { MemoryDriver } from "@sosb/vfs/memory";
@@ -14,19 +16,29 @@ const blankSite = minimal as unknown as Site;
 
 describe("WelcomeShell", () => {
   let host: HTMLDivElement | null = null;
+  let root: Root | null = null;
 
   afterEach(() => {
+    if (root !== null) {
+      act(() => {
+        root!.unmount();
+      });
+      root = null;
+    }
     if (host !== null) {
-      render(null, host);
       host.remove();
       host = null;
     }
   });
 
-  function mount(node: Parameters<typeof render>[0]): HTMLElement {
+  function mount(node: ReactNode): HTMLElement {
     host = document.createElement("div");
     document.body.appendChild(host);
-    render(node, host);
+    root = createRoot(host);
+    const created = root;
+    act(() => {
+      created.render(node);
+    });
     return host;
   }
 

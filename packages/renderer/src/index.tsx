@@ -1,3 +1,4 @@
+/** @jsxImportSource preact */
 /**
  * `@sosb/renderer` — pure function `(siteData, themeId) -> HTML`.
  *

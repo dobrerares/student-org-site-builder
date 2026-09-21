@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * Step 3 — Sections. Pick mandatory blocks for the home page; the user
  * can skip optional blocks and add them later in the editor.
@@ -6,9 +7,10 @@
  * already auto-created on a new site; this step lets the user opt out
  * of any they don't want, or trim the default set.
  */
-import type { JSX } from "preact";
+import type { JSX } from "react";
 
 import type { SectionsData } from "../state-machine.js";
+import { Input } from "@sosb/ui";
 
 export interface SectionsStepProps {
   readonly data: SectionsData;
@@ -50,7 +52,7 @@ export function SectionsStep(props: SectionsStepProps): JSX.Element {
         {MANDATORY_BLOCKS.map((block) => (
           <li key={block.id}>
             <label>
-              <input
+              <Input
                 type="checkbox"
                 data-field={`sections.${block.id}`}
                 checked={selected.includes(block.id)}

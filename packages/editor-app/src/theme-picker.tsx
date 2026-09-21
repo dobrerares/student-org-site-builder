@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * Theme picker — the canonical structural form override that replaces
  * what would otherwise be a raw `<input>` for `theme.id` (ADR 0043).
@@ -24,9 +25,10 @@
  * `<div role="radiogroup">` is kept for layout + a labelled wrapper
  * (the `aria-label="Theme"` gives assistive tech a group label).
  */
-import type { JSX } from "preact";
+import type { JSX } from "react";
 
 import { buildThemeCatalog } from "./theme-catalog.js";
+import { Input } from "@sosb/ui";
 
 export interface ThemePickerProps {
   readonly value: string;
@@ -60,7 +62,7 @@ export function ThemePicker(props: ThemePickerProps): JSX.Element {
               data-theme-id={entry.id}
               data-active={isActive ? "true" : "false"}
             >
-              <input
+              <Input
                 type="radio"
                 name={RADIO_GROUP_NAME}
                 value={entry.id}

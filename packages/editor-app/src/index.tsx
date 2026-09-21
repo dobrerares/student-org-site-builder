@@ -1,5 +1,6 @@
+/** @jsxImportSource react */
 /**
- * `@sosb/editor-app` — Preact editor shell.
+ * `@sosb/editor-app` — React editor shell.
  *
  * Tracking issues: #7, #36. ADR 0005 records the editor-shell design.
  * Validation surfaces: #25. ADR 0008 records the design.
@@ -27,7 +28,7 @@
  *   that build alternative panels can reuse the navigation behaviour.
  * - `<LocaleToggle />` — the editor-settings locale switcher. Reads / writes
  *   the active locale on the surrounding translator context.
- * - `useTranslator()` — Preact hook the editor and downstream block forms
+ * - `useTranslator()` — React hook the editor and downstream block forms
  *   use to translate user-visible strings.
  * - `<I18nProvider value={translator}>` — the context provider; useful when
  *   composing the editor inside a larger host (browser shell, Electron

@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 // @vitest-environment jsdom
 /**
  * Integration tests covering EditorApp's full block-library-picker +
@@ -8,7 +9,7 @@
  * redo, and verify the keyboard shortcut paths (Ctrl+Z, Ctrl+Shift+Z).
  */
 import { describe, expect, test, beforeEach, afterEach } from "vitest";
-import { render, fireEvent, cleanup } from "@testing-library/preact";
+import { render, fireEvent, cleanup } from "@testing-library/react";
 import type { Site } from "@sosb/schema";
 
 import minimal from "./fixtures/minimal-site.json" with { type: "json" };

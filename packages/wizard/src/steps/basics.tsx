@@ -1,12 +1,14 @@
+/** @jsxImportSource react */
 /**
  * Step 1 — Basics. Org name (required), tagline, founded year.
  *
  * The only required field is `name`; the state machine refuses to
  * advance past 'basics' until it is set.
  */
-import type { JSX } from "preact";
+import type { JSX } from "react";
 
 import type { BasicsData } from "../state-machine.js";
+import { Input } from "@sosb/ui";
 
 export interface BasicsStepProps {
   readonly data: BasicsData;
@@ -24,7 +26,7 @@ export function BasicsStep(props: BasicsStepProps): JSX.Element {
 
       <label>
         <span>Organization name *</span>
-        <input
+        <Input
           type="text"
           data-field="basics.name"
           value={props.data.name ?? ""}
@@ -35,7 +37,7 @@ export function BasicsStep(props: BasicsStepProps): JSX.Element {
 
       <label>
         <span>Tagline (optional)</span>
-        <input
+        <Input
           type="text"
           data-field="basics.tagline"
           value={props.data.tagline ?? ""}
@@ -49,7 +51,7 @@ export function BasicsStep(props: BasicsStepProps): JSX.Element {
 
       <label>
         <span>Founded year (optional)</span>
-        <input
+        <Input
           type="number"
           data-field="basics.foundedYear"
           value={props.data.foundedYear ?? ""}

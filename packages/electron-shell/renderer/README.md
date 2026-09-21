@@ -25,6 +25,24 @@ In dev, the main process loads `http://localhost:5173/` instead — the
 vite dev server for `@sosb/editor-app`. Override with the
 `SOSB_DEV_SERVER_URL` env var.
 
+## Builder styles
+
+The editor is React (ADR 0049) and its shared controls come from
+`@sosb/ui`, whose Tailwind-compiled stylesheet is a build artifact
+(`packages/ui/src/styles/builder.generated.css`, produced by
+`pnpm --filter @sosb/ui run build:css`). The renderer bundle gets it one of
+two ways:
+
+- `import "@sosb/ui/styles.css"` from the renderer entry, which the bundler
+  turns into same-origin CSS next to `renderer.js`; or
+- `import { injectBuilderCss } from "@sosb/ui/css"` for a JS-only bundle —
+  the same idiom `editor-app-css.ts` already uses.
+
+Both are covered by the CSP in `index.html`
+(`style-src 'self' 'unsafe-inline'`), which `test/renderer-csp.test.ts`
+pins. React needs no `unsafe-eval`, so the policy did not have to be
+relaxed for the migration. Nothing is fetched from a network origin.
+
 ## What's NOT here
 
 - A bundled `renderer.js` — building the editor-app for the Electron

@@ -8,7 +8,7 @@
  * iterate steps and look up their titles without hard-coding the key
  * strings.
  *
- * The full Preact wizard UI (state machine + per-step forms) lands in #33;
+ * The full React wizard UI (state machine + per-step forms) lands in #33;
  * this module is the i18n contract that #33 consumes.
  */
 

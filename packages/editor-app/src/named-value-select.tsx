@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * NamedValueSelect — generic structural form override for tri-state
  * named-value slots (ADR 0043). Two consumers in ThemeForm:
@@ -30,8 +31,11 @@
  * instances of this component (density + radius) can target each one
  * unambiguously via `[data-name-key="density"]`.
  */
-import type { JSX } from "preact";
-import { useId } from "preact/hooks";
+import type { JSX } from "react";
+import { useId } from "react";
+import type * as React from "react";
+import { NativeSelect } from "@sosb/ui";
+import { FieldHint } from "./field-hint.js";
 
 export interface NamedValueOption {
   readonly value: string;
@@ -57,7 +61,7 @@ export function NamedValueSelect(props: NamedValueSelectProps): JSX.Element {
   const trimmed = props.value ?? "";
   const isCustom = trimmed !== "" && !props.options.some((o) => o.value === trimmed);
 
-  const handleChange = (event: JSX.TargetedEvent<HTMLSelectElement>): void => {
+  const handleChange = (event: React.FormEvent<HTMLSelectElement>): void => {
     const next = event.currentTarget.value;
     props.onChange(next === "" ? undefined : next);
   };
@@ -65,12 +69,12 @@ export function NamedValueSelect(props: NamedValueSelectProps): JSX.Element {
   return (
     <div data-testid="named-value-select" data-name-key={props.nameKey ?? ""} data-picker-field>
       {props.label !== undefined ? (
-        <label data-picker-field-label for={selectId}>
+        <label data-picker-field-label htmlFor={selectId}>
           {props.label}
         </label>
       ) : null}
-      {props.hint !== undefined ? <p class="field-hint">{props.hint}</p> : null}
-      <select
+      <FieldHint hint={props.hint} />
+      <NativeSelect
         id={selectId}
         value={trimmed}
         onChange={handleChange}
@@ -87,7 +91,7 @@ export function NamedValueSelect(props: NamedValueSelectProps): JSX.Element {
             Custom: {trimmed}
           </option>
         )}
-      </select>
+      </NativeSelect>
     </div>
   );
 }

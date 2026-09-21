@@ -1,6 +1,7 @@
+/** @jsxImportSource react */
 // @vitest-environment jsdom
 import { describe, expect, test, vi, afterEach } from "vitest";
-import { render, cleanup, fireEvent } from "@testing-library/preact";
+import { render, cleanup, fireEvent } from "@testing-library/react";
 import { UpdateBanner, type UpdateBridge } from "../src/update-banner.js";
 
 /**

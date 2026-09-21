@@ -1,18 +1,20 @@
+/** @jsxImportSource react */
 /**
  * Inline SVG icons for the editor chrome.
  *
- * Kept as tiny Preact components (no icon-library dependency) so the
+ * Kept as tiny React components (no icon-library dependency) so the
  * archival single-file build stays lean. Every icon is decorative
  * (`aria-hidden`) — the surrounding control always carries the accessible
  * name via visible text, `aria-label`, or `title`.
  */
-import type { JSX } from "preact";
+import type { JSX } from "react";
+import type * as React from "react";
 
 interface IconProps {
   readonly size?: number;
 }
 
-function base(size: number | undefined): JSX.SVGAttributes<SVGSVGElement> {
+function base(size: number | undefined): React.SVGProps<SVGSVGElement> {
   const s = size ?? 16;
   return {
     width: s,
@@ -20,12 +22,12 @@ function base(size: number | undefined): JSX.SVGAttributes<SVGSVGElement> {
     viewBox: "0 0 24 24",
     fill: "none",
     stroke: "currentColor",
-    "stroke-width": "2",
-    "stroke-linecap": "round",
-    "stroke-linejoin": "round",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
     "aria-hidden": "true",
     focusable: "false",
-    class: "icon",
+    className: "icon",
   };
 }
 

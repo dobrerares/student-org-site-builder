@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * Block list editor — sortable list of a page's blocks.
  *
@@ -27,12 +28,14 @@
  * handle can drop anywhere on the destination row. The drag payload
  * carries the source index so the drop handler knows what moved.
  */
-import type { JSX } from "preact";
-import { useState } from "preact/hooks";
+import type { JSX } from "react";
+import { useState } from "react";
 import type { Site } from "@sosb/schema";
 
 import { buildBlockCatalog, type BlockCatalogEntry } from "./block-catalog.js";
 import { IconArrowDown, IconArrowUp, IconGrip, IconPlus, IconTrash } from "./icons.js";
+import type * as React from "react";
+import { Button } from "@sosb/ui";
 
 const DRAG_MIME = "application/x-sosb-block-index";
 
@@ -75,7 +78,7 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
               : "Click a section to edit it."}
           </p>
         </div>
-        <button
+        <Button
           type="button"
           data-testid="block-add"
           data-variant="primary"
@@ -83,7 +86,7 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
         >
           <IconPlus size={16} />
           <span>Add section</span>
-        </button>
+        </Button>
       </header>
 
       {blocks.length === 0 ? (
@@ -92,10 +95,10 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
             <strong>This page is empty.</strong> Add a section to start building it — a page header
             is a good first pick.
           </p>
-          <button type="button" data-variant="primary" onClick={props.onAddBlock}>
+          <Button type="button" data-variant="primary" onClick={props.onAddBlock}>
             <IconPlus size={16} />
             <span>Add your first section</span>
-          </button>
+          </Button>
         </div>
       ) : null}
 
@@ -114,7 +117,7 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
               data-block-index={index}
               data-block-type={block.type}
               data-drop-target={dropIndex === index}
-              onDragOver={(event: JSX.TargetedDragEvent<HTMLLIElement>): void => {
+              onDragOver={(event: React.DragEvent<HTMLLIElement>): void => {
                 // We allow dropping if the dataTransfer carries our payload.
                 // Browsers expose `types` (a `DOMStringList`); some test
                 // mocks don't, so we additionally tolerate missing `types`.
@@ -148,7 +151,7 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
                   if (dropIndex !== index) setDropIndex(index);
                 }
               }}
-              onDrop={(event: JSX.TargetedDragEvent<HTMLLIElement>): void => {
+              onDrop={(event: React.DragEvent<HTMLLIElement>): void => {
                 setDropIndex(null);
                 if (event.dataTransfer === null) return;
                 const raw = event.dataTransfer.getData(DRAG_MIME);
@@ -166,7 +169,7 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
                 draggable={true}
                 role="button"
                 tabIndex={0}
-                onDragStart={(event: JSX.TargetedDragEvent<HTMLSpanElement>): void => {
+                onDragStart={(event: React.DragEvent<HTMLSpanElement>): void => {
                   if (event.dataTransfer === null) return;
                   event.dataTransfer.effectAllowed = "move";
                   event.dataTransfer.setData(DRAG_MIME, String(index));
@@ -181,7 +184,7 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
               </span>
 
               {props.onSelect !== undefined ? (
-                <button
+                <Button
                   type="button"
                   data-testid="block-row-select"
                   data-action="select"
@@ -193,7 +196,7 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
                     {entry.label}
                   </span>
                   <span data-testid="block-row-title">{blockTitle}</span>
-                </button>
+                </Button>
               ) : (
                 <span data-block-row-text>
                   <span data-testid="block-row-label" data-eyebrow={showLabelAsEyebrow}>
@@ -204,7 +207,7 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
               )}
 
               <span data-row-actions role="group" aria-label={`Actions for ${entry.label}`}>
-                <button
+                <Button
                   type="button"
                   data-testid="block-move-up"
                   data-icon-button
@@ -214,8 +217,8 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
                   onClick={(): void => props.onMove(index, Math.max(0, index - 1))}
                 >
                   <IconArrowUp size={16} />
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   data-testid="block-move-down"
                   data-icon-button
@@ -225,8 +228,8 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
                   onClick={(): void => props.onMove(index, Math.min(blocks.length - 1, index + 1))}
                 >
                   <IconArrowDown size={16} />
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   data-testid="block-remove"
                   data-icon-button
@@ -236,7 +239,7 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
                   onClick={(): void => props.onRemove(block.id)}
                 >
                   <IconTrash size={16} />
-                </button>
+                </Button>
               </span>
             </li>
           );

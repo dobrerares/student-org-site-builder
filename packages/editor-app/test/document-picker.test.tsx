@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 // @vitest-environment jsdom
 /**
  * Tests for the DocumentPicker component — the upload-only document-
@@ -13,7 +14,8 @@
  * pipeline and not human-edited.
  */
 import { describe, expect, test, vi, afterEach } from "vitest";
-import { render, cleanup, fireEvent } from "@testing-library/preact";
+import { render, cleanup, fireEvent } from "@testing-library/react";
+import { act } from "react";
 
 import { DocumentPicker, type DocumentAssetRefLike } from "../src/document-picker.js";
 
@@ -167,8 +169,12 @@ describe("DocumentPicker", () => {
     Object.defineProperty(fileInput, "files", { value: [fakeFile], writable: false });
     fireEvent.change(fileInput);
 
-    await Promise.resolve();
-    await Promise.resolve();
+    // The rejection resolves on a later microtask and the resulting state
+    // update is scheduled by React; `act` flushes both.
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
 
     const errorBanner = container.querySelector('[data-testid="document-picker-error"]');
     expect(errorBanner).not.toBeNull();

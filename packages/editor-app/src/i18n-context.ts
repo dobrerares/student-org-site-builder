@@ -1,8 +1,8 @@
 /**
- * Preact context for the editor's translator.
+ * React context for the editor's translator.
  *
  * The translator itself lives in `@sosb/i18n` and is framework-agnostic. The
- * editor app exposes it through a Preact context so deeply nested form
+ * editor app exposes it through a React context so deeply nested form
  * controls (block forms in #9-#22 etc.) can `useTranslator()` without
  * threading the prop through every layer.
  *
@@ -10,8 +10,8 @@
  * `translator.subscribe(...)` flips a render-trigger state, since the
  * translator's identity is stable across locale changes.
  */
-import { createContext } from "preact";
-import { useCallback, useContext, useEffect, useState } from "preact/hooks";
+import { createContext } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import {
   createTranslator,
   enCatalog,

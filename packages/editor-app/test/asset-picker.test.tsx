@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 // @vitest-environment jsdom
 /**
  * Tests for the AssetPicker component — the upload-only image-asset
@@ -12,7 +13,8 @@
  * upload pipeline and not human-edited.
  */
 import { describe, expect, test, vi, afterEach } from "vitest";
-import { render, cleanup, fireEvent } from "@testing-library/preact";
+import { render, cleanup, fireEvent } from "@testing-library/react";
+import { act } from "react";
 import type { AssetRefLike } from "@sosb/schema";
 
 import { AssetPicker } from "../src/asset-picker.js";
@@ -153,8 +155,12 @@ describe("AssetPicker", () => {
     Object.defineProperty(fileInput, "files", { value: [fakeFile], writable: false });
     fireEvent.change(fileInput);
 
-    await Promise.resolve();
-    await Promise.resolve();
+    // The rejection resolves on a later microtask and the resulting state
+    // update is scheduled by React; `act` flushes both.
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
 
     const errorBanner = container.querySelector('[data-testid="asset-picker-error"]');
     expect(errorBanner).not.toBeNull();

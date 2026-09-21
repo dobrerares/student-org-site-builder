@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * Site Health panel — renders a `ValidationResult` as three grouped lists
  * (Errors / Warnings / Info). Each issue is a real `<button>` so it is
@@ -21,7 +22,7 @@
  *           >
  *             <span data-issue-message>...</span>
  *             <span data-issue-path>pages.1.slug</span>
- *           </button>
+ *           </Button>
  *         </li>
  *       </ul>
  *     </div>
@@ -33,10 +34,11 @@
  * three-tier structure stays stable even when one tier is empty (this is
  * what the "renders three distinct severity groups" test asserts).
  */
-import type { JSX } from "preact";
+import type { JSX } from "react";
 import type { ValidationIssue, ValidationResult } from "@sosb/schema";
 import { issuePathLabel } from "./field-labels.js";
 import { pathToDotted } from "./issue-navigate.js";
+import { Button } from "@sosb/ui";
 
 export interface SiteHealthPanelProps {
   readonly result: ValidationResult;
@@ -102,7 +104,7 @@ function IssueRow({ severity, issue, onJump }: IssueRowProps): JSX.Element {
   const dotted = pathToDotted(issue.path);
   const location = issuePathLabel(issue.path);
   return (
-    <button
+    <Button
       type="button"
       data-issue
       data-severity={severity}
@@ -112,6 +114,6 @@ function IssueRow({ severity, issue, onJump }: IssueRowProps): JSX.Element {
     >
       <span data-issue-message>{issue.message}</span>
       <span data-issue-path> {location}</span>
-    </button>
+    </Button>
   );
 }

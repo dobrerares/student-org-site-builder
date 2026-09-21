@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * DocumentPicker — upload-only document-asset widget (ADR 0043, ADR 0044).
  *
@@ -33,9 +34,11 @@
  * ZIP, TXT, CSV, ODT, ODS); the asset pipeline does the authoritative
  * MIME check by inspecting magic bytes, so a permissive picker is OK.
  */
-import type { JSX } from "preact";
-import { useRef, useState } from "preact/hooks";
+import type { JSX } from "react";
+import { useRef, useState } from "react";
 import type { DocumentAssetRef } from "@sosb/schema";
+import type * as React from "react";
+import { Button, Input } from "@sosb/ui";
 
 /**
  * Loose runtime view over `DocumentAssetRef`. Matches the schema's
@@ -133,7 +136,7 @@ export function DocumentPicker(props: DocumentPickerProps): JSX.Element {
     fileInputRef.current?.click();
   };
 
-  const onFileChosen = async (event: JSX.TargetedEvent<HTMLInputElement>): Promise<void> => {
+  const onFileChosen = async (event: React.FormEvent<HTMLInputElement>): Promise<void> => {
     const input = event.currentTarget;
     const file = input.files?.[0];
     if (file === undefined) return;
@@ -197,27 +200,27 @@ export function DocumentPicker(props: DocumentPickerProps): JSX.Element {
           <span data-testid="document-picker-filename">{filenameFor(props.value)}</span>
           <span data-testid="document-picker-type">{typeLabelFor(props.value!.mime)}</span>
           <span data-testid="document-picker-size">{formatByteSize(props.value!.byteSize)}</span>
-          <button
+          <Button
             type="button"
             data-testid="document-picker-replace"
             disabled={isUploading}
             onClick={triggerFilePicker}
           >
             Replace document
-          </button>
+          </Button>
         </div>
       ) : (
-        <button
+        <Button
           type="button"
           data-testid="document-picker-add"
           disabled={isUploading}
           onClick={triggerFilePicker}
         >
           Add document
-        </button>
+        </Button>
       )}
 
-      <input
+      <Input
         ref={fileInputRef}
         type="file"
         data-testid="document-picker-file-input"

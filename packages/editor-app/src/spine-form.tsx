@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * Site-spine form: walks the field tree from `fieldsFromSchema(SiteSchema)`
  * and emits one `<input>` / `<select>` per leaf field. The "site spine" is
@@ -20,8 +21,8 @@
  *                         `defaultLanguage`
  * Both exist so a non-technical author never has to type a language code.
  */
-import type { JSX } from "preact";
-import { useMemo, useState } from "preact/hooks";
+import type { JSX } from "react";
+import { useMemo, useState } from "react";
 import type { AssetRefLike, DocumentAssetRef, Site } from "@sosb/schema";
 import { nativeLanguageName } from "@sosb/renderer";
 
@@ -38,6 +39,8 @@ import { partitionByTier, tierSummaryLabels } from "./field-tiers.js";
 import { MoreOptions } from "./more-options.js";
 import { rebaseElement } from "./rebase-element.js";
 import { isLongTextField } from "./block-form.js";
+import type * as React from "react";
+import { Button, Input, NativeSelect, Textarea } from "@sosb/ui";
 
 export interface SpineFormProps {
   readonly fields: FieldNode[];
@@ -197,14 +200,14 @@ function FieldRenderer({
                 >
                   <FieldRenderer node={childNode} {...childProps} />
                   <div
-                    class="block-form__item-controls"
+                    className="block-form__item-controls"
                     role="group"
                     aria-label={`${label} item ${idx + 1} actions`}
                   >
-                    <span class="block-form__item-index" aria-hidden="true">
+                    <span className="block-form__item-index" aria-hidden="true">
                       {idx + 1} of {items.length}
                     </span>
-                    <button
+                    <Button
                       type="button"
                       data-action="move-up"
                       data-icon-button
@@ -214,8 +217,8 @@ function FieldRenderer({
                       onClick={() => move(idx, idx - 1)}
                     >
                       <IconArrowUp size={15} />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
                       data-action="move-down"
                       data-icon-button
@@ -225,8 +228,8 @@ function FieldRenderer({
                       onClick={() => move(idx, idx + 1)}
                     >
                       <IconArrowDown size={15} />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
                       data-action="remove"
                       data-tone="danger"
@@ -236,7 +239,7 @@ function FieldRenderer({
                     >
                       <IconTrash size={15} />
                       <span>Remove</span>
-                    </button>
+                    </Button>
                   </div>
                 </li>
               );
@@ -247,10 +250,10 @@ function FieldRenderer({
               {t("form.array.empty")}
             </p>
           ) : null}
-          <button type="button" data-action="add" data-variant="secondary" onClick={add}>
+          <Button type="button" data-action="add" data-variant="secondary" onClick={add}>
             <IconPlus size={15} />
             <span>Add {singular(label)}</span>
-          </button>
+          </Button>
         </fieldset>
       );
     }
@@ -263,11 +266,11 @@ function FieldRenderer({
         <label data-field-label={dottedPath} data-multiline={multiline}>
           <span>{label}</span>
           {multiline ? (
-            <textarea
+            <Textarea
               data-field={dottedPath}
               rows={3}
               value={typeof value === "string" ? value : ""}
-              onInput={(event: JSX.TargetedEvent<HTMLTextAreaElement>) => {
+              onInput={(event: React.FormEvent<HTMLTextAreaElement>) => {
                 const next = event.currentTarget.value;
                 for (const patch of expandAltSyncPatches(site, node.path, next)) {
                   onPatch(patch.path, patch.value);
@@ -275,12 +278,12 @@ function FieldRenderer({
               }}
             />
           ) : (
-            <input
+            <Input
               type={inputTypeFor(node.name)}
               data-field={dottedPath}
               list={listId}
               value={typeof value === "string" ? value : ""}
-              onInput={(event: JSX.TargetedEvent<HTMLInputElement>) => {
+              onInput={(event: React.FormEvent<HTMLInputElement>) => {
                 const next = event.currentTarget.value;
                 for (const patch of expandAltSyncPatches(site, node.path, next)) {
                   onPatch(patch.path, patch.value);
@@ -304,11 +307,11 @@ function FieldRenderer({
       return (
         <label data-field-label={dottedPath}>
           <span>{label}</span>
-          <input
+          <Input
             type="number"
             data-field={dottedPath}
             value={typeof value === "number" ? String(value) : ""}
-            onInput={(event: JSX.TargetedEvent<HTMLInputElement>) => {
+            onInput={(event: React.FormEvent<HTMLInputElement>) => {
               const raw = event.currentTarget.value;
               if (raw === "") {
                 onPatch(node.path, undefined);
@@ -325,11 +328,11 @@ function FieldRenderer({
     case "boolean":
       return (
         <label data-field-label={dottedPath}>
-          <input
+          <Input
             type="checkbox"
             data-field={dottedPath}
             checked={value === true}
-            onChange={(event: JSX.TargetedEvent<HTMLInputElement>) => {
+            onChange={(event: React.FormEvent<HTMLInputElement>) => {
               onPatch(node.path, event.currentTarget.checked);
             }}
           />
@@ -342,10 +345,10 @@ function FieldRenderer({
       return (
         <label data-field-label={dottedPath}>
           <span>{label}</span>
-          <select
+          <NativeSelect
             data-field={dottedPath}
             value={typeof value === "string" ? value : ""}
-            onChange={(event: JSX.TargetedEvent<HTMLSelectElement>) => {
+            onChange={(event: React.FormEvent<HTMLSelectElement>) => {
               onPatch(node.path, event.currentTarget.value);
             }}
           >
@@ -355,7 +358,7 @@ function FieldRenderer({
                 {optionLabel(option)}
               </option>
             ))}
-          </select>
+          </NativeSelect>
           <FieldHint hint={node.hint} />
         </label>
       );
@@ -411,10 +414,10 @@ function FieldRenderer({
         return (
           <label data-field-label={dottedPath}>
             <span>{label}</span>
-            <select
+            <NativeSelect
               data-field={dottedPath}
               value={current}
-              onChange={(event: JSX.TargetedEvent<HTMLSelectElement>) => {
+              onChange={(event: React.FormEvent<HTMLSelectElement>) => {
                 onPatch(node.path, event.currentTarget.value);
               }}
             >
@@ -423,7 +426,7 @@ function FieldRenderer({
                   {languageOptionLabel(code)}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
             <FieldHint
               hint={node.hint ?? "Visitors see this language first. It needs at least one page."}
             />
@@ -460,7 +463,7 @@ function FieldRenderer({
                 const locked = checked && (isDefault || hasPages);
                 return (
                   <label key={code} data-choice data-checked={checked}>
-                    <input
+                    <Input
                       type="checkbox"
                       data-field={`${dottedPath}.${code}`}
                       checked={checked}
@@ -472,7 +475,7 @@ function FieldRenderer({
                             : "Delete this language's pages first."
                           : undefined
                       }
-                      onChange={(event: JSX.TargetedEvent<HTMLInputElement>) => {
+                      onChange={(event: React.FormEvent<HTMLInputElement>) => {
                         toggle(code, event.currentTarget.checked);
                       }}
                     />
@@ -541,7 +544,7 @@ function emptyValueFor(node: FieldNode): unknown {
 
 /**
  * Apply a patch produced by the spine form. Pure helper; exported so unit
- * tests can drive it without a Preact render.
+ * tests can drive it without a React render.
  */
 export function applyPatch(site: Site, path: readonly (string | number)[], value: unknown): Site {
   const draft = structuredClone(site) as unknown as Record<string, unknown>;

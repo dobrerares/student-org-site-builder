@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * Step 4 — Content. Per-section initial content, or skip entirely.
  *
@@ -6,9 +7,10 @@
  * and let `buildSiteFromWizard` derive defaults from `basics.name` and
  * `basics.tagline`.
  */
-import type { JSX } from "preact";
+import type { JSX } from "react";
 
 import type { ContentData } from "../state-machine.js";
+import { Input } from "@sosb/ui";
 
 export interface ContentStepProps {
   readonly data: ContentData;
@@ -24,7 +26,7 @@ export function ContentStep(props: ContentStepProps): JSX.Element {
       <p>Write the headline for your home page now, or skip and do it in the editor.</p>
 
       <label>
-        <input
+        <Input
           type="checkbox"
           data-field="content.skip"
           checked={skipped}
@@ -41,7 +43,7 @@ export function ContentStep(props: ContentStepProps): JSX.Element {
         <>
           <label>
             <span>Main headline</span>
-            <input
+            <Input
               type="text"
               data-field="content.heroTitle"
               value={props.data.heroTitle ?? ""}
@@ -55,7 +57,7 @@ export function ContentStep(props: ContentStepProps): JSX.Element {
 
           <label>
             <span>Supporting sentence</span>
-            <input
+            <Input
               type="text"
               data-field="content.heroSubtitle"
               value={props.data.heroSubtitle ?? ""}

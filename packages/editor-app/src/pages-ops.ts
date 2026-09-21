@@ -1,7 +1,7 @@
 /**
  * Pure helpers for the editor's pages-list mutations.
  *
- * Kept framework-free so unit tests can drive them without rendering Preact,
+ * Kept framework-free so unit tests can drive them without rendering React,
  * and so the same operations are reusable from a future block-list or
  * keyboard-shortcut surface.
  */

@@ -1,5 +1,6 @@
+/** @jsxImportSource react */
 /**
- * `<Wizard />` — Preact UI shell wrapping the state machine.
+ * `<Wizard />` — React UI shell wrapping the state machine.
  *
  * Layout responsibilities:
  *   - Top: a step indicator showing all six steps with the active one
@@ -19,8 +20,8 @@
  * Tracking issue: #33.
  */
 
-import type { JSX } from "preact";
-import { useState, useCallback } from "preact/hooks";
+import type { JSX } from "react";
+import { useState, useCallback } from "react";
 import type { Site } from "@sosb/schema";
 
 import {
@@ -42,6 +43,7 @@ import { SectionsStep } from "./steps/sections.js";
 import { ContentStep } from "./steps/content.js";
 import { LanguagesStep } from "./steps/languages.js";
 import { ConfirmStep } from "./steps/confirm.js";
+import { Button } from "@sosb/ui";
 
 export interface WizardProps {
   /** Resume from a persisted state. Optional — defaults to a fresh wizard. */
@@ -156,27 +158,27 @@ export function Wizard(props: WizardProps): JSX.Element {
       </div>
 
       <div data-testid="wizard-nav">
-        <button type="button" data-action="cancel" onClick={handleCancel}>
+        <Button type="button" data-action="cancel" onClick={handleCancel}>
           Cancel
-        </button>
+        </Button>
         <span data-wizard-nav-spacer aria-hidden="true" />
-        <button type="button" data-action="back" disabled={isFirstStep} onClick={handleBack}>
+        <Button type="button" data-action="back" disabled={isFirstStep} onClick={handleBack}>
           Back
-        </button>
+        </Button>
         {canSkip && !isFinalStep && (
-          <button type="button" data-action="skip" onClick={handleSkip}>
+          <Button type="button" data-action="skip" onClick={handleSkip}>
             Skip for now
-          </button>
+          </Button>
         )}
         {!isFinalStep && (
-          <button type="button" data-action="next" disabled={!canAdvance} onClick={handleNext}>
+          <Button type="button" data-action="next" disabled={!canAdvance} onClick={handleNext}>
             Next
-          </button>
+          </Button>
         )}
         {isFinalStep && (
-          <button type="button" data-action="create" disabled={!canAdvance} onClick={handleCreate}>
+          <Button type="button" data-action="create" disabled={!canAdvance} onClick={handleCreate}>
             Create site
-          </button>
+          </Button>
         )}
       </div>
     </div>
@@ -196,7 +198,7 @@ function StepIndicator(props: StepIndicatorProps): JSX.Element {
         const status = idx < activeIndex ? "done" : idx === activeIndex ? "active" : "todo";
         return (
           <li key={step} data-step-status={status}>
-            <button
+            <Button
               type="button"
               data-wizard-step-indicator={step}
               data-active={props.state.step === step ? "true" : "false"}
@@ -207,7 +209,7 @@ function StepIndicator(props: StepIndicatorProps): JSX.Element {
                 {status === "done" ? "✓" : idx + 1}
               </span>
               <span data-step-label>{STEP_LABELS[step]}</span>
-            </button>
+            </Button>
           </li>
         );
       })}

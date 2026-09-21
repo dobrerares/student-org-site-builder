@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * Block form generator.
  *
@@ -41,8 +42,8 @@
  *    `<DocumentPicker>` there instead of a hash/path/mime/byteSize
  *    fieldset (the failure mode ADR 0044 prohibits).
  */
-import type { JSX } from "preact";
-import { useState } from "preact/hooks";
+import type { JSX } from "react";
+import { useState } from "react";
 import type { ZodType } from "zod";
 import type { AssetRefLike, DocumentAssetRef } from "@sosb/schema";
 
@@ -59,6 +60,8 @@ import { fieldLabel, optionLabel } from "./field-labels.js";
 import { MEDIA_PICKER_RENDERERS } from "./media-picker-renderers.js";
 import { rebaseElement } from "./rebase-element.js";
 import { IconArrowDown, IconArrowUp, IconPlus, IconTrash } from "./icons.js";
+import type * as React from "react";
+import { Button, Input, NativeSelect, Textarea } from "@sosb/ui";
 
 /**
  * Schema-identity registry consumed by the form-generator walk.
@@ -310,14 +313,14 @@ function FieldRenderer({
                     showAdvanced={showAdvanced}
                   />
                   <div
-                    class="block-form__item-controls"
+                    className="block-form__item-controls"
                     role="group"
                     aria-label={`${label} item ${idx + 1} actions`}
                   >
-                    <span class="block-form__item-index" aria-hidden="true">
+                    <span className="block-form__item-index" aria-hidden="true">
                       {idx + 1} of {items.length}
                     </span>
-                    <button
+                    <Button
                       type="button"
                       data-action="move-up"
                       data-icon-button
@@ -327,8 +330,8 @@ function FieldRenderer({
                       onClick={() => move(idx, idx - 1)}
                     >
                       <IconArrowUp size={15} />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
                       data-action="move-down"
                       data-icon-button
@@ -338,8 +341,8 @@ function FieldRenderer({
                       onClick={() => move(idx, idx + 1)}
                     >
                       <IconArrowDown size={15} />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
                       data-action="remove"
                       data-tone="danger"
@@ -349,17 +352,17 @@ function FieldRenderer({
                     >
                       <IconTrash size={15} />
                       <span>Remove</span>
-                    </button>
+                    </Button>
                   </div>
                 </li>
               );
             })}
           </ol>
           {items.length === 0 ? <p data-array-empty>Nothing here yet.</p> : null}
-          <button type="button" data-action="add" data-variant="secondary" onClick={add}>
+          <Button type="button" data-action="add" data-variant="secondary" onClick={add}>
             <IconPlus size={15} />
             <span>Add item</span>
-          </button>
+          </Button>
         </fieldset>
       );
     }
@@ -370,11 +373,11 @@ function FieldRenderer({
         <label data-field-label={dottedPath} data-multiline={multiline}>
           <span>{label}</span>
           {multiline ? (
-            <textarea
+            <Textarea
               data-field={dottedPath}
               rows={4}
               value={typeof value === "string" ? value : ""}
-              onInput={(event: JSX.TargetedEvent<HTMLTextAreaElement>) => {
+              onInput={(event: React.FormEvent<HTMLTextAreaElement>) => {
                 const next = event.currentTarget.value;
                 for (const patch of expandAltSyncPatches(data, node.path, next)) {
                   onPatch(patch.path, patch.value);
@@ -382,11 +385,11 @@ function FieldRenderer({
               }}
             />
           ) : (
-            <input
+            <Input
               type="text"
               data-field={dottedPath}
               value={typeof value === "string" ? value : ""}
-              onInput={(event: JSX.TargetedEvent<HTMLInputElement>) => {
+              onInput={(event: React.FormEvent<HTMLInputElement>) => {
                 const next = event.currentTarget.value;
                 for (const patch of expandAltSyncPatches(data, node.path, next)) {
                   onPatch(patch.path, patch.value);
@@ -403,11 +406,11 @@ function FieldRenderer({
       return (
         <label data-field-label={dottedPath}>
           <span>{label}</span>
-          <input
+          <Input
             type="number"
             data-field={dottedPath}
             value={typeof value === "number" ? String(value) : ""}
-            onInput={(event: JSX.TargetedEvent<HTMLInputElement>) => {
+            onInput={(event: React.FormEvent<HTMLInputElement>) => {
               const raw = event.currentTarget.value;
               if (raw === "") {
                 onPatch(node.path, undefined);
@@ -423,11 +426,11 @@ function FieldRenderer({
     case "boolean":
       return (
         <label data-field-label={dottedPath}>
-          <input
+          <Input
             type="checkbox"
             data-field={dottedPath}
             checked={value === true}
-            onChange={(event: JSX.TargetedEvent<HTMLInputElement>) => {
+            onChange={(event: React.FormEvent<HTMLInputElement>) => {
               onPatch(node.path, event.currentTarget.checked);
             }}
           />
@@ -439,10 +442,10 @@ function FieldRenderer({
       return (
         <label data-field-label={dottedPath}>
           <span>{label}</span>
-          <select
+          <NativeSelect
             data-field={dottedPath}
             value={typeof value === "string" ? value : ""}
-            onChange={(event: JSX.TargetedEvent<HTMLSelectElement>) => {
+            onChange={(event: React.FormEvent<HTMLSelectElement>) => {
               const raw = event.currentTarget.value;
               onPatch(node.path, raw === "" ? undefined : raw);
             }}
@@ -453,7 +456,7 @@ function FieldRenderer({
                 {optionLabel(option)}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
       );
 
@@ -488,24 +491,24 @@ function FieldRenderer({
             <legend>{label}</legend>
             <label data-field-label={`${dottedPath}.0`}>
               <span>Latitude</span>
-              <input
+              <Input
                 type="number"
                 step="any"
                 data-field={`${dottedPath}.0`}
                 value={lat === undefined ? "" : String(lat)}
-                onInput={(event: JSX.TargetedEvent<HTMLInputElement>) => {
+                onInput={(event: React.FormEvent<HTMLInputElement>) => {
                   patchCoordinate(0, event.currentTarget.value);
                 }}
               />
             </label>
             <label data-field-label={`${dottedPath}.1`}>
               <span>Longitude</span>
-              <input
+              <Input
                 type="number"
                 step="any"
                 data-field={`${dottedPath}.1`}
                 value={lng === undefined ? "" : String(lng)}
-                onInput={(event: JSX.TargetedEvent<HTMLInputElement>) => {
+                onInput={(event: React.FormEvent<HTMLInputElement>) => {
                   patchCoordinate(1, event.currentTarget.value);
                 }}
               />

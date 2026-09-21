@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * AssetPicker — upload-only image-asset widget (ADR 0043, ADR 0044).
  *
@@ -31,9 +32,11 @@
  * `uploader` prop. The prop indirection lets callers (BlockForm via
  * T11) wire the production `uploadAsset` while tests inject a mock.
  */
-import type { JSX } from "preact";
-import { useRef, useState } from "preact/hooks";
+import type { JSX } from "react";
+import { useRef, useState } from "react";
 import type { AssetRefLike } from "@sosb/schema";
+import type * as React from "react";
+import { Button, Input } from "@sosb/ui";
 
 export interface AssetPickerProps {
   readonly value: AssetRefLike | undefined;
@@ -86,7 +89,7 @@ export function AssetPicker(props: AssetPickerProps): JSX.Element {
     fileInputRef.current?.click();
   };
 
-  const onFileChosen = async (event: JSX.TargetedEvent<HTMLInputElement>): Promise<void> => {
+  const onFileChosen = async (event: React.FormEvent<HTMLInputElement>): Promise<void> => {
     const input = event.currentTarget;
     const file = input.files?.[0];
     if (file === undefined) return;
@@ -141,23 +144,23 @@ export function AssetPicker(props: AssetPickerProps): JSX.Element {
             alt={props.value!.alt}
             onError={() => setErrorHash(props.value!.hash)}
           />
-          <button
+          <Button
             type="button"
             data-testid="asset-picker-replace"
             disabled={isUploading}
             onClick={triggerFilePicker}
           >
             Replace image
-          </button>
+          </Button>
           {props.onClear !== undefined ? (
-            <button
+            <Button
               type="button"
               data-testid="asset-picker-remove"
               disabled={isUploading}
               onClick={props.onClear}
             >
               Remove image
-            </button>
+            </Button>
           ) : null}
         </>
       ) : null}
@@ -165,29 +168,29 @@ export function AssetPicker(props: AssetPickerProps): JSX.Element {
       {hasValue && imageErrored ? (
         <div data-testid="asset-picker-missing" role="status">
           <span>Missing image — the asset bytes could not be loaded.</span>
-          <button
+          <Button
             type="button"
             data-testid="asset-picker-reupload"
             disabled={isUploading}
             onClick={triggerFilePicker}
           >
             Re-upload
-          </button>
+          </Button>
         </div>
       ) : null}
 
       {!hasValue ? (
-        <button
+        <Button
           type="button"
           data-testid="asset-picker-add"
           disabled={isUploading}
           onClick={triggerFilePicker}
         >
           Add image
-        </button>
+        </Button>
       ) : null}
 
-      <input
+      <Input
         ref={fileInputRef}
         type="file"
         accept="image/*"

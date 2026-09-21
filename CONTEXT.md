@@ -1,7 +1,7 @@
 # Student Org Site Builder
 
 A no-backend, offline-capable site builder targeting Romanian student
-organisations. Users edit a structured **Site** in a Preact-based editor,
+organisations. Users edit a structured **Site** in a React-based editor,
 preview it live, and export a static folder of HTML/CSS/assets that can be
 hosted anywhere. The editor itself ships as a single archival HTML file.
 
@@ -151,9 +151,18 @@ editor (per ADR 0005), and theme editing surfaces token pickers
 _Avoid_: site config, site settings (use "Site settings" only for the
 user-facing affordance label, not as a synonym for spine).
 
+**Shared builder UI** (`@sosb/ui`):
+The one package holding the builder's shadcn-style React controls (built on
+Base UI primitives) and the Tailwind-compiled **builder stylesheet**. Used
+by the editor, the Wizard and the welcome interface. Builder styling is a
+separate artifact from public-site **Theme** CSS and never appears in
+exported output (ADR 0049).
+_Avoid_: "design system" (too grand), "components package" (ambiguous with
+the renderer's Theme component sets).
+
 **SpineForm**:
 The auto-generated form that walks `SiteSchema` minus the blocks
-carve-out. One Preact component, recursive, emits `<input>` / `<select>`
+carve-out. One React component, recursive, emits `<input>` / `<select>`
 per leaf field. Lives in `@sosb/editor-app`.
 
 **BlockForm**:

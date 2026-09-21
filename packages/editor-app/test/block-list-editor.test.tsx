@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 // @vitest-environment jsdom
 /**
  * Tests for the per-page block list editor.
@@ -13,7 +14,7 @@
  * The list also has an "Add Block" button that opens the picker.
  */
 import { describe, expect, test, vi, afterEach } from "vitest";
-import { render, fireEvent, cleanup } from "@testing-library/preact";
+import { render, fireEvent, cleanup } from "@testing-library/react";
 import type { Site, BlockEnvelope } from "@sosb/schema";
 
 import minimal from "./fixtures/minimal-site.json" with { type: "json" };

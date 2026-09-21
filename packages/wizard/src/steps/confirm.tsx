@@ -1,8 +1,9 @@
+/** @jsxImportSource react */
 /**
  * Step 6 — Confirm. Renders a preview summary of the captured wizard
  * data plus a 'Create site' button (in the parent `<Wizard>` shell).
  */
-import type { JSX } from "preact";
+import type { JSX } from "react";
 import type { Site } from "@sosb/schema";
 import { buildThemeCatalog } from "@sosb/themes";
 import type { WizardState } from "../state-machine.js";

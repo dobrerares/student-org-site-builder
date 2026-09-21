@@ -1,6 +1,6 @@
 # @sosb/editor-app
 
-Preact UI shell for the site builder.
+React UI shell for the site builder.
 
 ## Surface
 
@@ -24,7 +24,7 @@ Preact UI shell for the site builder.
 
 1. `EditorApp` instantiates an `EditorState` from `props.initial`.
 2. The form's `onPatch` calls `EditorState.update(...)`.
-3. A subscriber re-renders the Preact tree on every update.
+3. A subscriber re-renders the React tree on every update.
 4. The same subscriber posts a `siteData` envelope into the iframe via
    `@sosb/preview-bridge`'s `createPreviewHost`.
 5. The iframe's `srcdoc` is the renderer's HTML — same module, no duplicate

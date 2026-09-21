@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * customHTML block form — power-user escape-hatch editor.
  *
@@ -23,8 +24,10 @@
  * block-list UI is still part of the future block-list issue; the marker
  * markup lives here so it travels with the form component.
  */
-import type { JSX } from "preact";
+import type { JSX } from "react";
 import type { CustomHtmlBlock } from "@sosb/schema";
+import type * as React from "react";
+import { Input, Textarea } from "@sosb/ui";
 
 export interface CustomHtmlBlockFormProps {
   readonly block: CustomHtmlBlock;
@@ -63,22 +66,22 @@ export function CustomHtmlBlockForm(props: CustomHtmlBlockFormProps): JSX.Elemen
 
       <label data-field-label="data.html">
         <span>Embed code</span>
-        <textarea
+        <Textarea
           data-field="data.html"
           rows={8}
           value={html}
-          onInput={(event: JSX.TargetedEvent<HTMLTextAreaElement>) => {
+          onInput={(event: React.FormEvent<HTMLTextAreaElement>) => {
             patch({ html: event.currentTarget.value });
           }}
         />
       </label>
 
       <label data-field-label="data.sanitize">
-        <input
+        <Input
           type="checkbox"
           data-field="data.sanitize"
           checked={sanitize}
-          onChange={(event: JSX.TargetedEvent<HTMLInputElement>) => {
+          onChange={(event: React.FormEvent<HTMLInputElement>) => {
             patch({ sanitize: event.currentTarget.checked });
           }}
         />

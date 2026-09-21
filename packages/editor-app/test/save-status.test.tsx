@@ -1,7 +1,8 @@
+/** @jsxImportSource react */
 // @vitest-environment jsdom
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { cleanup, fireEvent, render } from "@testing-library/preact";
-import { act } from "preact/test-utils";
+import { cleanup, fireEvent, render } from "@testing-library/react";
+import { act } from "react";
 import { loadAutosave } from "@sosb/editor-state";
 import { MemoryDriver } from "@sosb/vfs/memory";
 import type { Site } from "@sosb/schema";

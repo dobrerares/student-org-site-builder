@@ -91,7 +91,7 @@ packages/<name>/
 `-- src/index.ts     # entry point
 ```
 
-The 15 v1 packages are:
+The 16 packages are:
 
 #### Deep modules (encapsulated behaviour, narrow interface)
 
@@ -112,11 +112,12 @@ The 15 v1 packages are:
 | ---------------- | --------------------------------------------------------------------------------------- |
 | `editor-state`   | Live document model with undo/redo, block manipulation actions.                         |
 | `preview-bridge` | postMessage protocol between editor and preview iframe.                                 |
-| `editor-app`     | Preact UI composing the deep modules.                                                   |
-| `wizard`         | 6-step state machine + Preact UI for guided onboarding.                                 |
+| `editor-app`     | React UI composing the deep modules.                                                    |
+| `wizard`         | 6-step state machine + React UI for guided onboarding.                                  |
 | `themes`         | Five Preact theme component sets + token defaults.                                      |
 | `electron-shell` | Main process, IPC bridge to Sharp, `electron-updater`, native dialogs, packaging.       |
 | `browser-shell`  | Service worker, single-file archival build, OPFS bootstrap, hosted-deployment artefact. |
+| `ui`             | Shared builder controls (shadcn-style, on Base UI) + the builder stylesheet.            |
 
 Some packages are still placeholders, and others (`schema`, `renderer`,
 `vfs`, `zip`, `build`, `editor-state`, `preview-bridge`, `editor-app`) have
@@ -138,6 +139,7 @@ All scripts run from the repo root.
 | `pnpm test:watch`   | Vitest in watch mode.                                |
 | `pnpm test:e2e`     | Run Playwright end-to-end tests from `./e2e`.        |
 | `pnpm build`        | Build every package (`tsc --build`).                 |
+| `pnpm build:ui-css` | Recompile `@sosb/ui`'s Tailwind stylesheet.          |
 
 `pnpm -r --filter @sosb/<name>` scopes a script to one package, e.g.
 `pnpm -r --filter @sosb/schema run build`.
@@ -345,8 +347,9 @@ and English (default for everything else). Translations live in the
 3. **Add the Romanian message** to `packages/i18n/src/locales/ro.ts`. Use
    proper diacritics (`ă`, `â`, `î`, `ș`, `ț`) and prefer formal/standard
    Romanian over slang.
-4. **Use the key in code** via `useTranslator()` (Preact) or directly
-   through `createTranslator(...)` for non-Preact contexts.
+4. **Use the key in code** via `useTranslator()` (the React hook exported
+   by `@sosb/editor-app`) or directly through `createTranslator(...)` for
+   non-React contexts such as the Node build pipeline.
 
 The catalog-parity vitest test fails CI if either locale is missing a key
 that the other defines, so the build won't merge until both catalogs are

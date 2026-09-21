@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * Locale toggle — the user's "always wins" override per PRD.
  *
@@ -13,10 +14,12 @@
  * persistence into this component because the editor app does not own a VFS
  * directly (see ADR 0005); the host shell does.
  */
-import type { JSX } from "preact";
+import type { JSX } from "react";
 import { SUPPORTED_LOCALES, type Locale } from "@sosb/i18n";
 
 import { useTranslator } from "./i18n-context.js";
+import type * as React from "react";
+import { NativeSelect } from "@sosb/ui";
 
 const LOCALE_LABEL_KEY: Readonly<
   Record<Locale, "settings.locale.option.ro" | "settings.locale.option.en">
@@ -32,10 +35,10 @@ export function LocaleToggle(): JSX.Element {
       <legend>{t("settings.locale.legend")}</legend>
       <label>
         <span>{t("settings.locale.label")}</span>
-        <select
+        <NativeSelect
           data-testid="locale-select"
           value={t.locale}
-          onChange={(event: JSX.TargetedEvent<HTMLSelectElement>) => {
+          onChange={(event: React.FormEvent<HTMLSelectElement>) => {
             const next = event.currentTarget.value;
             // The select's options are limited to SUPPORTED_LOCALES, but we
             // re-validate at the boundary because the DOM is not the source
@@ -51,7 +54,7 @@ export function LocaleToggle(): JSX.Element {
               {t(LOCALE_LABEL_KEY[locale])}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
       <p data-testid="locale-help">{t("settings.locale.help")}</p>
     </fieldset>

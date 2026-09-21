@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * MoreOptions — the collapsible "More options" section that closes each
  * generated form (ADR 0043 progressive disclosure, revised).
@@ -17,11 +18,12 @@
  *  - **absent when empty**: forms with no advanced fields render no
  *    section at all (the consuming form checks this).
  */
-import type { ComponentChildren, JSX } from "preact";
-import { useId } from "preact/hooks";
+import type { JSX, ReactNode } from "react";
+import { useId } from "react";
 
 import { IconChevronRight } from "./icons.js";
 import { summarizeLabels } from "./field-tiers.js";
+import { Button } from "@sosb/ui";
 
 export interface MoreOptionsProps {
   /** `true` when the section is expanded. */
@@ -31,7 +33,7 @@ export interface MoreOptionsProps {
   /** Friendly names of the fields inside, shown in the collapsed summary. */
   readonly labels: readonly string[];
   /** The rendered advanced fields. Only mounted while `open`. */
-  readonly children?: ComponentChildren;
+  readonly children?: ReactNode;
 }
 
 export function MoreOptions({ open, onToggle, labels, children }: MoreOptionsProps): JSX.Element {
@@ -39,7 +41,7 @@ export function MoreOptions({ open, onToggle, labels, children }: MoreOptionsPro
   const summary = summarizeLabels(labels);
   return (
     <section data-testid="more-options" data-more-options data-open={open}>
-      <button
+      <Button
         type="button"
         data-testid="advanced-toggle"
         data-more-options-toggle
@@ -60,7 +62,7 @@ export function MoreOptions({ open, onToggle, labels, children }: MoreOptionsPro
                 : "Rarely needed — sensible values are already filled in."}
           </small>
         </span>
-      </button>
+      </Button>
       {open ? (
         <div id={panelId} data-testid="more-options-panel" data-more-options-panel>
           {children}

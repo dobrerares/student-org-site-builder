@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * Step 5 — Languages. Single or bilingual; the secondary language is
  * picked when the user switches to bilingual mode.
@@ -6,9 +7,10 @@
  * keeps that decision pliant by surfacing both as user choices instead
  * of hard-coding RO.
  */
-import type { JSX } from "preact";
+import type { JSX } from "react";
 
 import type { LanguagesData, LanguagesMode } from "../state-machine.js";
+import { NativeSelect } from "@sosb/ui";
 
 export interface LanguagesStepProps {
   readonly data: LanguagesData;
@@ -35,7 +37,7 @@ export function LanguagesStep(props: LanguagesStepProps): JSX.Element {
 
       <label>
         <span>Mode</span>
-        <select
+        <NativeSelect
           data-field="languages.mode"
           value={mode}
           onChange={(e) =>
@@ -46,12 +48,12 @@ export function LanguagesStep(props: LanguagesStepProps): JSX.Element {
         >
           <option value="single">Single language</option>
           <option value="bilingual">Bilingual</option>
-        </select>
+        </NativeSelect>
       </label>
 
       <label>
         <span>Default language</span>
-        <select
+        <NativeSelect
           data-field="languages.defaultLanguage"
           value={defaultLanguage}
           onChange={(e) =>
@@ -65,13 +67,13 @@ export function LanguagesStep(props: LanguagesStepProps): JSX.Element {
               {l.label}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
 
       {mode === "bilingual" && (
         <label>
           <span>Secondary language</span>
-          <select
+          <NativeSelect
             data-field="languages.secondaryLanguage"
             value={secondaryLanguage ?? ""}
             onChange={(e) =>
@@ -86,7 +88,7 @@ export function LanguagesStep(props: LanguagesStepProps): JSX.Element {
                 {l.label}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
       )}
     </fieldset>

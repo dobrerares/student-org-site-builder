@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * Theme form — the form behind the editor's theme drill-in
  * (ADR 0043). It owns the structural overrides for everything under
@@ -30,7 +31,7 @@
  * inspector chrome (T7 review). The three groups below (look, colours,
  * type & spacing) are sub-headings, not a title.
  */
-import type { JSX } from "preact";
+import type { JSX } from "react";
 import type { Site } from "@sosb/schema";
 
 import { ColorPicker } from "./color-picker.js";

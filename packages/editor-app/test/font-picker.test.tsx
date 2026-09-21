@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 // @vitest-environment jsdom
 /**
  * Tests for the FontPicker component — structural form override for
@@ -9,7 +10,7 @@
  * as a "Custom: <value>" option instead of being silently dropped.
  */
 import { describe, expect, test, vi, afterEach } from "vitest";
-import { render, fireEvent, cleanup } from "@testing-library/preact";
+import { render, fireEvent, cleanup } from "@testing-library/react";
 
 import { FontPicker } from "../src/font-picker.js";
 
