@@ -132,7 +132,6 @@ export const en: EnglishCatalog = {
   "articleList.moveDown": "Move down",
   "articleList.matches": "Matching articles",
   "articleList.matches.empty": "Nothing matches yet. The list will show “No articles yet.”",
-  "articleList.limit": "Maximum number of articles",
   "articleList.sort": "Order",
   "articleList.sort.desc": "Newest first",
   "articleList.sort.asc": "Oldest first",

@@ -288,6 +288,20 @@ function todayIso(): string {
   return `${now.getFullYear()}-${month}-${day}`;
 }
 
+/**
+ * Block types an Article's main content cannot hold.
+ *
+ * `articleList`: issue #97 puts an Article's own list behind the Related
+ * Articles setting at the end of the Article, "rather than allowing such
+ * lists anywhere in its main content". Offering it in the body picker would
+ * hand the author a second, unspecified place to put one.
+ *
+ * `siteFooter`: an Article inherits its language's footer, and `ArticleShell`
+ * filters any footer Block out of the body — so adding one here would look
+ * like it worked and then render nothing.
+ */
+const ARTICLE_BODY_EXCLUDED_BLOCKS: readonly string[] = ["articleList", "siteFooter"];
+
 /** localStorage key remembering that the getting-started tip was dismissed. */
 const TIP_DISMISSED_KEY = "sosb.editor.tipDismissed";
 
@@ -1938,6 +1952,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
         open={pickerOpen}
         onPick={onPickBlockType}
         onClose={() => setPickerOpen(false)}
+        excludeTypes={contentKind === "articles" ? ARTICLE_BODY_EXCLUDED_BLOCKS : undefined}
       />
     </div>
   );

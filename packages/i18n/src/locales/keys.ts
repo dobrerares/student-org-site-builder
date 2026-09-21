@@ -127,7 +127,6 @@ export type EditorMessageKey =
   | "articleList.moveDown"
   | "articleList.matches"
   | "articleList.matches.empty"
-  | "articleList.limit"
   | "articleList.sort"
   | "articleList.sort.desc"
   | "articleList.sort.asc"

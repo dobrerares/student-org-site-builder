@@ -15,6 +15,12 @@
  * Reordering offers Move up / Move down buttons rather than drag alone, per
  * issue #102's fourth round: drag handles are unusable on a phone and invisible
  * to keyboard users.
+ *
+ * There is deliberately **no "how many" control**. Issue #97 is explicit that
+ * "there is no separate limited mode or 'View more' action" — every eligible
+ * match stays reachable through the card group's arrow navigation. The schema
+ * still tolerates a `limit` on data written by hand or by a future version, so
+ * nothing breaks on load; the editor simply never writes one.
  */
 import type { JSX } from "react";
 import { useState } from "react";
@@ -299,23 +305,6 @@ export function ArticleListInspector(props: ArticleListInspectorProps): JSX.Elem
           )}
         </div>
       )}
-
-      <div className="article-list-inspector__field">
-        <Label htmlFor="article-list-limit">{t("articleList.limit")}</Label>
-        <Input
-          id="article-list-limit"
-          type="number"
-          min={1}
-          value={props.value.limit ?? ""}
-          onChange={(event) => {
-            const raw = event.currentTarget.value;
-            const parsed = Number.parseInt(raw, 10);
-            props.onPatch({
-              limit: raw === "" || !Number.isFinite(parsed) || parsed < 1 ? undefined : parsed,
-            });
-          }}
-        />
-      </div>
 
       <section className="article-list-inspector__preview" aria-live="polite">
         <h3>{t("articleList.matches")}</h3>

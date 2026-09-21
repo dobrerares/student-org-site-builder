@@ -146,7 +146,6 @@ export const ro: RomanianCatalog = {
   "articleList.matches": "Articole care se potrivesc",
   "articleList.matches.empty":
     "Nimic nu se potrivește încă. Lista va afișa „Încă nu există articole.”",
-  "articleList.limit": "Număr maxim de articole",
   "articleList.sort": "Ordine",
   "articleList.sort.desc": "Cele mai noi primele",
   "articleList.sort.asc": "Cele mai vechi primele",
