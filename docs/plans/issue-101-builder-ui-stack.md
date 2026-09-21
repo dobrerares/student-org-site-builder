@@ -12,8 +12,7 @@ validated functionality.
   as the boundary. Public-site Theme redesign is outside this issue.
 - Maintain shared shadcn components and builder styles in one UI package used
   by all three interfaces. Keep builder styles separate from public-site styles.
-- Preserve schema-generated forms and editor-owned field overrides under ADR
-  0043. Use shared controls in those forms and explicit overrides for specialized
+- Preserve schema-generated forms and editor-owned field overrides under ADR 0043. Use shared controls in those forms and explicit overrides for specialized
   experiences such as Rich-text editing.
 - First migrate the framework and components while preserving current workflows.
   Then implement the workflow/navigation redesign approved through prototype
