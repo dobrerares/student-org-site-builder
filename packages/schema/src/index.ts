@@ -13,6 +13,32 @@
 export { PageSchema, SITE_SCHEMA_VERSION, SiteSchema, parseSite } from "./site.js";
 export type { Org, Page, Site, Theme } from "./site.js";
 
+// Articles
+export {
+  ARTICLE_ROUTE_PREFIX,
+  ARTICLE_STATES,
+  ArticleDateSchema,
+  ArticleSchema,
+  ArticleTagSchema,
+  RelatedArticlesSchema,
+  isDiscoverableArticle,
+  isPublicArticle,
+  normalizeTagLabel,
+} from "./article.js";
+export type { Article, ArticleState, ArticleTag, RelatedArticles } from "./article.js";
+export {
+  articlesById,
+  articlesOf,
+  inspectArticleSelection,
+  publishedTranslationsOf,
+  resolveArticleSelection,
+} from "./article-select.js";
+export type {
+  ArticleSelectionContext,
+  ArticleSelectionIssue,
+  ArticleSelectionProblem,
+} from "./article-select.js";
+
 // Page slug rules (multi-page support)
 export { SLUG_PATTERN, checkSlug, isValidSlug } from "./slug.js";
 export type { SlugValidationFailure } from "./slug.js";
@@ -89,6 +115,14 @@ export {
   isKnownBlockType,
   isValidEmbedUrl,
   ACTIVITIES_LIST_BLOCK_VERSION,
+  ARTICLE_LIST_BLOCK_VERSION,
+  ARTICLE_LIST_MODES,
+  ARTICLE_LIST_SORTS,
+  ArticleListBlockSchema,
+  ArticleListDataSchema,
+  ArticleSelectionSchema,
+  DEFAULT_ARTICLE_LIST_MODE,
+  DEFAULT_ARTICLE_LIST_SORT,
   ActivitiesListBlockSchema,
   ActivitiesListDataSchema,
   ActivitiesListLayoutSchema,
@@ -151,6 +185,11 @@ export type {
   ValueListLayout,
   ActivitiesListBlock,
   ActivitiesListData,
+  ArticleListBlock,
+  ArticleListData,
+  ArticleListMode,
+  ArticleListSort,
+  ArticleSelection,
   ActivitiesListLayout,
   ActivityImageRef,
   ActivityItem,
@@ -165,7 +204,12 @@ export type {
 } from "./blocks/index.js";
 
 // Validation
-export { KNOWN_THEME_IDS_FOR_VALIDATION, validate, validateBlock } from "./validate.js";
+export {
+  KNOWN_THEME_IDS_FOR_VALIDATION,
+  hasBlockingIssues,
+  validate,
+  validateBlock,
+} from "./validate.js";
 export type { Severity, ValidationIssue, ValidationResult } from "./validate.js";
 
 // Migration

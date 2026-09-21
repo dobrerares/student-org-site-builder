@@ -1,5 +1,10 @@
 import { z } from "zod";
 import { BlockEnvelopeSchema, KnownBlockSchemas, isKnownBlockType } from "./blocks/index.js";
+import { ARTICLE_ROUTE_PREFIX, normalizeTagLabel } from "./article.js";
+import type { Article } from "./article.js";
+import { articlesOf, inspectArticleSelection, resolveArticleSelection } from "./article-select.js";
+import type { ArticleSelection } from "./blocks/article-list.js";
+import { DEFAULT_ARTICLE_LIST_MODE } from "./blocks/article-list.js";
 import { SiteSchema } from "./site.js";
 import { checkSlug } from "./slug.js";
 
@@ -63,6 +68,18 @@ export interface ValidationIssue {
   path: (string | number)[];
   code: string;
   message: string;
+  /**
+   * Marks an `error` that the pre-export confirmation must NOT let the author
+   * override. ADR 0016's rule is "blocking-on-confirmation, never hard-block";
+   * ADR 0048 carves out a narrow exception for public content that cannot be
+   * produced correctly at all — today, an active explicit Article-list
+   * selection pointing at a Draft or deleted Article.
+   *
+   * The exception is deliberately narrow. Draft-only problems never set this,
+   * and saving the editable archive is never gated by it, so an author can
+   * always keep working and always keep their project.
+   */
+  blocking?: boolean;
 }
 
 export interface ValidationResult {
@@ -71,6 +88,11 @@ export interface ValidationResult {
   info: ValidationIssue[];
   /** Convenience: `errors.length === 0`. */
   ok: boolean;
+}
+
+/** True when `result` contains an error that the export dialog cannot override. */
+export function hasBlockingIssues(result: ValidationResult): boolean {
+  return result.errors.some((issue) => issue.blocking === true);
 }
 
 function emptyResult(): ValidationResult {
@@ -214,6 +236,20 @@ function runSiteRules(site: z.infer<typeof SiteSchema>, result: ValidationResult
     }
   });
 
+  // Errors: `articles` is the route prefix reserved for Articles (ADR 0047).
+  // A Page claiming it would collide with every `/articles/<slug>/` URL, so
+  // this is rejected outright rather than resolved by precedence.
+  site.pages.forEach((page, idx) => {
+    if (page.slug === ARTICLE_ROUTE_PREFIX) {
+      result.errors.push({
+        severity: "error",
+        path: ["pages", idx, "slug"],
+        code: "site.page.slug.reservedPrefix",
+        message: `Page link "${ARTICLE_ROUTE_PREFIX}" is reserved for articles. Choose a different link, such as news or blog.`,
+      });
+    }
+  });
+
   // Errors / warnings: localizedAs cross-references (#24).
   //
   //   - referenced language must be declared in site.languages (error)
@@ -281,37 +317,7 @@ function runSiteRules(site: z.infer<typeof SiteSchema>, result: ValidationResult
   // onto the site, so callers see schema violations regardless of where
   // they nest. Quality nudges (warnings) come from `runBlockRules`.
   site.pages.forEach((page, pageIdx) => {
-    page.blocks.forEach((block, blockIdx) => {
-      if (isKnownBlockType(block.type)) {
-        const knownSchema = KnownBlockSchemas[block.type] as unknown as z.ZodType;
-        const known = knownSchema.safeParse(block);
-        if (!known.success) {
-          for (const issue of known.error.issues) {
-            result.errors.push({
-              severity: "error",
-              path: ["pages", pageIdx, "blocks", blockIdx, ...pathFromZod(issue.path)],
-              code: `block.${block.type}.${issue.code}`,
-              message: issue.message,
-            });
-          }
-          return;
-        }
-        const childResult = emptyResult();
-        runBlockRules(
-          known.data as z.infer<(typeof KnownBlockSchemas)[keyof typeof KnownBlockSchemas]>,
-          childResult,
-        );
-        for (const issue of [...childResult.errors, ...childResult.warnings, ...childResult.info]) {
-          const rebased: ValidationIssue = {
-            ...issue,
-            path: ["pages", pageIdx, "blocks", blockIdx, ...issue.path],
-          };
-          if (issue.severity === "error") result.errors.push(rebased);
-          else if (issue.severity === "warning") result.warnings.push(rebased);
-          else result.info.push(rebased);
-        }
-      }
-    });
+    runBlocksDeep(page.blocks, ["pages", pageIdx, "blocks"], result);
   });
 
   // Warning: org logo without sibling logoAlt (accessibility nudge, mirrors hero).
@@ -348,8 +354,361 @@ function runSiteRules(site: z.infer<typeof SiteSchema>, result: ValidationResult
     });
   }
 
+  runArticleRules(site, result);
+  runArticleReferenceRules(site, result);
   runThemeContrastRules(site, result);
   runOversizedImageRules(site, result);
+}
+
+/**
+ * Deep-parse and rule-check a block list hanging off `basePath`, rebasing every
+ * produced issue onto that path. Shared by Pages and Articles so both surfaces
+ * report block problems identically.
+ */
+function runBlocksDeep(
+  blocks: readonly z.infer<typeof BlockEnvelopeSchema>[],
+  basePath: (string | number)[],
+  result: ValidationResult,
+): void {
+  blocks.forEach((block, blockIdx) => {
+    if (!isKnownBlockType(block.type)) return;
+    const knownSchema = KnownBlockSchemas[block.type] as unknown as z.ZodType;
+    const known = knownSchema.safeParse(block);
+    if (!known.success) {
+      for (const issue of known.error.issues) {
+        result.errors.push({
+          severity: "error",
+          path: [...basePath, blockIdx, ...pathFromZod(issue.path)],
+          code: `block.${block.type}.${issue.code}`,
+          message: issue.message,
+        });
+      }
+      return;
+    }
+    const childResult = emptyResult();
+    runBlockRules(known.data as KnownBlockData, childResult);
+    for (const issue of [...childResult.errors, ...childResult.warnings, ...childResult.info]) {
+      const rebased: ValidationIssue = { ...issue, path: [...basePath, blockIdx, ...issue.path] };
+      if (issue.severity === "error") result.errors.push(rebased);
+      else if (issue.severity === "warning") result.warnings.push(rebased);
+      else result.info.push(rebased);
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Article rules (ADR 0047; docs/plans/issue-97-*, issue-98-*).
+// ---------------------------------------------------------------------------
+
+/**
+ * Structural and identity rules for `site.articles` and `site.tags`.
+ *
+ * Cross-references between Articles (explicit list selections) are checked
+ * separately in `runArticleReferenceRules`, because whether a broken reference
+ * is a warning or an un-overridable export blocker depends on the publication
+ * state of whatever *contains* the reference, not on the Article itself.
+ */
+function runArticleRules(site: z.infer<typeof SiteSchema>, result: ValidationResult): void {
+  const articles = articlesOf(site);
+  const tags = site.tags ?? [];
+
+  // Errors: tag ids are the permanent handle every association and filter
+  // points at, so duplicates would silently merge two tags.
+  const seenTagIds = new Set<string>();
+  const seenTagLabels = new Map<string, number>();
+  tags.forEach((tag, idx) => {
+    if (seenTagIds.has(tag.id)) {
+      result.errors.push({
+        severity: "error",
+        path: ["tags", idx, "id"],
+        code: "site.tag.id.duplicate",
+        message: `Tag id "${tag.id}" is used more than once.`,
+      });
+    } else {
+      seenTagIds.add(tag.id);
+    }
+    // Labels differing only in case or surrounding whitespace are duplicates
+    // (issue #98). Storage keeps the author's capitalisation, so this is a
+    // nudge rather than a rejection of already-persisted data.
+    const normalized = normalizeTagLabel(tag.label);
+    const firstIdx = seenTagLabels.get(normalized);
+    if (firstIdx !== undefined) {
+      result.warnings.push({
+        severity: "warning",
+        path: ["tags", idx, "label"],
+        code: "site.tag.label.duplicate",
+        message: `Tag "${tag.label}" duplicates an existing tag. Merge them so lists stay predictable.`,
+      });
+    } else {
+      seenTagLabels.set(normalized, idx);
+    }
+  });
+
+  // Slug reservations per language: an Article's current slug and every slug in
+  // its history stay reserved while it exists, including while it is a Draft
+  // (ADR 0047). Collect them first so conflicts can name the other Article.
+  interface SlugClaim {
+    readonly articleIdx: number;
+    readonly historical: boolean;
+  }
+  const claims = new Map<string, SlugClaim>();
+  const claimKey = (lang: string, slug: string): string => `${lang}:${slug}`;
+
+  const seenArticleIds = new Set<string>();
+  const translationSeats = new Map<string, number>();
+
+  articles.forEach((article, idx) => {
+    // Errors: permanent identity must be unique — every reference resolves by id.
+    if (seenArticleIds.has(article.id)) {
+      result.errors.push({
+        severity: "error",
+        path: ["articles", idx, "id"],
+        code: "site.article.id.duplicate",
+        message: `Article id "${article.id}" is used more than once.`,
+      });
+    } else {
+      seenArticleIds.add(article.id);
+    }
+
+    // Errors: language must be declared on the site (mirrors the Page rule).
+    if (!site.languages.includes(article.lang)) {
+      result.errors.push({
+        severity: "error",
+        path: ["articles", idx, "lang"],
+        code: "site.article.lang.notInLanguagesList",
+        message: `Article language "${article.lang}" is not in the site's language list.`,
+      });
+    }
+
+    // Errors: the slug must be a flat, URL-safe segment, same as a Page's.
+    const failure = checkSlug(article.slug);
+    if (failure !== null) {
+      result.errors.push({
+        severity: "error",
+        path: ["articles", idx, "slug"],
+        code: `site.article.${failure.code}`,
+        message: failure.message,
+      });
+    }
+
+    // Errors: slug conflicts within a language, against both current slugs and
+    // reserved historical ones.
+    const currentKey = claimKey(article.lang, article.slug);
+    const existing = claims.get(currentKey);
+    if (existing !== undefined) {
+      const other = articles[existing.articleIdx];
+      result.errors.push({
+        severity: "error",
+        path: ["articles", idx, "slug"],
+        code: existing.historical
+          ? "site.article.slug.conflictsWithHistory"
+          : "site.article.slug.duplicate",
+        message: existing.historical
+          ? `Article link "${article.slug}" is a previous link of "${other?.title ?? "another article"}" and stays reserved while that article exists.`
+          : `Article link "${article.slug}" is already used in language "${article.lang}".`,
+      });
+    } else {
+      claims.set(currentKey, { articleIdx: idx, historical: false });
+    }
+
+    (article.slugHistory ?? []).forEach((old, historyIdx) => {
+      if (old === article.slug) {
+        result.warnings.push({
+          severity: "warning",
+          path: ["articles", idx, "slugHistory", historyIdx],
+          code: "site.article.slugHistory.containsCurrent",
+          message: `Article "${article.title}" lists its current link "${old}" as a previous link.`,
+        });
+        return;
+      }
+      const key = claimKey(article.lang, old);
+      const prior = claims.get(key);
+      if (prior !== undefined && prior.articleIdx !== idx) {
+        result.errors.push({
+          severity: "error",
+          path: ["articles", idx, "slugHistory", historyIdx],
+          code: "site.article.slugHistory.conflict",
+          message: `Previous article link "${old}" is already claimed by another article in language "${article.lang}".`,
+        });
+        return;
+      }
+      if (prior === undefined) claims.set(key, { articleIdx: idx, historical: true });
+    });
+
+    // Errors: two Articles in the same translation group cannot share a
+    // language — the language switcher would have no way to choose between them.
+    const group = article.translationGroup;
+    if (group !== undefined) {
+      const seatKey = `${group}:${article.lang}`;
+      const seat = translationSeats.get(seatKey);
+      if (seat !== undefined) {
+        result.errors.push({
+          severity: "error",
+          path: ["articles", idx, "translationGroup"],
+          code: "site.article.translationGroup.duplicateLanguage",
+          message: `Two articles are linked as the "${article.lang}" version of the same translation set.`,
+        });
+      } else {
+        translationSeats.set(seatKey, idx);
+      }
+    }
+
+    // Warnings: tag references that no longer resolve. Deleting a tag is meant
+    // to strip it from every Article, so this indicates a hand-edited project.
+    (article.tags ?? []).forEach((tagId, tagIdx) => {
+      if (!seenTagIds.has(tagId)) {
+        result.warnings.push({
+          severity: "warning",
+          path: ["articles", idx, "tags", tagIdx],
+          code: "site.article.tag.unknown",
+          message: `Article "${article.title}" refers to a tag that no longer exists.`,
+        });
+      }
+    });
+
+    // Warnings: cover image without a description (accessibility nudge; the
+    // same tier as every other missing image description, per ADR 0048).
+    if (article.cover && !article.coverAlt) {
+      result.warnings.push({
+        severity: "warning",
+        path: ["articles", idx, "coverAlt"],
+        code: "site.article.coverAlt.missing",
+        message: `The cover image for "${article.title}" needs a short description for people using screen readers.`,
+      });
+    }
+
+    // Warnings: a Published Article with no content renders as a bare title.
+    if (article.state === "published" && article.blocks.length === 0) {
+      result.warnings.push({
+        severity: "warning",
+        path: ["articles", idx, "blocks"],
+        code: "site.article.blocks.empty",
+        message: `Published article "${article.title}" has no content yet.`,
+      });
+    }
+
+    runBlocksDeep(article.blocks, ["articles", idx, "blocks"], result);
+  });
+}
+
+/**
+ * Cross-reference rules for configured Article lists.
+ *
+ * The severity depends on reachability, not on the reference itself:
+ *
+ *  - A broken explicit selection in **public content** (any Page, or a
+ *    Published/Unlisted Article) would put a card linking to nothing into the
+ *    exported Site. That is an un-overridable export blocker (ADR 0048).
+ *  - The same breakage inside a **Draft** Article, or inside a *disabled*
+ *    Related Articles setting, is an editor issue only — a warning that never
+ *    stands between the author and an export (issue #97).
+ */
+function runArticleReferenceRules(
+  site: z.infer<typeof SiteSchema>,
+  result: ValidationResult,
+): void {
+  const knownTagIds = new Set((site.tags ?? []).map((tag) => tag.id));
+
+  const check = (
+    selection: ArticleSelection,
+    basePath: (string | number)[],
+    containerLang: string,
+    isPublic: boolean,
+    containerArticle: Article | undefined,
+  ): void => {
+    for (const issue of inspectArticleSelection(site, selection)) {
+      const path = [...basePath, "articleIds", issue.index];
+      if (isPublic) {
+        result.errors.push({
+          severity: "error",
+          blocking: true,
+          path,
+          code:
+            issue.reason === "missing"
+              ? "site.articleList.selection.missing"
+              : "site.articleList.selection.draft",
+          message:
+            issue.reason === "missing"
+              ? "This list points at an article that no longer exists. Remove it or pick another article."
+              : "This list points at a draft article, which is not part of the exported website. Publish it or remove it from the list.",
+        });
+      } else {
+        result.warnings.push({
+          severity: "warning",
+          path,
+          code:
+            issue.reason === "missing"
+              ? "site.articleList.selection.missing.draftOnly"
+              : "site.articleList.selection.draft.draftOnly",
+          message:
+            issue.reason === "missing"
+              ? "This list points at an article that no longer exists. It will need fixing before this draft can be published."
+              : "This list points at a draft article. It will need fixing before this draft can be published.",
+        });
+      }
+    }
+
+    // Warnings: a tag filter naming a deleted tag silently widens the list.
+    (selection.tags ?? []).forEach((tagId, tagIdx) => {
+      if (!knownTagIds.has(tagId)) {
+        result.warnings.push({
+          severity: "warning",
+          path: [...basePath, "tags", tagIdx],
+          code: "site.articleList.tag.unknown",
+          message: "This list filters on a tag that no longer exists.",
+        });
+      }
+    });
+
+    // Info: an empty list still renders its heading plus "No articles yet",
+    // which is valid output but rarely what the author intended.
+    const matches = resolveArticleSelection(site, selection, {
+      lang: containerLang,
+      ...(containerArticle === undefined ? {} : { excludeArticleId: containerArticle.id }),
+    });
+    if (matches.length === 0) {
+      result.info.push({
+        severity: "info",
+        path: basePath,
+        code: "site.articleList.empty",
+        message: "This article list currently matches no articles and will show “No articles yet”.",
+      });
+    }
+  };
+
+  site.pages.forEach((page, pageIdx) => {
+    page.blocks.forEach((block, blockIdx) => {
+      if (block.type !== "articleList") return;
+      check(
+        block.data as ArticleSelection,
+        ["pages", pageIdx, "blocks", blockIdx, "data"],
+        page.lang,
+        true,
+        undefined,
+      );
+    });
+  });
+
+  articlesOf(site).forEach((article, idx) => {
+    const isPublic = article.state !== "draft";
+    article.blocks.forEach((block, blockIdx) => {
+      if (block.type !== "articleList") return;
+      check(
+        block.data as ArticleSelection,
+        ["articles", idx, "blocks", blockIdx, "data"],
+        article.lang,
+        isPublic,
+        article,
+      );
+    });
+
+    const related = article.relatedArticles;
+    // A disabled Related Articles list keeps its settings but leaves public
+    // output entirely, so it is excluded from reference checks by design.
+    if (related !== undefined && related.enabled) {
+      check(related, ["articles", idx, "relatedArticles"], article.lang, isPublic, article);
+    }
+  });
 }
 
 function runThemeContrastRules(site: z.infer<typeof SiteSchema>, result: ValidationResult): void {
@@ -420,6 +779,16 @@ function collectOversizedImages(site: z.infer<typeof SiteSchema>): ValidationIss
   site.pages.forEach((page, pageIdx) => {
     page.blocks.forEach((block, blockIdx) => {
       visitPotentialAsset(block.data, ["pages", pageIdx, "blocks", blockIdx, "data"], warnings);
+    });
+  });
+  articlesOf(site).forEach((article, articleIdx) => {
+    visitPotentialAsset(article.cover, ["articles", articleIdx, "cover"], warnings);
+    article.blocks.forEach((block, blockIdx) => {
+      visitPotentialAsset(
+        block.data,
+        ["articles", articleIdx, "blocks", blockIdx, "data"],
+        warnings,
+      );
     });
   });
   return warnings;
@@ -709,6 +1078,22 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
     case "siteFooter": {
       // No quality nudges in v1. The footer may intentionally contain only
       // contact links, only a membership mark, or both.
+      break;
+    }
+    case "articleList": {
+      // Context-free nudges only. Whether a selection actually resolves depends
+      // on the whole Site and on where the block sits, so those checks live in
+      // `runArticleReferenceRules` — `runBlockRules` sees one block in isolation
+      // and is also reachable through `validateBlock`, which has no Site at all.
+      const mode = block.data.mode ?? DEFAULT_ARTICLE_LIST_MODE;
+      if (mode === "selected" && (block.data.articleIds ?? []).length === 0) {
+        result.warnings.push({
+          severity: "warning",
+          path: ["data", "articleIds"],
+          code: "block.articleList.articleIds.empty",
+          message: "No articles are selected yet, so this list will be empty.",
+        });
+      }
       break;
     }
     default: {

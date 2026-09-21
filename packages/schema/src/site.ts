@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ArticleSchema, ArticleTagSchema } from "./article.js";
 import { AssetRefSchema } from "./blocks/asset-ref.js";
 import { BlockEnvelopeSchema } from "./blocks/index.js";
 
@@ -82,6 +83,15 @@ export const SiteSchema = z.looseObject({
   defaultLanguage: z.string().min(1),
   languages: z.array(z.string().min(1)).min(1),
   pages: z.array(PageSchema),
+  /**
+   * Articles and their tag registry are **optional** so every Site authored
+   * before Articles existed parses unchanged, with no migration and no
+   * `SITE_SCHEMA_VERSION` bump (v1.x is additive-only). Readers should treat
+   * an absent array as empty rather than writing one in on load, which would
+   * break ADR 0002's round-trip identity contract for untouched snapshots.
+   */
+  articles: z.array(ArticleSchema).optional(),
+  tags: z.array(ArticleTagSchema).optional(),
 });
 
 export type Site = z.infer<typeof SiteSchema>;

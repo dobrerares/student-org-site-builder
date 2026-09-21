@@ -15,6 +15,7 @@ import { ImageGalleryBlockSchema } from "./image-gallery.js";
 import { DocumentDownloadsBlockSchema } from "./document-downloads.js";
 import { EventListBlockSchema } from "./event-list.js";
 import { SiteFooterBlockSchema } from "./site-footer.js";
+import { ArticleListBlockSchema } from "./article-list.js";
 
 export { HeroBlockSchema, HeroDataSchema, HERO_BLOCK_VERSION } from "./hero.js";
 export type { HeroBlock, HeroData } from "./hero.js";
@@ -171,6 +172,23 @@ export type {
   EventPastBehavior,
 } from "./event-list.js";
 export {
+  ARTICLE_LIST_BLOCK_VERSION,
+  ARTICLE_LIST_MODES,
+  ARTICLE_LIST_SORTS,
+  ArticleListBlockSchema,
+  ArticleListDataSchema,
+  ArticleSelectionSchema,
+  DEFAULT_ARTICLE_LIST_MODE,
+  DEFAULT_ARTICLE_LIST_SORT,
+} from "./article-list.js";
+export type {
+  ArticleListBlock,
+  ArticleListData,
+  ArticleListMode,
+  ArticleListSort,
+  ArticleSelection,
+} from "./article-list.js";
+export {
   SITE_FOOTER_BLOCK_VERSION,
   SiteFooterBlockSchema,
   SiteFooterDataSchema,
@@ -239,6 +257,7 @@ export const KnownBlockSchemas = {
   documentDownloads: DocumentDownloadsBlockSchema,
   eventList: EventListBlockSchema,
   siteFooter: SiteFooterBlockSchema,
+  articleList: ArticleListBlockSchema,
 } as const;
 
 export type KnownBlockType = keyof typeof KnownBlockSchemas;
