@@ -13,7 +13,12 @@
   },
   "dependencies": {
     "@sosb/build": "workspace:*",
+    "@sosb/renderer": "workspace:*",
     "@sosb/schema": "workspace:*",
+    "@sosb/theme-package": "workspace:*",
     "@sosb/vfs": "workspace:*"
+  },
+  "devDependencies": {
+    "@sosb/themes": "workspace:*"
   }
 }

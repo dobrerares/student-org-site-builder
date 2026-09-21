@@ -109,6 +109,8 @@ function EventCard(props: {
 
 export function EventList(props: {
   block: EventListBlock;
+  /** Theme design variant, already gated by the renderer. Emitted as `data-variant`. */
+  variant?: string | undefined;
   assetUrlForPath?: AssetUrlForPath | undefined;
   lang?: string | undefined;
 }): preact.JSX.Element | null {
@@ -138,6 +140,7 @@ export function EventList(props: {
   return (
     <section
       data-block="event-list"
+      data-variant={props.variant}
       data-block-id={id}
       data-past-behavior={pastBehavior}
       aria-labelledby={headingId}

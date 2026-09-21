@@ -70,7 +70,10 @@ function FaqItemRow(props: {
   );
 }
 
-export function Faq(props: { block: FaqBlock }): preact.JSX.Element | null {
+export function Faq(props: {
+  block: FaqBlock;
+  variant?: string | undefined;
+}): preact.JSX.Element | null {
   const { id, data } = props.block;
   const items: FaqItem[] = Array.isArray(data.items) ? data.items : [];
 
@@ -84,6 +87,7 @@ export function Faq(props: { block: FaqBlock }): preact.JSX.Element | null {
   return (
     <section
       data-block="faq"
+      data-variant={props.variant}
       data-block-id={id}
       aria-labelledby={title !== undefined ? `${id}__title` : undefined}
     >

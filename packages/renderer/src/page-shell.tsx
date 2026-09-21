@@ -50,6 +50,22 @@ import { PREVIEW_NAV_SCRIPT, PREVIEW_NAV_SCRIPT_MARKER } from "./preview-nav-scr
 import { PREVIEW_MORPH_SCRIPT, PREVIEW_MORPH_SCRIPT_MARKER } from "./preview-morph-script.js";
 import type { AssetUrlForPath } from "./asset-url.js";
 import { resolveAssetUrl } from "./asset-url.js";
+import type { ThemeBundle } from "./theme-bundle.js";
+import { activeBlockVariant } from "./theme-reference.js";
+
+/**
+ * The design variant to hand a block component, or `undefined`.
+ *
+ * Resolved centrally — a block component has no business knowing what a Theme
+ * is — but *emitted* by the component, because the component owns its root
+ * element and is the only thing that knows which element that is. When this
+ * returns `undefined` Preact omits the attribute, so built-in Themes produce
+ * exactly the bytes they did before variants existed.
+ */
+function variantFor(block: BlockEnvelope, theme: ThemeBundle | undefined): string | undefined {
+  if (theme === undefined) return undefined;
+  return activeBlockVariant(block, theme);
+}
 
 /**
  * The page shell.
@@ -126,52 +142,77 @@ function renderBlock(
   block: BlockEnvelope,
   assetUrlForPath: AssetUrlForPath | undefined,
   pageLang: string,
+  variant?: string | undefined,
 ): preact.JSX.Element | null {
   if (!isKnownBlockType(block.type)) return null;
   if (block.type === "hero") {
-    return <Hero block={block as unknown as HeroBlock} assetUrlForPath={assetUrlForPath} />;
+    return (
+      <Hero
+        block={block as unknown as HeroBlock}
+        variant={variant}
+        assetUrlForPath={assetUrlForPath}
+      />
+    );
   }
   if (block.type === "richText") {
-    return <RichText block={block as unknown as RichTextBlock} />;
+    return <RichText block={block as unknown as RichTextBlock} variant={variant} />;
   }
   if (block.type === "quote") {
-    return <Quote block={block as unknown as QuoteBlock} assetUrlForPath={assetUrlForPath} />;
+    return (
+      <Quote
+        block={block as unknown as QuoteBlock}
+        variant={variant}
+        assetUrlForPath={assetUrlForPath}
+      />
+    );
   }
   if (block.type === "valueList") {
-    return <ValueList block={block as unknown as ValueListBlock} />;
+    return <ValueList block={block as unknown as ValueListBlock} variant={variant} />;
   }
   if (block.type === "contactCard") {
-    return <ContactCard block={block as unknown as ContactCardBlock} />;
+    return <ContactCard block={block as unknown as ContactCardBlock} variant={variant} />;
   }
   if (block.type === "embed") {
-    return <Embed block={block as unknown as EmbedBlock} />;
+    return <Embed block={block as unknown as EmbedBlock} variant={variant} />;
   }
   if (block.type === "customHTML") {
-    return <CustomHtml block={block as unknown as CustomHtmlBlock} />;
+    return <CustomHtml block={block as unknown as CustomHtmlBlock} variant={variant} />;
   }
   if (block.type === "activitiesList") {
     return (
       <ActivitiesList
         block={block as unknown as ActivitiesListBlock}
+        variant={variant}
         assetUrlForPath={assetUrlForPath}
       />
     );
   }
   if (block.type === "teamGrid") {
-    return <TeamGrid block={block as unknown as TeamGridBlock} assetUrlForPath={assetUrlForPath} />;
+    return (
+      <TeamGrid
+        block={block as unknown as TeamGridBlock}
+        variant={variant}
+        assetUrlForPath={assetUrlForPath}
+      />
+    );
   }
   if (block.type === "faq") {
-    return <Faq block={block as unknown as FaqBlock} />;
+    return <Faq block={block as unknown as FaqBlock} variant={variant} />;
   }
   if (block.type === "ctaBanner") {
     return (
-      <CtaBanner block={block as unknown as CtaBannerBlock} assetUrlForPath={assetUrlForPath} />
+      <CtaBanner
+        block={block as unknown as CtaBannerBlock}
+        variant={variant}
+        assetUrlForPath={assetUrlForPath}
+      />
     );
   }
   if (block.type === "partnerLogos") {
     return (
       <PartnerLogos
         block={block as unknown as PartnerLogosBlock}
+        variant={variant}
         assetUrlForPath={assetUrlForPath}
       />
     );
@@ -180,6 +221,7 @@ function renderBlock(
     return (
       <ImageGallery
         block={block as unknown as ImageGalleryBlock}
+        variant={variant}
         assetUrlForPath={assetUrlForPath}
       />
     );
@@ -188,6 +230,7 @@ function renderBlock(
     return (
       <DocumentDownloads
         block={block as unknown as DocumentDownloadsBlock}
+        variant={variant}
         assetUrlForPath={assetUrlForPath}
       />
     );
@@ -196,6 +239,7 @@ function renderBlock(
     return (
       <EventList
         block={block as unknown as EventListBlock}
+        variant={variant}
         assetUrlForPath={assetUrlForPath}
         lang={pageLang}
       />
@@ -203,7 +247,11 @@ function renderBlock(
   }
   if (block.type === "siteFooter") {
     return (
-      <SiteFooter block={block as unknown as SiteFooterBlock} assetUrlForPath={assetUrlForPath} />
+      <SiteFooter
+        block={block as unknown as SiteFooterBlock}
+        variant={variant}
+        assetUrlForPath={assetUrlForPath}
+      />
     );
   }
   return null;
@@ -237,8 +285,21 @@ export function PageShell(props: {
   fontPreloads?: readonly string[] | undefined;
   mode?: "deploy" | "preview";
   assetUrlForPath?: AssetUrlForPath | undefined;
+  /** Active theme. Only used to decide which design variants apply. */
+  theme?: ThemeBundle | undefined;
+  /** Page-shell variant, already gated against the active theme. */
+  shellVariant?: string | undefined;
 }): preact.JSX.Element {
-  const { site, page, css, fontPreloads = [], mode = "deploy", assetUrlForPath } = props;
+  const {
+    site,
+    page,
+    css,
+    fontPreloads = [],
+    mode = "deploy",
+    assetUrlForPath,
+    theme,
+    shellVariant,
+  } = props;
   const title = pageTitle(site, page);
   const description = pageDescription(site, page);
   const ogImage = pageOgImage(page, assetUrlForPath);
@@ -309,7 +370,13 @@ export function PageShell(props: {
         ))}
         <style dangerouslySetInnerHTML={{ __html: css }} />
       </head>
-      <body>
+      {/* `data-shell-variant` is the page-shell counterpart of a Block's
+       * `data-variant`: a theme addresses its header/nav/footer treatments as
+       * `[data-shell-variant="compact"] [data-site-nav]`. Omitted entirely
+       * when the active theme offers no shell variants, so built-in output is
+       * unchanged. ADR 0046 still owns the shell; a variant restyles it and
+       * must not reorder content. */}
+      <body data-shell-variant={shellVariant}>
         {/* Site-level navigation. Hidden when only one page is in-nav for this
          * language so single-page UX is preserved. The link list is ordered
          * by navOrder; the active page is marked with aria-current="page" and
@@ -375,7 +442,12 @@ export function PageShell(props: {
         )}
         <main>
           {contentBlocks.map((block) => {
-            const rendered = renderBlock(block, assetUrlForPath, page.lang);
+            const rendered = renderBlock(
+              block,
+              assetUrlForPath,
+              page.lang,
+              variantFor(block, theme),
+            );
             if (rendered !== null) return rendered;
             return (
               <div
@@ -387,7 +459,9 @@ export function PageShell(props: {
             );
           })}
         </main>
-        {footerBlocks.map((block) => renderBlock(block, assetUrlForPath, page.lang))}
+        {footerBlocks.map((block) =>
+          renderBlock(block, assetUrlForPath, page.lang, variantFor(block, theme)),
+        )}
         {hasLazyEmbed && (
           <script
             {...{ [EMBED_LOADER_MARKER]: "" }}

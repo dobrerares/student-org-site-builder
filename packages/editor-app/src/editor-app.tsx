@@ -143,6 +143,7 @@ import { I18nProvider, useTranslator } from "./i18n-context.js";
 import { LocaleToggle } from "./locale-toggle.js";
 import { exportToZip, importFromZip, ZipImportError } from "@sosb/zip";
 import {
+  SITE_VFS_PREFIXES,
   downloadBlob,
   exportZipBasename,
   mergeAssetVfs,
@@ -150,6 +151,18 @@ import {
   populateAssetDisplayUrls,
 } from "./site-io.js";
 import { fontBlobUrlForPath, revokeFontBlobUrls } from "./font-blobs.js";
+import { revokeThemeBlobUrls, themeBlobUrlForPath } from "./theme-blobs.js";
+import { BlockVariantControl } from "./block-variant-control.js";
+import { setBlockVariant } from "./theme-switch.js";
+import {
+  exportInstalledThemePackage,
+  installThemePackageIntoVfs,
+  installedThemeIds,
+  loadThemePackageFromVfs,
+  loadThemePackageFromZip,
+  uninstallThemePackageFromVfs,
+} from "@sosb/theme-package";
+import { resolveThemeBundle, type ThemeBundle } from "@sosb/renderer";
 import { Button, Tabs } from "@sosb/ui";
 
 const MOBILE_BREAKPOINT_PX = 768;
@@ -700,6 +713,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       // (shared, session-static) rather than this per-mount cache; revoke
       // them here too so a clean unmount leaves no leaked object URLs.
       revokeFontBlobUrls();
+      revokeThemeBlobUrls();
     };
   }, []);
 
@@ -708,6 +722,81 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       setAssetEpoch((n) => n + 1);
     });
   }, []);
+
+  // Theme packages installed in this Site, loaded from the same VFS the zip
+  // round trip carries (`themes/<id>/...`). Holding them in editor state — not
+  // re-reading the VFS per render — keeps `renderSite` synchronous, which the
+  // srcdoc preview depends on.
+  const [installedThemes, setInstalledThemes] = useState<readonly ThemeBundle[]>([]);
+
+  async function reloadInstalledThemes(): Promise<void> {
+    const vfs = assetVfsRef.current!;
+    const bundles: ThemeBundle[] = [];
+    for (const id of await installedThemeIds(vfs)) {
+      try {
+        bundles.push((await loadThemePackageFromVfs(vfs, id)).bundle);
+      } catch {
+        // A damaged package must not stop the Site from opening (ADR 0051).
+        // It simply does not appear as installed, so `themeReferenceIssue`
+        // reports it and the Theme form offers the repair.
+        continue;
+      }
+    }
+    setInstalledThemes(bundles);
+  }
+
+  // Mount-only: the Site's installed Themes are read once from the VFS, and
+  // every later change goes through the import/remove handlers, which refresh
+  // this list themselves.
+  useEffect(() => {
+    void reloadInstalledThemes();
+  }, []);
+
+  async function importThemePackage(file: File): Promise<void> {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    // Load (and therefore fully validate) before writing anything: a rejected
+    // package must leave the Site exactly as it found it.
+    const loaded = await loadThemePackageFromZip(bytes);
+    await installThemePackageIntoVfs(assetVfsRef.current!, loaded);
+    // Re-importing the same id and version with different bytes is the normal
+    // rhythm of authoring a Theme, so the blob cache (keyed on id + version)
+    // has to be dropped on every import rather than trusted to notice.
+    revokeThemeBlobUrls();
+    await reloadInstalledThemes();
+  }
+
+  async function exportThemePackageFile(themeId: string): Promise<void> {
+    const { bytes, filename } = await exportInstalledThemePackage(assetVfsRef.current!, themeId);
+    // Reuse the Site export's download helper rather than hand-rolling an
+    // anchor: it attaches the element to the document before clicking, which
+    // Firefox requires and a detached anchor silently skips.
+    downloadBlob(new Blob([bytes], { type: "application/zip" }), filename);
+  }
+
+  async function removeThemePackage(themeId: string): Promise<void> {
+    await uninstallThemePackageFromVfs(assetVfsRef.current!, themeId);
+    // Drop the preview blob URLs minted for this Theme. Without this, removing
+    // and re-importing an edited Theme at the same version would keep serving
+    // the old bytes from the blob cache, and the author would conclude their
+    // edits had not taken.
+    revokeThemeBlobUrls();
+    await reloadInstalledThemes();
+  }
+
+  /**
+   * The Theme the Site currently names, resolved against the built-ins and the
+   * installed packages. `undefined` when the Site names a package that is not
+   * installed — the Theme form then leads with the repair action rather than
+   * rendering as if nothing were wrong.
+   */
+  function resolveActiveTheme(themeId: string): ThemeBundle | undefined {
+    const installed = installedThemes.find((bundle) => bundle.id === themeId);
+    if (installed !== undefined) return installed;
+    const builtin = resolveThemeBundle(themeId);
+    return builtin.id === themeId ? builtin : undefined;
+  }
+
+  const activeThemeBundle = resolveActiveTheme(snapshot.theme.id);
 
   function displayUrlForAsset(ref: AssetRefLike): string | undefined {
     return displayUrlCacheRef.current!.get(ref.hash);
@@ -720,6 +809,11 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     // are not user uploads, so they never live in the hash-keyed cache below.
     const fontUrl = fontBlobUrlForPath(path);
     if (fontUrl !== undefined) return fontUrl;
+    // An imported Theme's own fonts and decorative files, at the same
+    // `assets/theme/<id>/...` paths the build writes. Same bundle, same paths,
+    // different resolution — that is the whole of preview/export parity.
+    const themeUrl = themeBlobUrlForPath(path, activeThemeBundle);
+    if (themeUrl !== undefined) return themeUrl;
     const filename = path.slice("assets/".length);
     const dot = filename.lastIndexOf(".");
     const hash = dot >= 0 ? filename.slice(0, dot) : filename;
@@ -745,11 +839,22 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
    * page the section being edited jumped out of view on every character.
    */
   const previewHtml = useMemo(
-    () => iframeSrcdoc(snapshot, snapshot.theme.id, safeActivePageIndex, displayUrlForAssetPath),
+    () =>
+      iframeSrcdoc(
+        snapshot,
+        snapshot.theme.id,
+        safeActivePageIndex,
+        displayUrlForAssetPath,
+        activeThemeBundle,
+      ),
     // `displayUrlForAssetPath` reads a ref-held cache rather than state, so it
     // is deliberately not a dependency; `assetEpoch` is what actually changes
     // when that cache gains an entry.
-    [snapshot, safeActivePageIndex, assetEpoch],
+    //
+    // `activeThemeBundle` *is* a dependency: importing or removing a Theme
+    // package changes the bundle without touching the Site snapshot, and
+    // without this the preview would keep rendering the previous design.
+    [snapshot, safeActivePageIndex, assetEpoch, activeThemeBundle],
   );
 
   /**
@@ -761,6 +866,11 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
    */
   const previewReloadKey = [
     snapshot.theme.id,
+    // An imported Theme's version, so re-importing an edited package boots a
+    // fresh document. Morphing would update the `<style>` text but keep the
+    // old document's already-resolved `blob:` font URLs, which the import
+    // revoked — the page would render the new CSS with no fonts.
+    activeThemeBundle?.origin === "package" ? activeThemeBundle.version : "",
     safeActivePageIndex,
     snapshot.pages[safeActivePageIndex]?.lang ?? "",
   ].join("\u0000");
@@ -1036,9 +1146,22 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       props.onExport(snapshot);
       return;
     }
-    const blob = await exportToZip(snapshot, assetVfsRef.current!);
-    const basename = exportZipBasename(snapshot.org.name);
-    downloadBlob(blob, `${basename}.zip`);
+    try {
+      const blob = await exportToZip(snapshot, assetVfsRef.current!);
+      const basename = exportZipBasename(snapshot.org.name);
+      downloadBlob(blob, `${basename}.zip`);
+    } catch (err) {
+      // `build()` refuses to export a Site whose Theme package is not
+      // installed (ADR 0051) — the one failure a normal author can actually
+      // hit here. Without this catch the promise rejected unhandled: the
+      // Download button did nothing at all, with no clue why, which is the
+      // worst possible reading of "the export is blocked".
+      window.alert(
+        err instanceof Error
+          ? `Your site could not be downloaded. ${err.message}`
+          : "Your site could not be downloaded.",
+      );
+    }
   }
 
   function handleExportClick(): void {
@@ -1061,11 +1184,21 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     try {
       const imported = await importFromZip(blob);
       const vfs = assetVfsRef.current!;
-      for (const path of await vfs.list("assets/")) {
-        await vfs.delete(path);
+      // Clear every subtree the archive owns, not just `assets/`. Leaving the
+      // outgoing Site's `themes/` behind would carry its Theme packages into
+      // an unrelated project, where they would show up as installed.
+      for (const prefix of SITE_VFS_PREFIXES) {
+        for (const path of await vfs.list(prefix)) {
+          await vfs.delete(path);
+        }
       }
       await mergeAssetVfs(imported.vfs, vfs);
       await populateAssetDisplayUrls(vfs, displayUrlCacheRef.current!);
+      // The incoming archive's Theme packages are only *installed* once this
+      // list is rebuilt; without it the Site would render as if its own Theme
+      // were missing until the editor was reloaded.
+      revokeThemeBlobUrls();
+      await reloadInstalledThemes();
       setAssetEpoch((n) => n + 1);
       historyRef.current = createHistoryStore<Site>({
         initial: structuredClone(imported.siteData),
@@ -1219,7 +1352,15 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
             The look of the whole site. Changes show in the preview right away.
           </p>
         </header>
-        <ThemeForm site={snapshot} onChange={applySite} />
+        <ThemeForm
+          site={snapshot}
+          onChange={applySite}
+          activeTheme={activeThemeBundle}
+          installedThemes={installedThemes}
+          onImportTheme={importThemePackage}
+          onExportTheme={exportThemePackageFile}
+          onRemoveTheme={removeThemePackage}
+        />
       </div>
     );
   } else if (drillMode.kind === "block" && activeBlock !== undefined && activeBlockIndex >= 0) {
@@ -1248,6 +1389,11 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
           <span data-testid="inspector-eyebrow">{entry.label}</span>
           <h2>{blockTitle}</h2>
         </header>
+        <BlockVariantControl
+          block={activeBlock}
+          theme={activeThemeBundle}
+          onChange={(variant) => applySite(setBlockVariant(snapshot, activeBlock.id, variant))}
+        />
         {activeBlock.type === "customHTML" ? (
           <CustomHtmlBlockForm
             block={activeBlock as CustomHtmlBlock}

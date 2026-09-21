@@ -51,6 +51,8 @@ import { resolveAssetUrl } from "../asset-url.js";
  */
 export function Quote(props: {
   block: QuoteBlock;
+  /** Theme design variant, already gated by the renderer. Emitted as `data-variant`. */
+  variant?: string | undefined;
   assetUrlForPath?: AssetUrlForPath | undefined;
 }): preact.JSX.Element | null {
   const { id, data } = props.block;
@@ -80,7 +82,7 @@ export function Quote(props: {
     author !== undefined || authorRole !== undefined || authorImage !== undefined;
 
   return (
-    <figure data-block="quote" data-block-id={id}>
+    <figure data-block="quote" data-variant={props.variant} data-block-id={id}>
       <blockquote class="quote__text">
         <p dangerouslySetInnerHTML={{ __html: inlineHtml }} />
       </blockquote>

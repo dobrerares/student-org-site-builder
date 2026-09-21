@@ -1,7 +1,16 @@
 import { describe, expect, test } from "vitest";
 import type { Site } from "@sosb/schema";
 import heroOnly from "./fixtures/hero-only.json" with { type: "json" };
-import { renderSite, usedFamiliesFor, fontAssetsFor, fontPreloadHrefsFor } from "../src/index.js";
+import {
+  builtinThemeBundle,
+  renderSite,
+  usedFamiliesFor,
+  fontAssetsFor,
+  fontPreloadHrefsFor,
+} from "../src/index.js";
+
+/** The stub theme as a bundle — the font helpers take a resolved theme now. */
+const STUB_BUNDLE = builtinThemeBundle("stub")!;
 
 const fixture = heroOnly as unknown as Site;
 
@@ -41,7 +50,7 @@ describe("@font-face emission (gated)", () => {
   });
 
   test("usedFamiliesFor returns the registry-gated family", () => {
-    expect(usedFamiliesFor(spaceGroteskSite, "stub")).toEqual(["Space Grotesk"]);
+    expect(usedFamiliesFor(spaceGroteskSite, STUB_BUNDLE)).toEqual(["Space Grotesk"]);
   });
 
   test("emits font preload links before the inline stylesheet", () => {
@@ -56,7 +65,7 @@ describe("@font-face emission (gated)", () => {
   });
 
   test("fontPreloadHrefsFor returns the same registry-gated font paths", () => {
-    const hrefs = fontPreloadHrefsFor(spaceGroteskSite, "stub");
+    const hrefs = fontPreloadHrefsFor(spaceGroteskSite, STUB_BUNDLE);
     expect(hrefs.length).toBeGreaterThan(0);
     expect(hrefs.every((href) => href.startsWith("assets/fonts/space-grotesk-"))).toBe(true);
     expect(hrefs.every((href) => href.endsWith(".woff2"))).toBe(true);
@@ -68,14 +77,14 @@ describe("@font-face emission (negative — system fonts)", () => {
     const html = renderSite(fixture, "stub");
     expect(html).not.toContain("@font-face");
     expect(html).not.toContain('rel="preload"');
-    expect(usedFamiliesFor(fixture, "stub")).toEqual([]);
-    expect(fontPreloadHrefsFor(fixture, "stub")).toEqual([]);
+    expect(usedFamiliesFor(fixture, STUB_BUNDLE)).toEqual([]);
+    expect(fontPreloadHrefsFor(fixture, STUB_BUNDLE)).toEqual([]);
   });
 });
 
 describe("fontAssetsFor", () => {
   test("maps assets/fonts/*.woff2 paths to valid woff2 byte arrays", () => {
-    const assets = fontAssetsFor(spaceGroteskSite, "stub");
+    const assets = fontAssetsFor(spaceGroteskSite, STUB_BUNDLE);
     expect(assets.size).toBeGreaterThan(0);
     for (const [path, bytes] of assets) {
       expect(path).toMatch(/^assets\/fonts\/space-grotesk-.+\.woff2$/);
@@ -86,7 +95,7 @@ describe("fontAssetsFor", () => {
   });
 
   test("returns an empty map for a system-font site", () => {
-    expect(fontAssetsFor(fixture, "stub").size).toBe(0);
+    expect(fontAssetsFor(fixture, STUB_BUNDLE).size).toBe(0);
   });
 });
 

@@ -28,6 +28,8 @@ import { resolveAssetUrl } from "../asset-url.js";
  */
 export function ActivitiesList(props: {
   block: ActivitiesListBlock;
+  /** Theme design variant, already gated by the renderer. Emitted as `data-variant`. */
+  variant?: string | undefined;
   assetUrlForPath?: AssetUrlForPath | undefined;
 }): preact.JSX.Element | null {
   const { id, data } = props.block;
@@ -43,6 +45,7 @@ export function ActivitiesList(props: {
   return (
     <section
       data-block="activitiesList"
+      data-variant={props.variant}
       data-block-id={id}
       data-layout={layout}
       aria-labelledby={`${id}__title`}

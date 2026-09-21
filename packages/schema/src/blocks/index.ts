@@ -194,6 +194,24 @@ export const BlockEnvelopeSchema = z.looseObject({
   type: z.string().min(1),
   version: z.number().int().positive(),
   data: z.looseObject({}),
+  /**
+   * The Theme design variant currently applied to this Block (ADR 0046).
+   * Presentation only — it never changes `data`, so switching Themes cannot
+   * lose content. The renderer emits it as `data-variant`, gated on the
+   * active Theme actually offering it for this Block type.
+   */
+  variant: z.string().min(1).optional(),
+  /**
+   * Per-Theme memory of variant choices, keyed by Theme id.
+   *
+   * ADR 0046 requires that switching away from a Theme and back restores the
+   * variant the author had picked. The editor writes the outgoing Theme's
+   * choice here on every switch and reads the incoming Theme's choice back
+   * into `variant`. Keeping the memory separate from `variant` means the
+   * renderer only ever reads one field — there is no "which of these two is
+   * live?" question at render time. ADR 0051 records the split.
+   */
+  variantsByTheme: z.record(z.string(), z.string()).optional(),
 });
 
 export type BlockEnvelope = z.infer<typeof BlockEnvelopeSchema>;

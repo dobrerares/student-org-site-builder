@@ -1,0 +1,37 @@
+{
+  "name": "@sosb/theme-package",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Parse, validate, load and export developer-authored Theme packages.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.test.json",
+    "build": "tsc --build"
+  },
+  "dependencies": {
+    "@sosb/renderer": "workspace:*",
+    "@sosb/schema": "workspace:*",
+    "@sosb/vfs": "workspace:*",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@sosb/build": "workspace:*",
+    "@sosb/themes": "workspace:*",
+    "@types/jsdom": "^21.1.7",
+    "axe-core": "^4.11.4",
+    "jsdom": "^25.0.1"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./node": {
+      "types": "./src/node.ts",
+      "default": "./src/node.ts"
+    }
+  }
+}

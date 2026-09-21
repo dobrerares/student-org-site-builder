@@ -94,6 +94,8 @@ function FooterContactItem(props: {
 
 export function SiteFooter(props: {
   block: SiteFooterBlock;
+  /** Theme design variant, already gated by the renderer. Emitted as `data-variant`. */
+  variant?: string | undefined;
   assetUrlForPath?: AssetUrlForPath | undefined;
 }): preact.JSX.Element | null {
   const { id, data } = props.block;
@@ -141,6 +143,7 @@ export function SiteFooter(props: {
   return (
     <footer
       data-block="siteFooter"
+      data-variant={props.variant}
       data-block-id={id}
       class="site-footer"
       aria-labelledby={labelledBy}

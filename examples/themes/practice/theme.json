@@ -1,0 +1,189 @@
+{
+  "formatVersion": 1,
+  "id": "org.example.practice",
+  "name": "Practice",
+  "version": "1.0.0",
+  "builder": {
+    "formatVersion": 1
+  },
+  "description": "A dark, high-contrast Theme for student societies: deep navy ground, pale gold accents, heavy grotesque headlines. Recreates the project's published design reference over the builder's existing Blocks.",
+  "author": "Student Org Site Builder contributors",
+  "license": "MIT",
+  "supports": {
+    "colors": true,
+    "fonts": false,
+    "density": true,
+    "radius": false
+  },
+  "cssTokens": {
+    "--color-primary": "#0a0c39",
+    "--color-accent": "#f6df82",
+    "--color-fg": "#f4f5fb",
+    "--color-bg": "#0a0c39",
+    "--color-muted": "#a7abd0",
+    "--color-on-image": "#ffffff",
+    "--font-headline": "\"Practice Display\", system-ui, sans-serif",
+    "--font-body": "\"Practice Text\", system-ui, sans-serif",
+    "--radius-base": "0px",
+    "--measure-body": "68ch"
+  },
+  "fonts": [
+    {
+      "family": "Practice Display",
+      "weight": 400,
+      "style": "normal",
+      "file": "fonts/archivo-latin-400-normal.woff2",
+      "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
+    },
+    {
+      "family": "Practice Display",
+      "weight": 400,
+      "style": "normal",
+      "file": "fonts/archivo-latin-ext-400-normal.woff2",
+      "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF"
+    },
+    {
+      "family": "Practice Display",
+      "weight": 700,
+      "style": "normal",
+      "file": "fonts/archivo-latin-700-normal.woff2",
+      "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
+    },
+    {
+      "family": "Practice Display",
+      "weight": 700,
+      "style": "normal",
+      "file": "fonts/archivo-latin-ext-700-normal.woff2",
+      "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF"
+    },
+    {
+      "family": "Practice Display",
+      "weight": 900,
+      "style": "normal",
+      "file": "fonts/archivo-latin-900-normal.woff2",
+      "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
+    },
+    {
+      "family": "Practice Display",
+      "weight": 900,
+      "style": "normal",
+      "file": "fonts/archivo-latin-ext-900-normal.woff2",
+      "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF"
+    },
+    {
+      "family": "Practice Text",
+      "weight": 400,
+      "style": "normal",
+      "file": "fonts/inter-latin-400-normal.woff2",
+      "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
+    },
+    {
+      "family": "Practice Text",
+      "weight": 400,
+      "style": "normal",
+      "file": "fonts/inter-latin-ext-400-normal.woff2",
+      "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF"
+    },
+    {
+      "family": "Practice Text",
+      "weight": 600,
+      "style": "normal",
+      "file": "fonts/inter-latin-600-normal.woff2",
+      "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
+    },
+    {
+      "family": "Practice Text",
+      "weight": 600,
+      "style": "normal",
+      "file": "fonts/inter-latin-ext-600-normal.woff2",
+      "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF"
+    }
+  ],
+  "css": "theme.css",
+  "variants": {
+    "hero": [
+      {
+        "id": "spotlight",
+        "label": "Spotlight",
+        "description": "Full-height hero with a radial glow behind the title."
+      },
+      {
+        "id": "split",
+        "label": "Split",
+        "description": "Title and image side by side from the medium breakpoint up."
+      }
+    ],
+    "valueList": [
+      {
+        "id": "cards",
+        "label": "Cards",
+        "description": "Bordered cards on the deep ground."
+      },
+      {
+        "id": "plain",
+        "label": "Plain",
+        "description": "Borderless rows with a gold rule between them."
+      }
+    ],
+    "teamGrid": [
+      {
+        "id": "portrait",
+        "label": "Portraits",
+        "description": "Tall portraits with names beneath."
+      },
+      {
+        "id": "roster",
+        "label": "Roster",
+        "description": "Compact rows with small round photos."
+      }
+    ],
+    "activitiesList": [
+      {
+        "id": "cards",
+        "label": "Cards",
+        "description": "Equal-height project cards."
+      },
+      {
+        "id": "feature",
+        "label": "Feature",
+        "description": "Alternating wide image/text bands."
+      }
+    ],
+    "partnerLogos": [
+      {
+        "id": "grid",
+        "label": "Grid",
+        "description": "Even grid of framed logos."
+      },
+      {
+        "id": "band",
+        "label": "Band",
+        "description": "Single quiet row on a lighter panel."
+      }
+    ],
+    "ctaBanner": [
+      {
+        "id": "gold",
+        "label": "Gold",
+        "description": "Solid gold panel with dark text."
+      },
+      {
+        "id": "outline",
+        "label": "Outline",
+        "description": "Transparent panel with a gold border."
+      }
+    ]
+  },
+  "shellVariants": [
+    {
+      "id": "standard",
+      "label": "Standard",
+      "description": "Roomy header with the wordmark on the left."
+    },
+    {
+      "id": "compact",
+      "label": "Compact",
+      "description": "Tighter sticky header for content-heavy sites."
+    }
+  ]
+}

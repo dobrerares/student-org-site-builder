@@ -135,6 +135,8 @@ function readLayout(raw: unknown): "list" | "cards" {
 
 export function DocumentDownloads(props: {
   block: DocumentDownloadsBlock;
+  /** Theme design variant, already gated by the renderer. Emitted as `data-variant`. */
+  variant?: string | undefined;
   assetUrlForPath?: AssetUrlForPath | undefined;
 }): preact.JSX.Element | null {
   const { id, data } = props.block;
@@ -162,6 +164,9 @@ export function DocumentDownloads(props: {
   };
   if (headingId !== undefined) {
     sectionProps["aria-labelledby"] = headingId;
+  }
+  if (props.variant !== undefined) {
+    sectionProps["data-variant"] = props.variant;
   }
 
   return (

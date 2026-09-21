@@ -326,7 +326,19 @@ The following are explicit non-goals for v1:
 - **No collaborative editing.** Single-user sessions only. No real-time sync, no commenting, no review workflow.
 - **No mobile editing app.** Desktop-only (Electron) and browser SPA (which works on tablet but is not phone-optimized).
 - **No template gallery, marketplace, or community-shared templates.** Single curated template only.
-- **No theme creation by users.** No custom CSS, no plugin system, no theme inheritance, no third-party themes.
+- ~~**No theme creation by users.** No custom CSS, no plugin system, no theme inheritance, no third-party themes.~~
+  **Superseded.** The project now supports **developer-authored Theme packages**: a
+  `.sosb-theme.zip` carrying a manifest, arbitrary CSS, packaged fonts and decorative
+  assets, offering named Block design variants. See
+  [ADR 0046](adr/0046-trusted-executable-theme-and-block-extensions.md) for the user
+  decision, [ADR 0050](adr/0050-theme-package-format.md) for the format,
+  [ADR 0051](adr/0051-theme-package-lifecycle.md) for the lifecycle,
+  [ADR 0052](adr/0052-renderer-theme-seam.md) for the renderer seam, and
+  [how to author a Theme](how-to-author-a-theme.md) for the developer guide.
+  What remains a non-goal is **visual theme creation by non-technical users** — authoring
+  is developer-first, via a package. Custom Blocks with developer-declared editable
+  fields, and executable rendering code, are phase two
+  ([issue-106 contract](plans/issue-106-custom-block-contract.md)).
 - **No contact forms, newsletter signups, comments, RSVPs, or built-in analytics on published sites.** mailto and social links only.
 - **No nested pages, no typed pages (blog/event types), no per-page password protection.**
 - **No video or audio assets.**

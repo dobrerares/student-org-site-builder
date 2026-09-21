@@ -20,6 +20,8 @@ import { resolveAssetUrl } from "../asset-url.js";
  */
 export function ImageGallery(props: {
   block: ImageGalleryBlock;
+  /** Theme design variant, already gated by the renderer. Emitted as `data-variant`. */
+  variant?: string | undefined;
   assetUrlForPath?: AssetUrlForPath | undefined;
 }): preact.JSX.Element | null {
   const { id, data } = props.block;
@@ -52,6 +54,7 @@ export function ImageGallery(props: {
   return (
     <section
       data-block="imageGallery"
+      data-variant={props.variant}
       data-block-id={id}
       data-layout={layout}
       aria-labelledby={labelledBy}

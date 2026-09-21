@@ -33,6 +33,8 @@
  * (the `aria-label="Theme"` gives assistive tech a group label).
  */
 import type { JSX } from "react";
+import type { ThemeCatalogEntry } from "@sosb/themes";
+import type { ThemeBundle } from "@sosb/renderer";
 
 import { ThemeMiniPreview } from "@sosb/themes";
 
@@ -42,6 +44,34 @@ import { Input } from "@sosb/ui";
 export interface ThemePickerProps {
   readonly value: string;
   readonly onChange: (id: string) => void;
+  /**
+   * Imported Theme packages, listed after the built-ins (ADR 0051).
+   *
+   * They share the built-ins' radio group rather than getting a list of their
+   * own: "which look does my site use?" is one question with one answer, and a
+   * split would make an author pick a category before picking a design.
+   */
+  readonly customThemes?: readonly ThemeBundle[];
+}
+
+/**
+ * Present an imported Theme in the catalog's shape so both kinds render
+ * through one code path.
+ *
+ * The label and description come from the package manifest, which is the
+ * Theme author's own words about their Theme — the equivalent of the
+ * built-ins' catalog entry. Everything *visual* comes from the miniature
+ * render instead, for the reason in this file's header: a picture the
+ * renderer produces cannot drift from the Theme, and a hand-written swatch
+ * can.
+ */
+function entryForBundle(bundle: ThemeBundle): ThemeCatalogEntry {
+  return {
+    id: bundle.id,
+    label: bundle.name,
+    description: bundle.description ?? "",
+    fonts: { headline: [], body: [] },
+  };
 }
 
 // Stable per-page radio-group name. Only one ThemePicker mounts on a
@@ -51,7 +81,13 @@ const RADIO_GROUP_NAME = "theme-picker";
 
 export function ThemePicker(props: ThemePickerProps): JSX.Element {
   const catalog = buildThemeCatalog();
-  const isKnown = catalog.entries.some((e) => e.id === props.value);
+  const customThemes = props.customThemes ?? [];
+  const entries = [...catalog.entries, ...customThemes.map(entryForBundle)];
+  // An imported Theme is not compiled into the renderer, so its miniature has
+  // to be handed the bundle to render from. Built-ins resolve by id.
+  const bundleFor = (id: string): ThemeBundle | undefined =>
+    customThemes.find((bundle) => bundle.id === id);
+  const isKnown = entries.some((e) => e.id === props.value);
 
   return (
     <div data-theme-picker-root>
@@ -62,7 +98,7 @@ export function ThemePicker(props: ThemePickerProps): JSX.Element {
         </p>
       )}
       <div data-testid="theme-picker" role="radiogroup" aria-label="Theme">
-        {catalog.entries.map((entry) => {
+        {entries.map((entry) => {
           const isActive = entry.id === props.value;
           return (
             <label
@@ -80,7 +116,7 @@ export function ThemePicker(props: ThemePickerProps): JSX.Element {
               />
               <span data-theme-option-body>
                 <span data-theme-option-preview>
-                  <ThemeMiniPreview themeId={entry.id} />
+                  <ThemeMiniPreview themeId={entry.id} bundle={bundleFor(entry.id)} />
                 </span>
                 <span data-theme-option-label>{entry.label}</span>
                 <span data-theme-option-description>{entry.description}</span>

@@ -24,10 +24,15 @@ export function iframeSrcdoc(
   themeId: string,
   pageIndex?: number,
   assetUrlForPath?: RenderOptions["assetUrlForPath"],
+  theme?: RenderOptions["theme"],
 ): string {
   return renderPreviewHtml(site, themeId, {
     mode: "preview",
     ...(typeof pageIndex === "number" ? { pageIndex } : {}),
     ...(assetUrlForPath !== undefined ? { assetUrlForPath } : {}),
+    // The resolved Theme bundle. Passing it here — rather than letting the
+    // preview look the id up separately — is what guarantees the preview and
+    // the export are rendered from the same theme data (ADR 0052).
+    ...(theme !== undefined ? { theme } : {}),
   });
 }

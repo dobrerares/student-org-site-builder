@@ -21,25 +21,20 @@ import { assetPrefixForDistPath, depthAwareAssetResolver, resolveAssetUrl } from
 import { pageDistPath } from "./routing.js";
 import { FONT_ASSET_PREFIX, FONT_FACE_REGISTRY, woff2Base64 } from "./fonts/registry.js";
 import { base64ToBytes } from "./fonts/bytes.js";
-import { STUB_THEME_CSS, STUB_THEME_ID } from "./themes/stub.js";
-import { PRODUCTION_SITE_BASE_CSS } from "./themes/production-base.js";
+import { STUB_THEME_ID } from "./themes/stub.js";
+import { MINIMAL_THEME_ID } from "./themes/minimal.js";
+import { MODERN_THEME_ID } from "./themes/modern.js";
+import { EDITORIAL_THEME_ID } from "./themes/editorial.js";
+import { CIVIC_THEME_ID } from "./themes/civic.js";
+import { ACADEMIC_THEME_ID } from "./themes/academic.js";
+import type { ThemeBundle, ThemeFontFace } from "./theme-bundle.js";
 import {
-  MINIMAL_THEME_BASELINE_TOKENS,
-  MINIMAL_THEME_CSS,
-  MINIMAL_THEME_ID,
-} from "./themes/minimal.js";
-import {
-  MODERN_THEME_BASELINE_TOKENS,
-  MODERN_THEME_CSS,
-  MODERN_THEME_ID,
-} from "./themes/modern.js";
-import {
-  EDITORIAL_THEME_BASELINE_TOKENS,
-  EDITORIAL_THEME_CSS,
-  EDITORIAL_THEME_ID,
-} from "./themes/editorial.js";
-import { CIVIC_THEME_BASELINE_TOKENS, CIVIC_THEME_CSS, CIVIC_THEME_ID } from "./themes/civic.js";
-import { ACADEMIC_THEME_CSS, ACADEMIC_THEME_ID, ACADEMIC_THEME_TOKENS } from "./themes/academic.js";
+  composeThemeCss,
+  offersShellVariant,
+  resolveThemeBundle,
+  themeAssetPrefix,
+} from "./theme-bundle.js";
+import { rewriteThemeCssUrls } from "./theme-assets.js";
 
 export interface RenderOptions {
   /**
@@ -67,6 +62,16 @@ export interface RenderOptions {
    * uploads and imported zip assets.
    */
   readonly assetUrlForPath?: AssetUrlForPath | undefined;
+  /**
+   * The resolved theme to render under (ADR 0052). Supply this to render
+   * under an imported Theme package; omit it and the renderer looks `themeId`
+   * up among the built-in bundles.
+   *
+   * The bundle's `id` must equal `themeId` — passing a mismatched pair is a
+   * caller bug (two sources of truth for "which theme is this?"), so it
+   * throws rather than silently preferring one.
+   */
+  readonly theme?: ThemeBundle | undefined;
 }
 
 /**
@@ -101,12 +106,26 @@ export function renderSite(data: Site, themeId: string, opts?: RenderOptions): s
   // nested page (`activitati/index.html`) points at `../assets/…`. See
   // `assetPrefixForDistPath`. The editor preview's blob resolver still wins
   // for any path it can resolve.
+  //
+  // A packaged Theme's own fonts and decorative files go through this same
+  // resolver, under `assets/theme/<id>/…`, so they inherit the depth prefix
+  // for free — there is no second rule for Theme assets to fall out of step
+  // with.
   const assetUrlForPath = depthAwareAssetResolver(
     opts?.assetUrlForPath,
     assetPrefixForDistPath(pageDistPath(data, page)),
   );
-  const css = composeCss(data, themeId, assetUrlForPath);
-  const fontPreloads = fontPreloadHrefsFor(data, themeId, assetUrlForPath);
+  const bundle = resolveThemeBundle(themeId, opts?.theme);
+  const css = composeCss(data, bundle, assetUrlForPath);
+  const fontPreloads = fontPreloadHrefsFor(data, bundle, assetUrlForPath);
+  // A shell variant only applies when the *active* theme actually offers it.
+  // Gating here (rather than trusting the saved value) means a choice left
+  // over from another theme cannot leak a dangling attribute into the output.
+  const savedShellVariant = (data.theme as { shellVariant?: unknown }).shellVariant;
+  const shellVariant =
+    typeof savedShellVariant === "string" && offersShellVariant(bundle, savedShellVariant)
+      ? savedShellVariant
+      : undefined;
   const body = render(
     <PageShell
       site={data}
@@ -115,15 +134,24 @@ export function renderSite(data: Site, themeId: string, opts?: RenderOptions): s
       fontPreloads={fontPreloads}
       mode={mode}
       assetUrlForPath={assetUrlForPath}
+      theme={bundle}
+      shellVariant={shellVariant}
     />,
   );
   return `<!doctype html>${body}`;
 }
 
-function composeCss(site: Site, themeId: string, assetUrlForPath?: AssetUrlForPath): string {
-  const root = emitTokenRoot(site, themeDefaultsFor(themeId), themeBaselineTokensFor(themeId));
-  const themeCss = themeCssFor(themeId);
-  const faces = emitFontFaces(usedFamiliesFor(site, themeId), assetUrlForPath);
+function composeCss(site: Site, bundle: ThemeBundle, assetUrlForPath?: AssetUrlForPath): string {
+  const root = emitTokenRoot(site, bundle.defaults, bundle.baselineTokens);
+  const composed = composeThemeCss(bundle);
+  // Only packaged themes carry relative asset URLs worth rewriting. Skipping
+  // built-ins keeps their emitted bytes identical to the pre-seam renderer,
+  // which is what lets the golden-file matrix stay untouched by this change.
+  const themeCss =
+    bundle.origin === "package"
+      ? rewriteThemeCssUrls(composed, bundle.id, assetUrlForPath)
+      : composed;
+  const faces = emitFontFaces(site, bundle, assetUrlForPath);
   // @font-face rules go first so the browser can begin fetching woff2 assets
   // before it parses the (much larger) theme CSS. Guard the leading join so an
   // empty face block never injects a blank line (keeps system-font output and
@@ -136,12 +164,8 @@ function composeCss(site: Site, themeId: string, assetUrlForPath?: AssetUrlForPa
  * `--font-headline` / `--font-body`, gated to those present in the registry.
  * Unique and sorted for deterministic emission.
  */
-export function usedFamiliesFor(site: Site, themeId: string): string[] {
-  const { headline, body } = resolveFontFamilies(
-    site,
-    themeDefaultsFor(themeId),
-    themeBaselineTokensFor(themeId),
-  );
+export function usedFamiliesFor(site: Site, bundle: ThemeBundle): string[] {
+  const { headline, body } = resolveFontFamilies(site, bundle.defaults, bundle.baselineTokens);
   const used = new Set<string>();
   for (const family of [headline, body]) {
     if (family !== undefined && family in FONT_FACE_REGISTRY) used.add(family);
@@ -150,11 +174,66 @@ export function usedFamiliesFor(site: Site, themeId: string): string[] {
 }
 
 /**
+ * Emit the page's `@font-face` rules.
+ *
+ * Two sources, in a fixed order (ADR 0052):
+ *  1. The compile-time registry, gated to the families the resolved tokens
+ *     actually name. This is the built-in behaviour and is emitted first, so
+ *     a built-in theme's bytes are exactly what they were before the seam.
+ *  2. The theme bundle's own packaged faces, for imported Theme packages.
+ *
+ * Both halves are sorted, so output stays deterministic. A packaged theme gets
+ * both halves: its bundled display face *and* whichever builder family the
+ * author picked, which is what makes `supports.fonts` mean something.
+ */
+function emitFontFaces(site: Site, bundle: ThemeBundle, assetUrlForPath?: AssetUrlForPath): string {
+  const registry = emitRegistryFontFaces(usedFamiliesFor(site, bundle), assetUrlForPath);
+  const packaged = emitBundleFontFaces(bundle, assetUrlForPath);
+  if (registry === "") return packaged;
+  if (packaged === "") return registry;
+  return `${registry}\n${packaged}`;
+}
+
+/**
+ * `@font-face` rules for a packaged theme's own woff2 files, emitted under the
+ * canonical `assets/theme/<id>/<file>` path so build output and preview blob
+ * resolution agree. Sorted by family, then weight, then style, then file.
+ */
+function emitBundleFontFaces(bundle: ThemeBundle, assetUrlForPath?: AssetUrlForPath): string {
+  if (bundle.fontSource.kind !== "bundle") return "";
+  const faces = [...bundle.fontSource.faces].sort(sortFontFaces);
+  if (faces.length === 0) return "";
+  const prefix = themeAssetPrefix(bundle.id);
+  const rules = faces.map((face) => {
+    const src = resolveAssetUrl(prefix + face.file, assetUrlForPath);
+    const range = face.unicodeRange === undefined ? "" : `unicode-range:${face.unicodeRange};`;
+    return (
+      `@font-face{font-family:"${face.family}";font-style:${face.style};` +
+      `font-weight:${face.weight};font-display:swap;` +
+      `src:url(${src}) format("woff2");${range}}`
+    );
+  });
+  return rules.join("\n");
+}
+
+function sortFontFaces(a: ThemeFontFace, b: ThemeFontFace): number {
+  return (
+    a.family.localeCompare(b.family) ||
+    a.weight - b.weight ||
+    a.style.localeCompare(b.style) ||
+    a.file.localeCompare(b.file)
+  );
+}
+
+/**
  * Emit `@font-face` rules for the given (already-gated) families. Each family's
  * registered defs are emitted sorted by weight then subset so output is
  * deterministic. Returns `""` when no families are used (no self-hosted fonts).
  */
-function emitFontFaces(families: readonly string[], assetUrlForPath?: AssetUrlForPath): string {
+function emitRegistryFontFaces(
+  families: readonly string[],
+  assetUrlForPath?: AssetUrlForPath,
+): string {
   if (families.length === 0) return "";
   const rules: string[] = [];
   for (const family of [...families].sort()) {
@@ -181,11 +260,15 @@ function emitFontFaces(families: readonly string[], assetUrlForPath?: AssetUrlFo
  */
 export function fontPreloadHrefsFor(
   site: Site,
-  themeId: string,
+  bundle: ThemeBundle,
   assetUrlForPath?: AssetUrlForPath,
 ): string[] {
+  // Registry faces only. A packaged theme may bundle many faces, and
+  // preloading all of them would spend the page's byte budget (ADR 0033)
+  // before any content paints; `font-display: swap` already prevents
+  // permanently-invisible text. ADR 0052 records the trade-off.
   const hrefs: string[] = [];
-  for (const family of usedFamiliesFor(site, themeId)) {
+  for (const family of usedFamiliesFor(site, bundle)) {
     const defs = [...(FONT_FACE_REGISTRY[family] ?? [])].sort(
       (a, b) => a.weight - b.weight || a.subset.localeCompare(b.subset),
     );
@@ -201,9 +284,9 @@ export function fontPreloadHrefsFor(
  * `assets/fonts/<file>` VFS path. PR-F2b's `build()` consumes this to write the
  * self-hosted font files into the output. Deterministic (sorted families/defs).
  */
-export function fontAssetsFor(site: Site, themeId: string): Map<string, Uint8Array> {
+export function fontAssetsFor(site: Site, bundle: ThemeBundle): Map<string, Uint8Array> {
   const assets = new Map<string, Uint8Array>();
-  for (const family of usedFamiliesFor(site, themeId)) {
+  for (const family of usedFamiliesFor(site, bundle)) {
     const defs = [...(FONT_FACE_REGISTRY[family] ?? [])].sort(
       (a, b) => a.weight - b.weight || a.subset.localeCompare(b.subset),
     );
@@ -214,65 +297,6 @@ export function fontAssetsFor(site: Site, themeId: string): Map<string, Uint8Arr
     }
   }
   return assets;
-}
-
-/**
- * Compose theme CSS as `STUB_THEME_CSS` (layout baseline covering every
- * registered block type) plus the active theme's curated overlay (palette,
- * typography, hero composition). Later wins per the CSS cascade, so the
- * theme overrides stub where they overlap and adds rules where stub doesn't.
- *
- * The stub-as-baseline composition was the original design intent — see the
- * comment at the top of `activities-list-golden.test.ts`, which described
- * the test stack as "until #47 substitutes the CSS for `themeId === academic`,
- * the renderer falls back to the stub theme". Production themes (#28-#31, #47)
- * shipped curated overlays expecting to extend stub, but the original
- * implementation of this function returned only the theme's CSS — leaving
- * any block the theme didn't curate (most of them, since each theme styles
- * 1-3 blocks) rendering with no theme CSS at all. This composition closes
- * that gap.
- *
- * The stub theme itself returns just stub CSS (no double-emit).
- * Unknown / future themes fall back to stub-only.
- */
-function themeCssFor(themeId: string): string {
-  if (themeId === STUB_THEME_ID) return STUB_THEME_CSS;
-  const base = `${STUB_THEME_CSS}\n${PRODUCTION_SITE_BASE_CSS}`;
-  if (themeId === EDITORIAL_THEME_ID) return `${base}\n${EDITORIAL_THEME_CSS}`;
-  if (themeId === CIVIC_THEME_ID) return `${base}\n${CIVIC_THEME_CSS}`;
-  if (themeId === ACADEMIC_THEME_ID) return `${base}\n${ACADEMIC_THEME_CSS}`;
-  if (themeId === MINIMAL_THEME_ID) return `${base}\n${MINIMAL_THEME_CSS}`;
-  if (themeId === MODERN_THEME_ID) return `${base}\n${MODERN_THEME_CSS}`;
-  return STUB_THEME_CSS;
-}
-
-function themeDefaultsFor(themeId: string): Readonly<Record<string, string>> | undefined {
-  // No theme currently ships schema-keyed defaults via this path — every
-  // production theme (incl. editorial, recast onto the tuple mechanism) routes
-  // its palette/fonts/density/radius through `themeBaselineTokensFor`. The
-  // parameter is kept (and the function in the precedence chain: baseline →
-  // defaults → tuple → user) so a future theme can opt back into schema-keyed
-  // defaults without re-threading the emitter.
-  // The stub theme deliberately ships no curated defaults — it leans on the
-  // baseline values in `tokens.ts` so framework tests stay anchored.
-  void themeId;
-  return undefined;
-}
-
-/**
- * Per-theme baseline tokens shipped as raw [cssProp, value] pairs. Composed
- * into `:root` after the renderer's universal baseline and after schema-keyed
- * theme defaults, so themes that prefer to ship CSS-property-keyed palettes
- * (civic = #30, academic = #47) can do so without funnelling through
- * `SCHEMA_TOKEN_MAP`.
- */
-function themeBaselineTokensFor(themeId: string): ReadonlyArray<readonly [string, string]> {
-  if (themeId === EDITORIAL_THEME_ID) return EDITORIAL_THEME_BASELINE_TOKENS;
-  if (themeId === CIVIC_THEME_ID) return CIVIC_THEME_BASELINE_TOKENS;
-  if (themeId === ACADEMIC_THEME_ID) return ACADEMIC_THEME_TOKENS;
-  if (themeId === MODERN_THEME_ID) return MODERN_THEME_BASELINE_TOKENS;
-  if (themeId === MINIMAL_THEME_ID) return MINIMAL_THEME_BASELINE_TOKENS;
-  return [];
 }
 
 /**
@@ -292,6 +316,32 @@ export const KNOWN_THEME_IDS: readonly string[] = [
   CIVIC_THEME_ID,
   ACADEMIC_THEME_ID,
 ];
+
+// The theme seam (ADR 0052). `ThemeBundle` is the whole contract between the
+// renderer and any theme, built-in or imported; `@sosb/theme-package` builds
+// bundles from a `.sosb-theme.zip`, and the editor/build pass them back in
+// through `RenderOptions.theme`.
+export type {
+  ThemeBundle,
+  ThemeFontFace,
+  ThemeFontSource,
+  ThemeSupports,
+  ThemeVariant,
+} from "./theme-bundle.js";
+export {
+  ALL_THEME_SUPPORTS,
+  builtinThemeBundle,
+  composeThemeCss,
+  isBuiltinThemeId,
+  offersBlockVariant,
+  offersShellVariant,
+  resolveThemeBundle,
+  themeAssetPrefix,
+  variantsForBlockType,
+} from "./theme-bundle.js";
+export { rewriteThemeCssUrls, themeAssetsFor } from "./theme-assets.js";
+export { activeBlockVariant, themeReferenceIssue } from "./theme-reference.js";
+export type { ThemeReferenceIssue } from "./theme-reference.js";
 
 export { STUB_THEME_ID } from "./themes/stub.js";
 export { MINIMAL_THEME_ID } from "./themes/minimal.js";

@@ -51,7 +51,9 @@ describe("renderer CSP", () => {
     // The renderer emits `@font-face { src: url(assets/fonts/<f>.woff2) }`.
     // A deployed site serves those as real files, but the editor preview has
     // no server, so `font-blobs.ts` mints a `blob:` URL per face from the
-    // bundled base64 (see `getFontBlobUrls`). Without `blob:` here the
+    // bundled base64 (see `getFontBlobUrls`). An imported Theme package's
+    // packaged woff2 files take the same route through `theme-blobs.ts`.
+    // Without `blob:` here the
     // packaged app silently fell back to a system font, so the preview
     // misrepresented every theme's typography — the exact kind of
     // preview/export divergence this policy is supposed to permit.

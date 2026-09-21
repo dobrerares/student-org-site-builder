@@ -115,3 +115,80 @@ test("renderSite produces byte-identical output in Node and headless Chromium", 
   // a missing JSX runtime makes both strings empty).
   expect(nodeOutput.length).toBeGreaterThan(200);
 });
+
+/**
+ * The same parity guarantee for a Site rendered under a Theme package
+ * (ADR 0050 / ADR 0052).
+ *
+ * Worth its own case: a packaged Theme runs CSS `url()` rewriting and the
+ * bundle font emitter, neither of which the built-in path touches, and both
+ * of which are string manipulation that could plausibly differ between JS
+ * engines. ADR 0046 requires identical page HTML across browser preview and
+ * Electron/export for the same Site *and Theme*.
+ */
+test("renderSite is byte-identical across engines under a packaged Theme", async ({ page }) => {
+  const [browserBundle, nodeModule] = await Promise.all([bundleForBrowser(), bundleForNode()]);
+
+  const themed = structuredClone(fixture) as Record<string, unknown>;
+  themed.theme = { id: "org.example.parity", shellVariant: "compact" };
+  const firstPage = (themed.pages as { blocks: Record<string, unknown>[] }[])[0];
+  if (firstPage !== undefined && firstPage.blocks[0] !== undefined) {
+    firstPage.blocks[0].variant = "split";
+  }
+
+  const bundle = (nodeModule as unknown as { PARITY_THEME_BUNDLE?: unknown }).PARITY_THEME_BUNDLE;
+  // The Node bundle is the renderer itself, not the e2e entry, so rebuild the
+  // same bundle here rather than importing it across the boundary.
+  const nodeBundle = bundle ?? nodeThemeBundle();
+  const nodeOutput = (
+    nodeModule as unknown as {
+      renderSite: (d: unknown, id: string, o: unknown) => string;
+    }
+  ).renderSite(themed, "org.example.parity", { theme: nodeBundle });
+
+  await page.setContent("<!doctype html><html><body></body></html>");
+  await page.addScriptTag({ type: "module", content: browserBundle });
+
+  const browserOutput = await page.evaluate((siteData) => {
+    const w = window as unknown as {
+      __sosbRenderer: {
+        renderSite: (data: unknown, themeId: string, opts: unknown) => string;
+        themeBundle: { id: string };
+      };
+    };
+    const theme = w.__sosbRenderer.themeBundle;
+    return w.__sosbRenderer.renderSite(siteData, theme.id, { theme });
+  }, themed);
+
+  expect(browserOutput).toBe(nodeOutput);
+  // Sanity: the packaged-Theme code paths really did run.
+  expect(nodeOutput).toContain('url("assets/theme/org.example.parity/assets/bg.svg")');
+  expect(nodeOutput).toContain('font-family:"Parity Display"');
+  expect(nodeOutput).toContain('data-variant="split"');
+  expect(nodeOutput).toContain('data-shell-variant="compact"');
+});
+
+/**
+ * The Node-side twin of the entry's `PARITY_THEME_BUNDLE`. Kept in lockstep
+ * with `renderer-parity.entry.ts` — if the two drift, the parity assertion
+ * fails, which is the correct outcome.
+ */
+function nodeThemeBundle(): unknown {
+  return {
+    id: "org.example.parity",
+    name: "Parity",
+    version: "1.0.0",
+    origin: "package",
+    css: `[data-block="hero"]{background-image:url(assets/bg.svg);}`,
+    baselineTokens: [["--color-primary", "#123456"]],
+    supports: { colors: true, fonts: false, density: true, radius: true },
+    blockVariants: { hero: [{ id: "split", label: "Split" }] },
+    shellVariants: [{ id: "compact", label: "Compact" }],
+    fontSource: {
+      kind: "bundle",
+      faces: [{ family: "Parity Display", weight: 700, style: "normal", file: "fonts/d.woff2" }],
+      bytes: new Map([["fonts/d.woff2", new Uint8Array([1, 2, 3])]]),
+    },
+    assets: new Map([["assets/bg.svg", new Uint8Array([4, 5, 6])]]),
+  };
+}
