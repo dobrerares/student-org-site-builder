@@ -112,16 +112,47 @@ Themes own presentation, while editable content belongs to the Site and
 its Blocks.
 _Avoid_: skin, template, layout.
 
-**Custom Theme** (planned):
-A developer-authored Theme that controls Site styling, page layouts,
-and Block markup. It can be imported, exported, and shared independently
-of Site content.
+**Custom Theme**:
+A developer-authored Theme that controls Site styling and page layout.
+It can be imported, exported, and shared independently of Site content.
+Distributed as a **Theme package**.
 _Avoid_: template, skin, custom Site.
 
-**Block design variant** (planned):
+**Theme package**:
+The shareable form of a Custom Theme: a `.sosb-theme.zip` archive (or an
+equivalent directory) holding a `theme.json` manifest, a stylesheet,
+packaged fonts and decorative assets. It has a namespaced permanent id
+(`org.example.practice`) and its own semver version, separate from any
+Site. Imported packages are stored **per Site** under `themes/<id>/`, so
+they travel inside the editable archive and a recipient can open it
+offline. A package never contains Site content. See
+[ADR 0050](docs/adr/0050-theme-package-format.md).
+_Avoid_: plugin, extension pack, theme file.
+
+**Block design variant**:
 A named presentation of a Block type offered by a Theme and selected by
-the author, such as a centred hero or an image-and-text hero.
-_Avoid_: Block type, Template.
+the author, such as a spotlight hero or a split hero. Presentation only:
+choosing one never changes the Block's type or its data. Emitted as
+`data-variant` on the Block's root element. A Theme that does not offer
+the selected variant falls back to its own default, and the selection is
+remembered for switching back ([ADR 0051](docs/adr/0051-theme-package-lifecycle.md)).
+_Avoid_: Block type, Template, layout mode.
+
+**Shell variant**:
+The page-shell counterpart of a Block design variant: a named treatment
+of the header, navigation and footer offered by a Theme and chosen in
+Theme settings ("Header style"). Emitted as `data-shell-variant` on
+`<body>`. Like Block variants, it is remembered per Theme.
+_Avoid_: header layout, chrome preset.
+
+**Theme bundle**:
+The resolved, ready-to-render form of a Theme inside the codebase — id,
+CSS, baseline tokens, supported appearance controls, variants, fonts and
+assets. Built-in Themes and imported Theme packages both reduce to one,
+so the renderer has a single code path
+([ADR 0052](docs/adr/0052-renderer-theme-seam.md)). An implementation
+term, not something an author ever sees.
+_Avoid_: theme object, compiled theme.
 
 **Token**:
 A CSS custom property exposed on `:root` (`--color-primary`,

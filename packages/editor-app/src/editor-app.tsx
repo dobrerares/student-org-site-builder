@@ -744,9 +744,11 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     setInstalledThemes(bundles);
   }
 
+  // Mount-only: the Site's installed Themes are read once from the VFS, and
+  // every later change goes through the import/remove handlers, which refresh
+  // this list themselves.
   useEffect(() => {
     void reloadInstalledThemes();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function importThemePackage(file: File): Promise<void> {

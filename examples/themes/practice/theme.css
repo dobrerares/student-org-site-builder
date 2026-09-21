@@ -48,9 +48,19 @@ main > [data-block] > * {
   max-width: 72rem;
 }
 
+/* Headings.
+ *
+ * The explicit `color` matters more than it looks. The shared baseline colours
+ * headings with `--color-primary`, which is the right default on the light
+ * grounds every built-in Theme uses — and invisible on this one, where the
+ * brand navy *is* the page background. A dark Theme has to say so. */
 h1,
 h2,
-h3 {
+h3,
+h4,
+h5,
+h6 {
+  color: var(--color-fg);
   font-family: var(--font-headline);
   font-weight: 900;
   letter-spacing: -0.02em;
@@ -64,6 +74,67 @@ h2 {
 
 h3 {
   font-size: var(--type-xl);
+}
+
+/* Section titles carry a short gold rule. Targeted by the Blocks' own title
+ * classes rather than by `> h2:first-child`, because most Blocks wrap their
+ * heading in an inner container. */
+/* The `[data-block]` prefix is not decoration. The shared baseline colours
+ * these titles through equally specific selectors, so an unprefixed class
+ * selector would lose the tie on specificity and the headings would render in
+ * the brand navy — invisible against this Theme's navy ground. */
+[data-block] .value-list__title,
+[data-block] .activities-list__title,
+[data-block] .partner-logos__title,
+[data-block] .event-list__title,
+[data-block] .image-gallery__title,
+[data-block] .document-downloads__title,
+[data-block] .team-grid__title,
+[data-block] .faq__title,
+[data-block] .ctaBanner__title,
+[data-block] .contact-card__title,
+[data-block] .site-footer__heading {
+  color: var(--color-fg);
+  margin-block-end: var(--space-lg);
+  padding-block-end: var(--space-sm);
+  position: relative;
+}
+
+[data-block] .value-list__title::after,
+[data-block] .activities-list__title::after,
+[data-block] .partner-logos__title::after,
+[data-block] .event-list__title::after,
+[data-block] .image-gallery__title::after,
+[data-block] .document-downloads__title::after,
+[data-block] .team-grid__title::after,
+[data-block] .faq__title::after {
+  background-color: var(--color-accent);
+  block-size: 4px;
+  content: "";
+  inline-size: 3.5rem;
+  inset-block-end: 0;
+  inset-inline-start: 0;
+  position: absolute;
+}
+
+/* Item-level headings sit on cards and panels; keep them legible and let the
+ * accent do the work of marking them as titles. */
+[data-block] .value-list__label,
+[data-block] .activities-list__item-title,
+[data-block] .event-list__item-title,
+[data-block] .team-grid__name,
+[data-block] .team-grid__role,
+[data-block] .document-downloads__label,
+[data-block] .quote__text,
+[data-block] .hero__title {
+  color: var(--color-fg);
+}
+
+[data-block] .value-list__label,
+[data-block] .activities-list__item-title,
+[data-block] .event-list__item-title,
+[data-block] .document-downloads__label {
+  font-size: var(--type-lg);
 }
 
 p {
@@ -332,24 +403,36 @@ summary:focus-visible,
   }
 }
 
-/* -- section headings across list-ish blocks ------------------------------ */
+/* -- cards and panels ----------------------------------------------------- */
 
-[data-block] > h2:first-child,
-[data-block] > header h2 {
-  margin-block-end: var(--space-lg);
-  position: relative;
-  padding-block-end: var(--space-sm);
+/* The shared baseline gives cards a light surface; on this ground they need a
+ * lifted navy panel with a hairline gold edge instead. */
+.activities-list__item,
+.event-list__item,
+.document-downloads__item,
+.team-grid__member,
+.image-gallery__figure {
+  background-color: var(--color-surface);
+  border: 1px solid rgba(var(--color-accent-rgb), 0.16);
 }
 
-[data-block] > h2:first-child::after,
-[data-block] > header h2::after {
+.activities-list__body,
+.event-list__item > article,
+.document-downloads__item {
+  padding: var(--space-md);
+}
+
+.activities-list__badge,
+.event-list__badge {
   background-color: var(--color-accent);
-  block-size: 4px;
-  content: "";
-  inline-size: 3.5rem;
-  inset-block-end: 0;
-  inset-inline-start: 0;
-  position: absolute;
+  color: var(--color-on-accent);
+  display: inline-block;
+  font-family: var(--font-headline);
+  font-size: var(--type-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 0.15rem 0.6rem;
+  text-transform: uppercase;
 }
 
 /* -- value list ----------------------------------------------------------- */
@@ -481,9 +564,21 @@ summary:focus-visible,
 
 /* -- partners ------------------------------------------------------------- */
 
+/* Partner logos arrive in every colour an organisation happens to use. On a
+ * light ground the usual trick is to desaturate them; on this one that pushes
+ * mid-tone marks toward the background and they disappear. Lifting brightness
+ * without desaturating keeps them visible and still quiet. */
 [data-block="partnerLogos"] img {
-  filter: grayscale(1) brightness(1.6);
-  opacity: 0.85;
+  filter: brightness(1.15);
+  opacity: 0.92;
+}
+
+[data-block="partnerLogos"] .partner-logos__item {
+  background-color: var(--color-surface);
+  border: 1px solid rgba(var(--color-accent-rgb), 0.16);
+  display: grid;
+  padding: var(--space-md);
+  place-items: center;
 }
 
 [data-block="partnerLogos"][data-variant="grid"] li {
@@ -509,6 +604,40 @@ summary:focus-visible,
 }
 
 /* -- call to action ------------------------------------------------------- */
+
+/* The default (no variant chosen) already reads as a panel, so the Theme's
+ * base treatment is not "nothing" — variants shift it, they do not supply it. */
+[data-block="ctaBanner"] .ctaBanner__inner {
+  align-items: center;
+  background-color: var(--color-surface);
+  border: 1px solid rgba(var(--color-accent-rgb), 0.3);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  justify-content: space-between;
+  padding: var(--space-lg);
+}
+
+/* Matches the baseline's own `[data-block="ctaBanner"].ctaBanner--solid
+ * .ctaBanner__title`, which is a three-part selector — a shorter one would
+ * lose and the title would stay brand-navy on a navy panel. */
+[data-block="ctaBanner"].ctaBanner--solid .ctaBanner__title,
+[data-block="ctaBanner"].ctaBanner--solid .ctaBanner__subtitle,
+[data-block="ctaBanner"] .ctaBanner__title,
+[data-block="ctaBanner"] .ctaBanner__subtitle {
+  color: var(--color-fg);
+  margin: 0;
+  text-align: start;
+}
+
+[data-block="ctaBanner"].ctaBanner--solid .ctaBanner__inner {
+  background-color: var(--color-surface);
+}
+
+[data-block="ctaBanner"] .ctaBanner__button--primary {
+  background-color: var(--color-accent);
+  color: var(--color-on-accent);
+}
 
 [data-block="ctaBanner"] > * {
   padding: var(--space-lg);

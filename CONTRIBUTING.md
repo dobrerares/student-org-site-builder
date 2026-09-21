@@ -91,20 +91,21 @@ packages/<name>/
 `-- src/index.ts     # entry point
 ```
 
-The 16 packages are:
+The 17 packages are:
 
 #### Deep modules (encapsulated behaviour, narrow interface)
 
-| Package    | Purpose                                                                                         |
-| ---------- | ----------------------------------------------------------------------------------------------- |
-| `schema`   | Block + site schemas, validation, severity tiers, migrations, preserve-unknown-keys.            |
-| `renderer` | Pure `(siteData, themeId) -> HTML`. Same code in browser preview and Node build.                |
-| `markdown` | Strict-whitelist sanitised markdown for `richText`, `faq`, `quote`.                             |
-| `vfs`      | Virtual filesystem with multiple drivers (Memory, IndexedDB, OPFS, Electron FS, Zip).           |
-| `assets`   | Image processing pipeline; environment-specific implementations behind a unified interface.     |
-| `zip`      | Bidirectional import/export with round-trip preservation.                                       |
-| `build`    | `(siteData) -> distFolder` pipeline, including SEO metadata generation and budget verification. |
-| `i18n`     | Keyed message lookup with RO/EN, browser language detection, override persistence.              |
+| Package         | Purpose                                                                                         |
+| --------------- | ----------------------------------------------------------------------------------------------- |
+| `schema`        | Block + site schemas, validation, severity tiers, migrations, preserve-unknown-keys.            |
+| `renderer`      | Pure `(siteData, themeId) -> HTML`. Same code in browser preview and Node build.                |
+| `markdown`      | Strict-whitelist sanitised markdown for `richText`, `faq`, `quote`.                             |
+| `vfs`           | Virtual filesystem with multiple drivers (Memory, IndexedDB, OPFS, Electron FS, Zip).           |
+| `assets`        | Image processing pipeline; environment-specific implementations behind a unified interface.     |
+| `zip`           | Bidirectional import/export with round-trip preservation.                                       |
+| `build`         | `(siteData) -> distFolder` pipeline, including SEO metadata generation and budget verification. |
+| `theme-package` | Parse, validate, load and export developer-authored Theme packages (ADR 0050).                  |
+| `i18n`          | Keyed message lookup with RO/EN, browser language detection, override persistence.              |
 
 #### Integration / UI modules
 
@@ -197,6 +198,29 @@ In short, a new theme:
 A theme PR that touches schema is almost always a sign that something is
 in the wrong layer — token shapes belong in `@sosb/schema`, theme CSS
 belongs in `@sosb/themes`.
+
+## How to author a Theme package
+
+The above describes adding a **built-in** theme, which ships inside the
+builder. Developers outside this repository (and anyone recreating a
+specific design for one organisation) instead author a **Theme package**: a
+`.sosb-theme.zip` with a manifest, arbitrary CSS, packaged fonts and
+decorative assets, which an author imports into their Site.
+
+The guide is [`docs/how-to-author-a-theme.md`](docs/how-to-author-a-theme.md)
+— it carries the full `theme.json` reference and the limits the builder
+enforces. A complete worked example lives at `examples/themes/practice/`.
+The decisions behind the format are [ADR 0050](docs/adr/0050-theme-package-format.md),
+[ADR 0051](docs/adr/0051-theme-package-lifecycle.md) and
+[ADR 0052](docs/adr/0052-renderer-theme-seam.md).
+
+Two things to know before choosing between the two:
+
+- A Theme package needs no builder release, and it may use arbitrary CSS
+  and bundled fonts (ADR 0046). Built-in themes keep ADR 0021's
+  token-only styling discipline and the script budget.
+- Packages are validated on import and **must work offline**: remote
+  `@import` and `url(http…)` are rejected, not warned about.
 
 ## How to add an ADR
 
