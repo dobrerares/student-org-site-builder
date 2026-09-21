@@ -227,7 +227,10 @@ export function resolveEmbed(data: EmbedData): ResolvedEmbed {
   return resolver(data.url, data.privacyMode ?? true);
 }
 
-export function Embed(props: { block: EmbedBlock }): preact.JSX.Element | null {
+export function Embed(props: {
+  block: EmbedBlock;
+  variant?: string | undefined;
+}): preact.JSX.Element | null {
   const { id } = props.block;
   const rawData = props.block.data as { provider?: unknown; url?: unknown };
 
@@ -250,6 +253,7 @@ export function Embed(props: { block: EmbedBlock }): preact.JSX.Element | null {
     return (
       <figure
         data-block="embed"
+        data-variant={props.variant}
         data-block-id={id}
         data-embed-provider={data.provider}
         class="embed embed--blockquote"
@@ -273,6 +277,7 @@ export function Embed(props: { block: EmbedBlock }): preact.JSX.Element | null {
     return (
       <figure
         data-block="embed"
+        data-variant={props.variant}
         data-block-id={id}
         data-embed-provider={data.provider}
         data-embed-src={resolved.src}
@@ -304,6 +309,7 @@ export function Embed(props: { block: EmbedBlock }): preact.JSX.Element | null {
   return (
     <figure
       data-block="embed"
+      data-variant={props.variant}
       data-block-id={id}
       data-embed-provider={data.provider}
       class="embed"

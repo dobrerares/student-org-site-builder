@@ -3,6 +3,8 @@ import { ZipDriver } from "@sosb/vfs/zip-driver";
 import type { Vfs } from "@sosb/vfs/vfs";
 import { build } from "@sosb/build";
 import type { Site } from "@sosb/schema";
+import type { ThemeBundle } from "@sosb/renderer";
+import { installedThemeIds, loadThemePackageFromVfs } from "@sosb/theme-package";
 
 import { generateDeployMd, type DeployLanguage } from "./deploy-md.js";
 
@@ -65,10 +67,33 @@ export async function exportToZip(siteData: unknown, vfs: Vfs): Promise<Blob> {
     await driver.write(path, bytes);
   }
 
+  // 2b. Installed Theme packages, under `themes/<id>/...`.
+  //
+  // These travel inside the editable archive on purpose (issue-106 plan): a
+  // recipient must be able to open the archive offline and see the intended
+  // design without hunting down the Theme package separately. That is also
+  // what makes an archive a complete hand-off rather than a reference to
+  // things the sender happens to have installed.
+  //
+  // They are *not* mirrored into `dist/`: the build already emits whatever
+  // the Theme actually contributes at `assets/theme/<id>/...`, and copying
+  // the raw package in as well would ship the manifest and READMEs to the
+  // public site for no reason.
+  for (const path of await vfs.list("themes/")) {
+    await driver.write(path, await vfs.read(path));
+  }
+
   // 3. Built static site. The editor's export-confirm flow already showed
   // validation issues; `skipValidation` lets the user's explicit download
   // choice still produce a self-contained zip.
-  const dist = build(siteData as Site, { skipValidation: true });
+  //
+  // Theme packages are resolved from the VFS we were handed, not from editor
+  // state: the archive and the built site must agree about which Theme this
+  // is, and the VFS is the thing being archived.
+  const dist = build(siteData as Site, {
+    skipValidation: true,
+    themes: await installedThemeBundles(vfs),
+  });
   for (const [path, value] of dist) {
     // The dist Map carries text artefacts (HTML/XML/JSON) as `string` and
     // binary artefacts (self-hosted woff2 fonts at `dist/assets/fonts/...`) as
@@ -102,6 +127,26 @@ export async function exportToZip(siteData: unknown, vfs: Vfs): Promise<Blob> {
 
   const zipBytes = driver.toZipBytes();
   return new Blob([zipBytes], { type: "application/zip" });
+}
+
+/**
+ * Load every Theme package installed in this VFS into a renderable bundle.
+ *
+ * A package that fails to load is skipped rather than aborting the export: if
+ * the Site does not use it, its damage is irrelevant to this download, and if
+ * the Site *does* use it, `build()` raises `BuildThemeMissingError` with a
+ * message naming the Theme — which is the more useful error of the two.
+ */
+async function installedThemeBundles(vfs: Vfs): Promise<ThemeBundle[]> {
+  const bundles: ThemeBundle[] = [];
+  for (const id of await installedThemeIds(vfs)) {
+    try {
+      bundles.push((await loadThemePackageFromVfs(vfs, id)).bundle);
+    } catch {
+      continue;
+    }
+  }
+  return bundles;
 }
 
 function deployLanguageFor(siteData: unknown): DeployLanguage {

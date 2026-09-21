@@ -41,6 +41,8 @@ function readButton(raw: unknown): RenderableButton | undefined {
 
 export function CtaBanner(props: {
   block: CtaBannerBlock;
+  /** Theme design variant, already gated by the renderer. Emitted as `data-variant`. */
+  variant?: string | undefined;
   assetUrlForPath?: AssetUrlForPath | undefined;
 }): preact.JSX.Element | null {
   const { id, data } = props.block;
@@ -67,6 +69,7 @@ export function CtaBanner(props: {
   return (
     <section
       data-block="ctaBanner"
+      data-variant={props.variant}
       data-block-id={id}
       class={sectionClasses.join(" ")}
       aria-labelledby={title !== undefined ? `${id}__title` : undefined}

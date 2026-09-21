@@ -276,7 +276,10 @@ function hasRenderableMap(mapEmbed: MapEmbedShape | undefined): boolean {
   return false;
 }
 
-export function ContactCard(props: { block: ContactCardBlock }): preact.JSX.Element | null {
+export function ContactCard(props: {
+  block: ContactCardBlock;
+  variant?: string | undefined;
+}): preact.JSX.Element | null {
   const { id, data } = props.block;
   const address = asString(data.address);
   const email = asString(data.email);
@@ -331,6 +334,7 @@ export function ContactCard(props: { block: ContactCardBlock }): preact.JSX.Elem
   return (
     <section
       data-block="contactCard"
+      data-variant={props.variant}
       data-block-id={id}
       aria-labelledby={`${id}__heading`}
       class="contact-card"

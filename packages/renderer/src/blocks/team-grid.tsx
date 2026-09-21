@@ -27,6 +27,8 @@ import { resolveAssetUrl } from "../asset-url.js";
  */
 export function TeamGrid(props: {
   block: TeamGridBlock;
+  /** Theme design variant, already gated by the renderer. Emitted as `data-variant`. */
+  variant?: string | undefined;
   assetUrlForPath?: AssetUrlForPath | undefined;
 }): preact.JSX.Element | null {
   const { id, data } = props.block;
@@ -51,6 +53,7 @@ export function TeamGrid(props: {
   return (
     <section
       data-block="teamGrid"
+      data-variant={props.variant}
       data-block-id={id}
       class="team-grid"
       aria-labelledby={title !== undefined ? `${id}__title` : undefined}

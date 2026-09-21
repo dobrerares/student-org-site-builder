@@ -1,8 +1,8 @@
 {
-  "name": "@sosb/zip",
+  "name": "@sosb/theme-package",
   "version": "0.0.0",
   "private": true,
-  "description": "Bidirectional import/export with round-trip preservation.",
+  "description": "Parse, validate, load and export developer-authored Theme packages.",
   "license": "MIT",
   "type": "module",
   "main": "./src/index.ts",
@@ -12,10 +12,13 @@
     "build": "tsc --build"
   },
   "dependencies": {
-    "@sosb/build": "workspace:*",
     "@sosb/renderer": "workspace:*",
     "@sosb/schema": "workspace:*",
-    "@sosb/theme-package": "workspace:*",
-    "@sosb/vfs": "workspace:*"
+    "@sosb/vfs": "workspace:*",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@sosb/build": "workspace:*",
+    "@sosb/themes": "workspace:*"
   }
 }

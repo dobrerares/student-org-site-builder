@@ -26,7 +26,10 @@ import { markdownToHtml } from "@sosb/markdown";
  * contract; the renderer's `richtext-block.test.ts` re-asserts it at the
  * page level.
  */
-export function RichText(props: { block: RichTextBlock }): preact.JSX.Element | null {
+export function RichText(props: {
+  block: RichTextBlock;
+  variant?: string | undefined;
+}): preact.JSX.Element | null {
   const { id, data } = props.block;
   const markdownSource = typeof data.markdown === "string" ? data.markdown : "";
 
@@ -42,6 +45,7 @@ export function RichText(props: { block: RichTextBlock }): preact.JSX.Element | 
   return (
     <section
       data-block="richText"
+      data-variant={props.variant}
       data-block-id={id}
       data-title-align={titleAlign}
       data-paragraph-align={paragraphAlign}

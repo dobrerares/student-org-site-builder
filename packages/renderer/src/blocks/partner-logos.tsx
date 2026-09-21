@@ -27,6 +27,8 @@ import { resolveAssetUrl } from "../asset-url.js";
  */
 export function PartnerLogos(props: {
   block: PartnerLogosBlock;
+  /** Theme design variant, already gated by the renderer. Emitted as `data-variant`. */
+  variant?: string | undefined;
   assetUrlForPath?: AssetUrlForPath | undefined;
 }): preact.JSX.Element | null {
   const { id, data } = props.block;
@@ -52,6 +54,7 @@ export function PartnerLogos(props: {
   return (
     <section
       data-block="partnerLogos"
+      data-variant={props.variant}
       data-block-id={id}
       data-presentation={presentation === "footer" ? presentation : undefined}
       aria-labelledby={title !== undefined ? `${id}__title` : undefined}

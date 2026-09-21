@@ -19,6 +19,8 @@ import { resolveAssetUrl } from "../asset-url.js";
  */
 export function Hero(props: {
   block: HeroBlock;
+  /** Theme design variant, already gated by the renderer. Emitted as `data-variant`. */
+  variant?: string | undefined;
   assetUrlForPath?: AssetUrlForPath | undefined;
 }): preact.JSX.Element {
   const { id, data } = props.block;
@@ -38,6 +40,7 @@ export function Hero(props: {
   return (
     <section
       data-block="hero"
+      data-variant={props.variant}
       data-block-id={id}
       class={hasImage ? "hero hero--has-image" : "hero"}
       aria-labelledby={`${id}__title`}

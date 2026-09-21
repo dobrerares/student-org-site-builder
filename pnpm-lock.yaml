@@ -345,6 +345,28 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
 
+  packages/theme-package:
+    dependencies:
+      '@sosb/renderer':
+        specifier: workspace:*
+        version: link:../renderer
+      '@sosb/schema':
+        specifier: workspace:*
+        version: link:../schema
+      '@sosb/vfs':
+        specifier: workspace:*
+        version: link:../vfs
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@sosb/build':
+        specifier: workspace:*
+        version: link:../build
+      '@sosb/themes':
+        specifier: workspace:*
+        version: link:../themes
+
   packages/themes:
     dependencies:
       '@sosb/renderer':
@@ -479,9 +501,15 @@ importers:
       '@sosb/build':
         specifier: workspace:*
         version: link:../build
+      '@sosb/renderer':
+        specifier: workspace:*
+        version: link:../renderer
       '@sosb/schema':
         specifier: workspace:*
         version: link:../schema
+      '@sosb/theme-package':
+        specifier: workspace:*
+        version: link:../theme-package
       '@sosb/vfs':
         specifier: workspace:*
         version: link:../vfs

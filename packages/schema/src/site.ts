@@ -36,8 +36,27 @@ const ThemeTokensSchema = z.looseObject({
 });
 
 const ThemeSchema = z.looseObject({
+  /**
+   * Built-in Theme id (`modern`, `civic`, …) or an imported Theme package's
+   * namespaced id (`org.example.practice`). An id that resolves to neither is
+   * a validation error with a repair action, not a silent fallback — see
+   * ADR 0051 and `themeReferenceIssue` in `@sosb/renderer`.
+   */
   id: z.string().min(1),
+  /**
+   * Version of the imported Theme package this Site was last edited against.
+   * Absent for built-in Themes. Recorded so a same-id import can tell the
+   * author whether it is an upgrade, a downgrade, or the same version.
+   */
+  version: z.string().min(1).optional(),
   tokens: ThemeTokensSchema.optional(),
+  /** Active page-shell variant (header/nav/footer treatment), if any. */
+  shellVariant: z.string().min(1).optional(),
+  /**
+   * Per-Theme memory of shell-variant choices, keyed by Theme id. The Block
+   * envelope's `variantsByTheme` counterpart, with the same rationale.
+   */
+  shellVariantsByTheme: z.record(z.string(), z.string()).optional(),
 });
 
 const PageSeoSchema = z.looseObject({

@@ -17,7 +17,17 @@
 
 import type { Page, Site, ValidationIssue } from "@sosb/schema";
 import { validate } from "@sosb/schema";
-import { fontAssetsFor, hreflangEntriesFor, pageDistPath, pagePath, renderSite } from "@sosb/renderer";
+import type { ThemeBundle } from "@sosb/renderer";
+import {
+  fontAssetsFor,
+  hreflangEntriesFor,
+  isBuiltinThemeId,
+  pageDistPath,
+  pagePath,
+  renderSite,
+  resolveThemeBundle,
+  themeAssetsFor,
+} from "@sosb/renderer";
 import {
   measureBudgets,
   formatBudgetViolations,
@@ -43,6 +53,29 @@ export {
  * Tracking issue: #25 — the build pipeline runs the same validation as
  * the editor; errors fail the build, warnings are logged.
  */
+/**
+ * Thrown when `site.theme.id` names a Theme package that was not supplied to
+ * `build()`.
+ *
+ * Deliberately fatal rather than a fallback to a built-in Theme (ADR 0051).
+ * An export is the artefact an organisation publishes; shipping it silently
+ * restyled is worse than not shipping it, because nobody involved finds out.
+ * The editor catches this earlier and offers a repair, so reaching here means
+ * a scripted or CLI build — exactly the case that needs a loud failure.
+ */
+export class BuildThemeMissingError extends Error {
+  public override readonly name = "BuildThemeMissingError";
+  public readonly themeId: string;
+
+  constructor(themeId: string) {
+    super(
+      `build: this Site uses the Theme package "${themeId}", which was not supplied. ` +
+        `Pass it through options.themes, or switch the Site to a built-in Theme.`,
+    );
+    this.themeId = themeId;
+  }
+}
+
 export class BuildValidationError extends Error {
   public override readonly name = "BuildValidationError";
   public readonly errors: readonly ValidationIssue[];
@@ -93,6 +126,18 @@ export interface BuildOptions {
   readonly _testInjectExtraCss?: string;
   readonly onWarning?: (issue: ValidationIssue) => void;
   readonly skipValidation?: boolean;
+  /**
+   * Theme packages available to this build (ADR 0050/0052).
+   *
+   * The build pipeline stays a pure function — it does not read the VFS or a
+   * filesystem to find Themes. The caller resolves them (the editor from the
+   * Site's `themes/` subtree, CI from a directory) and passes the bundles in,
+   * so `build()` remains deterministic and browser-safe.
+   *
+   * Built-in Themes need no entry here. A Site naming a Theme that is neither
+   * built in nor listed fails with `BuildThemeMissingError`.
+   */
+  readonly themes?: readonly ThemeBundle[];
 }
 
 /**
@@ -139,6 +184,14 @@ export function build(site: Site, options: BuildOptions = {}): DistFolder {
   const themeId = options.themeId ?? site.theme.id;
   const siteUrl = normaliseSiteUrl(options.siteUrl);
 
+  // Resolve the Theme once and render every page through the same bundle, so
+  // a multi-page build cannot end up with pages styled by different Themes.
+  const supplied = options.themes?.find((bundle) => bundle.id === themeId);
+  if (supplied === undefined && !isBuiltinThemeId(themeId)) {
+    throw new BuildThemeMissingError(themeId);
+  }
+  const themeBundle = resolveThemeBundle(themeId, supplied);
+
   if (site.pages.length === 0) {
     throw new Error("build: site has no pages");
   }
@@ -148,7 +201,7 @@ export function build(site: Site, options: BuildOptions = {}): DistFolder {
   // Insert pages in `pages[]` order so the Map iteration order is
   // deterministic and the home page (when it is at index 0) is first.
   site.pages.forEach((page, idx) => {
-    const renderedHtml = renderSite(site, themeId, { pageIndex: idx });
+    const renderedHtml = renderSite(site, themeId, { pageIndex: idx, theme: themeBundle });
     let html = injectSeoMeta(renderedHtml, site, page, siteUrl);
     if (options._testInjectExtraCss !== undefined && options._testInjectExtraCss.length > 0) {
       html = injectExtraInlineCss(html, options._testInjectExtraCss);
@@ -168,7 +221,14 @@ export function build(site: Site, options: BuildOptions = {}): DistFolder {
   // compile-time constants, so this preserves byte-identical builds. Inject
   // before `measureBudgets` so the new `fonts` metric sees them. Returns an
   // empty Map for system-font themes (no entries added).
-  for (const [path, bytes] of fontAssetsFor(site, themeId)) {
+  for (const [path, bytes] of fontAssetsFor(site, themeBundle)) {
+    dist.set(path, bytes);
+  }
+
+  // A Theme package's own fonts and decorative files, at the canonical
+  // `assets/theme/<id>/...` paths its rewritten CSS points at. Empty for
+  // built-in Themes, so their dist output is unchanged.
+  for (const [path, bytes] of themeAssetsFor(themeBundle)) {
     dist.set(path, bytes);
   }
 

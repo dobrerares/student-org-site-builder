@@ -33,7 +33,10 @@ import { sanitizeCustomHtml } from "@sosb/renderer/internal/sanitize";
  *    editor warning. This is the documented escape hatch contract from the
  *    PRD's customHTML block.
  */
-export function CustomHtml(props: { block: CustomHtmlBlock }): preact.JSX.Element | null {
+export function CustomHtml(props: {
+  block: CustomHtmlBlock;
+  variant?: string | undefined;
+}): preact.JSX.Element | null {
   const { id, data } = props.block;
   const rawHtml = typeof data.html === "string" ? data.html : "";
 
@@ -48,6 +51,7 @@ export function CustomHtml(props: { block: CustomHtmlBlock }): preact.JSX.Elemen
   return (
     <section
       data-block="customHTML"
+      data-variant={props.variant}
       data-block-id={id}
       dangerouslySetInnerHTML={{ __html: html }}
     />
