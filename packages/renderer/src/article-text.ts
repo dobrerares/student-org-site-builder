@@ -43,6 +43,8 @@ const COPY = {
     tagsLabel: "Etichete",
     languageLabel: "Limbă",
     publishedOn: "Publicat pe",
+    movedHeading: "Această pagină s-a mutat.",
+    movedLink: "Continuă către articol",
   },
   en: {
     emptyList: "No articles yet.",
@@ -50,6 +52,8 @@ const COPY = {
     tagsLabel: "Tags",
     languageLabel: "Language",
     publishedOn: "Published on",
+    movedHeading: "This page has moved.",
+    movedLink: "Continue to the article",
   },
 } as const;
 

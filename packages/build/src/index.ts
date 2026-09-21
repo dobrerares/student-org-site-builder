@@ -15,10 +15,15 @@
  * `pagePath`); see ADR 0007. `hreflang` annotations remain owned by #24.
  */
 
-import type { Page, Site, ValidationIssue } from "@sosb/schema";
+import type { Article, Page, Site, ValidationIssue } from "@sosb/schema";
 import { validate } from "@sosb/schema";
 import type { ThemeBundle } from "@sosb/renderer";
 import {
+  articleCopy,
+  articleDistPath,
+  articleHreflangEntriesFor,
+  articlePath,
+  articleRedirectsFor,
   fontAssetsFor,
   hreflangEntriesFor,
   isBuiltinThemeId,
@@ -28,12 +33,13 @@ import {
   resolveThemeBundle,
   themeAssetsFor,
 } from "@sosb/renderer";
+import type { ArticleRedirect, HreflangEntry } from "@sosb/renderer";
 import {
   measureBudgets,
   formatBudgetViolations,
   type BudgetReport,
 } from "./budget.js";
-import { jsonLdBlobsForPage, renderJsonLdScripts } from "./json-ld.js";
+import { jsonLdBlobsForArticle, jsonLdBlobsForPage, renderJsonLdScripts } from "./json-ld.js";
 
 export {
   BUDGET_LIMITS,
@@ -207,6 +213,28 @@ export function build(site: Site, options: BuildOptions = {}): DistFolder {
       html = injectExtraInlineCss(html, options._testInjectExtraCss);
     }
     dist.set(pageDistPath(site, page), html);
+  });
+
+  // Articles, after Pages so the Map order reads Pages → Articles → site
+  // files. Drafts are skipped entirely: they stay in the editable archive but
+  // are not part of the public Site (ADR 0047). Unlisted Articles ARE emitted
+  // — they are reachable by URL, just undiscoverable.
+  (site.articles ?? []).forEach((article, idx) => {
+    if (article.state === "draft") return;
+    const renderedHtml = renderSite(site, themeId, { articleIndex: idx, theme: themeBundle });
+    let html = injectArticleSeoMeta(renderedHtml, site, article, siteUrl);
+    if (options._testInjectExtraCss !== undefined && options._testInjectExtraCss.length > 0) {
+      html = injectExtraInlineCss(html, options._testInjectExtraCss);
+    }
+    dist.set(articleDistPath(site, article), html);
+
+    // Retired slugs keep working. The output is a static folder with no server
+    // to configure, so a redirect has to be a real HTML file: a meta refresh
+    // for browsers plus a canonical link so search engines consolidate on the
+    // current URL instead of indexing the stub.
+    for (const redirect of articleRedirectsFor(site, article)) {
+      dist.set(redirect.distPath, renderRedirectHtml(redirect, article.lang, siteUrl));
+    }
   });
 
   dist.set("robots.txt", emitRobotsTxt(siteUrl));
@@ -398,15 +426,109 @@ function injectSeoMeta(
   // gets a previewable structured-data set before they pick a host).
   const jsonLd = renderJsonLdScripts(jsonLdBlobsForPage(site, page, siteUrl));
 
-  const overlay = `${tags.join("")}${jsonLd}`;
-  if (overlay.length === 0) return working;
-  const headCloseIdx = working.indexOf("</head>");
+  return spliceIntoHead(working, `${tags.join("")}${jsonLd}`);
+}
+
+/**
+ * The Article counterpart of `injectSeoMeta`.
+ *
+ * Same overlay, three different sources: the canonical URL comes from
+ * `articlePath`, the share image from the Article's cover rather than a hero
+ * Block, and the alternates from the publication-aware
+ * `articleHreflangEntriesFor` (which returns nothing at all for Unlisted
+ * Articles, so an Unlisted URL advertises no alternates to match its
+ * `noindex`).
+ */
+function injectArticleSeoMeta(
+  html: string,
+  site: Site,
+  article: Article,
+  siteUrl: string | undefined,
+): string {
+  let working = html;
+  const tags: string[] = [];
+
+  if (siteUrl !== undefined) {
+    const canonical = `${siteUrl}${articlePath(site, article)}`;
+    const coverPath =
+      typeof article.cover?.path === "string" && article.cover.path.length > 0
+        ? article.cover.path
+        : undefined;
+    const ogImage = coverPath === undefined ? undefined : absolutise(siteUrl, coverPath);
+    tags.push(`<link rel="canonical" href="${escapeAttr(canonical)}"/>`);
+    tags.push(`<meta property="og:url" content="${escapeAttr(canonical)}"/>`);
+    if (ogImage !== undefined) {
+      tags.push(`<meta property="og:image" content="${escapeAttr(ogImage)}"/>`);
+    }
+    for (const entry of articleHreflangEntriesFor(site, article)) {
+      tags.push(
+        `<link rel="alternate" hreflang="${escapeAttr(entry.hreflang)}" href="${escapeAttr(`${siteUrl}${entry.href}`)}"/>`,
+      );
+    }
+    const relativeHreflangPattern = /<link rel="alternate" hreflang="[^"]+" href="[^"]*"\s*\/>/g;
+    working = working.replace(relativeHreflangPattern, "");
+
+    if (coverPath !== undefined) {
+      const twitterImagePattern = /<meta name="twitter:image" content="([^"]*)"\s*\/>/;
+      working = working.replace(twitterImagePattern, (_match, value: string) => {
+        return `<meta name="twitter:image" content="${escapeAttr(absolutise(siteUrl, value))}"/>`;
+      });
+    }
+  }
+
+  const jsonLd = renderJsonLdScripts(jsonLdBlobsForArticle(site, article, siteUrl));
+  return spliceIntoHead(working, `${tags.join("")}${jsonLd}`);
+}
+
+function spliceIntoHead(html: string, overlay: string): string {
+  if (overlay.length === 0) return html;
+  const headCloseIdx = html.indexOf("</head>");
   if (headCloseIdx === -1) {
     // The renderer always emits `<head>...</head>`. If that contract ever
     // changes, the parity tests catch it before we ship — but be defensive.
-    return working;
+    return html;
   }
-  return `${working.slice(0, headCloseIdx)}${overlay}${working.slice(headCloseIdx)}`;
+  return `${html.slice(0, headCloseIdx)}${overlay}${html.slice(headCloseIdx)}`;
+}
+
+/**
+ * A static redirect stub for a retired Article slug.
+ *
+ * Static hosting gives us no redirect rules, so the stub has to do the work
+ * itself: a zero-delay `http-equiv="refresh"` moves browsers, `rel="canonical"`
+ * tells crawlers where the content actually lives, and `noindex` keeps the stub
+ * itself out of results. The visible link is the fallback for anyone whose
+ * browser blocks meta refresh.
+ */
+function renderRedirectHtml(
+  redirect: ArticleRedirect,
+  lang: string,
+  siteUrl: string | undefined,
+): string {
+  const target = siteUrl === undefined ? redirect.to : `${siteUrl}${redirect.to}`;
+  const heading = articleCopy(lang, "movedHeading");
+  const linkLabel = articleCopy(lang, "movedLink");
+  return [
+    "<!doctype html>",
+    `<html lang="${escapeAttr(lang)}">`,
+    "<head>",
+    '<meta charset="utf-8"/>',
+    '<meta name="viewport" content="width=device-width, initial-scale=1"/>',
+    '<meta name="robots" content="noindex"/>',
+    `<meta http-equiv="refresh" content="0; url=${escapeAttr(redirect.to)}"/>`,
+    `<link rel="canonical" href="${escapeAttr(target)}"/>`,
+    `<title>${escapeHtmlText(heading)}</title>`,
+    "</head>",
+    "<body>",
+    `<p>${escapeHtmlText(heading)} <a href="${escapeAttr(redirect.to)}">${escapeHtmlText(linkLabel)}</a></p>`,
+    "</body>",
+    "</html>",
+    "",
+  ].join("\n");
+}
+
+function escapeHtmlText(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 /**
@@ -477,6 +599,26 @@ function emitSitemapXml(site: Site, siteUrl: string | undefined): string {
     lines.push(`    <loc>${escapeXmlText(loc)}</loc>`);
     if (isMultiLanguage) {
       const hreflangs = hreflangEntriesFor(site, page);
+      for (const entry of hreflangs) {
+        const altHref = siteUrl === undefined ? entry.href : `${siteUrl}${entry.href}`;
+        lines.push(
+          `    <xhtml:link rel="alternate" hreflang="${escapeAttr(entry.hreflang)}" href="${escapeAttr(altHref)}"/>`,
+        );
+      }
+    }
+    lines.push("  </url>");
+  }
+  // Published Articles join the sitemap after the Pages. Unlisted Articles are
+  // excluded by design: they carry `noindex` and are explicitly outside
+  // automatic discovery (ADR 0047). Drafts are not in the output at all.
+  for (const article of site.articles ?? []) {
+    if (article.state !== "published") continue;
+    const path = articlePath(site, article);
+    const loc = siteUrl === undefined ? path : `${siteUrl}${path}`;
+    lines.push("  <url>");
+    lines.push(`    <loc>${escapeXmlText(loc)}</loc>`);
+    if (isMultiLanguage) {
+      const hreflangs: readonly HreflangEntry[] = articleHreflangEntriesFor(site, article);
       for (const entry of hreflangs) {
         const altHref = siteUrl === undefined ? entry.href : `${siteUrl}${entry.href}`;
         lines.push(
