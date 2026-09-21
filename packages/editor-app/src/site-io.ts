@@ -92,12 +92,26 @@ export function exportZipBasename(orgName: string): string {
 }
 
 /**
- * Copy every `assets/...` entry from `source` into `target`, overwriting paths
- * that already exist in `target`.
+ * The VFS subtrees a project archive carries, and which the editor therefore
+ * has to move wholesale when one Site replaces another.
+ *
+ * `themes/` is here for the same reason `assets/` is: an imported Theme
+ * package travels *inside* the archive (ADR 0051 / the issue-106 plan), so
+ * that a recipient can open the project offline and see the design it was
+ * authored with. Copying only `assets/` on import silently dropped the Theme
+ * and the reopened Site reported its own design as missing.
+ */
+export const SITE_VFS_PREFIXES: readonly string[] = ["assets/", "themes/"];
+
+/**
+ * Copy every `assets/...` and `themes/...` entry from `source` into `target`,
+ * overwriting paths that already exist in `target`.
  */
 export async function mergeAssetVfs(source: Vfs, target: Vfs): Promise<void> {
-  for (const path of await source.list("assets/")) {
-    await target.write(path, await source.read(path));
+  for (const prefix of SITE_VFS_PREFIXES) {
+    for (const path of await source.list(prefix)) {
+      await target.write(path, await source.read(path));
+    }
   }
 }
 

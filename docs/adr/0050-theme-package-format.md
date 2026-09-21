@@ -101,7 +101,8 @@ missing or whose CSS rule was dropped, renders a site that looks _nearly_
 right, and that is the hardest kind of defect for a non-technical author to
 notice, let alone report.
 
-**Offline is enforced, not documented.** Remote `@import`, `url(http…)`,
+**Offline is enforced, not documented.** `@import` (remote or local),
+`url(http…)`,
 protocol-relative `url(//…)`, absolute `url(/…)` and package-escaping
 `url(../…)` are all rejected at import time. ADR 0046 explicitly requires the
 builder to enforce rendering access limits rather than trust authors to
@@ -116,6 +117,26 @@ package the author can trivially reword, whereas a parser's mistake ships a
 network request we promised would not exist. We take the noisy side.
 Everything rejected has a local equivalent — bundle the font, bundle the
 image.
+
+A scanner over raw source is only conservative if it cannot be spelled around,
+and CSS offers two spellings of everything. `\75 rl(https://…)` is `url(…)` to
+a browser; `@import"https://…";` is a valid at-rule with no whitespace;
+`image-set("https://…" 1x)` is a URL with no `url()` token at all; and a
+comment can be dropped into the middle of a token. So every check runs over a
+normalised copy of the stylesheet — comments stripped, character escapes
+decoded — and the shipped bytes are never rewritten.
+
+Two consequences follow, and both are deliberate:
+
+- **A `url()` that only exists after decoding is rejected outright**, even
+  when its target is local. The renderer's asset rewriter matches literal
+  tokens, so an escaped reference would never be rewritten onto the package's
+  asset prefix and would 404 in the export regardless of intent.
+- **`@import` is rejected entirely**, not just when remote. A package ships one
+  stylesheet, and the loader never resolves an `@import` against the package,
+  so a local one would silently resolve against the visitor's page URL. The
+  honest options are "inline it" or "it does not work"; we say so at import
+  time rather than letting it fail in front of a student.
 
 ### Standalone export excludes Site content structurally
 

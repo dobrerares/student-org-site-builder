@@ -143,6 +143,7 @@ import { I18nProvider, useTranslator } from "./i18n-context.js";
 import { LocaleToggle } from "./locale-toggle.js";
 import { exportToZip, importFromZip, ZipImportError } from "@sosb/zip";
 import {
+  SITE_VFS_PREFIXES,
   downloadBlob,
   exportZipBasename,
   mergeAssetVfs,
@@ -1145,9 +1146,22 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       props.onExport(snapshot);
       return;
     }
-    const blob = await exportToZip(snapshot, assetVfsRef.current!);
-    const basename = exportZipBasename(snapshot.org.name);
-    downloadBlob(blob, `${basename}.zip`);
+    try {
+      const blob = await exportToZip(snapshot, assetVfsRef.current!);
+      const basename = exportZipBasename(snapshot.org.name);
+      downloadBlob(blob, `${basename}.zip`);
+    } catch (err) {
+      // `build()` refuses to export a Site whose Theme package is not
+      // installed (ADR 0051) — the one failure a normal author can actually
+      // hit here. Without this catch the promise rejected unhandled: the
+      // Download button did nothing at all, with no clue why, which is the
+      // worst possible reading of "the export is blocked".
+      window.alert(
+        err instanceof Error
+          ? `Your site could not be downloaded. ${err.message}`
+          : "Your site could not be downloaded.",
+      );
+    }
   }
 
   function handleExportClick(): void {
@@ -1170,11 +1184,21 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     try {
       const imported = await importFromZip(blob);
       const vfs = assetVfsRef.current!;
-      for (const path of await vfs.list("assets/")) {
-        await vfs.delete(path);
+      // Clear every subtree the archive owns, not just `assets/`. Leaving the
+      // outgoing Site's `themes/` behind would carry its Theme packages into
+      // an unrelated project, where they would show up as installed.
+      for (const prefix of SITE_VFS_PREFIXES) {
+        for (const path of await vfs.list(prefix)) {
+          await vfs.delete(path);
+        }
       }
       await mergeAssetVfs(imported.vfs, vfs);
       await populateAssetDisplayUrls(vfs, displayUrlCacheRef.current!);
+      // The incoming archive's Theme packages are only *installed* once this
+      // list is rebuilt; without it the Site would render as if its own Theme
+      // were missing until the editor was reloaded.
+      revokeThemeBlobUrls();
+      await reloadInstalledThemes();
       setAssetEpoch((n) => n + 1);
       historyRef.current = createHistoryStore<Site>({
         initial: structuredClone(imported.siteData),

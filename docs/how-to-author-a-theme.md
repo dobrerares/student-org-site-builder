@@ -36,9 +36,26 @@ convention:
    arrangement, but the DOM order the author created must survive. Use grid
    and flex _placement_; do not use `order`, and do not lift content out of
    sequence.
-2. **Everything is offline.** No remote `@import`, no `url(http…)`, no
-   protocol-relative `url(//…)`. Bundle the font; bundle the image. The import
-   fails with a message naming the offending line.
+2. **Everything is offline.** No `url(http…)`, no protocol-relative
+   `url(//…)`, no root-absolute `url(/…)`, and no remote string in
+   `image-set()`. Bundle the font; bundle the image. The import fails with a
+   message naming the offending target.
+
+   Two rules surprise people, so they are worth stating plainly:
+
+   - **No `@import` at all**, remote or local. A package ships exactly one
+     stylesheet (`css` in the manifest). A local `@import` is never resolved
+     against the package — it would resolve against the visitor's page URL and
+     404 — so paste the rules into your stylesheet instead.
+   - **No CSS character escapes in `url()`.** `\75 rl(…)` is `url(…)` to a
+     browser, but the builder's asset rewriter matches literal tokens, so an
+     escaped reference would never be rewritten onto your package's asset path.
+     Write `url(assets/grid.svg)` as plain text.
+
+   The checks run over a copy of your stylesheet with comments stripped and
+   escapes decoded, so neither is a way around them. A `url()` inside a `/* */`
+   comment is not a reference and is ignored.
+
 3. **No code, yet.** Phase one is declarative: manifest, CSS, fonts, images.
    Executable rendering and Custom Blocks are phase two (see the end of this
    guide).
@@ -323,15 +340,15 @@ Then import the zip through **Theme settings → Theme packages → Import**.
 
 ### Rejection codes
 
-| Code                         | Meaning                                               |
-| ---------------------------- | ----------------------------------------------------- |
-| `manifest-missing`           | No `theme.json` at the root, or it is not valid JSON. |
-| `manifest-invalid`           | A field fails the schema; the message names it.       |
-| `format-version-unsupported` | The package needs a newer builder.                    |
-| `file-missing`               | The manifest or CSS names a file the package lacks.   |
-| `css-unsafe`                 | The CSS reaches for the network or an absolute path.  |
-| `path-unsafe`                | An entry or `url()` escapes the package root.         |
-| `package-too-large`          | Over 12 MB unpacked.                                  |
+| Code                         | Meaning                                                                                                           |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `manifest-missing`           | No `theme.json` at the root, or it is not valid JSON.                                                             |
+| `manifest-invalid`           | A field fails the schema, or a variant id or font face is declared twice; the message names it.                   |
+| `format-version-unsupported` | The package needs a newer builder.                                                                                |
+| `file-missing`               | The manifest or CSS names a file the package lacks.                                                               |
+| `css-unsafe`                 | The CSS reaches for the network or an absolute path, uses `@import`, or hides a `url()` behind character escapes. |
+| `path-unsafe`                | An entry or `url()` escapes the package root.                                                                     |
+| `package-too-large`          | Over 12 MB unpacked.                                                                                              |
 
 Import is all-or-nothing: a rejected package leaves the Site untouched.
 
