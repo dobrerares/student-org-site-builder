@@ -115,14 +115,28 @@ describe("exportToZip with drafts", () => {
     expect(paths).toContain("dist/articles/raport-intern/index.html");
   });
 
-  test("assets mirror into nested article folders for relative URLs", async () => {
+  test("nested article pages reach assets through one dist copy, not a mirror", async () => {
     const assets = new MemoryDriver();
     await assets.write("assets/published.webp", new Uint8Array([1, 2, 3]));
     const site = siteWithCovers();
     const inspector = ZipDriver.fromZipBytes(await blobToBytes(await exportToZip(site, assets)));
     const paths = await inspector.list();
-    expect(paths).toContain("dist/articles/gala-de-final/assets/published.webp");
-    expect(paths).toContain("dist/en/articles/end-of-year-gala/assets/published.webp");
+
+    // Since #116 the renderer emits a `../` hop per directory of depth, so one
+    // copy at the dist root serves every page. The old export mirrored the
+    // whole asset folder into each nested directory, which hid the fact that a
+    // raw dist/ folder had broken images on every nested page.
+    expect(paths).toContain("dist/assets/published.webp");
+    expect(paths.filter((p) => p.endsWith("assets/published.webp"))).toEqual([
+      "assets/published.webp",
+      "dist/assets/published.webp",
+    ]);
+
+    // An article two directories deep must point back at that single copy.
+    const html = new TextDecoder().decode(
+      await inspector.read("dist/articles/gala-de-final/index.html"),
+    );
+    expect(html).toContain("../../assets/published.webp");
   });
 
   test("round-trips drafts, tags, and slug history through data.json unchanged", async () => {

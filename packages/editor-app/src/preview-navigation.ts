@@ -177,4 +177,3 @@ function basePathFor(site: Site, from: PreviewTarget): string {
   const page = site.pages[from.index];
   return page === undefined ? "/" : pagePath(site, page);
 }
-

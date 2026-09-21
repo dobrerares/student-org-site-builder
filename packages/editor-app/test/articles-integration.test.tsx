@@ -157,6 +157,27 @@ describe("preview navigation resolves article links", () => {
   test("an unknown path is a soft no-match", () => {
     expect(resolvePreviewTarget(site, "/nothing-here/")).toBeNull();
   });
+
+  test("a relative link resolves against the article being previewed", () => {
+    // An author-written link on the article page, two directories deep.
+    expect(resolvePreviewTarget(site, "../../", { kind: "article", index: 0 })).toEqual({
+      kind: "page",
+      index: 0,
+    });
+  });
+
+  test("a relative link from a page can reach an article", () => {
+    expect(
+      resolvePreviewTarget(site, "articles/gala-de-final/", { kind: "page", index: 0 }),
+    ).toEqual({ kind: "article", index: 0 });
+  });
+
+  test("hashes and query strings do not defeat article matching", () => {
+    expect(resolvePreviewTarget(site, "/articles/gala-de-final/#end")).toEqual({
+      kind: "article",
+      index: 0,
+    });
+  });
 });
 
 describe("export gate", () => {
