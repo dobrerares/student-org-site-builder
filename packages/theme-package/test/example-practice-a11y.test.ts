@@ -56,36 +56,72 @@ function ids(violations: readonly axe.Result[]): string[] {
   return [...new Set(violations.map((v) => v.id))].sort();
 }
 
+/**
+ * An axe run over a jsdom document costs tens of seconds on a small machine,
+ * and the built-in-Theme baseline for a given page is the same every time it
+ * is needed. Computing it once per page keeps the number of runs linear in
+ * the number of assertions instead of quadratic, which is the difference
+ * between this suite finishing inside its budget and flaking on CI.
+ */
+const baselineCache = new Map<number, Promise<string[]>>();
+
+function baselineIds(site: Site, pageIndex: number): Promise<string[]> {
+  const cached = baselineCache.get(pageIndex);
+  if (cached !== undefined) return cached;
+  const computed = (async () => {
+    const baselineSite: Site = { ...site, theme: { id: "modern" } };
+    return ids(await violationsFor(renderSite(baselineSite, "modern", { pageIndex })));
+  })();
+  baselineCache.set(pageIndex, computed);
+  return computed;
+}
+
+/**
+ * Generous per-test budget. Each test is one or two axe runs, and a single run
+ * takes ~20s on the slowest machine we support; the default 30s left no
+ * headroom and made the suite flaky rather than slow.
+ */
+const AXE_TIMEOUT_MS = 120_000;
+
 describe("examples/themes/practice — accessibility", () => {
   const site = practiceSite();
 
   for (const [index, page] of site.pages.entries()) {
-    test(`page "${page.slug}" (${page.lang}) is no worse than a built-in Theme`, async () => {
-      // The comparison is against a built-in Theme on the same page rather
-      // than against zero, because the sample Site's own content carries a
-      // couple of landmark findings (a customHTML `<aside>`, a repeated
-      // section landmark) that belong to the fixture, not to any Theme.
-      // Asserting "the Theme adds nothing" is the claim that is actually
-      // about the Theme — and it fails loudly if this Theme's CSS or variant
-      // markup ever introduces a new problem.
-      const themed = renderSite(site, bundle.id, { pageIndex: index, theme: bundle });
-      const baselineSite: Site = { ...site, theme: { id: "modern" } };
-      const baseline = renderSite(baselineSite, "modern", { pageIndex: index });
+    test(
+      `page "${page.slug}" (${page.lang}) is no worse than a built-in Theme`,
+      async () => {
+        // The comparison is against a built-in Theme on the same page rather
+        // than against zero, because the sample Site's own content carries a
+        // couple of landmark findings (a customHTML `<aside>`, a repeated
+        // section landmark) that belong to the fixture, not to any Theme.
+        // Asserting "the Theme adds nothing" is the claim that is actually
+        // about the Theme — and it fails loudly if this Theme's CSS or variant
+        // markup ever introduces a new problem.
+        const themed = renderSite(site, bundle.id, { pageIndex: index, theme: bundle });
 
-      expect(ids(await violationsFor(themed))).toEqual(ids(await violationsFor(baseline)));
-    }, 30_000);
+        expect(ids(await violationsFor(themed))).toEqual(await baselineIds(site, index));
+      },
+      AXE_TIMEOUT_MS,
+    );
   }
 
-  test("each shell variant renders without violations", async () => {
-    for (const variant of bundle.shellVariants) {
-      const themed: Site = {
-        ...site,
-        theme: { ...site.theme, shellVariant: variant.id },
-      };
-      const html = renderSite(themed, bundle.id, { pageIndex: 0, theme: bundle });
-      expect(html).toContain(`data-shell-variant="${variant.id}"`);
-      const baseline = renderSite({ ...site, theme: { id: "modern" } }, "modern");
-      expect(ids(await violationsFor(html))).toEqual(ids(await violationsFor(baseline)));
-    }
-  }, 30_000);
+  // One test per shell variant rather than a loop inside one test: a loop
+  // shares a single timeout across every variant, so adding a variant to the
+  // manifest silently pushed the suite over its budget, and a failure named
+  // the whole set rather than the variant that broke.
+  for (const variant of bundle.shellVariants) {
+    test(
+      `shell variant "${variant.id}" is no worse than a built-in Theme`,
+      async () => {
+        const themed: Site = {
+          ...site,
+          theme: { ...site.theme, shellVariant: variant.id },
+        };
+        const html = renderSite(themed, bundle.id, { pageIndex: 0, theme: bundle });
+        expect(html).toContain(`data-shell-variant="${variant.id}"`);
+        expect(ids(await violationsFor(html))).toEqual(await baselineIds(site, 0));
+      },
+      AXE_TIMEOUT_MS,
+    );
+  }
 });
