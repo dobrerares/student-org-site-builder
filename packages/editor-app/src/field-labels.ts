@@ -3,6 +3,17 @@ import type { FieldNode } from "./form-generator.js";
 const FIELD_LABELS: Readonly<Record<string, string>> = {
   org: "Organization",
   pages: "Pages",
+  articles: "Articles",
+  slugHistory: "Previous article links",
+  publishedAt: "Publication date",
+  state: "Publication status",
+  summary: "Summary",
+  cover: "Cover image",
+  coverAlt: "Cover image description",
+  tags: "Tags",
+  articleIds: "Chosen articles",
+  relatedArticles: "Related articles",
+  translationGroup: "Linked translations",
   seo: "Google result",
   legalName: "Official organization name",
   shortName: "Display name",
@@ -104,8 +115,22 @@ export function optionLabel(value: string): string {
   return VALUE_LABELS[value] ?? humanizeIdentifier(value);
 }
 
+/**
+ * Names that mean something different depending on which top-level collection
+ * the issue sits in. `slug` is the only one so far: a Page's slug is the thing
+ * that appears in its menu link, while an Article's is the `/articles/<slug>/`
+ * segment the author edits knowing it retires the old URL into a redirect.
+ * Calling both "Page link name" sent authors looking at the wrong screen.
+ */
+const ARTICLE_SCOPED_LABELS: Readonly<Record<string, string>> = {
+  slug: "Article link name",
+  blocks: "Article sections",
+  title: "Article title",
+};
+
 export function issuePathLabel(path: readonly (string | number)[]): string {
   if (path.length === 0) return "Site";
+  const inArticles = path[0] === "articles";
 
   const parts: string[] = [];
   for (let index = 0; index < path.length; index += 1) {
@@ -115,11 +140,17 @@ export function issuePathLabel(path: readonly (string | number)[]): string {
       const parent = path[index - 1];
       if (parent === "pages") {
         parts.push(`page ${segment + 1}`);
+      } else if (parent === "articles") {
+        parts.push(`article ${segment + 1}`);
       } else if (parent === "blocks") {
         parts.push(`section ${segment + 1}`);
       } else {
         parts.push(`item ${segment + 1}`);
       }
+      continue;
+    }
+    if (inArticles && ARTICLE_SCOPED_LABELS[segment] !== undefined) {
+      parts.push(ARTICLE_SCOPED_LABELS[segment]);
       continue;
     }
     parts.push(segment === "blocks" ? "Page sections" : labelForName(segment));

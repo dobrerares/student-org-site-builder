@@ -49,6 +49,7 @@ import {
   articleLanguageSwitcherEntriesFor,
   articlePath,
   hreflangEntriesFor,
+  languageHomeIndex,
   languageSwitcherEntriesFor,
   navPagesForLanguage,
   pagePath,
@@ -481,15 +482,20 @@ function ArticleTags(props: { site: Site; article: Article }): preact.JSX.Elemen
   const ids = props.article.tags ?? [];
   if (ids.length === 0) return null;
   const registry = new Map((props.site.tags ?? []).map((tag) => [tag.id, tag.label]));
-  const labels = ids
-    .map((id) => registry.get(id))
-    .filter((label): label is string => typeof label === "string" && label.length > 0);
-  if (labels.length === 0) return null;
+  // Keyed by tag id, not by label: two tags can legitimately carry the same
+  // visible label (the duplicate rule is a validation warning, not a
+  // rejection), and a duplicate key would drop one of the list items.
+  const labelled = ids
+    .map((id) => ({ id, label: registry.get(id) }))
+    .filter((entry): entry is { id: string; label: string } => {
+      return typeof entry.label === "string" && entry.label.length > 0;
+    });
+  if (labelled.length === 0) return null;
   return (
     <ul class="article__tags" aria-label={articleCopy(props.article.lang, "tagsLabel")}>
-      {labels.map((label) => (
-        <li key={label} class="article__tag">
-          {label}
+      {labelled.map((entry) => (
+        <li key={entry.id} class="article__tag">
+          {entry.label}
         </li>
       ))}
     </ul>
@@ -573,11 +579,17 @@ export function ArticleShell(props: {
     containerArticleId: article.id,
   };
 
-  // Articles have no site-footer Block of their own; they inherit the footer
-  // of their language's home page so every URL of the Site ends the same way.
-  const footerSource = site.pages.find(
-    (page) => page.lang === article.lang && page.blocks.some((b) => b.type === "siteFooter"),
-  );
+  // Articles have no site-footer Block of their own; they inherit one from
+  // their language's Pages so every URL of the Site ends the same way. The
+  // language home page wins when it has a footer — that is the Page an author
+  // thinks of as "the site" — and any other Page in the language is the
+  // fallback for Sites that put their footer somewhere else.
+  const languageHome = site.pages[languageHomeIndex(site, article.lang)];
+  const hasFooter = (page: Page): boolean => page.blocks.some((b) => b.type === "siteFooter");
+  const footerSource =
+    languageHome !== undefined && languageHome.lang === article.lang && hasFooter(languageHome)
+      ? languageHome
+      : site.pages.find((page) => page.lang === article.lang && hasFooter(page));
   const footerBlocks = (footerSource?.blocks ?? []).filter((block) => block.type === "siteFooter");
 
   const cover = assetRefPath(article.cover);

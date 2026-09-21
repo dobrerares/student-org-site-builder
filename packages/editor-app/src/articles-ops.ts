@@ -264,12 +264,14 @@ export function addArticleTranslation(
     state: "draft",
     publishedAt: today,
     translationGroup: group,
-    slugHistory: [],
     blocks: structuredClone(source.blocks).map((block, i) => ({
       ...block,
       id: `blk_${id}_${i}`,
     })),
   };
+  // The counterpart is a brand-new Article at a brand-new URL, so it inherits
+  // no redirect history from the source. Dropped rather than set to `[]` so an
+  // untouched project stays byte-identical on round-trip (ADR 0002).
   delete (counterpart as { slugHistory?: unknown }).slugHistory;
 
   const withGroup = articles.map((a, i) => (i === index ? { ...a, translationGroup: group } : a));
