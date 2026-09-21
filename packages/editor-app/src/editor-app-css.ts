@@ -1777,6 +1777,14 @@ body {
  * Only the z-index needs stating, so the popup clears the backdrop's
  * unlayered z-index above.
  */
+/*
+ * Keyed on the popup's own ARIA contract rather than on a list of test ids.
+ * The id list was a trap: a new dialog that forgot to join it rendered in
+ * document flow *behind* the fixed backdrop, which then swallowed every
+ * click on it. Every EditorDialog popup sets aria-modal, so this cannot be
+ * forgotten.
+ */
+[data-dialog-host] [aria-modal="true"],
 [data-testid="add-block-dialog"],
 [data-testid="export-confirm-dialog"] {
   z-index: 101;
@@ -1790,8 +1798,20 @@ body {
   box-shadow: var(--shadow-lg);
   animation: sosb-pop-in 160ms ease;
 }
-[data-testid="export-confirm-dialog"] {
+[data-testid="export-confirm-dialog"],
+[data-testid="tag-delete-dialog"],
+[data-testid="article-delete-dialog"] {
   width: min(600px, 100%);
+}
+[data-testid="article-create-dialog"] {
+  width: min(460px, 100%);
+}
+[data-testid="article-create-dialog"] h2,
+[data-testid="tag-manager-dialog"] h2,
+[data-testid="article-delete-dialog"] h2,
+[data-testid="tag-delete-dialog"] h2 {
+  margin: 0 0 var(--sp-3) 0;
+  font-size: var(--step-1, 1.125rem);
 }
 [data-testid="add-block-dialog"] > header {
   display: flex;

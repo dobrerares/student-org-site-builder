@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import type { Article, Site } from "@sosb/schema";
+import type { Site } from "@sosb/schema";
 import { validate } from "@sosb/schema";
 import {
   addArticleTranslation,
@@ -167,7 +167,7 @@ describe("setArticleSlug", () => {
 
 describe("deleteArticle", () => {
   test("removes the article and leaves references for the author to resolve", () => {
-    let site = createArticle(baseSite(), { title: "Gala", lang: "ro", today: TODAY }).site;
+    const site = createArticle(baseSite(), { title: "Gala", lang: "ro", today: TODAY }).site;
     const id = (site.articles ?? [])[0]!.id;
     site.pages[0]!.blocks.push({
       id: "list",
