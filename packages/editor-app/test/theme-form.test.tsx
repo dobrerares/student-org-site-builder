@@ -16,18 +16,33 @@ import type { Site } from "@sosb/schema";
 
 import { ThemeForm } from "../src/theme-form.js";
 
+/**
+ * A Site is `{ theme, pages }` at minimum. These fixtures used to omit
+ * `pages`, which typechecked only because of the `as unknown as Site` cast and
+ * worked only because nothing in the form walked the page list. Switching
+ * Themes now migrates each Block's design-variant memory (ADR 0051), so it
+ * does — and a fixture that lies about the shape of a Site fails for a reason
+ * that has nothing to do with what the test is asserting.
+ */
+function siteWithTheme(id: string, tokens?: Record<string, string>): Site {
+  return {
+    theme: tokens === undefined ? { id } : { id, tokens },
+    pages: [],
+  } as unknown as Site;
+}
+
 describe("ThemeForm", () => {
   afterEach(() => cleanup());
 
   test("ThemeForm renders the theme picker", () => {
-    const site = { theme: { id: "academic" } } as unknown as Site;
+    const site = siteWithTheme("academic");
     const { container } = render(<ThemeForm site={site} onChange={() => {}} />);
     expect(container.querySelector('[data-testid="theme-picker"]')).not.toBeNull();
   });
 
   test("ThemeForm onChange writes a new theme id back to the site", () => {
     const updates: Site[] = [];
-    const site = { theme: { id: "academic" } } as unknown as Site;
+    const site = siteWithTheme("academic");
     const { container } = render(<ThemeForm site={site} onChange={(s) => updates.push(s)} />);
     const civic = container.querySelector('[data-theme-id="civic"]') as HTMLElement;
     civic.click();
@@ -36,14 +51,14 @@ describe("ThemeForm", () => {
 
   test("ThemeForm does not render any auto-generated text inputs for theme.id", () => {
     // ADR 0044 invariant: never a raw input.
-    const site = { theme: { id: "academic" } } as unknown as Site;
+    const site = siteWithTheme("academic");
     const { container } = render(<ThemeForm site={site} onChange={() => {}} />);
     expect(container.querySelector('input[type="text"]')).toBeNull();
   });
 
   test("ThemeForm renders all six theme-token widgets", () => {
-    const site = { theme: { id: "academic" } };
-    const { container } = render(<ThemeForm site={site as unknown as Site} onChange={() => {}} />);
+    const site = siteWithTheme("academic");
+    const { container } = render(<ThemeForm site={site} onChange={() => {}} />);
     expect(container.querySelectorAll('[data-testid="color-picker"]').length).toBe(2);
     expect(container.querySelectorAll('[data-testid="font-picker"]').length).toBe(2);
     expect(container.querySelectorAll('[data-testid="named-value-select"]').length).toBe(2);
@@ -51,10 +66,8 @@ describe("ThemeForm", () => {
 
   test("ThemeForm onChange for a color token writes to site.theme.tokens", () => {
     let next: Site | null = null;
-    const site = { theme: { id: "academic" } };
-    const { container } = render(
-      <ThemeForm site={site as unknown as Site} onChange={(s) => (next = s)} />,
-    );
+    const site = siteWithTheme("academic");
+    const { container } = render(<ThemeForm site={site} onChange={(s) => (next = s)} />);
     const firstColorInput = container.querySelector('input[type="color"]') as HTMLInputElement;
     fireEvent.input(firstColorInput, { target: { value: "#ff0000" } });
     expect((next as Site | null)?.theme.tokens?.colorPrimary).toBe("#ff0000");
@@ -62,10 +75,8 @@ describe("ThemeForm", () => {
 
   test("ThemeForm onChange for a font token writes to site.theme.tokens", () => {
     let next: Site | null = null;
-    const site = { theme: { id: "academic" } };
-    const { container } = render(
-      <ThemeForm site={site as unknown as Site} onChange={(s) => (next = s)} />,
-    );
+    const site = siteWithTheme("academic");
+    const { container } = render(<ThemeForm site={site} onChange={(s) => (next = s)} />);
     // headline picker is the first font-picker
     const headlineSelect = container.querySelector(
       '[data-testid="font-picker"][data-kind="headline"] select',
@@ -76,13 +87,11 @@ describe("ThemeForm", () => {
 
   test("ThemeForm shows an on-color preview chip for each set palette color (Guardrail 2)", () => {
     // Light accent → dark sample text; dark primary → white sample text.
-    const site = {
-      theme: {
-        id: "academic",
-        tokens: { colorPrimary: "#1a2440", colorAccent: "#ffe14d" },
-      },
-    };
-    const { container } = render(<ThemeForm site={site as unknown as Site} onChange={() => {}} />);
+    const site = siteWithTheme("academic", {
+      colorPrimary: "#1a2440",
+      colorAccent: "#ffe14d",
+    });
+    const { container } = render(<ThemeForm site={site} onChange={() => {}} />);
     const chips = container.querySelectorAll('[data-testid="color-picker-on-color"]');
     // One per palette ColorPicker (primary + accent); font pickers don't carry chips.
     expect(chips.length).toBe(2);
@@ -90,15 +99,8 @@ describe("ThemeForm", () => {
 
   test("ThemeForm preserves existing tokens when updating a single token", () => {
     let next: Site | null = null;
-    const site = {
-      theme: {
-        id: "academic",
-        tokens: { colorPrimary: "#111111", fontBody: "Inter" },
-      },
-    };
-    const { container } = render(
-      <ThemeForm site={site as unknown as Site} onChange={(s) => (next = s)} />,
-    );
+    const site = siteWithTheme("academic", { colorPrimary: "#111111", fontBody: "Inter" });
+    const { container } = render(<ThemeForm site={site} onChange={(s) => (next = s)} />);
     const accentInput = container.querySelectorAll('input[type="color"]')[1] as HTMLInputElement;
     fireEvent.input(accentInput, { target: { value: "#aa00aa" } });
     expect((next as Site | null)?.theme.tokens?.colorAccent).toBe("#aa00aa");

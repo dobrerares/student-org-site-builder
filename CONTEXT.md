@@ -270,6 +270,10 @@ deliberately no hand-written preview metadata. The pickers show a live
 **theme miniature** instead: a scaled-down render of the sample site's
 home page under that theme, produced by the Renderer itself, so it
 cannot drift from the Theme the way hand-maintained swatches did.
+An imported **Theme package** appears in the same picker, after the
+built-ins, with a miniature rendered from its bundle — so a Theme the
+renderer was never compiled with previews exactly like one that was.
+Its manifest carries no preview metadata either, for the same reason.
 
 **Field-override metadata** (planned):
 Side table(s) in `@sosb/editor-app` augmenting the auto-generated

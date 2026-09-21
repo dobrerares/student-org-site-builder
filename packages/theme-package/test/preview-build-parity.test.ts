@@ -44,13 +44,28 @@ const PREVIEW_PREFIX = "blob:sosb/";
 const previewResolver = (path: string): string => `${PREVIEW_PREFIX}${path}`;
 
 /**
- * Undo the preview resolver, so the two documents can be compared directly.
- * Deliberately a plain string replace of the known prefix rather than a regex
- * over "anything that looks like a URL" — a sloppy normaliser could hide a
- * real structural difference.
+ * Undo the two *known* URL differences, so the two documents can be compared
+ * directly. Deliberately plain, narrow replacements rather than a regex over
+ * "anything that looks like a URL" — a sloppy normaliser could hide a real
+ * structural difference, which is the only thing this test exists to catch.
+ *
+ * Mirrors the normaliser list in
+ * `packages/editor-app/test/preview-build-parity.test.ts`; the two differences
+ * are properties of the renderer, not of Theme packages.
  */
-function normalisePreview(html: string): string {
-  return html.split(PREVIEW_PREFIX).join("");
+function normalise(html: string): string {
+  return (
+    html
+      // The preview resolves every asset to a blob: object URL; the build
+      // emits the canonical VFS path.
+      .split(PREVIEW_PREFIX)
+      .join("")
+      // A built nested page reaches assets through `../`, while the preview is
+      // a single srcdoc document with no directory depth and resolves every
+      // asset to an absolute blob: URL instead. A packaged Theme's own fonts
+      // and images go through the same resolver, so they get the same hops.
+      .replace(/(?:\.\.\/)+assets\//g, "assets/")
+  );
 }
 
 /** The composed `<style>` payload — the Theme's entire contribution to a page. */
@@ -88,8 +103,11 @@ describe("preview/build parity with a Theme package", () => {
       // overlay (which only applies when a siteUrl is configured).
       const deployed = renderSite(site, bundle.id, { pageIndex: idx, theme: bundle });
 
-      expect(normalisePreview(preview)).toBe(deployed);
+      expect(normalise(preview)).toBe(normalise(deployed));
       expect(page.slug.length).toBeGreaterThan(0);
+      // The depth normaliser has to be doing real work on a nested page, or
+      // this test would silently stop covering the Theme's own asset paths.
+      if (idx > 0) expect(deployed).toContain("../assets/theme/");
     });
 
     // And the built output carries that same rendering. `build()` overlays

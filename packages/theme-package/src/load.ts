@@ -229,19 +229,6 @@ export function loadThemePackage(files: ReadonlyMap<string, Uint8Array>): Loaded
     }
     assets.set(ref, bytes);
   }
-  if (manifest.preview.thumbnail !== undefined) {
-    const thumb = files.get(manifest.preview.thumbnail);
-    if (thumb === undefined) {
-      throw new ThemePackageError(
-        "file-missing",
-        `The manifest names preview thumbnail "${manifest.preview.thumbnail}", ` +
-          `which is not in the package.`,
-        manifest.preview.thumbnail,
-      );
-    }
-    assets.set(manifest.preview.thumbnail, thumb);
-  }
-
   const blockVariants: Record<string, readonly ThemeVariant[]> = {};
   for (const [blockType, list] of Object.entries(manifest.variants)) {
     blockVariants[blockType] = toVariants(list);
@@ -252,12 +239,6 @@ export function loadThemePackage(files: ReadonlyMap<string, Uint8Array>): Loaded
     name: manifest.name,
     version: manifest.version,
     description: manifest.description,
-    preview: {
-      swatches: manifest.preview.swatches,
-      headlineSample: manifest.preview.headlineSample,
-      bodySample: manifest.preview.bodySample,
-      thumbnail: manifest.preview.thumbnail,
-    },
     origin: "package",
     css,
     baselineTokens: Object.entries(manifest.cssTokens).sort(([a], [b]) => a.localeCompare(b)),

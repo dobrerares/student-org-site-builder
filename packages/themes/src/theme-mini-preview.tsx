@@ -21,6 +21,8 @@
 import type { JSX } from "react";
 import { useEffect, useRef, useState } from "react";
 
+import type { ThemeBundle } from "@sosb/renderer";
+
 import {
   THEME_PREVIEW_VIEWPORT_HEIGHT,
   THEME_PREVIEW_VIEWPORT_WIDTH,
@@ -79,6 +81,11 @@ export function resetThemeMiniPreviewQueue(): void {
 export interface ThemeMiniPreviewProps {
   readonly themeId: string;
   /**
+   * An imported Theme package's resolved bundle, for ids the renderer does not
+   * have compiled in. Omit for built-in themes.
+   */
+  readonly bundle?: ThemeBundle | undefined;
+  /**
    * Width the miniature occupies, in CSS pixels. The render happens at the
    * full `THEME_PREVIEW_VIEWPORT_WIDTH` and is transform-scaled down to this,
    * so the theme's desktop composition is what gets shown — shrinking the
@@ -118,12 +125,16 @@ export function ThemeMiniPreview(props: ThemeMiniPreviewProps): JSX.Element {
     };
   }, []);
 
+  // `props.bundle` is a dependency, not just an argument: re-importing an
+  // edited Theme package hands down a new bundle at the same id, and without
+  // it the miniature would keep showing the replaced design.
+  const bundle = props.bundle;
   useEffect(() => {
     if (!visible) return;
     return requestBootSlot(() => {
-      setHtml(themePreviewHtml(props.themeId));
+      setHtml(themePreviewHtml(props.themeId, bundle));
     });
-  }, [visible, props.themeId]);
+  }, [visible, props.themeId, bundle]);
 
   // Release the slot once this miniature has painted, so the next one starts.
   useEffect(() => {

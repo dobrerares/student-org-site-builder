@@ -3,7 +3,9 @@
   "id": "org.example.practice",
   "name": "Practice",
   "version": "1.0.0",
-  "builder": { "formatVersion": 1 },
+  "builder": {
+    "formatVersion": 1
+  },
   "description": "A dark, high-contrast Theme for student societies: deep navy ground, pale gold accents, heavy grotesque headlines. Recreates the project's published design reference over the builder's existing Blocks.",
   "author": "Student Org Site Builder contributors",
   "license": "MIT",
@@ -112,7 +114,11 @@
       }
     ],
     "valueList": [
-      { "id": "cards", "label": "Cards", "description": "Bordered cards on the deep ground." },
+      {
+        "id": "cards",
+        "label": "Cards",
+        "description": "Bordered cards on the deep ground."
+      },
       {
         "id": "plain",
         "label": "Plain",
@@ -125,18 +131,42 @@
         "label": "Portraits",
         "description": "Tall portraits with names beneath."
       },
-      { "id": "roster", "label": "Roster", "description": "Compact rows with small round photos." }
+      {
+        "id": "roster",
+        "label": "Roster",
+        "description": "Compact rows with small round photos."
+      }
     ],
     "activitiesList": [
-      { "id": "cards", "label": "Cards", "description": "Equal-height project cards." },
-      { "id": "feature", "label": "Feature", "description": "Alternating wide image/text bands." }
+      {
+        "id": "cards",
+        "label": "Cards",
+        "description": "Equal-height project cards."
+      },
+      {
+        "id": "feature",
+        "label": "Feature",
+        "description": "Alternating wide image/text bands."
+      }
     ],
     "partnerLogos": [
-      { "id": "grid", "label": "Grid", "description": "Even grid of framed logos." },
-      { "id": "band", "label": "Band", "description": "Single quiet row on a lighter panel." }
+      {
+        "id": "grid",
+        "label": "Grid",
+        "description": "Even grid of framed logos."
+      },
+      {
+        "id": "band",
+        "label": "Band",
+        "description": "Single quiet row on a lighter panel."
+      }
     ],
     "ctaBanner": [
-      { "id": "gold", "label": "Gold", "description": "Solid gold panel with dark text." },
+      {
+        "id": "gold",
+        "label": "Gold",
+        "description": "Solid gold panel with dark text."
+      },
       {
         "id": "outline",
         "label": "Outline",
@@ -155,10 +185,5 @@
       "label": "Compact",
       "description": "Tighter sticky header for content-heavy sites."
     }
-  ],
-  "preview": {
-    "swatches": ["#0a0c39", "#f6df82", "#e63000"],
-    "headlineSample": "Societate",
-    "bodySample": "Dark, gold-accented, high contrast."
-  }
+  ]
 }

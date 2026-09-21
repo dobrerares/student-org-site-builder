@@ -103,15 +103,6 @@ const FontSchema = z.looseObject({
   unicodeRange: z.string().optional(),
 });
 
-const PreviewSchema = z.looseObject({
-  /** Two or three hex colours for the theme picker's swatch strip. */
-  swatches: z.array(z.string().min(1)).max(6).default([]),
-  headlineSample: z.string().default(""),
-  bodySample: z.string().default(""),
-  /** Optional bundle-relative thumbnail. */
-  thumbnail: ThemePathSchema.optional(),
-});
-
 const BuilderCompatSchema = z.looseObject({
   /**
    * The manifest format the package is authored against. Separate from the
@@ -154,7 +145,11 @@ export const ThemeManifestSchema = z.looseObject({
   fonts: z.array(FontSchema).default([]),
   /** Entry stylesheet, bundle-relative. */
   css: ThemePathSchema.default("theme.css"),
-  preview: PreviewSchema.default({ swatches: [], headlineSample: "", bodySample: "" }),
+  // There is deliberately no `preview` block of swatches and sample words.
+  // The pickers render a real miniature of the Theme instead, so a
+  // hand-written palette here would be a second copy of what `theme.css`
+  // already says, free to drift with nothing to catch it. The manifest is a
+  // loose object, so a package that still carries one parses and is ignored.
 });
 
 export type ThemeManifest = z.infer<typeof ThemeManifestSchema>;

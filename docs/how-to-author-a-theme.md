@@ -197,19 +197,24 @@ between them — or to another Theme — cannot lose content.
 
 Surfaced as **Header style** in Theme settings.
 
-### `css` and `preview`
+### `css`
 
 ```json
-"css": "theme.css",
-"preview": {
-  "swatches": ["#0a0c39", "#f6df82", "#e63000"],
-  "headlineSample": "Societate",
-  "bodySample": "Dark, gold-accented, high contrast.",
-  "thumbnail": "assets/preview.png"
-}
+"css": "theme.css"
 ```
 
-`preview` drives the swatch strip and type samples in the Theme picker.
+The entry stylesheet, bundle-relative. Defaults to `theme.css`.
+
+There is no `preview` block of swatches or sample words, and you do not need
+to supply a thumbnail. The Theme picker shows a **real miniature render** of
+your Theme — the sample site's home page, rendered by the same renderer that
+builds a real site, scaled down. It cannot drift from your CSS, because it
+_is_ your CSS. Your `name` and `description` are what you write; everything
+visual is taken from the Theme itself.
+
+(Fonts and images are not served inside the miniature, so it shows your
+fallback font stack and grey placeholders in image slots. It is a picture of
+your layout and palette, not a pixel-exact proof.)
 
 ---
 

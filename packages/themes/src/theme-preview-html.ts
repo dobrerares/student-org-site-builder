@@ -18,7 +18,7 @@
  *   - callers mount the iframes lazily and one at a time (see
  *     `theme-mini-preview.tsx`).
  */
-import { renderSite } from "@sosb/renderer";
+import { renderSite, type ThemeBundle } from "@sosb/renderer";
 
 import { asociatiaStudenteascaDemoData } from "./templates/index.js";
 
@@ -36,7 +36,8 @@ const PLACEHOLDER_IMAGE =
 /**
  * Self-hosted webfonts are skipped in the miniature.
  *
- * The renderer emits `@font-face { src: url(assets/fonts/…) }`, which the
+ * The renderer emits `@font-face { src: url(assets/fonts/…) }` — and, for an
+ * imported Theme package, `url(assets/theme/<id>/fonts/…)` — which the
  * miniature cannot serve. Returning the placeholder for a font file would make
  * the browser reject a malformed font rather than fall back cleanly, so font
  * paths resolve to a URL that simply fails, and `font-display: swap` shows the
@@ -51,22 +52,44 @@ function previewAssetUrl(path: string): string | undefined {
 const htmlCache = new Map<string, string>();
 
 /**
+ * Cache key for a miniature.
+ *
+ * A built-in theme is a compile-time constant, so its id is enough. An
+ * imported Theme package is not: re-importing an edited package at the same id
+ * must produce a new miniature, or the picker would keep showing the design
+ * the author just replaced. The version is part of the key, and `undefined`
+ * for built-ins keeps their keys — and their cache hits — exactly as before.
+ */
+function cacheKey(themeId: string, bundle: ThemeBundle | undefined): string {
+  if (bundle === undefined || bundle.origin !== "package") return themeId;
+  return `${themeId}@${bundle.version}`;
+}
+
+/**
  * The full HTML document for a theme's miniature: the sample site's home page
- * rendered under `themeId`. Memoised per theme for the session — the inputs
- * are constants, so the output is too.
+ * rendered under `themeId`. Memoised per theme for the session — for a
+ * built-in the inputs are constants, so the output is too.
  *
  * Rendered in deploy mode: a miniature is a picture, not an interactive
  * preview, so it must not carry the preview-only link interceptor or the
  * in-place update receiver.
+ *
+ * @param bundle An imported Theme package's resolved bundle. Supplying it is
+ *               what lets a custom Theme appear in the picker at all: without
+ *               it `renderSite` would look the id up among the built-ins, not
+ *               find it, and fall back to the stub layout — so every imported
+ *               Theme would preview as the same unstyled page.
  */
-export function themePreviewHtml(themeId: string): string {
-  const cached = htmlCache.get(themeId);
+export function themePreviewHtml(themeId: string, bundle?: ThemeBundle): string {
+  const key = cacheKey(themeId, bundle);
+  const cached = htmlCache.get(key);
   if (cached !== undefined) return cached;
   const html = renderSite(asociatiaStudenteascaDemoData, themeId, {
     pageIndex: 0,
     assetUrlForPath: previewAssetUrl,
+    ...(bundle === undefined ? {} : { theme: bundle }),
   });
-  htmlCache.set(themeId, html);
+  htmlCache.set(key, html);
   return html;
 }
 

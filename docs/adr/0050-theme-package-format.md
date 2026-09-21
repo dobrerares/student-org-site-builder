@@ -53,8 +53,14 @@ ADR 0046 permits that eventually for trusted extensions.
 `theme.json` carries `formatVersion: 1`, a namespaced `id`, `name`, semver
 `version`, a `builder` compatibility block, `description`, `author`,
 `license`, `supports`, baseline `tokens` / `cssTokens`, `variants` (per Block
-type) and `shellVariants`, `fonts[]`, the `css` entry filename, and `preview`
-swatches and samples. The authoritative field-by-field reference is
+type) and `shellVariants`, `fonts[]`, and the `css` entry filename.
+
+The manifest deliberately carries **no preview metadata** — no swatches, no
+sample words, no thumbnail. The pickers render a real miniature of the Theme
+instead (the renderer's own output, so it cannot drift), which is the same
+decision #116 made when it deleted the built-in themes' hand-written swatches.
+A package that still ships a `preview` block parses and is ignored, because
+the manifest is a loose object. The authoritative field-by-field reference is
 [`docs/how-to-author-a-theme.md`](../how-to-author-a-theme.md); duplicating it
 here would guarantee the two drift.
 

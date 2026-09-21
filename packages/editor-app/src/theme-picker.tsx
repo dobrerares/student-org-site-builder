@@ -56,8 +56,14 @@ export interface ThemePickerProps {
 
 /**
  * Present an imported Theme in the catalog's shape so both kinds render
- * through one code path. Swatches and samples come from the package
- * manifest's `preview` block.
+ * through one code path.
+ *
+ * The label and description come from the package manifest, which is the
+ * Theme author's own words about their Theme — the equivalent of the
+ * built-ins' catalog entry. Everything *visual* comes from the miniature
+ * render instead, for the reason in this file's header: a picture the
+ * renderer produces cannot drift from the Theme, and a hand-written swatch
+ * can.
  */
 function entryForBundle(bundle: ThemeBundle): ThemeCatalogEntry {
   return {
@@ -65,7 +71,6 @@ function entryForBundle(bundle: ThemeBundle): ThemeCatalogEntry {
     label: bundle.name,
     description: bundle.description ?? "",
     fonts: { headline: [], body: [] },
-    preview: bundle.preview ?? { swatches: [], headlineSample: "", bodySample: "" },
   };
 }
 
@@ -76,7 +81,12 @@ const RADIO_GROUP_NAME = "theme-picker";
 
 export function ThemePicker(props: ThemePickerProps): JSX.Element {
   const catalog = buildThemeCatalog();
-  const entries = [...catalog.entries, ...(props.customThemes ?? []).map(entryForBundle)];
+  const customThemes = props.customThemes ?? [];
+  const entries = [...catalog.entries, ...customThemes.map(entryForBundle)];
+  // An imported Theme is not compiled into the renderer, so its miniature has
+  // to be handed the bundle to render from. Built-ins resolve by id.
+  const bundleFor = (id: string): ThemeBundle | undefined =>
+    customThemes.find((bundle) => bundle.id === id);
   const isKnown = entries.some((e) => e.id === props.value);
 
   return (
@@ -106,7 +116,7 @@ export function ThemePicker(props: ThemePickerProps): JSX.Element {
               />
               <span data-theme-option-body>
                 <span data-theme-option-preview>
-                  <ThemeMiniPreview themeId={entry.id} />
+                  <ThemeMiniPreview themeId={entry.id} bundle={bundleFor(entry.id)} />
                 </span>
                 <span data-theme-option-label>{entry.label}</span>
                 <span data-theme-option-description>{entry.description}</span>

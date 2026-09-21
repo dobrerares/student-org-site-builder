@@ -9,6 +9,8 @@
 import { describe, expect, test, afterEach } from "vitest";
 import { render, cleanup } from "@testing-library/react";
 
+import type { ThemeBundle } from "@sosb/renderer";
+
 import { ThemePicker } from "../src/theme-picker.js";
 
 describe("ThemePicker", () => {
@@ -74,5 +76,60 @@ describe("ThemePicker", () => {
     for (const mini of Array.from(minis)) {
       expect(mini.getAttribute("aria-hidden")).toBe("true");
     }
+  });
+});
+
+/**
+ * An imported Theme package is not compiled into the renderer, so it can only
+ * be previewed if the picker hands its bundle down to the miniature. Get that
+ * wrong and every custom Theme silently previews as the unstyled stub layout
+ * — which looks like a broken Theme rather than a broken picker, so it is
+ * worth pinning.
+ */
+describe("ThemePicker with imported Theme packages", () => {
+  afterEach(() => cleanup());
+
+  const bundle = {
+    id: "org.example.practice",
+    name: "Practice",
+    version: "1.0.0",
+    description: "A packaged Theme.",
+    origin: "package",
+    css: "body{color:red}",
+    baselineTokens: [],
+    supports: { colors: true, fonts: true, density: true, radius: true },
+    blockVariants: {},
+    shellVariants: [],
+    fontSource: { kind: "registry" },
+    assets: new Map(),
+  } as unknown as ThemeBundle;
+
+  test("lists imported Themes after the built-ins", () => {
+    const { container } = render(
+      <ThemePicker value="academic" onChange={() => {}} customThemes={[bundle]} />,
+    );
+    const options = container.querySelectorAll("[data-theme-option]");
+    expect(options.length).toBe(6);
+    expect(options[5]?.getAttribute("data-theme-id")).toBe("org.example.practice");
+  });
+
+  test("an imported Theme is a known value, not an unrecognised one", () => {
+    const { container } = render(
+      <ThemePicker value="org.example.practice" onChange={() => {}} customThemes={[bundle]} />,
+    );
+    expect(container.querySelector("[data-theme-current-unknown]")).toBeNull();
+    const active = container.querySelector('[data-theme-option][data-active="true"]');
+    expect(active?.getAttribute("data-theme-id")).toBe("org.example.practice");
+  });
+
+  test("renders a miniature for the imported Theme too", () => {
+    const { container } = render(
+      <ThemePicker value="academic" onChange={() => {}} customThemes={[bundle]} />,
+    );
+    const custom = container.querySelector(
+      '[data-theme-option][data-theme-id="org.example.practice"] [data-theme-mini-preview]',
+    );
+    expect(custom).not.toBeNull();
+    expect(custom?.getAttribute("data-theme-id")).toBe("org.example.practice");
   });
 });
