@@ -196,4 +196,34 @@ a:hover, a:focus-visible { text-decoration-thickness: 2px; }
 [data-block="valueList"] .value-list__items {
   gap: var(--space-xl);
 }
+
+[data-block="articleList"] .article-card {
+  border-radius: var(--radius-sm);
+}
+[data-block="articleList"] .article-card__title {
+  font-family: var(--font-headline);
+  font-size: 1.125rem;
+  line-height: 1.35;
+}
+[data-block="articleList"] .article-card__date {
+  font-variant: small-caps;
+  text-transform: none;
+  letter-spacing: 0.04em;
+  font-size: 0.8125rem;
+}
+.article__date {
+  font-variant: small-caps;
+  text-transform: none;
+  letter-spacing: 0.04em;
+}
+.article__summary {
+  font-family: var(--font-headline);
+}
+.article__cover {
+  border-radius: var(--radius-sm);
+}
+.article__tag {
+  border-radius: var(--radius-sm);
+  font-variant: small-caps;
+}
 `.trim();

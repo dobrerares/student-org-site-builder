@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "org": {
+    "name": "Stub Org",
+    "tagline": "A fixture for Article renderer tests"
+  },
+  "theme": {
+    "id": "stub",
+    "tokens": {
+      "colorPrimary": "#1f3a5f",
+      "colorAccent": "#c08a3e"
+    }
+  },
+  "defaultLanguage": "ro",
+  "languages": ["ro", "en"],
+  "tags": [
+    { "id": "tag_evenimente", "label": "Evenimente" },
+    { "id": "tag_proiecte", "label": "Proiecte" }
+  ],
+  "pages": [
+    {
+      "slug": "acasa",
+      "lang": "ro",
+      "navLabel": "Acasă",
+      "navOrder": 0,
+      "showInNav": true,
+      "seo": {
+        "title": "Stub site — articole",
+        "description": "A minimal site for Article renderer tests."
+      },
+      "blocks": [
+        {
+          "id": "blk_home_list",
+          "type": "articleList",
+          "version": 1,
+          "data": {
+            "title": "Noutăți",
+            "intro": "Ce s-a întâmplat recent în asociație.",
+            "mode": "byTag",
+            "tags": ["tag_evenimente"]
+          }
+        }
+      ]
+    },
+    {
+      "slug": "home",
+      "lang": "en",
+      "navLabel": "Home",
+      "navOrder": 0,
+      "showInNav": true,
+      "blocks": [
+        {
+          "id": "blk_home_en_list",
+          "type": "articleList",
+          "version": 1,
+          "data": {
+            "title": "News",
+            "mode": "selected",
+            "articleIds": ["art_ro_gala", "art_en_gala"]
+          }
+        }
+      ]
+    }
+  ],
+  "articles": [
+    {
+      "id": "art_ro_gala",
+      "lang": "ro",
+      "slug": "gala-de-final",
+      "slugHistory": ["gala-2026"],
+      "title": "Gala de final de an",
+      "summary": "Am premiat cele mai bune proiecte studențești ale anului.",
+      "publishedAt": "2026-06-12",
+      "state": "published",
+      "tags": ["tag_evenimente"],
+      "translationGroup": "grp_gala",
+      "relatedArticles": {
+        "enabled": true,
+        "mode": "byTag",
+        "tags": ["tag_evenimente"]
+      },
+      "blocks": [
+        {
+          "id": "blk_gala_body",
+          "type": "richText",
+          "version": 1,
+          "data": {
+            "markdown": "Gala a adunat peste **200 de studenți** din toate facultățile.\n\nMulțumim tuturor voluntarilor."
+          }
+        }
+      ]
+    },
+    {
+      "id": "art_ro_atelier",
+      "lang": "ro",
+      "slug": "atelier-de-scriere",
+      "title": "Atelier de scriere creativă",
+      "summary": "Șase săptămâni de exerciții și lecturi.",
+      "publishedAt": "2026-04-03",
+      "state": "published",
+      "tags": ["tag_evenimente", "tag_proiecte"],
+      "blocks": [
+        {
+          "id": "blk_atelier_body",
+          "type": "richText",
+          "version": 1,
+          "data": { "markdown": "Ne-am întâlnit în fiecare marți." }
+        }
+      ]
+    },
+    {
+      "id": "art_ro_schita",
+      "lang": "ro",
+      "slug": "schita-nepublicata",
+      "title": "Schiță nepublicată",
+      "publishedAt": "2026-08-01",
+      "state": "draft",
+      "tags": ["tag_evenimente"],
+      "blocks": []
+    },
+    {
+      "id": "art_ro_nelistat",
+      "lang": "ro",
+      "slug": "raport-intern",
+      "title": "Raport intern",
+      "summary": "Accesibil doar prin link direct.",
+      "publishedAt": "2026-05-20",
+      "state": "unlisted",
+      "tags": ["tag_proiecte"],
+      "blocks": [
+        {
+          "id": "blk_raport_body",
+          "type": "richText",
+          "version": 1,
+          "data": { "markdown": "Detalii interne." }
+        }
+      ]
+    },
+    {
+      "id": "art_en_gala",
+      "lang": "en",
+      "slug": "end-of-year-gala",
+      "title": "End-of-year gala",
+      "summary": "We celebrated the best student projects of the year.",
+      "publishedAt": "2026-06-12",
+      "state": "published",
+      "tags": ["tag_evenimente"],
+      "translationGroup": "grp_gala",
+      "blocks": [
+        {
+          "id": "blk_gala_en_body",
+          "type": "richText",
+          "version": 1,
+          "data": { "markdown": "The gala gathered over **200 students**." }
+        }
+      ]
+    }
+  ]
+}

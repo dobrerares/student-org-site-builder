@@ -168,4 +168,28 @@ a:hover, a:focus-visible {
 [data-block="event-list"] .event-list__item-time {
   font-weight: 700;
 }
+
+[data-block="articleList"] .article-card {
+  border-left: 4px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+}
+[data-block="articleList"] .article-card__date {
+  font-weight: 700;
+  color: var(--color-primary);
+}
+[data-block="articleList"] .article-card__title {
+  font-weight: 700;
+}
+.article__date {
+  font-weight: 700;
+  color: var(--color-primary);
+}
+.article__cover {
+  border-radius: var(--radius-sm);
+}
+.article__tag {
+  border-radius: var(--radius-sm);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
 `.trim();

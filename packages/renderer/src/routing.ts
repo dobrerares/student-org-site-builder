@@ -1,4 +1,5 @@
-import type { Page, Site } from "@sosb/schema";
+import { ARTICLE_ROUTE_PREFIX, publishedTranslationsOf } from "@sosb/schema";
+import type { Article, Page, Site } from "@sosb/schema";
 
 /**
  * Multi-page + multi-language URL/slug strategy.
@@ -148,9 +149,18 @@ export function homePagePathForLanguage(site: Site, lang: string): string {
  * (single-page UX preserved).
  */
 export function navPagesFor(site: Site, activePage: Page): Page[] {
+  return navPagesForLanguage(site, activePage.lang);
+}
+
+/**
+ * Nav pages for a language, without needing an active Page to read it from.
+ * Article pages use this: they sit outside `site.pages` but still render the
+ * site navigation for their own language.
+ */
+export function navPagesForLanguage(site: Site, lang: string): Page[] {
   return site.pages
     .map((page, idx) => ({ page, idx }))
-    .filter(({ page }) => page.lang === activePage.lang && page.showInNav === true)
+    .filter(({ page }) => page.lang === lang && page.showInNav === true)
     .sort((a, b) => {
       if (a.page.navOrder !== b.page.navOrder) {
         return a.page.navOrder - b.page.navOrder;
@@ -284,5 +294,141 @@ export function hreflangEntriesFor(site: Site, activePage: Page): HreflangEntry[
         : homePagePathForLanguage(site, defaultLang);
   }
   entries.push({ hreflang: "x-default", href: xDefaultHref });
+  return entries;
+}
+
+// ---------------------------------------------------------------------------
+// Article routing (ADR 0047).
+// ---------------------------------------------------------------------------
+
+/**
+ * Map an `Article` to its URL path.
+ *
+ *   - default language → `/articles/<slug>/`
+ *   - secondary language → `/<lang>/articles/<slug>/`
+ *
+ * This follows ADR 0015's language-prefix convention, with one deliberate
+ * difference from Pages: there is no "home" special case and no generated
+ * index at `/articles/`. Authors build listing Pages with `articleList`
+ * blocks instead, so the prefix is a namespace rather than a browsable route.
+ * The `articles` segment is reserved — the validator rejects a Page that
+ * claims it.
+ */
+export function articlePath(site: Site, article: Article): string {
+  if (article.lang === site.defaultLanguage) {
+    return `/${ARTICLE_ROUTE_PREFIX}/${article.slug}/`;
+  }
+  return `/${article.lang}/${ARTICLE_ROUTE_PREFIX}/${article.slug}/`;
+}
+
+/** Dist-relative emit path for an Article. Mirrors `articlePath` + `index.html`. */
+export function articleDistPath(site: Site, article: Article): string {
+  return `${articlePath(site, article).slice(1)}index.html`;
+}
+
+/** URL path a retired slug used to occupy, for redirect emission. */
+export function articleHistoricalPath(site: Site, article: Article, oldSlug: string): string {
+  if (article.lang === site.defaultLanguage) {
+    return `/${ARTICLE_ROUTE_PREFIX}/${oldSlug}/`;
+  }
+  return `/${article.lang}/${ARTICLE_ROUTE_PREFIX}/${oldSlug}/`;
+}
+
+export interface ArticleRedirect {
+  /** Dist-relative path of the redirect stub. */
+  readonly distPath: string;
+  /** URL path the stub sends visitors to. */
+  readonly to: string;
+}
+
+/**
+ * Redirect stubs for an Article's retired slugs.
+ *
+ * Returns `[]` for Draft Articles: their historical URLs stay *reserved* (no
+ * other Article may claim them) but nothing is emitted, because the
+ * destination itself is not exported (ADR 0047).
+ */
+export function articleRedirectsFor(site: Site, article: Article): ArticleRedirect[] {
+  if (article.state === "draft") return [];
+  const to = articlePath(site, article);
+  const seen = new Set<string>();
+  const redirects: ArticleRedirect[] = [];
+  for (const oldSlug of article.slugHistory ?? []) {
+    if (oldSlug === article.slug) continue;
+    const path = articleHistoricalPath(site, article, oldSlug);
+    if (seen.has(path)) continue;
+    seen.add(path);
+    redirects.push({ distPath: `${path.slice(1)}index.html`, to });
+  }
+  return redirects;
+}
+
+/**
+ * Language-switcher rows for an Article.
+ *
+ * Deliberately unlike `languageSwitcherEntriesFor`: there is **no** language-home
+ * fallback. A language with no Published counterpart is omitted entirely rather
+ * than sending the visitor to an unrelated page, and Draft/Unlisted counterparts
+ * are never offered (ADR 0047). Returns `[]` when the Article stands alone, so
+ * the renderer can skip the switcher.
+ */
+export function articleLanguageSwitcherEntriesFor(
+  site: Site,
+  article: Article,
+): LanguageSwitcherEntry[] {
+  if (site.languages.length < 2) return [];
+  const counterparts = publishedTranslationsOf(site, article);
+  if (counterparts.length === 0) return [];
+  const byLang = new Map(counterparts.map((other) => [other.lang, other]));
+  const entries: LanguageSwitcherEntry[] = [];
+  for (const lang of site.languages) {
+    if (lang === article.lang) {
+      entries.push({
+        lang,
+        nativeName: nativeLanguageName(lang),
+        href: articlePath(site, article),
+        isActive: true,
+      });
+      continue;
+    }
+    const counterpart = byLang.get(lang);
+    if (counterpart === undefined) continue;
+    entries.push({
+      lang,
+      nativeName: nativeLanguageName(lang),
+      href: articlePath(site, counterpart),
+      isActive: false,
+    });
+  }
+  return entries;
+}
+
+/**
+ * Hreflang annotations for an Article.
+ *
+ * Unlisted Articles produce none at all: they carry `noindex` and are excluded
+ * from automatic discovery, so advertising alternates for them would undo both.
+ * Published Articles advertise only their Published counterparts, with
+ * `x-default` pointing at the default-language member when there is one.
+ */
+export function articleHreflangEntriesFor(site: Site, article: Article): HreflangEntry[] {
+  if (site.languages.length < 2) return [];
+  if (article.state !== "published") return [];
+  const counterparts = publishedTranslationsOf(site, article);
+  if (counterparts.length === 0) return [];
+
+  const byLang = new Map<string, Article>([[article.lang, article]]);
+  for (const other of counterparts) byLang.set(other.lang, other);
+
+  const entries: HreflangEntry[] = [];
+  for (const lang of site.languages) {
+    const member = byLang.get(lang);
+    if (member === undefined) continue;
+    entries.push({ hreflang: lang, href: articlePath(site, member) });
+  }
+  const defaultMember = byLang.get(site.defaultLanguage);
+  if (defaultMember !== undefined) {
+    entries.push({ hreflang: "x-default", href: articlePath(site, defaultMember) });
+  }
   return entries;
 }

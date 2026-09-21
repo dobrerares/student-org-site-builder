@@ -20,7 +20,11 @@ import type {
   ValueListBlock,
   ActivitiesListBlock,
 } from "@sosb/schema";
-import { isKnownBlockType } from "@sosb/schema";
+import type { Article, ArticleListBlock, ArticleSelection } from "@sosb/schema";
+import { isKnownBlockType, resolveArticleSelection } from "@sosb/schema";
+import { ArticleCards, ArticleList } from "./blocks/article-list.js";
+import { articleCopy, formatArticleDate } from "./article-text.js";
+import { assetRefAlt, assetRefPath } from "./asset-ref-path.js";
 import { CtaBanner } from "./blocks/cta-banner.js";
 import { Faq } from "./blocks/faq.js";
 import { Hero } from "./blocks/hero.js";
@@ -41,11 +45,15 @@ import { DocumentDownloads } from "./blocks/document-downloads.js";
 import { EventList } from "./blocks/event-list.js";
 import { EVENT_LIST_PAST_FADE_SCRIPT } from "./blocks/event-list-past-fade.js";
 import {
+  articleHreflangEntriesFor,
+  articleLanguageSwitcherEntriesFor,
+  articlePath,
   hreflangEntriesFor,
   languageSwitcherEntriesFor,
-  navPagesFor,
+  navPagesForLanguage,
   pagePath,
 } from "./routing.js";
+import type { HreflangEntry, LanguageSwitcherEntry } from "./routing.js";
 import { PREVIEW_NAV_SCRIPT, PREVIEW_NAV_SCRIPT_MARKER } from "./preview-nav-script.js";
 import { PREVIEW_MORPH_SCRIPT, PREVIEW_MORPH_SCRIPT_MARKER } from "./preview-morph-script.js";
 import type { AssetUrlForPath } from "./asset-url.js";
@@ -138,13 +146,45 @@ function pageOgImage(page: Page, assetUrlForPath: AssetUrlForPath | undefined): 
   return resolveAssetUrl(path, assetUrlForPath);
 }
 
-function renderBlock(
-  block: BlockEnvelope,
-  assetUrlForPath: AssetUrlForPath | undefined,
-  pageLang: string,
-  variant?: string | undefined,
-): preact.JSX.Element | null {
+/**
+ * What a block needs to know about its surroundings.
+ *
+ * Most blocks render from their own `data` alone. `articleList` cannot: it
+ * resolves Articles out of the whole Site, filters by the container's
+ * language, and excludes the containing Article from "By tag" results. The
+ * active Theme belongs here for the same reason — `variantFor` needs it for
+ * every block, and threading it as a second positional argument alongside the
+ * context would give two ways to say "about the surroundings".
+ *
+ * Passing a context record rather than widening the parameter list keeps the
+ * next site-aware block from churning every call site again.
+ */
+interface BlockRenderContext {
+  readonly site: Site;
+  readonly lang: string;
+  readonly assetUrlForPath: AssetUrlForPath | undefined;
+  /** Active Theme, for resolving each block's design variant. */
+  readonly theme?: ThemeBundle | undefined;
+  /** Set only when the blocks belong to an Article. */
+  readonly containerArticleId?: string | undefined;
+}
+
+function renderBlock(block: BlockEnvelope, ctx: BlockRenderContext): preact.JSX.Element | null {
+  const assetUrlForPath = ctx.assetUrlForPath;
+  const pageLang = ctx.lang;
+  const variant = variantFor(block, ctx.theme);
   if (!isKnownBlockType(block.type)) return null;
+  if (block.type === "articleList") {
+    return (
+      <ArticleList
+        block={block as unknown as ArticleListBlock}
+        site={ctx.site}
+        lang={ctx.lang}
+        containerArticleId={ctx.containerArticleId}
+        assetUrlForPath={assetUrlForPath}
+      />
+    );
+  }
   if (block.type === "hero") {
     return (
       <Hero
@@ -258,24 +298,62 @@ function renderBlock(
 }
 
 /**
- * Does the page contain at least one imageGallery whose lightbox is on?
+ * One rendered document — a Page or an Article — reduced to what the shell
+ * needs. Both kinds share the entire `<head>`, the site navigation, the
+ * language switcher, and the per-page script gating; only the sources of the
+ * title, the alternates, and the `<main>` contents differ.
  *
- * The lightbox dialog scaffold and the inline JS are page-global; we want
- * them only when at least one block opted in. The check is intentionally
- * tolerant — `block.data` is `looseObject`-typed, so we read `lightbox`
- * via a typeof check.
+ * Resolving both into this record (rather than branching inside the shell on
+ * "is this an article?") keeps one implementation of the head, so an SEO tag
+ * added for Pages cannot silently skip Articles.
  */
-function pageNeedsLightbox(page: Page): boolean {
-  for (const block of page.blocks) {
+interface ShellTarget {
+  readonly lang: string;
+  readonly title: string;
+  readonly description: string | undefined;
+  readonly ogImage: string | undefined;
+  readonly ogType: "website" | "article";
+  /** Unlisted Articles only. Pages are always indexable. */
+  readonly noindex: boolean;
+  readonly activeHref: string;
+  readonly hreflangs: readonly HreflangEntry[];
+  readonly switcherEntries: readonly LanguageSwitcherEntry[];
+  readonly mainContent: preact.JSX.Element;
+  readonly footerContent: preact.JSX.Element | null;
+  readonly hasLazyEmbed: boolean;
+  readonly needsLightbox: boolean;
+  readonly hasEventList: boolean;
+}
+
+function renderBlocks(
+  blocks: readonly BlockEnvelope[],
+  ctx: BlockRenderContext,
+): preact.JSX.Element {
+  return (
+    <>
+      {blocks.map((block) => {
+        const rendered = renderBlock(block, ctx);
+        if (rendered !== null) return rendered;
+        return (
+          <div
+            key={block.id}
+            dangerouslySetInnerHTML={{
+              __html: `<!-- unknown block: ${escapeHtmlComment(block.type)} -->`,
+            }}
+          />
+        );
+      })}
+    </>
+  );
+}
+
+function blocksNeedLightbox(blocks: readonly BlockEnvelope[]): boolean {
+  for (const block of blocks) {
     if (block.type !== "imageGallery") continue;
     const flag = (block.data as { lightbox?: unknown }).lightbox;
     if (flag === true) return true;
   }
   return false;
-}
-
-function pageHasEventList(page: Page): boolean {
-  return page.blocks.some((b) => b.type === "eventList");
 }
 
 export function PageShell(props: {
@@ -300,19 +378,270 @@ export function PageShell(props: {
     theme,
     shellVariant,
   } = props;
-  const title = pageTitle(site, page);
-  const description = pageDescription(site, page);
-  const ogImage = pageOgImage(page, assetUrlForPath);
-  const twitterCardType = ogImage === undefined ? "summary" : "summary_large_image";
-  const navPages = navPagesFor(site, page);
-  const activeHref = pagePath(site, page);
-  const hasLazyEmbed = pageHasLazyEmbed(page.blocks);
-  const needsLightbox = pageNeedsLightbox(page);
-  const hasEventList = pageHasEventList(page);
   const contentBlocks = page.blocks.filter((block) => block.type !== "siteFooter");
   const footerBlocks = page.blocks.filter((block) => block.type === "siteFooter");
-  const switcherEntries = languageSwitcherEntriesFor(site, page);
-  const hreflangs = hreflangEntriesFor(site, page);
+  const ctx: BlockRenderContext = { site, lang: page.lang, assetUrlForPath, theme };
+
+  const target: ShellTarget = {
+    lang: page.lang,
+    title: pageTitle(site, page),
+    description: pageDescription(site, page),
+    ogImage: pageOgImage(page, assetUrlForPath),
+    ogType: "website",
+    noindex: false,
+    activeHref: pagePath(site, page),
+    hreflangs: hreflangEntriesFor(site, page),
+    switcherEntries: languageSwitcherEntriesFor(site, page),
+    mainContent: renderBlocks(contentBlocks, ctx),
+    footerContent: footerBlocks.length === 0 ? null : renderBlocks(footerBlocks, ctx),
+    hasLazyEmbed: pageHasLazyEmbed(page.blocks),
+    needsLightbox: blocksNeedLightbox(page.blocks),
+    hasEventList: page.blocks.some((b) => b.type === "eventList"),
+  };
+
+  return (
+    <DocumentShell
+      site={site}
+      target={target}
+      css={css}
+      fontPreloads={fontPreloads}
+      mode={mode}
+      assetUrlForPath={assetUrlForPath}
+      shellVariant={shellVariant}
+    />
+  );
+}
+
+function articleTitle(site: Site, article: Article): string {
+  const candidate = article.seo?.title;
+  if (typeof candidate === "string" && candidate.length > 0) return candidate;
+  // Search and sharing metadata default to the Article's own title, falling
+  // back to the org name only when an Article somehow has none (issue #97).
+  return article.title.length > 0 ? article.title : site.org.name;
+}
+
+function articleDescription(site: Site, article: Article): string | undefined {
+  const override = article.seo?.description;
+  if (typeof override === "string" && override.length > 0) return override;
+  if (typeof article.summary === "string" && article.summary.length > 0) return article.summary;
+  if (typeof site.org.tagline === "string" && site.org.tagline.length > 0) {
+    return site.org.tagline;
+  }
+  return undefined;
+}
+
+/**
+ * The Article's own header: title, publication date, optional cover and
+ * summary, rendered above the Article's Blocks.
+ *
+ * These are *not* Blocks. Issue #97 makes them automatic fields of every
+ * Article so a card and its full Article can never disagree about the title or
+ * the date, which is exactly what would happen if an author could delete the
+ * heading Block out of one and not the other.
+ */
+function ArticleHeader(props: {
+  article: Article;
+  assetUrlForPath: AssetUrlForPath | undefined;
+}): preact.JSX.Element {
+  const { article } = props;
+  const cover = assetRefPath(article.cover);
+  const coverAlt =
+    typeof article.coverAlt === "string" && article.coverAlt.length > 0
+      ? article.coverAlt
+      : cover !== undefined
+        ? assetRefAlt(article.cover)
+        : "";
+  const summary =
+    typeof article.summary === "string" && article.summary.length > 0 ? article.summary : undefined;
+
+  return (
+    <header class="article__header">
+      <h1 class="article__title">{article.title}</h1>
+      <time class="article__date" datetime={article.publishedAt}>
+        {formatArticleDate(article.publishedAt, article.lang)}
+      </time>
+      {summary !== undefined && <p class="article__summary">{summary}</p>}
+      {cover !== undefined && (
+        <div class="article__cover">
+          <img src={resolveAssetUrl(cover, props.assetUrlForPath)} alt={coverAlt} />
+        </div>
+      )}
+    </header>
+  );
+}
+
+/**
+ * Tag labels shown at the foot of an Article.
+ *
+ * Deliberately plain text, never links: Article tags are internal authoring
+ * labels (CONTEXT.md, issue #98) and there are no tag pages to link to.
+ * Rendering them as anchors would promise browsing that does not exist.
+ */
+function ArticleTags(props: { site: Site; article: Article }): preact.JSX.Element | null {
+  const ids = props.article.tags ?? [];
+  if (ids.length === 0) return null;
+  const registry = new Map((props.site.tags ?? []).map((tag) => [tag.id, tag.label]));
+  const labels = ids
+    .map((id) => registry.get(id))
+    .filter((label): label is string => typeof label === "string" && label.length > 0);
+  if (labels.length === 0) return null;
+  return (
+    <ul class="article__tags" aria-label={articleCopy(props.article.lang, "tagsLabel")}>
+      {labels.map((label) => (
+        <li key={label} class="article__tag">
+          {label}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function RelatedArticles(props: {
+  site: Site;
+  article: Article;
+  assetUrlForPath: AssetUrlForPath | undefined;
+}): preact.JSX.Element | null {
+  const related = props.article.relatedArticles;
+  if (related === undefined || !related.enabled) return null;
+  const matches = resolveArticleSelection(props.site, related as ArticleSelection, {
+    lang: props.article.lang,
+    excludeArticleId: props.article.id,
+  });
+  const headingId = `${props.article.id}__related`;
+  const title =
+    typeof related.title === "string" && related.title.length > 0
+      ? related.title
+      : articleCopy(props.article.lang, "relatedTitle");
+  return (
+    <section
+      data-block="articleList"
+      data-article-related="true"
+      data-mode={related.mode ?? "byTag"}
+      aria-labelledby={headingId}
+    >
+      <h2 id={headingId} class="article-list__title">
+        {title}
+      </h2>
+      <ArticleCards
+        site={props.site}
+        articles={matches}
+        lang={props.article.lang}
+        assetUrlForPath={props.assetUrlForPath}
+      />
+    </section>
+  );
+}
+
+/**
+ * Render one Article as a full page inside the site shell.
+ *
+ * The Article's Blocks reuse the Page dispatch unchanged — that is the whole
+ * point of storing an Article body as a Block list (ADR 0048's migration
+ * note): when the Rich-text Block gains structured content later, Articles
+ * inherit it with no work here.
+ */
+export function ArticleShell(props: {
+  site: Site;
+  article: Article;
+  css: string;
+  fontPreloads?: readonly string[] | undefined;
+  mode?: "deploy" | "preview";
+  assetUrlForPath?: AssetUrlForPath | undefined;
+  /** Active theme. Only used to decide which design variants apply. */
+  theme?: ThemeBundle | undefined;
+  /** Page-shell variant, already gated against the active theme. */
+  shellVariant?: string | undefined;
+}): preact.JSX.Element {
+  const {
+    site,
+    article,
+    css,
+    fontPreloads = [],
+    mode = "deploy",
+    assetUrlForPath,
+    theme,
+    shellVariant,
+  } = props;
+  const contentBlocks = article.blocks.filter((block) => block.type !== "siteFooter");
+  // An Article's Blocks get the same variant treatment a Page's do: the
+  // Theme seam knows nothing about which kind of document a Block sits in.
+  const ctx: BlockRenderContext = {
+    site,
+    lang: article.lang,
+    assetUrlForPath,
+    theme,
+    containerArticleId: article.id,
+  };
+
+  // Articles have no site-footer Block of their own; they inherit the footer
+  // of their language's home page so every URL of the Site ends the same way.
+  const footerSource = site.pages.find(
+    (page) => page.lang === article.lang && page.blocks.some((b) => b.type === "siteFooter"),
+  );
+  const footerBlocks = (footerSource?.blocks ?? []).filter((block) => block.type === "siteFooter");
+
+  const cover = assetRefPath(article.cover);
+  const mainContent = (
+    <>
+      <article
+        class="article"
+        data-article-id={article.id}
+        data-article-state={article.state}
+        data-article-lang={article.lang}
+      >
+        <ArticleHeader article={article} assetUrlForPath={assetUrlForPath} />
+        <div class="article__body">{renderBlocks(contentBlocks, ctx)}</div>
+        <ArticleTags site={site} article={article} />
+      </article>
+      <RelatedArticles site={site} article={article} assetUrlForPath={assetUrlForPath} />
+    </>
+  );
+
+  const target: ShellTarget = {
+    lang: article.lang,
+    title: articleTitle(site, article),
+    description: articleDescription(site, article),
+    ogImage: cover === undefined ? undefined : resolveAssetUrl(cover, assetUrlForPath),
+    ogType: "article",
+    // Unlisted Articles are reachable by URL but must stay out of search
+    // results (ADR 0047). They are not private — this is a discovery boundary.
+    noindex: article.state === "unlisted",
+    activeHref: articlePath(site, article),
+    hreflangs: articleHreflangEntriesFor(site, article),
+    switcherEntries: articleLanguageSwitcherEntriesFor(site, article),
+    mainContent,
+    footerContent: footerBlocks.length === 0 ? null : renderBlocks(footerBlocks, ctx),
+    hasLazyEmbed: pageHasLazyEmbed(article.blocks),
+    needsLightbox: blocksNeedLightbox(article.blocks),
+    hasEventList: article.blocks.some((b) => b.type === "eventList"),
+  };
+
+  return (
+    <DocumentShell
+      site={site}
+      target={target}
+      css={css}
+      fontPreloads={fontPreloads}
+      mode={mode}
+      assetUrlForPath={assetUrlForPath}
+      shellVariant={shellVariant}
+    />
+  );
+}
+
+function DocumentShell(props: {
+  site: Site;
+  target: ShellTarget;
+  css: string;
+  fontPreloads: readonly string[];
+  mode: "deploy" | "preview";
+  assetUrlForPath: AssetUrlForPath | undefined;
+  shellVariant: string | undefined;
+}): preact.JSX.Element {
+  const { site, target, css, fontPreloads, mode, assetUrlForPath, shellVariant } = props;
+  const { title, description, ogImage } = target;
+  const twitterCardType = ogImage === undefined ? "summary" : "summary_large_image";
+  const navPages = navPagesForLanguage(site, target.lang);
   const navLogo = site.org.logo;
   const faviconHref =
     navLogo !== undefined && typeof navLogo.path === "string" && navLogo.path.length > 0
@@ -330,16 +659,17 @@ export function PageShell(props: {
         : site.org.name;
   // Always emit the preview-mode click interceptor in preview mode. Gating it
   // on "has multi-page nav or a language switcher" missed every other link on
-  // the page — hero CTAs, CTA banners, footer and rich-text links — so on a
-  // single-page site the first CTA click navigated the preview iframe off the
-  // editor's origin.
+  // the page — hero CTAs, CTA banners, footer and rich-text links, and links
+  // into Articles — so on a single-page site the first CTA click navigated the
+  // preview iframe off the editor's origin.
   const isPreviewMode = mode === "preview";
 
   return (
-    <html lang={page.lang}>
+    <html lang={target.lang}>
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        {target.noindex && <meta name="robots" content="noindex" />}
         <title>{title}</title>
         {faviconHref !== undefined && <link rel="icon" href={faviconHref} type={faviconType} />}
         {fontPreloads.map((href) => (
@@ -356,7 +686,7 @@ export function PageShell(props: {
         {/* Open Graph minimum so theme-agnostic shares render predictably. */}
         <meta property="og:title" content={title} />
         {description !== undefined && <meta property="og:description" content={description} />}
-        <meta property="og:type" content="website" />
+        <meta property="og:type" content={target.ogType} />
         {/* Twitter Card parity. Absolute URLs for og:image/twitter:image are
          * overlaid by the build pipeline when a `siteUrl` is configured. */}
         <meta name="twitter:card" content={twitterCardType} />
@@ -365,7 +695,7 @@ export function PageShell(props: {
         {ogImage !== undefined && <meta name="twitter:image" content={ogImage} />}
         {/* hreflang alternates for cross-language SEO. Skipped on
          * single-language sites (no other languages to advertise). */}
-        {hreflangs.map((entry) => (
+        {target.hreflangs.map((entry) => (
           <link key={entry.hreflang} rel="alternate" hreflang={entry.hreflang} href={entry.href} />
         ))}
         <style dangerouslySetInnerHTML={{ __html: css }} />
@@ -398,7 +728,7 @@ export function PageShell(props: {
               <ul>
                 {navPages.map((entry) => {
                   const href = pagePath(site, entry);
-                  const isActive = href === activeHref;
+                  const isActive = href === target.activeHref;
                   return (
                     <li key={`${entry.lang}:${entry.slug}`}>
                       <a
@@ -420,11 +750,12 @@ export function PageShell(props: {
          * active language self-links so theme styling can rely on
          * aria-current; non-active languages link to localizedAs
          * counterparts, with a graceful fallback to the language home when
-         * no counterpart exists. */}
-        {switcherEntries.length > 0 && (
+         * no counterpart exists. Articles use a stricter rule: only
+         * Published counterparts, and no language-home fallback. */}
+        {target.switcherEntries.length > 0 && (
           <nav data-language-switcher aria-label="Language">
             <ul>
-              {switcherEntries.map((entry) => (
+              {target.switcherEntries.map((entry) => (
                 <li key={entry.lang}>
                   <a
                     href={entry.href}
@@ -440,39 +771,19 @@ export function PageShell(props: {
             </ul>
           </nav>
         )}
-        <main>
-          {contentBlocks.map((block) => {
-            const rendered = renderBlock(
-              block,
-              assetUrlForPath,
-              page.lang,
-              variantFor(block, theme),
-            );
-            if (rendered !== null) return rendered;
-            return (
-              <div
-                key={block.id}
-                dangerouslySetInnerHTML={{
-                  __html: `<!-- unknown block: ${escapeHtmlComment(block.type)} -->`,
-                }}
-              />
-            );
-          })}
-        </main>
-        {footerBlocks.map((block) =>
-          renderBlock(block, assetUrlForPath, page.lang, variantFor(block, theme)),
-        )}
-        {hasLazyEmbed && (
+        <main>{target.mainContent}</main>
+        {target.footerContent}
+        {target.hasLazyEmbed && (
           <script
             {...{ [EMBED_LOADER_MARKER]: "" }}
             dangerouslySetInnerHTML={{ __html: EMBED_LAZY_LOAD_SCRIPT }}
           />
         )}
-        {needsLightbox && <LightboxScaffold />}
-        {needsLightbox && (
+        {target.needsLightbox && <LightboxScaffold />}
+        {target.needsLightbox && (
           <script data-sosb-lightbox-script dangerouslySetInnerHTML={{ __html: LIGHTBOX_SCRIPT }} />
         )}
-        {hasEventList && (
+        {target.hasEventList && (
           <script
             data-sosb="event-list-past-fade"
             dangerouslySetInnerHTML={{ __html: EVENT_LIST_PAST_FADE_SCRIPT }}
