@@ -1,0 +1,23 @@
+{
+  "name": "@sosb/prototype-issue-102-builder",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "THROWAWAY prototype for issue #102. Not production code; never imported by packages/.",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5202",
+    "proto:build": "vite build",
+    "proto:preview": "vite preview --host 127.0.0.1 --port 5203"
+  },
+  "dependencies": {
+    "react": "19.0.0",
+    "react-dom": "19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.0.2",
+    "@types/react-dom": "19.0.2",
+    "@vitejs/plugin-react": "4.3.4",
+    "typescript": "5.7.2",
+    "vite": "6.0.5"
+  }
+}
