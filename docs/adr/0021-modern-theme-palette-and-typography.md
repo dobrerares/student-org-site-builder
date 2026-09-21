@@ -4,6 +4,14 @@
 - **Date:** 2026-05-05
 - **Issue:** #28
 
+## Extension contract amendment — issue #105
+
+[ADR 0046](0046-trusted-executable-theme-and-block-extensions.md) expands
+Custom Themes to control page layouts and Block markup, permits arbitrary
+page CSS and packaged fonts, and allows custom extensions to bundle
+client frameworks and exceed the interaction-script budget. The built-in
+Modern Theme choices below remain unchanged.
+
 ## Context
 
 Issue #28 asks for the **Modern** theme — one of the five v1 themes the

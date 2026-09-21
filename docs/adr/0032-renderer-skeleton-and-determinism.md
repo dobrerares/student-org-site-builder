@@ -4,6 +4,15 @@
 - **Date:** 2026-05-05
 - **Issue:** #46
 
+## Extension contract amendment — issue #105
+
+[ADR 0046](0046-trusted-executable-theme-and-block-extensions.md) permits
+custom extensions to supply rendering code, arbitrary page CSS, and
+bundled public-site frameworks. It retains deterministic HTML across
+environments and requires core content and navigation to work before
+public-site scripts run. Its exceptions to token-only styling and
+framework-free output apply to custom extensions.
+
 ## Context
 
 Issue #46 is the infrastructure half of the renderer (split from the original

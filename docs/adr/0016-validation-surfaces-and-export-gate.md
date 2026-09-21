@@ -4,6 +4,17 @@
 - **Date:** 2026-05-05
 - **Issue:** #25
 
+## Planned amendment from issues #97 and #100
+
+The [rich-text contract](../plans/issue-100-rich-text-contract.md) and
+[ADR 0048](0048-structured-rich-text-block-content.md) introduce explicit
+exceptions to the override rule below: unavailable active explicit Article-list
+selections, missing image bytes, and unsupported rich-text content in public
+content block public export without an override. Draft-only problems do not;
+editable archive saving remains available. Broken prose links warn and render
+unlinked text; missing image descriptions remain warnings. These are planned
+changes; the historical implementation described below still allows overrides.
+
 ## Context
 
 Issue #25 wires the schema's three severity tiers
