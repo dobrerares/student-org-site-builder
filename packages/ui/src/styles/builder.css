@@ -33,6 +33,21 @@
 @source "../../../browser-shell/src";
 
 @theme {
+  /*
+   * Inter is NOT shipped by this package and no `@font-face` is declared
+   * here. The builder's Inter bytes come from `@sosb/renderer`'s font
+   * registry, injected as base64 `data:` woff2 rules by
+   * `@sosb/editor-app/src/editor-fonts.ts` — a module-load side effect, so
+   * they are present in every shell that mounts the editor, including the
+   * offline archive. `packages/browser-shell/test/archival-css.test.ts`
+   * asserts those bytes actually reach the single-file build.
+   *
+   * This stack is the same one `welcome-shell-css.ts` already uses, and it
+   * degrades to the system sans on any surface that loads `@sosb/ui`
+   * without the editor: naming Inter first costs nothing when it is
+   * missing, and keeps the shared controls matching the chrome around them
+   * when it is not.
+   */
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;

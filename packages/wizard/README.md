@@ -1,12 +1,12 @@
 # @sosb/wizard
 
-6-step state machine + Preact UI for guided onboarding.
+6-step state machine + React UI for guided onboarding.
 
 Tracking issue: #33. ADR 0007 records the design.
 
 ## Public surface
 
-- `<Wizard initial onProgress onComplete onCancel />` — the Preact shell.
+- `<Wizard initial onProgress onComplete onCancel />` — the React shell.
   The host (browser-shell / electron-shell) wires `onProgress` to
   `saveWizardProgress` for resume-across-reload, `onComplete` to its
   "open in editor" flow, and `onCancel` to the welcome-screen restore.

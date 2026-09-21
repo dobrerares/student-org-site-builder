@@ -2336,11 +2336,26 @@ button[data-issue] [data-issue-path]::before {
   [data-health-counts] > [data-zero="true"] {
     display: none;
   }
+  /*
+   * Narrow viewports dock the dialog to the bottom of the screen instead of
+   * centring it — a thumb reaches the bottom of a phone, not the middle.
+   * This used to fall out of the backdrop's grid (align-items: end); now
+   * that the popup positions itself, it has to be stated here.
+   *
+   * translate: none cancels the shared popup's Tailwind centring, which
+   * uses the translate longhand. Leaving it in place would drag the sheet
+   * half its own height off the bottom of the screen.
+   */
   [data-testid="add-block-dialog"],
   [data-testid="export-confirm-dialog"] {
+    top: auto;
+    bottom: var(--sp-2);
+    left: var(--sp-2);
+    right: var(--sp-2);
+    translate: none;
     max-height: 92vh;
     padding: var(--sp-3);
-    width: calc(100vw - 2 * var(--sp-2));
+    width: auto;
   }
 }
 `;

@@ -44,9 +44,12 @@ async function bundleForBrowser(): Promise<string> {
   return out.text;
 }
 
-async function mountEditor(page: import("@playwright/test").Page): Promise<void> {
+async function mountEditor(
+  page: import("@playwright/test").Page,
+  viewport: { width: number; height: number } = { width: 1200, height: 900 },
+): Promise<void> {
   const bundle = await bundleForBrowser();
-  await page.setViewportSize({ width: 1200, height: 900 });
+  await page.setViewportSize(viewport);
   await page.setContent('<!doctype html><html><body><div id="root"></div></body></html>');
   await page.addScriptTag({ type: "module", content: bundle });
   await page.evaluate((siteData) => {
@@ -67,6 +70,63 @@ test("the Add Block dialog opens and lists at least the hero block", async ({ pa
   const heroEntry = page.locator('[data-testid="add-block-entry"][data-block-type="hero"]');
   await expect(heroEntry).toBeVisible();
   await expect(page.getByTestId("add-block-search")).toBeVisible();
+});
+
+/**
+ * Narrow viewports dock the dialog to the bottom of the screen rather than
+ * centring it — a thumb reaches the bottom of a phone, not the middle.
+ *
+ * This used to fall out of the backdrop being a grid container with
+ * `align-items: end`. Since the dialog moved onto Base UI the popup is a
+ * sibling of the backdrop and positions itself, so the behaviour is now
+ * stated explicitly in the editor stylesheet and needs a test that would
+ * notice it disappearing again.
+ */
+test("at a phone viewport the Add Block dialog docks to the bottom of the screen", async ({
+  page,
+}) => {
+  await mountEditor(page, { width: 390, height: 780 });
+
+  await page.getByTestId("block-add").click();
+  const dialog = page.getByTestId("add-block-dialog");
+  await expect(dialog).toBeVisible();
+
+  const box = (await dialog.boundingBox())!;
+  const viewport = page.viewportSize()!;
+
+  // Bottom-docked: its lower edge sits near the bottom of the viewport, and
+  // it does not float in the vertical middle.
+  expect(viewport.height - (box.y + box.height)).toBeLessThanOrEqual(24);
+  expect(box.y + box.height).toBeGreaterThan(viewport.height * 0.75);
+
+  // Full-bleed apart from a small gutter, rather than a centred card.
+  expect(box.x).toBeLessThanOrEqual(24);
+  expect(box.width).toBeGreaterThan(viewport.width - 48);
+
+  // And it is actually on screen — the Tailwind centring translate must be
+  // cancelled, or the sheet hangs half its height below the fold.
+  expect(box.y).toBeGreaterThanOrEqual(0);
+});
+
+test("at a desktop viewport the Add Block dialog is centred", async ({ page }) => {
+  await mountEditor(page, { width: 1200, height: 900 });
+
+  await page.getByTestId("block-add").click();
+  const dialog = page.getByTestId("add-block-dialog");
+  await expect(dialog).toBeVisible();
+  // The pop-in animation ends on an 8px vertical offset; measure after it
+  // settles or the assertion is a race.
+  await dialog.evaluate(async (el) => {
+    await Promise.all(el.getAnimations().map((animation) => animation.finished));
+  });
+
+  const box = (await dialog.boundingBox())!;
+  const viewport = page.viewportSize()!;
+
+  const centreX = box.x + box.width / 2;
+  const centreY = box.y + box.height / 2;
+  expect(Math.abs(centreX - viewport.width / 2)).toBeLessThanOrEqual(2);
+  expect(Math.abs(centreY - viewport.height / 2)).toBeLessThanOrEqual(2);
 });
 
 test("picking a block from the dialog appends a row and closes the picker", async ({ page }) => {

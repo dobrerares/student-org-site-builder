@@ -58,7 +58,7 @@ Linktree) fall short.
 
 ## Editor distributions
 
-Two distributions are planned, both running the same Preact-based editor and
+Two distributions are planned, both running the same React-based editor and
 the same renderer:
 
 - **Browser editor** — a hosted SPA. Useful when the user prefers not to

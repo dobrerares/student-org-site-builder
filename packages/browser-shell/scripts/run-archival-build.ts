@@ -111,10 +111,13 @@ export async function runArchivalBuild(
     jsxImportSource: "react",
     absWorkingDir: repoRoot,
     minify: true,
-    // Fonts and images that the builder stylesheet references must travel
-    // inside the single file; a `file://` archive has nothing to fetch from.
-    loader: { ".woff2": "dataurl", ".woff": "dataurl", ".png": "dataurl", ".svg": "dataurl" },
   });
+  // No font/image loaders are configured on purpose. Nothing in the builder
+  // imports a font or image *file*: Inter arrives as base64 `data:` woff2
+  // rules built at runtime from `@sosb/renderer`'s font registry (see
+  // `@sosb/editor-app/src/editor-fonts.ts`), and every icon is inline SVG in
+  // `icons.tsx`. A loader map here would be dead configuration that looks
+  // like it guarantees something it does not.
 
   const { js, css } = classifyOutputs(bundleResult.outputFiles);
   if (js === undefined) {

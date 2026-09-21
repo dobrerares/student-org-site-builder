@@ -131,8 +131,14 @@ bytes in the offline archive for no gain.
   rendered HTML are still the only boundary, and the preview iframe keeps
   mounting the Preact renderer.
 - `@sosb/editor-state`, `@sosb/schema`, `@sosb/preview-bridge`,
-  `@sosb/assets`, `@sosb/vfs`, `@sosb/zip` and `@sosb/build` were not
-  touched and declare no React dependency.
+  `@sosb/assets`, `@sosb/vfs` and `@sosb/zip` have no source or manifest
+  change and declare no React dependency.
+- `@sosb/build`'s source and manifest are likewise unchanged, but the
+  package did gain one test file — `test/no-builder-css.test.ts` — which
+  guards the boundary from the public-output side. Worth stating precisely,
+  because "untouched" would be wrong and the distinction is the point: the
+  build pipeline stayed framework-independent, and the only addition is an
+  assertion that it stays that way.
 - New `packages/ui` (`@sosb/ui`): Button, Input, Textarea, NativeSelect,
   Label, Hint, Dialog, Popover, Select (listbox), Tabs, Toast, and `cn`.
 - Adopted in all three interfaces: buttons, inputs, textareas and native
@@ -249,3 +255,50 @@ Evidence for specific contract items:
   and its selects are native by design. Adopting them belongs with the
   issue #102 navigation redesign rather than to a migration that is
   supposed to preserve workflows.
+
+### Review follow-ups
+
+Changes made after the two-axis review of the implementation PR, recorded
+here because two of them correct claims made above.
+
+- **`<Input>` is type-aware.** The first cut applied text-field chrome
+  (`w-full`, border, padding, background) to every `<input>`, including the
+  checkboxes, radios, colour swatches and file pickers in `spine-form`,
+  `block-form`, `theme-picker`, `color-picker` and the Wizard. Inside
+  `[data-testid="editor-pane"]` the legacy unlayered stylesheet masked it,
+  so nothing looked wrong in the editor — but measured on a bare page
+  carrying only the builder stylesheet, a checkbox rendered 480px wide and
+  a colour input became a full-width text box with the swatch squashed to a
+  line. Text chrome is now scoped to text-like types; everything else gets
+  the shared focus/disabled treatment only, and checkbox/radio additionally
+  get `accent-color`. Verified in headless Chromium before and after.
+- **Narrow-viewport dialogs dock to the bottom again.** That behaviour used
+  to fall out of the backdrop being a grid container with `align-items:
+end`. Moving to Base UI made the popup a sibling of the backdrop, so the
+  docking had to be restated — including cancelling the shared popup's
+  Tailwind `translate` centring, which would otherwise hang the sheet half
+  its height below the fold. `e2e/block-library.spec.ts` now asserts both
+  the phone-viewport docking and the desktop centring.
+- **The Inter claim is now stated and verified rather than assumed.**
+  `@sosb/ui` ships no font file and declares no `@font-face`; Inter reaches
+  the builder as base64 `data:` woff2 rules built at module load by
+  `@sosb/editor-app/src/editor-fonts.ts` from `@sosb/renderer`'s registry.
+  `archival-css.test.ts` now asserts those bytes and the injector reach the
+  single-file archive, so the offline build cannot silently fall back to
+  the system sans. The dead `loader: { ".woff2": "dataurl", … }` entry in
+  the archival esbuild config was removed: nothing imports a font or image
+  file, so it guaranteed nothing.
+- **Drift guard for the committed stylesheet.** `build-css.mjs` gained a
+  `--check` mode and `packages/ui/test/generated-css-sync.test.ts` runs it,
+  mirroring `packages/renderer/test/fonts-registry.test.ts`. This matters
+  more than it looks: `builder.css` `@source`s the `src` trees of
+  `editor-app`, `wizard` and `browser-shell`, so a class renamed in any of
+  them staleness the artifact, and the failure is silent — the class simply
+  gets no rule.
+- Smaller cleanups: one shared axe helper
+  (`packages/editor-app/test/helpers/axe.ts`) instead of the configuration
+  duplicated across two suites; `EditorDialogProps.tone` narrowed to the
+  `"error" | "warning"` union the stylesheet actually has rules for; and
+  `FieldHint` earned its keep by absorbing the three hand-rolled
+  `<p className="field-hint">` copies in the colour, font and named-value
+  override widgets.

@@ -40,8 +40,12 @@ export interface EditorDialogProps {
   readonly labelledBy?: string;
   /** Id of the element describing the dialog. */
   readonly describedBy?: string;
-  /** Severity hook the editor stylesheet reads (`data-tone`). */
-  readonly tone?: string;
+  /**
+   * Severity hook the editor stylesheet reads (`data-tone`). The union is
+   * closed on purpose: `editor-app-css.ts` only has rules for these two,
+   * so any other value would be a silently ineffective attribute.
+   */
+  readonly tone?: "error" | "warning";
   /**
    * Element to focus on open. Without it Base UI focuses the first
    * tabbable element, which is the right default for most dialogs.

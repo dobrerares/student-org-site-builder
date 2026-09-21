@@ -85,6 +85,49 @@ describe("text controls", () => {
     expect(input.accept).toBe("image/*");
   });
 
+  // Text chrome on a checkbox stretches it across the form and pads it into
+  // the wrong place. Only text entry gets the box.
+  const TEXT_CHROME = ["w-full", "border", "px-2.5", "bg-card"];
+
+  test.each([["text"], ["search"], ["number"], ["email"], ["url"], ["tel"]])(
+    "type=%s gets the text-field chrome",
+    (type) => {
+      const { container } = render(<Input type={type} />);
+      const className = container.querySelector("input")!.className;
+      for (const cls of TEXT_CHROME) {
+        expect(className.split(" ")).toContain(cls);
+      }
+    },
+  );
+
+  test("an input with no type is treated as text", () => {
+    const { container } = render(<Input />);
+    expect(container.querySelector("input")!.className.split(" ")).toContain("w-full");
+  });
+
+  test.each([["checkbox"], ["radio"], ["color"], ["file"], ["range"]])(
+    "type=%s gets none of the text-field chrome",
+    (type) => {
+      const { container } = render(<Input type={type} />);
+      const classes = container.querySelector("input")!.className.split(" ");
+      for (const cls of TEXT_CHROME) {
+        expect(classes).not.toContain(cls);
+      }
+      // The shared disabled treatment still applies everywhere.
+      expect(classes).toContain("disabled:cursor-not-allowed");
+    },
+  );
+
+  test.each([["checkbox"], ["radio"]])("type=%s is tinted with the accent colour", (type) => {
+    const { container } = render(<Input type={type} />);
+    expect(container.querySelector("input")!.className.split(" ")).toContain("accent-primary");
+  });
+
+  test("a caller class still lands on a non-text input", () => {
+    const { container } = render(<Input type="color" className="color-picker__swatch" />);
+    expect(container.querySelector("input")!.className).toContain("color-picker__swatch");
+  });
+
   test("Textarea renders a native textarea", () => {
     const { container } = render(<Textarea rows={4} defaultValue="hello" />);
     const area = container.querySelector("textarea")!;

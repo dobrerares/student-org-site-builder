@@ -42,6 +42,7 @@ import { useId } from "react";
 import { onColorFor } from "@sosb/renderer";
 import type * as React from "react";
 import { Button, Input } from "@sosb/ui";
+import { FieldHint } from "./field-hint.js";
 
 export interface ColorPickerProps {
   readonly value: string | undefined;
@@ -83,7 +84,7 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
           {props.label}
         </label>
       ) : null}
-      {props.hint !== undefined ? <p className="field-hint">{props.hint}</p> : null}
+      <FieldHint hint={props.hint} />
       <div data-color-picker-row>
         <span data-color-swatch style={hasValue ? { background: props.value! } : undefined}>
           <Input

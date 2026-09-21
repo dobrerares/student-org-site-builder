@@ -73,4 +73,34 @@ describe("archival HTML includes the compiled builder stylesheet", () => {
     expect(html).not.toMatch(/<style[^>]*>[^<]*@import\s+url\(\s*["']?https?:/i);
     expect(html).not.toMatch(/url\(\s*["']?https?:\/\//i);
   }, 180_000);
+
+  /**
+   * The builder stylesheet names Inter first but ships no font file and
+   * declares no `@font-face`. Inter reaches the archive a different way:
+   * `@sosb/editor-app/src/editor-fonts.ts` builds base64 `data:` woff2
+   * rules at module load from `@sosb/renderer`'s font registry.
+   *
+   * That is an easy thing to break by accident — dropping the side-effect
+   * import, or tree-shaking the registry — and the failure is silent: the
+   * archive just renders in the system sans. So assert the bytes are there.
+   */
+  test("carries Inter's woff2 bytes so the offline archive is not left on the system font", async () => {
+    const outDir = path.join(pkgRoot, "dist", "archival-css-test");
+    const { outPath } = await runArchivalBuild({ outDir });
+    const html = readFileSync(outPath, "utf8");
+
+    // The stylesheet asks for Inter...
+    const generated = readFileSync(uiCssPath, "utf8");
+    expect(generated).toContain("Inter");
+
+    // ...and the archive carries real woff2 payloads. `d09GMg` is the
+    // base64 encoding of the woff2 magic number (`wOF2`).
+    const woff2Blobs = html.match(/d09GMg/g) ?? [];
+    expect(woff2Blobs.length).toBeGreaterThan(0);
+
+    // The machinery that turns those bytes into @font-face rules is present
+    // too — bytes with no rule would still fall back to the system font.
+    expect(html).toContain("sosb-editor-fonts");
+    expect(html).toContain("data:font/woff2;base64,");
+  }, 180_000);
 });
