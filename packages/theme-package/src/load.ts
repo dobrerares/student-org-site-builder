@@ -15,7 +15,12 @@ import { ZipDriver } from "@sosb/vfs/zip-driver";
 import type { Vfs } from "@sosb/vfs/vfs";
 import { ThemePackageError } from "./errors.js";
 import { assertThemeCssIsOffline, referencedLocalUrls } from "./css-safety.js";
-import { THEME_FORMAT_VERSION, ThemeManifestSchema, type ThemeManifest } from "./manifest.js";
+import {
+  THEME_FORMAT_VERSION,
+  THEME_ID_RE,
+  ThemeManifestSchema,
+  type ThemeManifest,
+} from "./manifest.js";
 
 /** Manifest filename, at the package root. */
 export const THEME_MANIFEST_FILE = "theme.json";
@@ -100,6 +105,51 @@ function toVariants(
 }
 
 /**
+ * Reject duplicate keys in a manifest list.
+ *
+ * A repeated variant id is not a harmless typo: the editor renders one option
+ * per entry, so the author sees the same design twice and cannot tell which
+ * one they picked, and the per-Theme variant memory (ADR 0051) keys on the id,
+ * so the two entries are indistinguishable once saved. A repeated `@font-face`
+ * key is the same story one layer down — the later rule silently wins and the
+ * author's other file is dead weight in the package.
+ */
+function assertNoDuplicates(keys: readonly string[], what: string, at: string): void {
+  const seen = new Set<string>();
+  for (const key of keys) {
+    if (seen.has(key)) {
+      throw new ThemePackageError(
+        "manifest-invalid",
+        `${at} declares ${what} "${key}" more than once. Every entry must be distinct.`,
+        at,
+      );
+    }
+    seen.add(key);
+  }
+}
+
+/** Every uniqueness rule the manifest schema cannot express on its own. */
+function assertManifestIsConsistent(manifest: ThemeManifest): void {
+  for (const [blockType, list] of Object.entries(manifest.variants)) {
+    assertNoDuplicates(
+      list.map((v) => v.id),
+      "variant id",
+      `variants.${blockType}`,
+    );
+  }
+  assertNoDuplicates(
+    manifest.shellVariants.map((v) => v.id),
+    "shell variant id",
+    "shellVariants",
+  );
+  assertNoDuplicates(
+    manifest.fonts.map((f) => `${f.family} ${f.weight} ${f.style} ${f.unicodeRange ?? "*"}`),
+    "font face",
+    "fonts",
+  );
+}
+
+/**
  * Build a `ThemeBundle` from a flat map of package files.
  *
  * Validation order matters: manifest, then referenced files, then CSS safety.
@@ -128,6 +178,7 @@ export function loadThemePackage(files: ReadonlyMap<string, Uint8Array>): Loaded
   }
 
   const manifest = readManifest(files);
+  assertManifestIsConsistent(manifest);
 
   const cssBytes = files.get(manifest.css);
   if (cssBytes === undefined) {
@@ -308,13 +359,23 @@ export async function uninstallThemePackageFromVfs(vfs: Vfs, themeId: string): P
   }
 }
 
-/** The ids of every Theme package installed in a Site's VFS, sorted. */
+/**
+ * The ids of every Theme package installed in a Site's VFS, sorted.
+ *
+ * Directory names that are not well-formed Theme ids are ignored rather than
+ * reported. This list is built from an untrusted archive's directory listing,
+ * and it feeds straight back into path construction; requiring the same id
+ * shape the manifest requires means a hand-crafted `themes/../…` entry can
+ * never become a prefix we go on to read, write or delete under.
+ */
 export async function installedThemeIds(vfs: Vfs): Promise<string[]> {
   const ids = new Set<string>();
   for (const path of await vfs.list(THEME_VFS_PREFIX)) {
     const rest = path.slice(THEME_VFS_PREFIX.length);
     const slash = rest.indexOf("/");
-    if (slash > 0) ids.add(rest.slice(0, slash));
+    if (slash <= 0) continue;
+    const id = rest.slice(0, slash);
+    if (THEME_ID_RE.test(id)) ids.add(id);
   }
   return [...ids].sort();
 }

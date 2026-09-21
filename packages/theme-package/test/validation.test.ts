@@ -193,6 +193,143 @@ describe("offline enforcement (ADR 0046)", () => {
   });
 });
 
+describe("offline enforcement cannot be spelled around", () => {
+  // CSS lets you write the same token several ways. A scanner that only
+  // matches the obvious spelling is a scanner that is not enforcing anything,
+  // so each of these is a real escape route that must stay closed.
+
+  test("an escaped url() keyword is rejected", () => {
+    // `\75 rl(` is `url(` — a browser fetches it, a naive scanner does not
+    // see it.
+    expectRejection(
+      pkg(VALID_MANIFEST, { "theme.css": "body{background:\\75 rl(https://cdn.example/x.png)}" }),
+      "css-unsafe",
+      /remote url/,
+    );
+  });
+
+  test("a six-digit escaped url() keyword is rejected", () => {
+    expectRejection(
+      pkg(VALID_MANIFEST, {
+        "theme.css": "body{background:\\000075rl(https://cdn.example/x.png)}",
+      }),
+      "css-unsafe",
+      /remote url/,
+    );
+  });
+
+  test("an escaped url() keyword around a local file is rejected too", () => {
+    // Not a network request, but the renderer's rewriter would not recognise
+    // it either, so it would 404 in the export. Reject at import instead.
+    const files = pkg(VALID_MANIFEST, {
+      "theme.css": "body{background:\\75 rl(assets/grid.svg)}",
+      "assets/grid.svg": "<svg/>",
+    });
+    expectRejection(files, "css-unsafe", /character escapes/);
+  });
+
+  test("an @import with no space before its string is rejected", () => {
+    // `@import"…";` is valid CSS and skips a scanner that requires
+    // whitespace after the at-rule name.
+    expectRejection(
+      pkg(VALID_MANIFEST, { "theme.css": '@import"https://cdn.example/reset.css";' }),
+      "css-unsafe",
+      /remote @import/,
+    );
+  });
+
+  test("a local @import is rejected — the loader never resolves it", () => {
+    const files = pkg(VALID_MANIFEST, {
+      "theme.css": '@import "other.css";',
+      "other.css": "body{color:red}",
+    });
+    expectRejection(files, "css-unsafe", /@import is not allowed/);
+  });
+
+  test("a remote image-set() bare string is rejected", () => {
+    // `image-set()` takes bare quoted strings as URLs, with no url() token.
+    expectRejection(
+      pkg(VALID_MANIFEST, {
+        "theme.css": 'body{background-image:image-set("https://cdn.example/x.png" 1x)}',
+      }),
+      "css-unsafe",
+      /remote image-set/,
+    );
+  });
+
+  test("a url() inside a comment is not a reference", () => {
+    // The mirror of the rules above: the scanner must not invent problems
+    // either, or authors learn to work around it instead of with it.
+    expect(() =>
+      loadThemePackage(
+        pkg(VALID_MANIFEST, {
+          "theme.css": "/* url(https://cdn.example/old.png) */ body{color:red}",
+        }),
+      ),
+    ).not.toThrow();
+  });
+});
+
+describe("duplicate declarations", () => {
+  test("a repeated variant id is rejected", () => {
+    expectRejection(
+      pkg({
+        ...VALID_MANIFEST,
+        variants: {
+          hero: [
+            { id: "split", label: "Split" },
+            { id: "split", label: "Split again" },
+          ],
+        },
+      }),
+      "manifest-invalid",
+      /variants\.hero declares variant id "split" more than once/,
+    );
+  });
+
+  test("a repeated shell variant id is rejected", () => {
+    expectRejection(
+      pkg({
+        ...VALID_MANIFEST,
+        shellVariants: [
+          { id: "compact", label: "Compact" },
+          { id: "compact", label: "Compact too" },
+        ],
+      }),
+      "manifest-invalid",
+      /shellVariants declares shell variant id "compact" more than once/,
+    );
+  });
+
+  test("two font faces with the same family, weight and style are rejected", () => {
+    const files = pkg(
+      {
+        ...VALID_MANIFEST,
+        fonts: [
+          { family: "Archivo", weight: 400, style: "normal", file: "a.woff2" },
+          { family: "Archivo", weight: 400, style: "normal", file: "b.woff2" },
+        ],
+      },
+      { "theme.css": "body{color:red}", "a.woff2": "x", "b.woff2": "y" },
+    );
+    expectRejection(files, "manifest-invalid", /fonts declares font face .* more than once/);
+  });
+
+  test("the same family at different weights is fine", () => {
+    const files = pkg(
+      {
+        ...VALID_MANIFEST,
+        fonts: [
+          { family: "Archivo", weight: 400, style: "normal", file: "a.woff2" },
+          { family: "Archivo", weight: 700, style: "normal", file: "b.woff2" },
+        ],
+      },
+      { "theme.css": "body{color:red}", "a.woff2": "x", "b.woff2": "y" },
+    );
+    expect(() => loadThemePackage(files)).not.toThrow();
+  });
+});
+
 describe("path safety", () => {
   test("an entry escaping the package root is rejected", () => {
     const files = pkg(VALID_MANIFEST);
