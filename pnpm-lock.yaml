@@ -217,6 +217,9 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
+      '@sosb/build':
+        specifier: workspace:*
+        version: link:../build
       '@testing-library/dom':
         specifier: 10.4.1
         version: 10.4.1
