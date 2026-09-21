@@ -105,6 +105,13 @@ export const ro: RomanianCatalog = {
   "articles.settings.tags.add": "Adaugă etichetă",
   "articles.settings.tags.placeholder": "Caută sau creează o etichetă",
   "articles.settings.language": "Limbă",
+  "articles.settings.language.hint":
+    "Fiecare limbă este un articol separat, cu propriul statut de publicare. Vizitatorii văd doar versiunile pe care le-ai publicat.",
+  "articles.settings.seo": "Căutare și distribuire",
+  "articles.settings.seo.hint":
+    "Motoarele de căutare și rețelele sociale arată în mod normal titlul și rezumatul articolului. Completează aceste câmpuri doar dacă vrei să apară altceva.",
+  "articles.settings.seo.title": "Titlu pentru rezultatele căutării",
+  "articles.settings.seo.description": "Descriere pentru rezultatele căutării",
   "articles.settings.related": "Articole similare",
   "articles.settings.related.enable": "Arată articole similare la final",
   "articles.settings.related.hint":

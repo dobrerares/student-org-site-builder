@@ -21,6 +21,7 @@ import { ARTICLE_STATES } from "@sosb/schema";
 import { Input, Label, NativeSelect, Textarea } from "@sosb/ui";
 import { AssetPicker } from "./asset-picker.js";
 import { InfoHint } from "./info-hint.js";
+import { MoreOptions } from "./more-options.js";
 import { TagPicker } from "./tag-picker.js";
 import { createTag, setArticleSlug, updateArticle } from "./articles-ops.js";
 import { useTranslator } from "./i18n-context.js";
@@ -45,6 +46,8 @@ export function ArticleSettingsForm(props: ArticleSettingsFormProps): JSX.Elemen
   // redirect for a URL that never existed.
   const [slugDraft, setSlugDraft] = useState(article?.slug ?? "");
   const [slugError, setSlugError] = useState<"invalid" | "taken" | null>(null);
+  // Session-scoped, per form instance, like every other MoreOptions section.
+  const [seoOpen, setSeoOpen] = useState(false);
   useEffect(() => {
     setSlugDraft(article?.slug ?? "");
     setSlugError(null);
@@ -194,6 +197,52 @@ export function ArticleSettingsForm(props: ArticleSettingsFormProps): JSX.Elemen
           }}
         />
       </div>
+
+      <MoreOptions
+        open={seoOpen}
+        onToggle={setSeoOpen}
+        labels={[t("articles.settings.seo.title"), t("articles.settings.seo.description")]}
+      >
+        {/*
+         * Issue #97: "Search and sharing metadata default to title, summary,
+         * and cover image. Optional title and description overrides live under
+         * 'More options.'" They are genuinely rare, and an always-visible pair
+         * of near-duplicate fields invites authors to retype the title into
+         * both and then let them drift apart.
+         */}
+        <div className="article-settings__field">
+          <div className="article-settings__label-row">
+            <Label htmlFor="article-seo-title">{t("articles.settings.seo.title")}</Label>
+            <InfoHint
+              label={t("articles.settings.seo")}
+              text={t("articles.settings.seo.hint")}
+              testId="article-seo-hint"
+            />
+          </div>
+          <Input
+            id="article-seo-title"
+            data-field={`articles.${index}.seo.title`}
+            value={article.seo?.title ?? ""}
+            placeholder={article.title}
+            onChange={(event) =>
+              patch({ seo: { ...article.seo, title: event.currentTarget.value } })
+            }
+          />
+        </div>
+        <div className="article-settings__field">
+          <Label htmlFor="article-seo-description">{t("articles.settings.seo.description")}</Label>
+          <Textarea
+            id="article-seo-description"
+            rows={2}
+            data-field={`articles.${index}.seo.description`}
+            value={article.seo?.description ?? ""}
+            placeholder={article.summary ?? ""}
+            onChange={(event) =>
+              patch({ seo: { ...article.seo, description: event.currentTarget.value } })
+            }
+          />
+        </div>
+      </MoreOptions>
 
       <div className="article-settings__field">
         <div className="article-settings__label-row">

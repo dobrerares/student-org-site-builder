@@ -8,6 +8,7 @@ import type { Site } from "@sosb/schema";
 import { ArticlesPanel } from "../src/articles-panel.js";
 import { ArticleSettingsForm } from "../src/article-settings-form.js";
 import { ArticleListInspector } from "../src/article-list-inspector.js";
+import { ArticleWorkspace } from "../src/article-workspace.js";
 import { TagManager } from "../src/tag-manager.js";
 import { createArticle, createTag, updateArticle } from "../src/articles-ops.js";
 import { expectNoAxeViolations } from "./helpers/axe.js";
@@ -181,6 +182,25 @@ describe("ArticleSettingsForm", () => {
     );
     return result;
   }
+
+  test("search and sharing overrides live behind More options, not on the form", () => {
+    const { container, getByTestId } = renderForm();
+    // Issue #97: the overrides are optional and rare, so they start collapsed.
+    expect(container.querySelector("#article-seo-title")).toBeNull();
+    fireEvent.click(getByTestId("advanced-toggle"));
+    const title = container.querySelector("#article-seo-title") as HTMLInputElement;
+    // The placeholder shows what search engines use when the override is blank.
+    expect(title.placeholder).toBe("Gala de final");
+    fireEvent.change(title, { target: { value: "Gala 2026 — recapitulare" } });
+    expect((container.querySelector("#article-seo-title") as HTMLInputElement).value).toBe(
+      "Gala 2026 — recapitulare",
+    );
+    const description = container.querySelector("#article-seo-description") as HTMLTextAreaElement;
+    fireEvent.change(description, { target: { value: "Cum a decurs gala." } });
+    expect((container.querySelector("#article-seo-description") as HTMLTextAreaElement).value).toBe(
+      "Cum a decurs gala.",
+    );
+  });
 
   test("edits the title", () => {
     const { getByTestId } = renderForm();
@@ -424,5 +444,53 @@ describe("TagManager", () => {
   test("has no axe violations", async () => {
     const { getByTestId } = renderManager();
     await expectNoAxeViolations(getByTestId("editor-app"));
+  });
+});
+
+describe("ArticleWorkspace translations", () => {
+  function renderWorkspace(initial: Site = populatedSite()) {
+    const opened: string[] = [];
+    const utils = render(
+      <Harness initial={initial}>
+        {(site, apply) => (
+          <ArticleWorkspace
+            site={site}
+            articleIndex={0}
+            onApply={apply}
+            onBack={() => undefined}
+            onOpenArticle={(id) => opened.push(id)}
+            today={TODAY}
+            onPatchBlockData={() => undefined}
+            onArrayChangeBlockData={() => undefined}
+            onMoveBlock={() => undefined}
+            onRemoveBlock={() => undefined}
+            onAddBlock={() => undefined}
+            uploader={async () => {
+              throw new Error("not used");
+            }}
+            documentUploader={async () => {
+              throw new Error("not used");
+            }}
+          />
+        )}
+      </Harness>,
+    );
+    return { ...utils, opened };
+  }
+
+  test("offers the missing language and opens the new Draft counterpart", () => {
+    const { getByTestId, queryByTestId, opened } = renderWorkspace();
+    // The article is `ro`; only `en` is missing from its translation group.
+    expect(queryByTestId("article-add-translation-ro")).toBeNull();
+    fireEvent.click(getByTestId("article-add-translation-en"));
+    expect(opened).toEqual(["art_4"]);
+    // Both ends now sit in one group, and the counterpart starts as a Draft.
+    expect(queryByTestId("article-translations")).toBeNull();
+  });
+
+  test("single-language sites show no translation controls", () => {
+    const single = { ...populatedSite(), languages: ["ro"] } as Site;
+    const { queryByTestId } = renderWorkspace(single);
+    expect(queryByTestId("article-translations")).toBeNull();
   });
 });

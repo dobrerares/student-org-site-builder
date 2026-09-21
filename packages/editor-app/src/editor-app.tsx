@@ -1530,6 +1530,8 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
           articleIndex={articleIndex}
           onApply={applyArticleChange}
           onBack={() => setActiveArticleId(null)}
+          onOpenArticle={setActiveArticleId}
+          today={todayIso()}
           onPatchBlockData={patchArticleBlockData}
           onArrayChangeBlockData={arrayChangeArticleBlockData}
           onMoveBlock={onMoveArticleBlock}

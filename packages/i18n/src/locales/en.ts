@@ -92,6 +92,13 @@ export const en: EnglishCatalog = {
   "articles.settings.tags.add": "Add tag",
   "articles.settings.tags.placeholder": "Find or create a tag",
   "articles.settings.language": "Language",
+  "articles.settings.language.hint":
+    "Each language is a separate article with its own publication status. Visitors are only offered the versions you have published.",
+  "articles.settings.seo": "Search and sharing",
+  "articles.settings.seo.hint":
+    "Search engines and social networks normally show the article's own title and summary. Fill these in only when you want them to show something different.",
+  "articles.settings.seo.title": "Title for search results",
+  "articles.settings.seo.description": "Description for search results",
   "articles.settings.related": "Related articles",
   "articles.settings.related.enable": "Show related articles at the end",
   "articles.settings.related.hint":

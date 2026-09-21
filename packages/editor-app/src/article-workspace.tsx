@@ -35,7 +35,7 @@ import { IconArrowLeft } from "./icons.js";
 import { InfoHint } from "./info-hint.js";
 import { ArticleListInspector } from "./article-list-inspector.js";
 import { ArticleSettingsForm, type ApplySiteChange } from "./article-settings-form.js";
-import { updateArticle } from "./articles-ops.js";
+import { addArticleTranslation, updateArticle } from "./articles-ops.js";
 import { useTranslator } from "./i18n-context.js";
 
 type ArticleDrill =
@@ -47,6 +47,13 @@ export interface ArticleWorkspaceProps {
   readonly articleIndex: number;
   readonly onApply: ApplySiteChange;
   readonly onBack: () => void;
+  /** Open another Article for editing — used after creating a translation. */
+  readonly onOpenArticle: (articleId: string) => void;
+  /**
+   * Today's date as `YYYY-MM-DD`, seeding a new translation's publication
+   * date. Injected rather than read from the clock so tests stay stable.
+   */
+  readonly today: string;
   readonly onPatchBlockData: (
     blockIndex: number,
     subpath: readonly (string | number)[],
@@ -201,6 +208,14 @@ export function ArticleWorkspace(props: ArticleWorkspaceProps): JSX.Element | nu
         />
       </section>
 
+      <ArticleTranslations
+        site={props.site}
+        articleIndex={index}
+        today={props.today}
+        onApply={props.onApply}
+        onOpenArticle={props.onOpenArticle}
+      />
+
       <section className="article-workspace__related" data-testid="article-related">
         <div className="article-workspace__label-row">
           <Label htmlFor="article-related-toggle">{t("articles.settings.related")}</Label>
@@ -252,5 +267,73 @@ export function ArticleWorkspace(props: ArticleWorkspaceProps): JSX.Element | nu
         )}
       </section>
     </div>
+  );
+}
+
+/**
+ * Create the Article's counterpart in another language.
+ *
+ * Issue #97 makes translations separate linked Articles with their own
+ * publication state, which means the author needs a way to *make* one —
+ * `addArticleTranslation` existed but nothing reached it, so a translation
+ * could only be produced by hand-editing the project file.
+ *
+ * Only languages with no counterpart in the translation group are offered:
+ * `addArticleTranslation` refuses a second Article in a language the group
+ * already occupies, and a button that silently does nothing is worse than no
+ * button. Renders nothing on a single-language Site.
+ */
+function ArticleTranslations(props: {
+  site: Site;
+  articleIndex: number;
+  today: string;
+  onApply: ApplySiteChange;
+  onOpenArticle: (articleId: string) => void;
+}): JSX.Element | null {
+  const t = useTranslator();
+  const article = (props.site.articles ?? [])[props.articleIndex];
+  if (article === undefined) return null;
+  if (props.site.languages.length < 2) return null;
+
+  const group = article.translationGroup;
+  const taken = new Set<string>([article.lang]);
+  if (group !== undefined) {
+    for (const other of props.site.articles ?? []) {
+      if (other.translationGroup === group) taken.add(other.lang);
+    }
+  }
+  const missing = props.site.languages.filter((lang) => !taken.has(lang));
+  if (missing.length === 0) return null;
+
+  return (
+    <section className="article-workspace__translations" data-testid="article-translations">
+      <div className="article-workspace__label-row">
+        <Label>{t("articles.settings.language")}</Label>
+        <InfoHint
+          label={t("articles.settings.language")}
+          text={t("articles.settings.language.hint")}
+          testId="article-translations-hint"
+        />
+      </div>
+      {missing.map((lang) => (
+        <Button
+          key={lang}
+          type="button"
+          variant="secondary"
+          data-testid={`article-add-translation-${lang}`}
+          onClick={() => {
+            let createdId: string | undefined;
+            props.onApply((site) => {
+              const result = addArticleTranslation(site, props.articleIndex, lang, props.today);
+              createdId = result.articleId;
+              return result.site;
+            });
+            if (createdId !== undefined) props.onOpenArticle(createdId);
+          }}
+        >
+          {t("articles.action.addTranslation", { lang })}
+        </Button>
+      ))}
+    </section>
   );
 }
