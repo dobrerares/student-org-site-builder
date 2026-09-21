@@ -261,10 +261,10 @@ function LinkDialog({
                   >
                     <span className="list-row-main">
                       <span className="list-row-title">{item.title}</span>
-                      <span className="row" style={{ gap: 4 }}>
+                      <span className="row" style={{ gap: "var(--s1)" }}>
                         <LangBadge lang={item.lang} />
                         {isArticle && <StateBadge state={item.state} />}
-                        <span className="small muted">
+                        <span className="meta">
                           {isArticle ? articleUrl(site, item) : pageUrl(site, item)}
                         </span>
                       </span>
@@ -275,10 +275,12 @@ function LinkDialog({
             </div>
             {chosenArticle?.state === "draft" && (
               <div className="finding" data-sev="warning">
-                <span aria-hidden="true">⚠</span>
-                <div>
+                <span className="finding-icon" aria-hidden="true">
+                  !
+                </span>
+                <div className="finding-body">
                   <strong>“{chosenArticle.title}” is a Draft.</strong>
-                  <div className="small">
+                  <span>
                     You can link to it while you work. On the public website the text will appear
                     without a link until the article is Published.{" "}
                     <Info label="draft link targets">
@@ -286,7 +288,7 @@ function LinkDialog({
                       Draft prose links warn here and render as plain text on the website; they do
                       not block exporting.
                     </Info>
-                  </div>
+                  </span>
                 </div>
               </div>
             )}

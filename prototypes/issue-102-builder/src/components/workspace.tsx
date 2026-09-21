@@ -80,8 +80,8 @@ function BlockOutline({
 
   return (
     <div className="stack">
-      <div className="row" style={{ justifyContent: "space-between" }}>
-        <h3 style={{ fontSize: "var(--step-1)" }}>
+      <div className="row-between">
+        <h3 className="h3">
           Blocks{" "}
           <Info label="blocks">
             Blocks are the pieces this page is made of, in the order they appear. Choose one to edit
@@ -118,34 +118,34 @@ function BlockOutline({
             </span>
             <button className="block-open" onClick={() => onOpenBlock(b.id)}>
               <span className="t">{BLOCK_LABEL[b.type]}</span>
-              <span className="s" style={{ display: "block" }}>
-                {summary(b)}
-              </span>
+              <span className="s">{summary(b)}</span>
             </button>
-            <button
-              className="btn btn-sm btn-icon"
-              title="Move up"
-              aria-label={`Move ${BLOCK_LABEL[b.type]} up`}
-              onClick={() => onReorder(i, i - 1)}
-            >
-              ↑
-            </button>
-            <button
-              className="btn btn-sm btn-icon"
-              title="Move down"
-              aria-label={`Move ${BLOCK_LABEL[b.type]} down`}
-              onClick={() => onReorder(i, i + 1)}
-            >
-              ↓
-            </button>
-            <button
-              className="btn btn-sm btn-icon"
-              title="Remove block"
-              aria-label={`Remove ${BLOCK_LABEL[b.type]}`}
-              onClick={() => onRemove(b.id)}
-            >
-              ✕
-            </button>
+            <span className="block-actions">
+              <button
+                className="btn btn-sm btn-icon"
+                title="Move up"
+                aria-label={`Move ${BLOCK_LABEL[b.type]} up`}
+                onClick={() => onReorder(i, i - 1)}
+              >
+                ↑
+              </button>
+              <button
+                className="btn btn-sm btn-icon"
+                title="Move down"
+                aria-label={`Move ${BLOCK_LABEL[b.type]} down`}
+                onClick={() => onReorder(i, i + 1)}
+              >
+                ↓
+              </button>
+              <button
+                className="btn btn-sm btn-icon"
+                title="Remove block"
+                aria-label={`Remove ${BLOCK_LABEL[b.type]}`}
+                onClick={() => onRemove(b.id)}
+              >
+                ✕
+              </button>
+            </span>
           </div>
         ))}
       </div>
@@ -325,7 +325,7 @@ function ArticleSettings({
       <Field label="Cover image" info="Shown above the article and on its cards. Optional.">
         {article.cover ? (
           <div className="row">
-            <span className="badge">🖼 {article.cover.src}</span>
+            <span className="badge badge-tag">🖼 {article.cover.src}</span>
             <button className="btn btn-sm" onClick={() => update({ cover: null })}>
               Remove
             </button>
@@ -378,8 +378,8 @@ function ArticleSettings({
 
 function StateSelector({ value, onChange }: { value: PubState; onChange: (v: PubState) => void }) {
   return (
-    <div className="row" style={{ gap: 6 }}>
-      <span className="small muted">Publication</span>
+    <div className="row">
+      <span className="field-label">Publication</span>
       <Segmented
         ariaLabel="Publication state"
         value={value}
@@ -510,11 +510,19 @@ export function Workspace(props: WorkspaceProps) {
       <div className="pane-bar">
         {drill.kind === "outline" ? (
           <button className="back-btn" onClick={onBack}>
-            ← {target.kind === "page" ? "All pages" : "All articles"}
+            <span aria-hidden="true">←</span>
+            <span className="truncate">
+              {target.kind === "page" ? "All pages" : "All articles"}
+            </span>
           </button>
         ) : (
-          <button className="back-btn" onClick={() => setDrill({ kind: "outline" })}>
-            ← Back to “{contentTitle}”
+          <button
+            className="back-btn"
+            onClick={() => setDrill({ kind: "outline" })}
+            title={`Back to “${contentTitle}”`}
+          >
+            <span aria-hidden="true">←</span>
+            <span className="truncate">Back to “{contentTitle}”</span>
           </button>
         )}
         <span className="topbar-spacer" />
@@ -525,7 +533,7 @@ export function Workspace(props: WorkspaceProps) {
       <div className="pane-body stack">
         {drill.kind === "outline" && (
           <>
-            <div className="field">
+            <div className="field title-field">
               <span className="field-label">{article ? "Article title" : "Page title"}</span>
               <input
                 type="text"
@@ -536,7 +544,6 @@ export function Workspace(props: WorkspaceProps) {
                     ? updateArticle({ title: e.target.value })
                     : updatePage({ title: e.target.value })
                 }
-                style={{ fontSize: "var(--step-2)", fontWeight: 600, minHeight: 46 }}
               />
               <span className="hint">
                 {article ? articleUrl(site, article) : pageUrl(site, page!)}
@@ -555,19 +562,21 @@ export function Workspace(props: WorkspaceProps) {
             <button
               className="list-row"
               onClick={() => setDrill({ kind: "settings" })}
-              style={{ borderRadius: "var(--r-md)", border: "1px solid var(--rule)" }}
+              style={{ border: "1px solid var(--rule)", borderRadius: "var(--r-card)" }}
             >
               <span className="list-row-main">
                 <span className="list-row-title">
                   {article ? "Article settings" : "Page settings"}
                 </span>
-                <span className="small muted">
+                <span className="meta">
                   {article
                     ? "Summary, cover image, publication date, tags, web address"
                     : "Menu label, web address, search preview"}
                 </span>
               </span>
-              <span aria-hidden="true">›</span>
+              <span className="chev" aria-hidden="true">
+                ›
+              </span>
             </button>
 
             <BlockOutline
@@ -581,7 +590,7 @@ export function Workspace(props: WorkspaceProps) {
 
             {article && (
               <div className="card stack">
-                <div className="row" style={{ justifyContent: "space-between" }}>
+                <div className="row-between">
                   <span className="field-label">
                     Related articles
                     <Info label="related articles">
@@ -589,11 +598,10 @@ export function Workspace(props: WorkspaceProps) {
                       are kept — the list simply stops appearing on the website.
                     </Info>
                   </span>
-                  <label className="row" style={{ gap: 6 }}>
+                  <label className="row">
                     <input
                       type="checkbox"
                       checked={article.related.enabled}
-                      style={{ width: 18, height: 18, minHeight: 0 }}
                       onChange={(e) =>
                         updateArticle({
                           related: { ...article.related, enabled: e.target.checked },
@@ -625,8 +633,8 @@ export function Workspace(props: WorkspaceProps) {
         {drill.kind === "settings" && (
           <>
             <div className="inspector-header">
-              <div className="eyebrow">{article ? "Article settings" : "Page settings"}</div>
-              <h2>{contentTitle}</h2>
+              <div className="kicker">{article ? "Article settings" : "Page settings"}</div>
+              <h2 className="h2">{contentTitle}</h2>
             </div>
             {article ? (
               <div className="stack">
@@ -655,7 +663,6 @@ export function Workspace(props: WorkspaceProps) {
                   <input
                     type="checkbox"
                     checked={page!.showInNav}
-                    style={{ width: 18, height: 18, minHeight: 0 }}
                     onChange={(e) => updatePage({ showInNav: e.target.checked })}
                   />
                   <span>Show this page in the website menu</span>
@@ -668,8 +675,8 @@ export function Workspace(props: WorkspaceProps) {
         {drill.kind === "related" && article && (
           <>
             <div className="inspector-header">
-              <div className="eyebrow">Related articles</div>
-              <h2>
+              <div className="kicker">Related articles</div>
+              <h2 className="h2">
                 {contentTitle}{" "}
                 <Info label="the related list">
                   This list is shown at the end of the article. “By tag” never includes the article
@@ -695,8 +702,8 @@ export function Workspace(props: WorkspaceProps) {
         {drill.kind === "block" && activeBlock && (
           <>
             <div className="inspector-header">
-              <div className="eyebrow">{BLOCK_LABEL[activeBlock.type]}</div>
-              <h2>{contentTitle}</h2>
+              <div className="kicker">{BLOCK_LABEL[activeBlock.type]}</div>
+              <h2 className="h2">{contentTitle}</h2>
             </div>
             <BlockInspector
               site={site}
@@ -722,19 +729,14 @@ export function Workspace(props: WorkspaceProps) {
   const previewPane = (
     <div className="preview-pane" data-hidden={isPhone && mobileTab !== "preview"}>
       <div className="pane-bar">
-        <span className="eyebrow">
+        <span className="kicker">
           Preview{" "}
           <Info label="the preview">
             Links and cards here behave like the real website, so you can click through it the way a
             visitor would. Use “Edit this Page/Article” to open whatever you are looking at.
           </Info>
         </span>
-        <span
-          className="small muted"
-          style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-        >
-          {previewedTitle}
-        </span>
+        <span className="meta truncate">{previewedTitle}</span>
         <span className="topbar-spacer" />
         {!previewedIsTarget && (
           <button className="btn btn-sm" onClick={() => setPreviewTarget(target)}>

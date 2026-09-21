@@ -25,6 +25,27 @@ Reload the page at any time to get the seeded project back.
 To try the phone layout, either narrow the browser window below 820 px or use
 the browser's device toolbar (390 × 844 is what the screenshots use).
 
+## Visual system
+
+The direction is the one the brief fixes: a restrained writing tool. Neutral
+paper surfaces, one accent (the editor's teal), visible labels, and no
+decoration that does not carry information. One deliberately expressive element:
+the previewed website itself, set in a serif on a white sheet over the dotted
+workbench, so the thing being made never looks like the tool making it.
+
+- **Typefaces, self-hosted, offline.** Inter for the builder chrome and
+  Source Serif 4 for the previewed website, both copied from the repo's pinned
+  `@fontsource` packages into `public/fonts/` (latin and latin-ext, so the
+  Romanian content renders properly). No CDN, no network at runtime.
+- **One type scale**: 11 · 12 · 13 · 14 · 16 · 20 · 26 · 32 px, with three
+  line-heights. Headings land on the scale whether or not they carry a class.
+- **One spacing scale**: 4 · 8 · 12 · 16 · 24 · 32 · 48 px.
+- **One control system**: 36 px controls (28 px compact), 8 px control radius,
+  12 px card radius, one border colour, one focus ring, one hover treatment.
+  The segmented control and the rich-text toolbar are the same component family.
+- **Badges carry meaning**: publication state is tinted per state, language is
+  a neutral outline, tags are quiet.
+
 ## What is in the fake project
 
 - Four pages: **Home**, **About us**, **Join us** (English) and **Acasă** (Romanian).

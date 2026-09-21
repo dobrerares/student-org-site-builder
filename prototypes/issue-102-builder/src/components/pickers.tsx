@@ -43,7 +43,7 @@ export function TagPicker({
         {info && <Info label={label.toLowerCase()}>{info}</Info>}
       </span>
       {selected.length > 0 && (
-        <div className="chips" style={{ marginBottom: 4 }}>
+        <div className="chips">
           {selected.map((id) => {
             const tag = site.tags.find((t) => t.id === id);
             return (
@@ -68,7 +68,7 @@ export function TagPicker({
         aria-label={`Search ${label.toLowerCase()}`}
         onChange={(e) => setQuery(e.target.value)}
       />
-      <div className="chips" style={{ marginTop: 6 }}>
+      <div className="chips">
         {matches.map((t) => (
           <button
             key={t.id}
@@ -94,7 +94,7 @@ export function TagPicker({
             + Create tag “{query.trim()}”
           </button>
         )}
-        {matches.length === 0 && !q && <span className="hint">No tags yet.</span>}
+        {site.tags.length === 0 && <span className="hint">No tags on this site yet.</span>}
       </div>
     </div>
   );
@@ -119,16 +119,16 @@ export function ArticleCard({
         {article.cover ? "🖼" : "📄"}
       </span>
       <span className="list-row-main">
-        <span style={{ display: "block", fontWeight: 600 }}>{article.title}</span>
-        <span className="small muted" style={{ display: "block" }}>
+        <span className="card-title">{article.title}</span>
+        <span className="meta">
           {formatDate(article.date)}
           {article.summary ? ` — ${article.summary}` : ""}
         </span>
-        <span className="row" style={{ gap: 4, marginTop: 4 }}>
+        <span className="row" style={{ gap: "var(--s1)" }}>
           <LangBadge lang={article.lang} />
           {showState && <StateBadge state={article.state} />}
           {article.tagIds.map((id) => (
-            <span className="badge" key={id}>
+            <span className="badge badge-tag" key={id}>
               {site.tags.find((t) => t.id === id)?.label ?? "(deleted tag)"}
             </span>
           ))}
@@ -282,7 +282,7 @@ export function ListConfigEditor({
                       <span className="list-row-title">
                         {a ? a.title : "Article no longer exists"}
                       </span>
-                      <span className="row" style={{ gap: 4 }}>
+                      <span className="row" style={{ gap: "var(--s1)" }}>
                         {a && <LangBadge lang={a.lang} />}
                         {a ? (
                           <StateBadge state={a.state} />
@@ -340,16 +340,18 @@ export function ListConfigEditor({
               >
                 <span className="list-row-main">
                   <span className="list-row-title">{a.title}</span>
-                  <span className="row" style={{ gap: 4 }}>
+                  <span className="row" style={{ gap: "var(--s1)" }}>
                     <LangBadge lang={a.lang} />
                     <StateBadge state={a.state} />
-                    <span className="small muted">{formatDate(a.date)}</span>
+                    <span className="meta">{formatDate(a.date)}</span>
                   </span>
                 </span>
-                <span className="badge">Add</span>
+                <span className="badge badge-tag">Add</span>
               </button>
             ))}
-            {candidates.length === 0 && <div className="list-row muted">No articles match.</div>}
+            {candidates.length === 0 && (
+              <div className="list-row meta">Nothing matches that search.</div>
+            )}
           </div>
         </div>
       )}

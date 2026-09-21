@@ -14,6 +14,13 @@ import { Dialog, Field, Info, LangBadge, Segmented, StateBadge, formatDate } fro
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
+const ACCENTS = [
+  { label: "Teal", value: "#0f766e" },
+  { label: "Ink blue", value: "#1d4ed8" },
+  { label: "Plum", value: "#9d174d" },
+  { label: "Amber", value: "#b45309" },
+];
+
 /* ---------------- content overview ---------------- */
 
 export function Overview({
@@ -38,8 +45,7 @@ export function Overview({
   return (
     <div className="page-pad stack">
       <div>
-        <div className="eyebrow">Site</div>
-        <h1 style={{ fontSize: "var(--step-4)" }}>{site.name}</h1>
+        <h1 className="display">{site.name}</h1>
         <p className="muted">
           {LANG_LABEL[site.defaultLang]} and{" "}
           {site.languages
@@ -52,7 +58,7 @@ export function Overview({
 
       <div className="grid-2">
         <section className="card stack">
-          <div className="row" style={{ justifyContent: "space-between" }}>
+          <div className="row-between">
             <h2>
               Pages{" "}
               <Info label="pages">
@@ -71,7 +77,7 @@ export function Overview({
               >
                 <span className="list-row-main">
                   <span className="list-row-title">{p.title}</span>
-                  <span className="small muted">{p.blocks.length} blocks</span>
+                  <span className="meta">{p.blocks.length} blocks</span>
                 </span>
                 <LangBadge lang={p.lang} />
               </button>
@@ -88,7 +94,7 @@ export function Overview({
         </section>
 
         <section className="card stack">
-          <div className="row" style={{ justifyContent: "space-between" }}>
+          <div className="row-between">
             <h2>Articles</h2>
             <span className="badge">{site.articles.length}</span>
           </div>
@@ -109,7 +115,7 @@ export function Overview({
                 >
                   <span className="list-row-main">
                     <span className="list-row-title">{a.title}</span>
-                    <span className="small muted">{formatDate(a.date)}</span>
+                    <span className="meta">{formatDate(a.date)}</span>
                   </span>
                   <LangBadge lang={a.lang} />
                   <StateBadge state={a.state} />
@@ -128,7 +134,7 @@ export function Overview({
       </div>
 
       <section className="card stack">
-        <div className="row" style={{ justifyContent: "space-between" }}>
+        <div className="row-between">
           <h2>
             Site Health{" "}
             <Info label="site health">
@@ -167,17 +173,19 @@ export function FindingList({
 }) {
   if (findings.length === 0) return <div className="empty">Nothing needs your attention.</div>;
   return (
-    <div className="stack" style={{ gap: "var(--sp-1)" }}>
+    <div className="stack-tight">
       {findings.map((f) => (
         <div className="finding" data-sev={f.severity} key={f.id}>
-          <span aria-hidden="true">{f.severity === "error" ? "✕" : "⚠"}</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div>
+          <span className="finding-icon" aria-hidden="true">
+            {f.severity === "error" ? "✕" : "!"}
+          </span>
+          <div className="finding-body">
+            <span>
               <strong>{f.message}</strong> <Info label="this problem">{f.detail}</Info>
-            </div>
-            <div className="small muted">
+            </span>
+            <span className="meta">
               {f.blocksExport ? "Blocks exporting the website." : "Does not block exporting."}
-            </div>
+            </span>
           </div>
           <button
             className="btn btn-sm"
@@ -206,8 +214,8 @@ export function PagesScreen({
   const rows = site.pages.filter((p) => p.title.toLowerCase().includes(query.trim().toLowerCase()));
   return (
     <div className="page-pad stack">
-      <div className="row" style={{ justifyContent: "space-between" }}>
-        <h1 style={{ fontSize: "var(--step-3)" }}>Pages</h1>
+      <div className="row-between">
+        <h1 className="h1">Pages</h1>
         <button className="btn btn-primary" onClick={onCreatePage}>
           Create Page
         </button>
@@ -228,15 +236,19 @@ export function PagesScreen({
           >
             <span className="list-row-main">
               <span className="list-row-title">{p.title}</span>
-              <span className="small muted">
-                {p.blocks.length} blocks {p.showInNav ? "· in the menu" : "· not in the menu"}
+              <span className="meta">
+                {p.blocks.length} blocks {p.showInNav ? "· in the menu" : "· hidden from the menu"}
               </span>
             </span>
             <LangBadge lang={p.lang} />
-            <span aria-hidden="true">›</span>
+            <span className="chev" aria-hidden="true">
+              ›
+            </span>
           </button>
         ))}
-        {rows.length === 0 && <div className="list-row muted">No pages match “{query}”.</div>}
+        {rows.length === 0 && (
+          <div className="list-row meta">Nothing matches “{query}”. Try a shorter search.</div>
+        )}
       </div>
     </div>
   );
@@ -273,8 +285,8 @@ export function ArticlesScreen({
 
   return (
     <div className="page-pad stack">
-      <div className="row" style={{ justifyContent: "space-between" }}>
-        <h1 style={{ fontSize: "var(--step-3)" }}>Articles</h1>
+      <div className="row-between">
+        <h1 className="h1">Articles</h1>
         <div className="row">
           <button className="btn" onClick={onManageTags}>
             Manage tags
@@ -358,9 +370,9 @@ export function ArticlesScreen({
           >
             <span className="list-row-main">
               <span className="list-row-title">{a.title}</span>
-              <span className="row" style={{ gap: 4 }}>
+              <span className="row" style={{ gap: "var(--s1)" }}>
                 {a.tagIds.map((id) => (
-                  <span className="badge" key={id}>
+                  <span className="badge badge-tag" key={id}>
                     {site.tags.find((t) => t.id === id)?.label ?? "(deleted tag)"}
                   </span>
                 ))}
@@ -368,14 +380,14 @@ export function ArticlesScreen({
             </span>
             <LangBadge lang={a.lang} />
             <StateBadge state={a.state} />
-            <span className="small muted" style={{ minWidth: 92, textAlign: "right" }}>
+            <span className="meta" style={{ minWidth: 92, textAlign: "right" }}>
               {formatDate(a.date)}
             </span>
           </button>
         ))}
         {rows.length === 0 && (
-          <div className="list-row muted">
-            No articles match these filters. Try clearing one of them.
+          <div className="list-row meta">
+            Nothing matches these filters. Clear one of them to see more.
           </div>
         )}
       </div>
@@ -467,7 +479,7 @@ export function TagsScreen({
       <button className="back-btn" onClick={onBack}>
         ← All articles
       </button>
-      <h1 style={{ fontSize: "var(--step-3)" }}>
+      <h1 className="h1">
         Manage tags{" "}
         <Info label="tags">
           Tags belong to the whole site and are shared across languages. Renaming one updates its
@@ -480,9 +492,9 @@ export function TagsScreen({
           <div className="list-row" key={t.id}>
             <span className="list-row-main">
               <span className="list-row-title">{t.label}</span>
-              <span className="small muted">
-                {plural(usage(t.id).length, "article")} · {plural(listsUsing(t.id).length, "list")}{" "}
-                filter on it
+              <span className="meta">
+                On {plural(usage(t.id).length, "article")} ·{" "}
+                {plural(listsUsing(t.id).length, "list")} filter on it
               </span>
             </span>
             <button
@@ -501,7 +513,7 @@ export function TagsScreen({
         ))}
       </div>
 
-      <div className="card row" style={{ alignItems: "flex-end" }}>
+      <div className="card" style={{ flexDirection: "row", alignItems: "flex-end" }}>
         <Field label="New tag">
           <input
             type="text"
@@ -606,8 +618,10 @@ export function TagsScreen({
             </p>
             {listsUsing(deletingTag.id).length > 0 && (
               <div className="finding" data-sev="warning">
-                <span aria-hidden="true">⚠</span>
-                <div>
+                <span className="finding-icon" aria-hidden="true">
+                  !
+                </span>
+                <div className="finding-body">
                   <strong>
                     {plural(listsUsing(deletingTag.id).length, "article list")} filter on this tag:
                   </strong>{" "}
@@ -615,7 +629,7 @@ export function TagsScreen({
                     Deleting the tag removes it from every list filter that uses it. Lists that keep
                     other tags carry on matching any of those.
                   </Info>
-                  <ul style={{ margin: "4px 0 0 18px", padding: 0 }}>
+                  <ul style={{ margin: "var(--s1) 0 0", paddingLeft: "1.1em" }}>
                     {listsUsing(deletingTag.id).map((l) => (
                       <li key={l.where} className="small">
                         {l.where}
@@ -653,7 +667,7 @@ export function ThemeScreen({
   const themes = ["Modern", "Editorial", "Civic", "Minimal", "Academic"];
   return (
     <div className="page-pad stack">
-      <h1 style={{ fontSize: "var(--step-3)" }}>
+      <h1 className="h1">
         Theme{" "}
         <Info label="the theme">
           The look of the whole website: fonts, colours and spacing. Changes show in every preview
@@ -676,23 +690,18 @@ export function ThemeScreen({
           info="One accent colour is used for links, buttons and highlights across the website."
         >
           <div className="row">
-            {["#0f766e", "#1d4ed8", "#9d174d", "#b45309"].map((c) => (
+            {ACCENTS.map((a) => (
               <button
-                key={c}
-                className="btn btn-sm"
-                aria-pressed={site.accent === c}
+                key={a.value}
+                className="swatch"
+                aria-pressed={site.accent === a.value}
                 onClick={() => {
-                  setSite((s) => ({ ...s, accent: c }));
-                  document.documentElement.style.setProperty("--accent", c);
-                }}
-                style={{
-                  background: c,
-                  color: "#fff",
-                  borderColor: c,
-                  outline: site.accent === c ? "2px solid var(--ink)" : undefined,
+                  setSite((s) => ({ ...s, accent: a.value }));
+                  document.documentElement.style.setProperty("--accent", a.value);
                 }}
               >
-                {c}
+                <span className="swatch-dot" style={{ background: a.value }} aria-hidden="true" />
+                {a.label}
               </button>
             ))}
           </div>
@@ -711,7 +720,7 @@ export function SettingsScreen({
 }) {
   return (
     <div className="page-pad stack">
-      <h1 style={{ fontSize: "var(--step-3)" }}>Site settings</h1>
+      <h1 className="h1">Site settings</h1>
       <div className="card stack">
         <Field label="Organisation name">
           <input
@@ -787,7 +796,7 @@ export function ExportDialog({
       <div className="stack">
         {blockers.length > 0 ? (
           <>
-            <h3 style={{ fontSize: "var(--step-1)" }}>Fix these first ({blockers.length})</h3>
+            <h3 className="h3">Fix these first ({blockers.length})</h3>
             <FindingList
               findings={blockers}
               onOpen={(t) => {
@@ -797,22 +806,24 @@ export function ExportDialog({
             />
           </>
         ) : (
-          <div className="finding" data-sev="warning" style={{ borderLeftColor: "var(--ok)" }}>
-            <span aria-hidden="true">✓</span>
-            <div>
+          <div className="finding" data-sev="ok">
+            <span className="finding-icon" aria-hidden="true">
+              ✓
+            </span>
+            <div className="finding-body">
               <strong>Ready to export.</strong>
-              <div className="small muted">
+              <span className="meta">
                 {site.articles.filter((a) => a.state !== "draft").length} articles and{" "}
                 {site.pages.length} pages will be written out.{" "}
                 {site.articles.filter((a) => a.state === "draft").length} drafts stay behind.
-              </div>
+              </span>
             </div>
           </div>
         )}
 
         {warnings.length > 0 && (
           <>
-            <h3 style={{ fontSize: "var(--step-1)" }}>
+            <h3 className="h3">
               Worth a look ({warnings.length}){" "}
               <Info label="warnings">
                 These do not stop the export. Fix them when you have time.

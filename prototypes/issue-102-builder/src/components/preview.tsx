@@ -39,38 +39,32 @@ function ListView({
 }) {
   const items = resolveList(site, config, lang, excludeId).filter((a) => a.state !== "draft");
   return (
-    <section style={{ marginTop: "1.5rem" }}>
+    <section className="site-list">
       <h2>{config.heading}</h2>
       {items.length === 0 ? (
-        <p className="muted">No articles yet.</p>
+        <p className="site-meta">No articles yet.</p>
       ) : (
         <div className="card-grid">
           {items.map((a) => (
             <button
               key={a.id}
-              className="article-card"
+              className="site-card"
               onClick={() => onNavigate({ kind: "article", id: a.id })}
             >
-              <span className="cover" aria-hidden="true">
-                {a.cover ? "🖼" : "📄"}
+              <span className="cover" aria-hidden="true" style={{ width: 44, height: 44 }}>
+                {a.cover ? "🖼" : "¶"}
               </span>
               <span className="list-row-main">
-                <span style={{ display: "block", fontWeight: 600 }}>{a.title}</span>
-                <span className="small muted">{formatDate(a.date)}</span>
-                {a.summary && (
-                  <span className="small" style={{ display: "block" }}>
-                    {a.summary}
-                  </span>
-                )}
+                <span className="card-title">{a.title}</span>
+                <span className="site-meta">{formatDate(a.date)}</span>
+                {a.summary && <span>{a.summary}</span>}
               </span>
             </button>
           ))}
         </div>
       )}
       {items.length > 3 && (
-        <p className="small muted" style={{ fontFamily: "var(--font-ui)" }}>
-          ‹ › Arrow navigation reaches every matching article.
-        </p>
+        <p className="site-meta">‹ › Arrow navigation reaches every matching article.</p>
       )}
     </section>
   );
@@ -117,29 +111,15 @@ function BlockView({
       return block.level === 2 ? <h2>{block.text}</h2> : <h3>{block.text}</h3>;
     case "cta":
       return (
-        <div
-          className="card"
-          style={{
-            marginTop: "1rem",
-            background: "var(--accent-soft)",
-            borderColor: "transparent",
-          }}
-        >
+        <div className="site-cta">
           <strong>{block.text}</strong>
-          <div style={{ marginTop: 8 }}>
-            <span className="btn btn-primary">{block.buttonLabel}</span>
-          </div>
+          <span className="btn btn-primary">{block.buttonLabel}</span>
         </div>
       );
     case "image":
       return (
-        <figure style={{ margin: "1rem 0" }}>
-          <div
-            className="cover"
-            style={{ width: "100%", height: 160 }}
-            aria-label={block.alt}
-            role="img"
-          >
+        <figure className="site-figure">
+          <div className="cover" aria-label={block.alt} role="img">
             🖼 {block.src}
           </div>
           {block.caption && <figcaption className="site-meta">{block.caption}</figcaption>}
@@ -189,29 +169,21 @@ export function PublicPreview({
         )}
         {article && (
           <>
-            {article.state === "draft" && (
-              <p className="badge badge-draft" style={{ fontFamily: "var(--font-ui)" }}>
-                Draft — not part of the public website yet
-              </p>
-            )}
-            {article.state === "unlisted" && (
-              <p className="badge badge-unlisted" style={{ fontFamily: "var(--font-ui)" }}>
-                Unlisted — reachable only by direct link
-              </p>
+            {article.state !== "published" && (
+              <span className={`badge badge-${article.state} site-state`}>
+                {article.state === "draft"
+                  ? "Draft — not on the public website yet"
+                  : "Unlisted — reachable only by a direct link"}
+              </span>
             )}
             {article.cover && (
-              <div
-                className="cover"
-                style={{ width: "100%", height: 150, marginBottom: 12 }}
-                role="img"
-                aria-label={article.cover.alt}
-              >
+              <div className="cover" role="img" aria-label={article.cover.alt}>
                 🖼 {article.cover.src}
               </div>
             )}
             <h1>{article.title}</h1>
             <p className="site-meta">{formatDate(article.date)}</p>
-            {article.summary && <p style={{ fontStyle: "italic" }}>{article.summary}</p>}
+            {article.summary && <p className="site-lede">{article.summary}</p>}
             {article.blocks.map((b) => (
               <BlockView
                 key={b.id}

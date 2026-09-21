@@ -157,17 +157,14 @@ export function ToastHost({ toasts, dismiss }: { toasts: Toast[]; dismiss: (id: 
     <div className="toasts" role="status" aria-live="polite">
       {toasts.map((t) => (
         <div key={t.id} className="toast" data-kind={t.kind}>
-          <div className="row" style={{ justifyContent: "space-between", flexWrap: "nowrap" }}>
-            <span>{t.text}</span>
-            <button
-              className="chip-x"
-              style={{ color: "#fff" }}
-              onClick={() => dismiss(t.id)}
-              aria-label="Dismiss message"
-            >
-              ✕
-            </button>
-          </div>
+          <span>{t.text}</span>
+          <button
+            className="toast-close"
+            onClick={() => dismiss(t.id)}
+            aria-label="Dismiss message"
+          >
+            ✕
+          </button>
         </div>
       ))}
     </div>
@@ -244,9 +241,9 @@ export function Field({
 
 /** True below the wide/phone breakpoint used by the stylesheet. */
 export function useIsPhone() {
-  const [phone, setPhone] = useState(() => window.matchMedia("(max-width: 820px)").matches);
+  const [phone, setPhone] = useState(() => window.matchMedia("(max-width: 860px)").matches);
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 820px)");
+    const mq = window.matchMedia("(max-width: 860px)");
     const on = () => setPhone(mq.matches);
     mq.addEventListener("change", on);
     return () => mq.removeEventListener("change", on);

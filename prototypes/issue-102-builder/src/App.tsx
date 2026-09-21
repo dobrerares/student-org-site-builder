@@ -142,6 +142,17 @@ export default function App() {
 
   const nav = (
     <nav className="nav" data-drawer={drawer} aria-label="Main">
+      <div className="drawer-head">
+        <span className="brand">
+          <span className="brand-mark" aria-hidden="true">
+            SB
+          </span>
+          <span>Site Builder</span>
+        </span>
+        <button className="btn btn-sm" onClick={() => setDrawer(false)}>
+          Close
+        </button>
+      </div>
       <span className="nav-label">Site</span>
       {navItems.map((item) => (
         <button
@@ -162,7 +173,7 @@ export default function App() {
         Create Article
       </button>
       <span className="nav-label">Content language</span>
-      <div style={{ padding: "0 var(--sp-2)" }}>
+      <div style={{ padding: "0 var(--s2)" }}>
         <select
           value={lang}
           onChange={(e) => setLang(e.target.value as Lang)}
@@ -175,11 +186,6 @@ export default function App() {
           ))}
         </select>
       </div>
-      {drawer && (
-        <button className="btn" style={{ margin: "var(--sp-2)" }} onClick={() => setDrawer(false)}>
-          Close menu
-        </button>
-      )}
     </nav>
   );
 
@@ -201,13 +207,13 @@ export default function App() {
         </span>
         <span className="topbar-spacer" />
         <span className="save-status">
-          <strong>
+          <b>
             {dirty
               ? "Unsaved changes"
               : savedAt
                 ? `Saved in this browser · ${savedAt}`
                 : "Not saved yet"}
-          </strong>
+          </b>
           <span>
             Downloaded copy: {downloadedAt ? downloadedAt : "never"}{" "}
             <Info label="saving and downloading">
