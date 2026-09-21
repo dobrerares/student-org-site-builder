@@ -183,8 +183,47 @@ test("preview viewport controls resize the iframe shell", async ({ page }) => {
   await page.locator('[data-testid="viewport-preview-option"][data-viewport="phone"]').click();
   await expect(frame).toHaveAttribute("data-preview-viewport", "phone");
 
+  // The frame is LAID OUT at the true phone viewport, so the previewed page
+  // resolves its media queries against 390x844 like a real phone would…
+  expect(await frame.evaluate((el) => el.offsetWidth)).toBe(390);
+  expect(await frame.evaluate((el) => el.offsetHeight)).toBe(844);
+
+  // …and is then scaled down to fit the pane. Its on-screen box is therefore
+  // smaller than its layout size and never overflows the canvas — which is
+  // exactly what the unscaled 1440px desktop preset used to do.
   const box = await frame.boundingBox();
   expect(box).not.toBeNull();
-  expect(Math.round(box!.width)).toBe(390);
-  expect(Math.round(box!.height)).toBe(844);
+  expect(box!.width).toBeLessThanOrEqual(390);
+  expect(box!.height).toBeLessThanOrEqual(844);
+
+  const canvas = await page.getByTestId("preview-canvas").boundingBox();
+  expect(canvas).not.toBeNull();
+  expect(box!.height).toBeLessThanOrEqual(canvas!.height + 1);
+
+  // Aspect ratio is preserved — a uniform scale, not a squash.
+  expect(box!.width / box!.height).toBeCloseTo(390 / 844, 2);
+});
+
+test("the desktop preset fits inside the preview pane instead of overflowing", async ({ page }) => {
+  await page.setViewportSize({ width: 1200, height: 900 });
+  const bundle = await bundleForBrowser();
+
+  await page.setContent('<!doctype html><html><body><div id="root"></div></body></html>');
+  await page.addScriptTag({ type: "module", content: bundle });
+  await page.evaluate((siteData) => {
+    const root = document.getElementById("root");
+    if (root === null) throw new Error("missing root");
+    window.__sosbEditor.mount(siteData as never, root);
+  }, fixture);
+
+  await page.locator('[data-testid="viewport-preview-option"][data-viewport="desktop"]').click();
+  const frame = page.getByTestId("preview-frame-shell");
+  await expect(frame).toHaveAttribute("data-preview-viewport", "desktop");
+
+  // 1440 CSS pixels of layout in a pane far narrower than that.
+  expect(await frame.evaluate((el) => el.offsetWidth)).toBe(1440);
+
+  const box = (await frame.boundingBox())!;
+  const canvas = (await page.getByTestId("preview-canvas").boundingBox())!;
+  expect(box.width).toBeLessThanOrEqual(canvas.width + 1);
 });
