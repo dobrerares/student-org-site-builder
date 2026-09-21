@@ -24,4 +24,12 @@ export type {
   TemplateDescriptor,
 } from "./templates/index.js";
 export { buildThemeCatalog } from "./theme-catalog.js";
-export type { ThemeCatalog, ThemeCatalogEntry, ThemeFonts, ThemePreview } from "./theme-catalog.js";
+export {
+  THEME_PREVIEW_VIEWPORT_HEIGHT,
+  THEME_PREVIEW_VIEWPORT_WIDTH,
+  clearThemePreviewHtmlCache,
+  themePreviewHtml,
+} from "./theme-preview-html.js";
+export { ThemeMiniPreview, resetThemeMiniPreviewQueue } from "./theme-mini-preview.js";
+export type { ThemeMiniPreviewProps } from "./theme-mini-preview.js";
+export type { ThemeCatalog, ThemeCatalogEntry, ThemeFonts } from "./theme-catalog.js";

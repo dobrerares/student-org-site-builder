@@ -30,12 +30,14 @@ describe("buildThemeCatalog", () => {
     }
   });
 
-  test("each entry has visual preview metadata", () => {
+  test("carries no hand-written preview metadata", () => {
+    // The pickers render a real miniature of the theme now. Re-introducing
+    // hand-maintained swatches or sample words would recreate a second copy
+    // of what the theme CSS already says — free to drift, with nothing to
+    // catch it.
     const catalog = buildThemeCatalog();
     for (const entry of catalog.entries) {
-      expect(entry.preview.swatches.length).toBeGreaterThanOrEqual(3);
-      expect(entry.preview.headlineSample.length).toBeGreaterThan(0);
-      expect(entry.preview.bodySample.length).toBeGreaterThan(0);
+      expect(entry).not.toHaveProperty("preview");
     }
   });
 
@@ -44,7 +46,6 @@ describe("buildThemeCatalog", () => {
     const entry = catalog.entryFor("someFutureTheme");
     expect(entry.label).toBe("Some future theme");
     expect(entry.fonts.headline).toEqual([]);
-    expect(entry.preview.swatches).toEqual([]);
   });
 
   test("entryFor returns curated fonts for a known theme", () => {

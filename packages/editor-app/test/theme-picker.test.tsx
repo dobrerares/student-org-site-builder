@@ -62,11 +62,17 @@ describe("ThemePicker", () => {
     expect(academic?.textContent?.toLowerCase()).toContain("scholarly");
   });
 
-  test("renders a visual preview for each cataloged theme", () => {
+  test("renders a real miniature of each cataloged theme", () => {
     const { container } = render(<ThemePicker value="academic" onChange={() => {}} />);
     expect(container.querySelectorAll("[data-theme-option-preview]").length).toBe(5);
-    expect(container.querySelectorAll("[data-theme-preview-swatch]").length).toBeGreaterThanOrEqual(
-      15,
-    );
+    const minis = container.querySelectorAll("[data-theme-mini-preview]");
+    expect(minis.length).toBe(5);
+    // Each miniature is tied to its own theme, and is decorative — everything
+    // it shows is also in the option's label and description.
+    const ids = Array.from(minis).map((n) => n.getAttribute("data-theme-id"));
+    expect(new Set(ids).size).toBe(5);
+    for (const mini of Array.from(minis)) {
+      expect(mini.getAttribute("aria-hidden")).toBe("true");
+    }
   });
 });

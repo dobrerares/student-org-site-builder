@@ -1630,30 +1630,32 @@ body {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
-[data-theme-preview-swatches] {
-  display: inline-flex;
-  gap: 0;
-  border-radius: 6px;
+/* Theme miniature: a real render of the theme, scaled down. The frame is laid
+ * out at THEME_PREVIEW_VIEWPORT_WIDTH and transform-scaled by the component,
+ * so the wrapper clips it to the miniature's on-screen box. Pointer events
+ * pass through to the radio that wraps it, so clicking the picture selects
+ * the theme. */
+[data-theme-mini-preview] {
+  display: block;
+  position: relative;
   overflow: hidden;
+  border-radius: 8px;
   border: 1px solid var(--rule);
+  background: var(--paper-sunken);
+  pointer-events: none;
+  flex: 0 0 auto;
 }
-[data-theme-preview-swatch] {
-  width: 18px;
-  height: 22px;
+[data-theme-mini-preview-frame] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 0;
+  transform-origin: top left;
+  pointer-events: none;
 }
-[data-theme-preview-type] {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.1;
-  font-size: var(--step--2);
-  color: var(--ink-3);
-}
-[data-theme-preview-type] > strong {
-  font-size: var(--step--1);
-  color: var(--ink);
-}
+
 
 [data-testid="color-picker"] {
   display: flex;

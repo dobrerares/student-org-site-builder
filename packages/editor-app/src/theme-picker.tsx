@@ -17,6 +17,13 @@
  * with none marked active; the unknown value is preserved by the parent
  * form and the user can pick any cataloged theme to move forward.
  *
+ * Each option shows a real miniature render of the theme (see
+ * `@sosb/themes`'s `ThemeMiniPreview`) rather than the hand-written hex
+ * swatches it used to carry. Those swatches were a second, manual copy of
+ * what the theme CSS already says, so they could drift without any test
+ * noticing — and a colour chip answers a narrower question than the one the
+ * user is actually asking, which is "what will my site look like".
+ *
  * Markup choice: native `<input type="radio">` wrapped in a `<label>`,
  * matching the prior art in `packages/wizard/src/steps/identity.tsx`.
  * Native radios with a shared `name` form a radiogroup and get arrow-key
@@ -26,6 +33,8 @@
  * (the `aria-label="Theme"` gives assistive tech a group label).
  */
 import type { JSX } from "react";
+
+import { ThemeMiniPreview } from "@sosb/themes";
 
 import { buildThemeCatalog } from "./theme-catalog.js";
 import { Input } from "@sosb/ui";
@@ -70,20 +79,8 @@ export function ThemePicker(props: ThemePickerProps): JSX.Element {
                 onChange={() => props.onChange(entry.id)}
               />
               <span data-theme-option-body>
-                <span data-theme-option-preview aria-hidden="true">
-                  <span data-theme-preview-swatches>
-                    {entry.preview.swatches.map((swatch) => (
-                      <span
-                        key={swatch}
-                        data-theme-preview-swatch
-                        style={{ backgroundColor: swatch }}
-                      />
-                    ))}
-                  </span>
-                  <span data-theme-preview-type>
-                    <strong>{entry.preview.headlineSample}</strong>
-                    <span>{entry.preview.bodySample}</span>
-                  </span>
+                <span data-theme-option-preview>
+                  <ThemeMiniPreview themeId={entry.id} />
                 </span>
                 <span data-theme-option-label>{entry.label}</span>
                 <span data-theme-option-description>{entry.description}</span>
