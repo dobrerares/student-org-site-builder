@@ -32,7 +32,7 @@ Theme output. The renderer's golden-file matrix (ADR 0032) and the a11y matrix
 A resolved Theme is data:
 
 ```
-id, name, version, description, preview
+id, name, version, description
 origin: "builtin" | "package"
 css, baselineTokens, defaults
 supports: { colors, fonts, density, radius }

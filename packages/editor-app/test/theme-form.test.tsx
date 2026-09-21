@@ -14,6 +14,8 @@ import { afterEach, describe, expect, test } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import type { Site } from "@sosb/schema";
 
+import type { ThemeBundle } from "@sosb/renderer";
+
 import { ThemeForm } from "../src/theme-form.js";
 
 /**
@@ -107,5 +109,64 @@ describe("ThemeForm", () => {
     // Other tokens preserved:
     expect((next as Site | null)?.theme.tokens?.colorPrimary).toBe("#111111");
     expect((next as Site | null)?.theme.tokens?.fontBody).toBe("Inter");
+  });
+});
+
+/**
+ * A Site whose Theme package is not installed (ADR 0051).
+ *
+ * The rule is "preserve the content, block the export, offer a repair" — not
+ * "quietly render under some other Theme", which would produce a
+ * plausible-looking wrong site that an author could publish without ever
+ * learning their design was missing. The form is where the author finds out.
+ */
+describe("ThemeForm with a missing Theme package", () => {
+  afterEach(() => cleanup());
+
+  const missingSite = {
+    theme: { id: "org.example.practice", version: "1.0.0" },
+    pages: [],
+  } as unknown as Site;
+
+  test("names the missing Theme and reassures the author about their content", () => {
+    const { container } = render(<ThemeForm site={missingSite} onChange={() => {}} />);
+    const alert = container.querySelector('[data-testid="theme-missing"]');
+    expect(alert).not.toBeNull();
+    expect(alert?.textContent).toContain("org.example.practice");
+    expect(alert?.textContent).toContain("unchanged");
+  });
+
+  test("the repair switches to a built-in look", () => {
+    let next: Site | null = null;
+    const { container } = render(<ThemeForm site={missingSite} onChange={(s) => (next = s)} />);
+    const repair = container.querySelector(
+      '[data-testid="theme-missing-repair"]',
+    ) as HTMLElement | null;
+    expect(repair).not.toBeNull();
+    repair?.click();
+    expect((next as Site | null)?.theme.id).toBe("modern");
+    // The dangling package version must not survive the switch, or the Site
+    // would claim to be at v1.0.0 of a Theme it no longer uses.
+    expect((next as Site | null)?.theme.version).toBeUndefined();
+  });
+
+  test("no alert once the Theme is installed", () => {
+    const bundle = {
+      id: "org.example.practice",
+      name: "Practice",
+      version: "1.0.0",
+      origin: "package",
+      css: "",
+      baselineTokens: [],
+      supports: { colors: true, fonts: true, density: true, radius: true },
+      blockVariants: {},
+      shellVariants: [],
+      fontSource: { kind: "registry" },
+      assets: new Map(),
+    } as unknown as ThemeBundle;
+    const { container } = render(
+      <ThemeForm site={missingSite} onChange={() => {}} installedThemes={[bundle]} />,
+    );
+    expect(container.querySelector('[data-testid="theme-missing"]')).toBeNull();
   });
 });

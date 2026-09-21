@@ -35,7 +35,7 @@ Two deliberate departures:
 ## Contents
 
 ```
-theme.json   manifest: tokens, fonts, variants, shell variants, preview
+theme.json   manifest: tokens, fonts, variants, shell variants
 theme.css    the stylesheet (~14 KB)
 fonts/       Archivo 400/700/900 and Inter 400/600, latin + latin-ext
 assets/      grid.svg — the decorative background texture
