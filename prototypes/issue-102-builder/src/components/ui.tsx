@@ -62,12 +62,15 @@ export function Info({ label, children }: { label: string; children: React.React
 /** Modal dialog. Escape closes; focus moves in on open and back to the opener on close. */
 export function Dialog({
   title,
+  titleInfo,
   children,
   onClose,
   actions,
   wide,
 }: {
   title: string;
+  /** Longer explanation, shown behind an (i) next to the dialog's heading. */
+  titleInfo?: React.ReactNode;
   children: React.ReactNode;
   onClose: () => void;
   actions?: React.ReactNode;
@@ -124,7 +127,10 @@ export function Dialog({
         ref={box}
         style={wide ? { width: "min(760px, 100%)" } : undefined}
       >
-        <h2>{title}</h2>
+        <h2>
+          {title}
+          {titleInfo && <Info label={title.toLowerCase()}>{titleInfo}</Info>}
+        </h2>
         {children}
         {actions && <div className="dialog-actions">{actions}</div>}
       </div>

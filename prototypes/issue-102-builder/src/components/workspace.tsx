@@ -81,14 +81,17 @@ function BlockOutline({
   return (
     <div className="stack">
       <div className="row" style={{ justifyContent: "space-between" }}>
-        <h3 style={{ fontSize: "var(--step-1)" }}>Blocks</h3>
+        <h3 style={{ fontSize: "var(--step-1)" }}>
+          Blocks{" "}
+          <Info label="blocks">
+            Blocks are the pieces this page is made of, in the order they appear. Choose one to edit
+            it. Drag the ⠿ handle, or use Move up / Move down, to reorder them.
+          </Info>
+        </h3>
         <button className="btn btn-sm" onClick={() => setAdding(true)}>
           + Add block
         </button>
       </div>
-      <p className="hint">
-        Choose a block to edit it. Drag the handle, or use Move up / Move down, to reorder.
-      </p>
       <div className="list">
         {blocks.length === 0 && <div className="list-row muted">No blocks yet.</div>}
         {blocks.map((b, i) => (
@@ -169,11 +172,14 @@ function BlockOutline({
                 {BLOCK_LABEL[t]}
               </button>
             ))}
-            <p className="hint" style={{ margin: 0 }}>
-              Prototype note: the real builder offers all {Object.keys(BLOCK_LABEL).length * 3}{" "}
-              block types from the block library. Five are enough to walk through navigation. (
-              {site.pages.length} pages in this project.)
-            </p>
+            <span className="field-label">
+              Prototype note
+              <Info label="the block list in this prototype">
+                The real builder offers all {Object.keys(BLOCK_LABEL).length * 3} block types from
+                the block library. Five are enough to walk through navigation. ({site.pages.length}{" "}
+                pages in this project.)
+              </Info>
+            </span>
           </div>
         </Dialog>
       )}
@@ -607,8 +613,8 @@ export function Workspace(props: WorkspaceProps) {
                     {article.related.config.tagIds.length +
                       article.related.config.articleIds.length >
                     0
-                      ? "Your previous settings are kept."
-                      : "Turn it on to choose what appears."}
+                      ? "Settings kept."
+                      : ""}
                   </span>
                 )}
               </div>
@@ -663,10 +669,13 @@ export function Workspace(props: WorkspaceProps) {
           <>
             <div className="inspector-header">
               <div className="eyebrow">Related articles</div>
-              <h2>{contentTitle}</h2>
-              <p className="hint" style={{ marginTop: 4 }}>
-                Shown at the end of this article. “By tag” never includes this article itself.
-              </p>
+              <h2>
+                {contentTitle}{" "}
+                <Info label="the related list">
+                  This list is shown at the end of the article. “By tag” never includes the article
+                  itself; you can still select it explicitly.
+                </Info>
+              </h2>
             </div>
             <ListConfigEditor
               site={site}
@@ -713,7 +722,13 @@ export function Workspace(props: WorkspaceProps) {
   const previewPane = (
     <div className="preview-pane" data-hidden={isPhone && mobileTab !== "preview"}>
       <div className="pane-bar">
-        <span className="eyebrow">Preview</span>
+        <span className="eyebrow">
+          Preview{" "}
+          <Info label="the preview">
+            Links and cards here behave like the real website, so you can click through it the way a
+            visitor would. Use “Edit this Page/Article” to open whatever you are looking at.
+          </Info>
+        </span>
         <span
           className="small muted"
           style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
@@ -737,10 +752,6 @@ export function Workspace(props: WorkspaceProps) {
         </button>
       </div>
       <PublicPreview site={site} target={previewTarget} onNavigate={setPreviewTarget} />
-      <p className="hint" style={{ padding: "0 var(--sp-3) var(--sp-3)" }}>
-        Links and cards here behave like the real website. Use “Edit this Page/Article” to open
-        whatever you are looking at.
-      </p>
     </div>
   );
 

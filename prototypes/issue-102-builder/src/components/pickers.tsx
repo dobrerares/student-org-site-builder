@@ -355,12 +355,15 @@ export function ListConfigEditor({
       )}
 
       <div className="field">
-        <span className="field-label">Articles in this list right now ({matches.length})</span>
+        <span className="field-label">
+          Articles in this list right now ({matches.length})
+          <Info label="this list’s contents">
+            These are the cards a visitor would see, in this order. If nothing matches, the website
+            keeps the heading and shows “No articles yet.” Drafts never appear on the website.
+          </Info>
+        </span>
         {matches.length === 0 ? (
-          <div className="empty">
-            Nothing matches yet. On the website the heading stays and the list says “No articles
-            yet.”
-          </div>
+          <div className="empty">Nothing matches yet.</div>
         ) : (
           <div className="card-grid">
             {matches.map((a) => (

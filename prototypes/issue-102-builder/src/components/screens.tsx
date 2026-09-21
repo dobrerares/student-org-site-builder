@@ -53,12 +53,15 @@ export function Overview({
       <div className="grid-2">
         <section className="card stack">
           <div className="row" style={{ justifyContent: "space-between" }}>
-            <h2>Pages</h2>
+            <h2>
+              Pages{" "}
+              <Info label="pages">
+                The fixed parts of your website: home, about, join, and any listing page you build.
+                Articles are dated pieces of writing and live in their own destination.
+              </Info>
+            </h2>
             <span className="badge">{site.pages.length}</span>
           </div>
-          <p className="muted small" style={{ margin: 0 }}>
-            The fixed parts of your website: home, about, join, and any listing page you build.
-          </p>
           <div className="list">
             {site.pages.slice(0, 4).map((p) => (
               <button
@@ -572,7 +575,11 @@ export function TagsScreen({
           </Field>
           <p className="hint">
             Used by {plural(usage(renamingTag.id).length, "article")} and{" "}
-            {plural(listsUsing(renamingTag.id).length, "list")}. Both keep working.
+            {plural(listsUsing(renamingTag.id).length, "list")}.{" "}
+            <Info label="what renaming changes">
+              Renaming changes the tag’s name everywhere it appears. Every article keeps the tag and
+              every list filter keeps working.
+            </Info>
           </p>
         </Dialog>
       )}
@@ -603,7 +610,11 @@ export function TagsScreen({
                 <div>
                   <strong>
                     {plural(listsUsing(deletingTag.id).length, "article list")} filter on this tag:
-                  </strong>
+                  </strong>{" "}
+                  <Info label="what happens to these lists">
+                    Deleting the tag removes it from every list filter that uses it. Lists that keep
+                    other tags carry on matching any of those.
+                  </Info>
                   <ul style={{ margin: "4px 0 0 18px", padding: 0 }}>
                     {listsUsing(deletingTag.id).map((l) => (
                       <li key={l.where} className="small">
@@ -620,9 +631,6 @@ export function TagsScreen({
                       </li>
                     ))}
                   </ul>
-                  <p className="small muted" style={{ marginTop: 4 }}>
-                    Lists that keep other tags carry on matching any of those.
-                  </p>
                 </div>
               </div>
             )}
@@ -645,10 +653,13 @@ export function ThemeScreen({
   const themes = ["Modern", "Editorial", "Civic", "Minimal", "Academic"];
   return (
     <div className="page-pad stack">
-      <h1 style={{ fontSize: "var(--step-3)" }}>Theme</h1>
-      <p className="muted">
-        The look of the whole website. Changes show in every preview straight away.
-      </p>
+      <h1 style={{ fontSize: "var(--step-3)" }}>
+        Theme{" "}
+        <Info label="the theme">
+          The look of the whole website: fonts, colours and spacing. Changes show in every preview
+          straight away, and reach your visitors after you export and upload again.
+        </Info>
+      </h1>
       <div className="card stack">
         <Field label="Theme">
           <select
@@ -745,6 +756,14 @@ export function ExportDialog({
   return (
     <Dialog
       title="Export website"
+      titleInfo={
+        <>
+          Exporting builds the public website as a folder and downloads it to this computer. It does{" "}
+          <strong>not</strong> update the website your visitors see — you still have to upload the
+          exported folder to your hosting. Drafts are never part of the export, and saving your
+          project stays available even while there are problems listed here.
+        </>
+      }
       wide
       onClose={onClose}
       actions={
@@ -766,15 +785,6 @@ export function ExportDialog({
       }
     >
       <div className="stack">
-        <p className="muted" style={{ margin: 0 }}>
-          Builds the public website as a folder you can upload.{" "}
-          <Info label="exporting">
-            Exporting downloads files to this computer. It does <strong>not</strong> update the
-            website your visitors see — you still have to upload the exported folder to your
-            hosting. Drafts are never part of the export.
-          </Info>
-        </p>
-
         {blockers.length > 0 ? (
           <>
             <h3 style={{ fontSize: "var(--step-1)" }}>Fix these first ({blockers.length})</h3>
@@ -817,10 +827,6 @@ export function ExportDialog({
             />
           </>
         )}
-
-        <p className="hint" style={{ margin: 0 }}>
-          Saving your project is always available, even while there are problems here.
-        </p>
       </div>
     </Dialog>
   );

@@ -106,10 +106,14 @@ Do 1–14 on a wide window, then repeat 15–18 at phone width. Tick as you go.
     exporting does not update the live site, and keeps the export button disabled
     until the blocker is gone. Repair the selection (publish the article, or
     remove it from the list) and export succeeds. `[ ]`
-14. **Help and keyboard.** Any (i) opens by click and by keyboard (Tab to it,
-    press Enter or Space); Escape or a click outside closes it and focus returns
-    to the icon. Dialogs close with Escape and return focus to the control that
-    opened them. `[ ]`
+14. **Help and keyboard.** There is no standing explanatory prose anywhere: every
+    explanation sits behind an (i) next to its heading, label or dialog title —
+    Pages, Site Health, Blocks, Preview, Related articles, the list contents, the
+    tag screens and the export panel all work this way. Only short labels, status
+    lines and actionable problems stay visible. Any (i) opens by click and by
+    keyboard (Tab to it, press Enter or Space); Escape or a click outside closes
+    it and focus returns to the icon. Dialogs close with Escape and return focus
+    to the control that opened them. `[ ]`
 
 ### Phone width (≤ 820 px)
 
@@ -146,4 +150,4 @@ numbered step and what you expected instead.
 
 `screenshots/` holds desktop (1440 × 900) and phone (390 × 844) captures of the
 overview, the article workspace, the Article-list Inspector, the export readiness
-panel, the navigation drawer and the phone preview.
+panel, an opened help popover, the navigation drawer and the phone preview.
