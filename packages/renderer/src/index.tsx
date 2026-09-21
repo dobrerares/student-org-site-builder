@@ -325,6 +325,7 @@ export type {
   ThemeBundle,
   ThemeFontFace,
   ThemeFontSource,
+  ThemePreviewInfo,
   ThemeSupports,
   ThemeVariant,
 } from "./theme-bundle.js";

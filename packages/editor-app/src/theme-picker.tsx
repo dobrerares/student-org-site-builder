@@ -33,6 +33,8 @@
  * (the `aria-label="Theme"` gives assistive tech a group label).
  */
 import type { JSX } from "react";
+import type { ThemeCatalogEntry } from "@sosb/themes";
+import type { ThemeBundle } from "@sosb/renderer";
 
 import { ThemeMiniPreview } from "@sosb/themes";
 
@@ -42,6 +44,29 @@ import { Input } from "@sosb/ui";
 export interface ThemePickerProps {
   readonly value: string;
   readonly onChange: (id: string) => void;
+  /**
+   * Imported Theme packages, listed after the built-ins (ADR 0051).
+   *
+   * They share the built-ins' radio group rather than getting a list of their
+   * own: "which look does my site use?" is one question with one answer, and a
+   * split would make an author pick a category before picking a design.
+   */
+  readonly customThemes?: readonly ThemeBundle[];
+}
+
+/**
+ * Present an imported Theme in the catalog's shape so both kinds render
+ * through one code path. Swatches and samples come from the package
+ * manifest's `preview` block.
+ */
+function entryForBundle(bundle: ThemeBundle): ThemeCatalogEntry {
+  return {
+    id: bundle.id,
+    label: bundle.name,
+    description: bundle.description ?? "",
+    fonts: { headline: [], body: [] },
+    preview: bundle.preview ?? { swatches: [], headlineSample: "", bodySample: "" },
+  };
 }
 
 // Stable per-page radio-group name. Only one ThemePicker mounts on a
@@ -51,7 +76,8 @@ const RADIO_GROUP_NAME = "theme-picker";
 
 export function ThemePicker(props: ThemePickerProps): JSX.Element {
   const catalog = buildThemeCatalog();
-  const isKnown = catalog.entries.some((e) => e.id === props.value);
+  const entries = [...catalog.entries, ...(props.customThemes ?? []).map(entryForBundle)];
+  const isKnown = entries.some((e) => e.id === props.value);
 
   return (
     <div data-theme-picker-root>
@@ -62,7 +88,7 @@ export function ThemePicker(props: ThemePickerProps): JSX.Element {
         </p>
       )}
       <div data-testid="theme-picker" role="radiogroup" aria-label="Theme">
-        {catalog.entries.map((entry) => {
+        {entries.map((entry) => {
           const isActive = entry.id === props.value;
           return (
             <label

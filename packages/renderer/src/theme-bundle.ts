@@ -111,10 +111,27 @@ export type ThemeFontSource =
  * A fully resolved theme, ready to render. Built-in themes and imported Theme
  * packages both reduce to this; `renderSite` knows nothing else about themes.
  */
+/**
+ * Picker presentation for a theme: the swatch strip and type samples the
+ * editor shows before an author commits to a design. Carried on the bundle so
+ * imported themes render through the same picker code path as built-ins,
+ * rather than needing a parallel catalog the editor has to keep in sync.
+ */
+export interface ThemePreviewInfo {
+  readonly swatches: readonly string[];
+  readonly headlineSample: string;
+  readonly bodySample: string;
+  /** Bundle-relative thumbnail path, if the package ships one. */
+  readonly thumbnail?: string | undefined;
+}
+
 export interface ThemeBundle {
   readonly id: string;
   readonly name: string;
   readonly version: string;
+  /** One-line summary shown beside the theme in the picker. */
+  readonly description?: string | undefined;
+  readonly preview?: ThemePreviewInfo | undefined;
   /** `builtin` themes ship with the builder; `package` themes were imported. */
   readonly origin: "builtin" | "package";
   /** The theme's own CSS overlay. Composed *after* the shared baselines. */

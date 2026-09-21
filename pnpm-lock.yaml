@@ -195,6 +195,9 @@ importers:
       '@sosb/schema':
         specifier: workspace:*
         version: link:../schema
+      '@sosb/theme-package':
+        specifier: workspace:*
+        version: link:../theme-package
       '@sosb/themes':
         specifier: workspace:*
         version: link:../themes

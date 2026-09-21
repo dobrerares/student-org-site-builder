@@ -200,6 +200,13 @@ export function loadThemePackage(files: ReadonlyMap<string, Uint8Array>): Loaded
     id: manifest.id,
     name: manifest.name,
     version: manifest.version,
+    description: manifest.description,
+    preview: {
+      swatches: manifest.preview.swatches,
+      headlineSample: manifest.preview.headlineSample,
+      bodySample: manifest.preview.bodySample,
+      thumbnail: manifest.preview.thumbnail,
+    },
     origin: "package",
     css,
     baselineTokens: Object.entries(manifest.cssTokens).sort(([a], [b]) => a.localeCompare(b)),
