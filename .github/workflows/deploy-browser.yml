@@ -106,10 +106,6 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          # Use npx so the action never runs `pnpm add wrangler` at the
-          # workspace root (pnpm refuses that without -w once the workspace
-          # has more than one glob).
-          packageManager: npm
           command: >-
             pages deploy packages/browser-shell/dist/archival
             --project-name=student-org-site-builder
