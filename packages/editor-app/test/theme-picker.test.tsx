@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 // @vitest-environment jsdom
 /**
  * Tests for the theme picker — the canonical structural override that
@@ -6,7 +7,7 @@
  * text input.
  */
 import { describe, expect, test, afterEach } from "vitest";
-import { render, cleanup } from "@testing-library/preact";
+import { render, cleanup } from "@testing-library/react";
 
 import { ThemePicker } from "../src/theme-picker.js";
 

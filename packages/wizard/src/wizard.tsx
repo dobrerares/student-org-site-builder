@@ -1,5 +1,6 @@
+/** @jsxImportSource react */
 /**
- * `<Wizard />` — Preact UI shell wrapping the state machine.
+ * `<Wizard />` — React UI shell wrapping the state machine.
  *
  * Layout responsibilities:
  *   - Top: a step indicator showing all six steps with the active one
@@ -19,8 +20,8 @@
  * Tracking issue: #33.
  */
 
-import type { JSX } from "preact";
-import { useState, useCallback } from "preact/hooks";
+import type { JSX } from "react";
+import { useState, useCallback } from "react";
 import type { Site } from "@sosb/schema";
 
 import {

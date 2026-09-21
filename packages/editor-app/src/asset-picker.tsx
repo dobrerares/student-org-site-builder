@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * AssetPicker — upload-only image-asset widget (ADR 0043, ADR 0044).
  *
@@ -31,9 +32,10 @@
  * `uploader` prop. The prop indirection lets callers (BlockForm via
  * T11) wire the production `uploadAsset` while tests inject a mock.
  */
-import type { JSX } from "preact";
-import { useRef, useState } from "preact/hooks";
+import type { JSX } from "react";
+import { useRef, useState } from "react";
 import type { AssetRefLike } from "@sosb/schema";
+import type * as React from "react";
 
 export interface AssetPickerProps {
   readonly value: AssetRefLike | undefined;
@@ -86,7 +88,7 @@ export function AssetPicker(props: AssetPickerProps): JSX.Element {
     fileInputRef.current?.click();
   };
 
-  const onFileChosen = async (event: JSX.TargetedEvent<HTMLInputElement>): Promise<void> => {
+  const onFileChosen = async (event: React.FormEvent<HTMLInputElement>): Promise<void> => {
     const input = event.currentTarget;
     const file = input.files?.[0];
     if (file === undefined) return;

@@ -13,7 +13,7 @@
  * cool-grey ground, a single teal action colour, and severity colours that
  * read at a glance. Selectors hang off the data attributes the components
  * already emit for testing, so no class names need to be threaded through
- * the Preact tree.
+ * the React tree.
  *
  * Token contract (CSS custom properties on `:root`):
  *
@@ -2337,7 +2337,7 @@ button[data-issue] [data-issue-path]::before {
  * Inject the editor-app stylesheet into the host document, idempotently.
  *
  * Runs as a top-level side effect when this module is first imported, so
- * the styles are present before Preact renders into `#root`. Guarded for
+ * the styles are present before React renders into `#root`. Guarded for
  * non-DOM evaluation contexts (SSR builds, Node-side tooling).
  */
 function injectEditorAppStyle(): void {

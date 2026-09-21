@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * Add Block dialog — categorised, searchable picker over the schema
  * registry.
@@ -15,11 +16,12 @@
  * `<button type="button">` so keyboard activation works. A backdrop sits
  * behind the dialog; clicking it dismisses, matching the Escape key.
  */
-import type { JSX } from "preact";
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import type { JSX } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { buildBlockCatalog, type BlockCatalogEntry } from "./block-catalog.js";
 import { IconClose } from "./icons.js";
+import type * as React from "react";
 
 const CATEGORY_LABELS: Record<string, string> = {
   mandatory: "Essentials",
@@ -79,7 +81,7 @@ export function AddBlockDialog(props: AddBlockDialogProps): JSX.Element | null {
     <div
       data-testid="dialog-backdrop"
       data-dialog-backdrop
-      onClick={(event: JSX.TargetedMouseEvent<HTMLDivElement>) => {
+      onClick={(event: React.MouseEvent<HTMLDivElement>) => {
         if (event.target === event.currentTarget) props.onClose();
       }}
     >
@@ -89,7 +91,7 @@ export function AddBlockDialog(props: AddBlockDialogProps): JSX.Element | null {
         aria-modal="true"
         aria-label="Add a page section"
         tabIndex={-1}
-        onKeyDown={(event: JSX.TargetedKeyboardEvent<HTMLDivElement>): void => {
+        onKeyDown={(event: React.KeyboardEvent<HTMLDivElement>): void => {
           if (event.key === "Escape") {
             event.stopPropagation();
             props.onClose();
@@ -123,7 +125,7 @@ export function AddBlockDialog(props: AddBlockDialogProps): JSX.Element | null {
             data-testid="add-block-search"
             value={query}
             placeholder="Search sections, e.g. team, gallery, contact"
-            onInput={(event: JSX.TargetedEvent<HTMLInputElement>): void => {
+            onInput={(event: React.FormEvent<HTMLInputElement>): void => {
               setQuery(event.currentTarget.value);
             }}
           />

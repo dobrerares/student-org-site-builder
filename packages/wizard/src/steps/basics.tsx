@@ -1,10 +1,11 @@
+/** @jsxImportSource react */
 /**
  * Step 1 — Basics. Org name (required), tagline, founded year.
  *
  * The only required field is `name`; the state machine refuses to
  * advance past 'basics' until it is set.
  */
-import type { JSX } from "preact";
+import type { JSX } from "react";
 
 import type { BasicsData } from "../state-machine.js";
 

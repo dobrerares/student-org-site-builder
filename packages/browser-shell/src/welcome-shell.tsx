@@ -1,5 +1,6 @@
-import type { JSX } from "preact";
-import { useEffect, useState } from "preact/hooks";
+/** @jsxImportSource react */
+import type { JSX } from "react";
+import { useEffect, useState } from "react";
 import { parseSite, type Site } from "@sosb/schema";
 import type { Vfs } from "@sosb/vfs/vfs";
 import { loadAutosave, saveAutosave } from "@sosb/editor-state";
@@ -15,6 +16,7 @@ import {
 
 import { openPreferredPersistentVfs } from "./persistent-vfs/preferred.js";
 import "./welcome-shell-css.js";
+import type * as React from "react";
 
 export interface WelcomeLoadedSite {
   readonly site: Site;
@@ -194,11 +196,11 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
   return (
     <main
       data-testid="welcome-screen"
-      onDragOver={(event: JSX.TargetedDragEvent<HTMLElement>) => {
+      onDragOver={(event: React.DragEvent<HTMLElement>) => {
         if (!canDropImport || !event.dataTransfer?.types.includes("Files")) return;
         event.preventDefault();
       }}
-      onDrop={(event: JSX.TargetedDragEvent<HTMLElement>) => {
+      onDrop={(event: React.DragEvent<HTMLElement>) => {
         if (!canDropImport) return;
         const file = firstZipFile(event.dataTransfer?.files);
         event.preventDefault();

@@ -1,6 +1,7 @@
+/** @jsxImportSource react */
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import { cleanup, fireEvent, render } from "@testing-library/preact";
+import { cleanup, fireEvent, render } from "@testing-library/react";
 import type { Site } from "@sosb/schema";
 
 import tiered from "./fixtures/issue-tiered-site.json" with { type: "json" };

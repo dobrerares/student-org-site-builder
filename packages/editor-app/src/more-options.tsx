@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * MoreOptions — the collapsible "More options" section that closes each
  * generated form (ADR 0043 progressive disclosure, revised).
@@ -17,8 +18,8 @@
  *  - **absent when empty**: forms with no advanced fields render no
  *    section at all (the consuming form checks this).
  */
-import type { ComponentChildren, JSX } from "preact";
-import { useId } from "preact/hooks";
+import type { JSX, ReactNode } from "react";
+import { useId } from "react";
 
 import { IconChevronRight } from "./icons.js";
 import { summarizeLabels } from "./field-tiers.js";
@@ -31,7 +32,7 @@ export interface MoreOptionsProps {
   /** Friendly names of the fields inside, shown in the collapsed summary. */
   readonly labels: readonly string[];
   /** The rendered advanced fields. Only mounted while `open`. */
-  readonly children?: ComponentChildren;
+  readonly children?: ReactNode;
 }
 
 export function MoreOptions({ open, onToggle, labels, children }: MoreOptionsProps): JSX.Element {

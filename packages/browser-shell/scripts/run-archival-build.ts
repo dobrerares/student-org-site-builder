@@ -54,6 +54,28 @@ function findPkgRoot(start: string): string {
   throw new Error(`run-archival-build: cannot locate @sosb/browser-shell root from ${start}`);
 }
 
+/**
+ * Split esbuild's in-memory outputs into "the JavaScript" and "the CSS".
+ *
+ * esbuild does not promise an output order, and a CSS import adds a second
+ * file, so indexing into `outputFiles` is not safe. Classify by extension
+ * and concatenate if a future entry ever emits more than one stylesheet.
+ */
+export function classifyOutputs(
+  outputFiles: readonly { readonly path: string; readonly text: string }[],
+): { js: string | undefined; css: string | undefined } {
+  const jsParts: string[] = [];
+  const cssParts: string[] = [];
+  for (const file of outputFiles) {
+    if (file.path.endsWith(".css")) cssParts.push(file.text);
+    else if (file.path.endsWith(".js") || file.path.endsWith(".mjs")) jsParts.push(file.text);
+  }
+  return {
+    js: jsParts.length === 0 ? undefined : jsParts.join("\n"),
+    css: cssParts.length === 0 ? undefined : cssParts.join("\n"),
+  };
+}
+
 export interface RunArchivalBuildOptions {
   /** Where to write `builder.html`. Defaults to `<pkg>/dist/archival/`. */
   readonly outDir?: string;
@@ -64,28 +86,44 @@ export async function runArchivalBuild(
 ): Promise<{ outPath: string; bytes: number }> {
   const outDir = options.outDir ?? path.join(pkgRoot, "dist", "archival");
 
-  // (1) Bundle the archival entry. The entry imports `<WelcomeShell>` and
-  //     mounts the welcome shell into `#root`.
+  // (1) Bundle the archival entry. The entry imports `<WelcomeShell>`, the
+  //     compiled builder stylesheet (`@sosb/ui/styles.css`) and mounts the
+  //     welcome shell into `#root`.
+  //
+  //     `outdir` matters: without it esbuild refuses to bundle a CSS import
+  //     from a JS entry ("Cannot import ... without an output path
+  //     configured"). Nothing is written to disk — `write: false` keeps the
+  //     outputs in memory — but esbuild needs a nominal output path to name
+  //     the emitted CSS file. This is the fix for the gap recorded in the
+  //     issue #99 research: the archival path previously took
+  //     `outputFiles[0]` as "the JavaScript" and dropped everything else,
+  //     so generated CSS could never reach the single-file HTML.
   const entryPath = path.join(pkgRoot, "scripts", "archival-entry.tsx");
   const bundleResult = await esbuild({
     entryPoints: [entryPath],
     bundle: true,
     write: false,
+    outdir: path.join(pkgRoot, "dist", "archival-bundle"),
     format: "esm",
     platform: "browser",
     target: "es2022",
     jsx: "automatic",
-    jsxImportSource: "preact",
+    jsxImportSource: "react",
     absWorkingDir: repoRoot,
     minify: true,
+    // Fonts and images that the builder stylesheet references must travel
+    // inside the single file; a `file://` archive has nothing to fetch from.
+    loader: { ".woff2": "dataurl", ".woff": "dataurl", ".png": "dataurl", ".svg": "dataurl" },
   });
-  const bundleFile = bundleResult.outputFiles[0];
-  if (bundleFile === undefined) {
-    throw new Error("runArchivalBuild: esbuild produced no output");
-  }
-  const bundleSource = bundleFile.text;
 
-  // (2) Shell HTML.
+  const { js, css } = classifyOutputs(bundleResult.outputFiles);
+  if (js === undefined) {
+    throw new Error("runArchivalBuild: esbuild produced no JavaScript output");
+  }
+
+  // (2) Shell HTML. The stylesheet `<link>` is only emitted when the bundle
+  //     actually produced CSS, so the shell never references a missing asset.
+  const styleLink = css === undefined ? "" : `\n<link rel="stylesheet" href="bundle.css"/>`;
   const shellHtml = `<!doctype html>
 <html lang="en">
 <head>
@@ -96,7 +134,7 @@ export async function runArchivalBuild(
 <style>
   html,body{margin:0;padding:0;font-family:system-ui,sans-serif;}
   #root{min-height:100vh;}
-</style>
+</style>${styleLink}
 </head>
 <body>
 <div id="root"></div>
@@ -105,11 +143,10 @@ export async function runArchivalBuild(
 </html>
 `;
 
-  // (3) Inline the bundle into the shell.
-  const archival = buildArchival({
-    html: shellHtml,
-    assets: new Map<string, string | Uint8Array>([["bundle.js", bundleSource]]),
-  });
+  // (3) Inline the bundle (and the generated stylesheet) into the shell.
+  const assets = new Map<string, string | Uint8Array>([["bundle.js", js]]);
+  if (css !== undefined) assets.set("bundle.css", css);
+  const archival = buildArchival({ html: shellHtml, assets });
 
   // (4) Write output.
   mkdirSync(outDir, { recursive: true });

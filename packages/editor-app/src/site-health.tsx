@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * Site Health panel — renders a `ValidationResult` as three grouped lists
  * (Errors / Warnings / Info). Each issue is a real `<button>` so it is
@@ -33,7 +34,7 @@
  * three-tier structure stays stable even when one tier is empty (this is
  * what the "renders three distinct severity groups" test asserts).
  */
-import type { JSX } from "preact";
+import type { JSX } from "react";
 import type { ValidationIssue, ValidationResult } from "@sosb/schema";
 import { issuePathLabel } from "./field-labels.js";
 import { pathToDotted } from "./issue-navigate.js";

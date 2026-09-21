@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 // @vitest-environment jsdom
 /**
  * Accessibility regression: the AddBlockDialog and BlockListEditor produce
@@ -9,7 +10,7 @@
  * labels, button accessibility, ARIA, keyboard reach — DO run here.
  */
 import { describe, expect, test, afterEach } from "vitest";
-import { render, cleanup } from "@testing-library/preact";
+import { render, cleanup } from "@testing-library/react";
 import axe from "axe-core";
 import type { Site } from "@sosb/schema";
 

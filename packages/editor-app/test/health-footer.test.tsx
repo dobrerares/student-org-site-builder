@@ -1,6 +1,7 @@
+/** @jsxImportSource react */
 // @vitest-environment jsdom
 import { afterEach, describe, expect, test } from "vitest";
-import { cleanup, fireEvent, render } from "@testing-library/preact";
+import { cleanup, fireEvent, render } from "@testing-library/react";
 
 import { HealthFooter } from "../src/health-footer.js";
 import type { ValidationResult } from "@sosb/schema";

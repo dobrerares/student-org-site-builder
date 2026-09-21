@@ -1,6 +1,7 @@
+/** @jsxImportSource react */
 // @vitest-environment jsdom
 import { describe, expect, test, afterEach, vi } from "vitest";
-import { render, fireEvent, cleanup } from "@testing-library/preact";
+import { render, fireEvent, cleanup } from "@testing-library/react";
 
 import { Wizard } from "../src/wizard.js";
 

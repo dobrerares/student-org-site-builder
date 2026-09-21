@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * Block form generator.
  *
@@ -41,8 +42,8 @@
  *    `<DocumentPicker>` there instead of a hash/path/mime/byteSize
  *    fieldset (the failure mode ADR 0044 prohibits).
  */
-import type { JSX } from "preact";
-import { useState } from "preact/hooks";
+import type { JSX } from "react";
+import { useState } from "react";
 import type { ZodType } from "zod";
 import type { AssetRefLike, DocumentAssetRef } from "@sosb/schema";
 
@@ -59,6 +60,7 @@ import { fieldLabel, optionLabel } from "./field-labels.js";
 import { MEDIA_PICKER_RENDERERS } from "./media-picker-renderers.js";
 import { rebaseElement } from "./rebase-element.js";
 import { IconArrowDown, IconArrowUp, IconPlus, IconTrash } from "./icons.js";
+import type * as React from "react";
 
 /**
  * Schema-identity registry consumed by the form-generator walk.
@@ -310,11 +312,11 @@ function FieldRenderer({
                     showAdvanced={showAdvanced}
                   />
                   <div
-                    class="block-form__item-controls"
+                    className="block-form__item-controls"
                     role="group"
                     aria-label={`${label} item ${idx + 1} actions`}
                   >
-                    <span class="block-form__item-index" aria-hidden="true">
+                    <span className="block-form__item-index" aria-hidden="true">
                       {idx + 1} of {items.length}
                     </span>
                     <button
@@ -374,7 +376,7 @@ function FieldRenderer({
               data-field={dottedPath}
               rows={4}
               value={typeof value === "string" ? value : ""}
-              onInput={(event: JSX.TargetedEvent<HTMLTextAreaElement>) => {
+              onInput={(event: React.FormEvent<HTMLTextAreaElement>) => {
                 const next = event.currentTarget.value;
                 for (const patch of expandAltSyncPatches(data, node.path, next)) {
                   onPatch(patch.path, patch.value);
@@ -386,7 +388,7 @@ function FieldRenderer({
               type="text"
               data-field={dottedPath}
               value={typeof value === "string" ? value : ""}
-              onInput={(event: JSX.TargetedEvent<HTMLInputElement>) => {
+              onInput={(event: React.FormEvent<HTMLInputElement>) => {
                 const next = event.currentTarget.value;
                 for (const patch of expandAltSyncPatches(data, node.path, next)) {
                   onPatch(patch.path, patch.value);
@@ -407,7 +409,7 @@ function FieldRenderer({
             type="number"
             data-field={dottedPath}
             value={typeof value === "number" ? String(value) : ""}
-            onInput={(event: JSX.TargetedEvent<HTMLInputElement>) => {
+            onInput={(event: React.FormEvent<HTMLInputElement>) => {
               const raw = event.currentTarget.value;
               if (raw === "") {
                 onPatch(node.path, undefined);
@@ -427,7 +429,7 @@ function FieldRenderer({
             type="checkbox"
             data-field={dottedPath}
             checked={value === true}
-            onChange={(event: JSX.TargetedEvent<HTMLInputElement>) => {
+            onChange={(event: React.FormEvent<HTMLInputElement>) => {
               onPatch(node.path, event.currentTarget.checked);
             }}
           />
@@ -442,7 +444,7 @@ function FieldRenderer({
           <select
             data-field={dottedPath}
             value={typeof value === "string" ? value : ""}
-            onChange={(event: JSX.TargetedEvent<HTMLSelectElement>) => {
+            onChange={(event: React.FormEvent<HTMLSelectElement>) => {
               const raw = event.currentTarget.value;
               onPatch(node.path, raw === "" ? undefined : raw);
             }}
@@ -493,7 +495,7 @@ function FieldRenderer({
                 step="any"
                 data-field={`${dottedPath}.0`}
                 value={lat === undefined ? "" : String(lat)}
-                onInput={(event: JSX.TargetedEvent<HTMLInputElement>) => {
+                onInput={(event: React.FormEvent<HTMLInputElement>) => {
                   patchCoordinate(0, event.currentTarget.value);
                 }}
               />
@@ -505,7 +507,7 @@ function FieldRenderer({
                 step="any"
                 data-field={`${dottedPath}.1`}
                 value={lng === undefined ? "" : String(lng)}
-                onInput={(event: JSX.TargetedEvent<HTMLInputElement>) => {
+                onInput={(event: React.FormEvent<HTMLInputElement>) => {
                   patchCoordinate(1, event.currentTarget.value);
                 }}
               />

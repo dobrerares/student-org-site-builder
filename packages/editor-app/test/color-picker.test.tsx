@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 // @vitest-environment jsdom
 /**
  * Tests for the ColorPicker component — the structural form override
@@ -10,7 +11,7 @@
  * and reset-to-undefined.
  */
 import { describe, expect, test, vi, afterEach } from "vitest";
-import { render, fireEvent, cleanup } from "@testing-library/preact";
+import { render, fireEvent, cleanup } from "@testing-library/react";
 import { onColorFor } from "@sosb/renderer";
 
 import { ColorPicker } from "../src/color-picker.js";

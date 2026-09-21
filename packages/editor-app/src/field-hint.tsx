@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * FieldHint — advisory helper text rendered beneath a form field.
  *
@@ -12,7 +13,7 @@
  * Renders nothing when there is no hint, so callers can drop it into
  * every field's markup unconditionally.
  */
-import type { JSX } from "preact";
+import type { JSX } from "react";
 
 export interface FieldHintProps {
   /** Advisory text; when `undefined`, nothing renders. */
@@ -22,7 +23,7 @@ export interface FieldHintProps {
 export function FieldHint(props: FieldHintProps): JSX.Element | null {
   if (props.hint === undefined) return null;
   return (
-    <p class="field-hint" data-testid="field-hint">
+    <p className="field-hint" data-testid="field-hint">
       {props.hint}
     </p>
   );

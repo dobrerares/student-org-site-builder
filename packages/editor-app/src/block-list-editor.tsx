@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * Block list editor — sortable list of a page's blocks.
  *
@@ -27,12 +28,13 @@
  * handle can drop anywhere on the destination row. The drag payload
  * carries the source index so the drop handler knows what moved.
  */
-import type { JSX } from "preact";
-import { useState } from "preact/hooks";
+import type { JSX } from "react";
+import { useState } from "react";
 import type { Site } from "@sosb/schema";
 
 import { buildBlockCatalog, type BlockCatalogEntry } from "./block-catalog.js";
 import { IconArrowDown, IconArrowUp, IconGrip, IconPlus, IconTrash } from "./icons.js";
+import type * as React from "react";
 
 const DRAG_MIME = "application/x-sosb-block-index";
 
@@ -114,7 +116,7 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
               data-block-index={index}
               data-block-type={block.type}
               data-drop-target={dropIndex === index}
-              onDragOver={(event: JSX.TargetedDragEvent<HTMLLIElement>): void => {
+              onDragOver={(event: React.DragEvent<HTMLLIElement>): void => {
                 // We allow dropping if the dataTransfer carries our payload.
                 // Browsers expose `types` (a `DOMStringList`); some test
                 // mocks don't, so we additionally tolerate missing `types`.
@@ -148,7 +150,7 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
                   if (dropIndex !== index) setDropIndex(index);
                 }
               }}
-              onDrop={(event: JSX.TargetedDragEvent<HTMLLIElement>): void => {
+              onDrop={(event: React.DragEvent<HTMLLIElement>): void => {
                 setDropIndex(null);
                 if (event.dataTransfer === null) return;
                 const raw = event.dataTransfer.getData(DRAG_MIME);
@@ -166,7 +168,7 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
                 draggable={true}
                 role="button"
                 tabIndex={0}
-                onDragStart={(event: JSX.TargetedDragEvent<HTMLSpanElement>): void => {
+                onDragStart={(event: React.DragEvent<HTMLSpanElement>): void => {
                   if (event.dataTransfer === null) return;
                   event.dataTransfer.effectAllowed = "move";
                   event.dataTransfer.setData(DRAG_MIME, String(index));

@@ -7,8 +7,8 @@
  * a discriminated tuple of step ids + per-step data, with `next` /
  * `back` / `jumpTo` / `patch` / `reset` as the public transitions.
  *
- * The module has zero framework dependencies — no Preact, no DOM. The
- * Preact shell (`wizard.tsx`) renders one step component per `state.step`.
+ * The module has zero framework dependencies — no React, no DOM. The
+ * React shell (`wizard.tsx`) renders one step component per `state.step`.
  *
  * Tracking issue: #33. ADR 0007 records the design.
  */

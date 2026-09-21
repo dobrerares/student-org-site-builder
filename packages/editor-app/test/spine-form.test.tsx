@@ -1,6 +1,7 @@
+/** @jsxImportSource react */
 // @vitest-environment jsdom
 import { afterEach, describe, expect, test } from "vitest";
-import { render, cleanup, fireEvent } from "@testing-library/preact";
+import { render, cleanup, fireEvent } from "@testing-library/react";
 import type { Site } from "@sosb/schema";
 import { SiteSchema } from "@sosb/schema";
 

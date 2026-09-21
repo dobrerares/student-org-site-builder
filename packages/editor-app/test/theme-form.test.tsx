@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 // @vitest-environment jsdom
 /**
  * Tests for the ThemeForm component — the form behind the theme
@@ -10,7 +11,7 @@
  * token slot — the only entry points are the structural pickers.
  */
 import { afterEach, describe, expect, test } from "vitest";
-import { cleanup, fireEvent, render } from "@testing-library/preact";
+import { cleanup, fireEvent, render } from "@testing-library/react";
 import type { Site } from "@sosb/schema";
 
 import { ThemeForm } from "../src/theme-form.js";

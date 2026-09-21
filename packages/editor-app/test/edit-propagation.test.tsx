@@ -1,6 +1,7 @@
+/** @jsxImportSource react */
 // @vitest-environment jsdom
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { render, cleanup, fireEvent } from "@testing-library/preact";
+import { render, cleanup, fireEvent } from "@testing-library/react";
 import type { Site } from "@sosb/schema";
 
 import minimal from "./fixtures/minimal-site.json" with { type: "json" };

@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * Pages list panel — the editor's multi-page management UI.
  *
@@ -26,13 +27,14 @@
  *   - The component never deletes the last page in the site (a site without
  *     pages is invalid per the schema).
  */
-import type { JSX } from "preact";
-import { useState } from "preact/hooks";
+import type { JSX } from "react";
+import { useState } from "react";
 import type { Page, Site } from "@sosb/schema";
 import { checkSlug } from "@sosb/schema";
 import { nativeLanguageName } from "@sosb/renderer";
 import { missingTranslationLanguages } from "./pages-ops.js";
 import { IconArrowDown, IconArrowUp, IconCopy, IconPlus, IconTrash } from "./icons.js";
+import type * as React from "react";
 
 export interface PagesListProps {
   readonly site: Site;
@@ -278,7 +280,7 @@ export function PagesList(props: PagesListProps): JSX.Element {
             type="text"
             data-testid="pages-list-add-slug"
             value={newSlug}
-            onInput={(event: JSX.TargetedEvent<HTMLInputElement>) => {
+            onInput={(event: React.FormEvent<HTMLInputElement>) => {
               setNewSlug(event.currentTarget.value);
               if (addError !== null) setAddError(null);
             }}

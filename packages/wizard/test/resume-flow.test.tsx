@@ -1,8 +1,9 @@
+/** @jsxImportSource react */
 // @vitest-environment jsdom
 import { describe, expect, test, afterEach } from "vitest";
-import { render, fireEvent, cleanup } from "@testing-library/preact";
-import { useEffect, useState } from "preact/hooks";
-import type { JSX } from "preact";
+import { render, fireEvent, cleanup } from "@testing-library/react";
+import { useEffect, useState } from "react";
+import type { JSX } from "react";
 
 import { MemoryDriver } from "@sosb/vfs";
 import { validate } from "@sosb/schema";

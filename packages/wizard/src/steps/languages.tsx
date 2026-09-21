@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * Step 5 — Languages. Single or bilingual; the secondary language is
  * picked when the user switches to bilingual mode.
@@ -6,7 +7,7 @@
  * keeps that decision pliant by surfacing both as user choices instead
  * of hard-coding RO.
  */
-import type { JSX } from "preact";
+import type { JSX } from "react";
 
 import type { LanguagesData, LanguagesMode } from "../state-machine.js";
 

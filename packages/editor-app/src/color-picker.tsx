@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * ColorPicker — structural form override for `theme.tokens.color*`
  * (ADR 0043). Wraps the browser's native `<input type="color">` and
@@ -36,9 +37,10 @@
  * rather than guessing the theme's default hex. `onColorFor` returns
  * `#ffffff` for unparseable input, so the chip degrades gracefully.
  */
-import type { JSX } from "preact";
-import { useId } from "preact/hooks";
+import type { JSX } from "react";
+import { useId } from "react";
 import { onColorFor } from "@sosb/renderer";
+import type * as React from "react";
 
 export interface ColorPickerProps {
   readonly value: string | undefined;
@@ -65,7 +67,7 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
   const hasValue = props.value !== undefined;
   const swatchValue = hasValue ? props.value! : FALLBACK_HEX;
 
-  const handleInput = (event: JSX.TargetedEvent<HTMLInputElement>): void => {
+  const handleInput = (event: React.FormEvent<HTMLInputElement>): void => {
     props.onChange(event.currentTarget.value);
   };
 
@@ -76,11 +78,11 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
   return (
     <div data-testid="color-picker" data-has-value={hasValue}>
       {props.label !== undefined ? (
-        <label data-color-picker-label for={inputId}>
+        <label data-color-picker-label htmlFor={inputId}>
           {props.label}
         </label>
       ) : null}
-      {props.hint !== undefined ? <p class="field-hint">{props.hint}</p> : null}
+      {props.hint !== undefined ? <p className="field-hint">{props.hint}</p> : null}
       <div data-color-picker-row>
         <span data-color-swatch style={hasValue ? { background: props.value! } : undefined}>
           <input
@@ -96,7 +98,7 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
           hasValue ? (
             <span
               data-testid="color-picker-on-color"
-              class="color-picker__on-color"
+              className="color-picker__on-color"
               style={{ background: props.value!, color: onColorFor(props.value!) }}
               title="Readable text color the renderer will use on this color"
             >
@@ -105,7 +107,7 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
           ) : (
             <span
               data-testid="color-picker-on-color-default"
-              class="color-picker__on-color color-picker__on-color--default"
+              className="color-picker__on-color color-picker__on-color--default"
             >
               Aa
             </span>

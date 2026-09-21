@@ -1,5 +1,6 @@
+/** @jsxImportSource react */
 /**
- * EditorApp — the top-level Preact shell.
+ * EditorApp — the top-level React shell.
  *
  * Layout responsibilities:
  *
@@ -57,8 +58,8 @@
  * looks at `window.innerWidth` inside its own effect, which keeps it
  * trivially renderable in a vitest jsdom environment AND in SSR.
  */
-import type { JSX } from "preact";
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import type { JSX } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   AssetRefLike,
   BlockEnvelope,
@@ -238,7 +239,7 @@ function writeTipDismissed(): void {
 type SaveStatus = "localOnly" | "saving" | "saved" | "error";
 
 export function EditorApp(props: EditorAppProps): JSX.Element {
-  const translatorRef = useRef<Translator>();
+  const translatorRef = useRef<Translator | undefined>(undefined);
   if (translatorRef.current === undefined) {
     translatorRef.current =
       props.translator ??
@@ -260,7 +261,7 @@ export function EditorApp(props: EditorAppProps): JSX.Element {
 function EditorAppInner(props: EditorAppProps): JSX.Element {
   const t = useTranslator();
 
-  const stateRef = useRef<EditorState>();
+  const stateRef = useRef<EditorState | undefined>(undefined);
   if (stateRef.current === undefined) {
     stateRef.current =
       props.autosaveVfs === undefined
@@ -274,7 +275,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   // change snapshot. Undo/redo set the editor state back to that snapshot.
   // The history store is created lazily so the initial snapshot lines up
   // with the editor's first `getSnapshot()`.
-  const historyRef = useRef<HistoryStore<Site>>();
+  const historyRef = useRef<HistoryStore<Site> | undefined>(undefined);
   if (historyRef.current === undefined) {
     historyRef.current = createHistoryStore<Site>({
       initial: state.getSnapshot(),
@@ -585,7 +586,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   // in a later round; today's MemoryDriver pairs with the ephemeral SPA
   // session and the round-trip zip export path already handles
   // persistence-by-zip.
-  const assetVfsRef = useRef<Vfs>();
+  const assetVfsRef = useRef<Vfs | undefined>(undefined);
   if (assetVfsRef.current === undefined) {
     assetVfsRef.current = props.initialAssetVfs ?? new MemoryDriver();
   }
@@ -615,7 +616,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   // The same cache backs picker thumbnails and the live preview iframe:
   // pickers resolve by AssetRef hash, while the preview resolves canonical
   // `assets/...` paths by extracting the same content hash.
-  const displayUrlCacheRef = useRef<Map<string, string>>();
+  const displayUrlCacheRef = useRef<Map<string, string> | undefined>(undefined);
   if (displayUrlCacheRef.current === undefined) {
     displayUrlCacheRef.current = new Map();
   }
@@ -1255,7 +1256,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
           <iframe
             ref={iframeRef}
             title={t("pane.preview.label")}
-            srcdoc={previewSrcdoc}
+            srcDoc={previewSrcdoc}
             sandbox="allow-scripts allow-same-origin"
           />
         </div>

@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * Theme picker — the canonical structural form override that replaces
  * what would otherwise be a raw `<input>` for `theme.id` (ADR 0043).
@@ -24,7 +25,7 @@
  * `<div role="radiogroup">` is kept for layout + a labelled wrapper
  * (the `aria-label="Theme"` gives assistive tech a group label).
  */
-import type { JSX } from "preact";
+import type { JSX } from "react";
 
 import { buildThemeCatalog } from "./theme-catalog.js";
 

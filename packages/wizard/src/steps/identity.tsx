@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * Step 2 — Identity. Theme pick (logo upload + token customisation are
  * deferred to the editor; the wizard stays narrow per PRD).
@@ -11,7 +12,7 @@
  * catalog returns entries pre-sorted by id; we don't impose a separate
  * order here.
  */
-import type { JSX } from "preact";
+import type { JSX } from "react";
 
 import { buildThemeCatalog } from "@sosb/themes";
 

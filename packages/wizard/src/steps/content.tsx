@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * Step 4 — Content. Per-section initial content, or skip entirely.
  *
@@ -6,7 +7,7 @@
  * and let `buildSiteFromWizard` derive defaults from `basics.name` and
  * `basics.tagline`.
  */
-import type { JSX } from "preact";
+import type { JSX } from "react";
 
 import type { ContentData } from "../state-machine.js";
 

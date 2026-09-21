@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * Font picker — structural form override for `theme.tokens.fontHeadline`
  * and `theme.tokens.fontBody` (ADR 0043).
@@ -24,10 +25,11 @@
  * renders a raw `<input type="text">` — the picker is the only way to
  * change the font slot from the editor.
  */
-import type { JSX } from "preact";
-import { useId } from "preact/hooks";
+import type { JSX } from "react";
+import { useId } from "react";
 
 import { buildThemeCatalog } from "./theme-catalog.js";
+import type * as React from "react";
 
 export interface FontPickerProps {
   readonly themeId: string;
@@ -52,7 +54,7 @@ export function FontPicker(props: FontPickerProps): JSX.Element {
   const trimmed = props.value ?? "";
   const isCustom = trimmed !== "" && !catalogFonts.includes(trimmed);
 
-  const handleChange = (event: JSX.TargetedEvent<HTMLSelectElement>): void => {
+  const handleChange = (event: React.FormEvent<HTMLSelectElement>): void => {
     const next = event.currentTarget.value;
     props.onChange(next === "" ? undefined : next);
   };
@@ -60,11 +62,11 @@ export function FontPicker(props: FontPickerProps): JSX.Element {
   return (
     <div data-testid="font-picker" data-kind={props.kind} data-picker-field>
       {props.label !== undefined ? (
-        <label data-picker-field-label for={selectId}>
+        <label data-picker-field-label htmlFor={selectId}>
           {props.label}
         </label>
       ) : null}
-      {props.hint !== undefined ? <p class="field-hint">{props.hint}</p> : null}
+      {props.hint !== undefined ? <p className="field-hint">{props.hint}</p> : null}
       <select
         id={selectId}
         value={trimmed}

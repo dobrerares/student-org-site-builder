@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * Browser-side entry for the wizard e2e specs.
  *
@@ -6,7 +7,9 @@
  * `window.__sosbWizard` so the test can read the captured Site after
  * the user completes the flow.
  */
-import { render } from "preact";
+import { createRoot } from "react-dom/client";
+import { flushSync } from "react-dom";
+import "@sosb/ui/styles.css";
 import type { Site } from "@sosb/schema";
 
 import { Wizard } from "../packages/wizard/src/index.js";
@@ -33,21 +36,25 @@ const bridge: WizardBridge = {
   completed: null,
   cancelled: false,
   mount(opts, container) {
-    render(
-      <Wizard
-        initial={opts.initial}
-        onProgress={(state) => {
-          bridge.lastProgress = state;
-        }}
-        onComplete={(site) => {
-          bridge.completed = site;
-        }}
-        onCancel={() => {
-          bridge.cancelled = true;
-        }}
-      />,
-      container,
-    );
+    const root = createRoot(container);
+    // `flushSync` so the spec can query the DOM straight after `mount()`
+    // returns — `createRoot().render()` is otherwise scheduled.
+    flushSync(() => {
+      root.render(
+        <Wizard
+          initial={opts.initial}
+          onProgress={(state) => {
+            bridge.lastProgress = state;
+          }}
+          onComplete={(site) => {
+            bridge.completed = site;
+          }}
+          onCancel={() => {
+            bridge.cancelled = true;
+          }}
+        />,
+      );
+    });
   },
 };
 

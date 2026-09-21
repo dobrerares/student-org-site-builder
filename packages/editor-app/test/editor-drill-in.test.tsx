@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 // @vitest-environment jsdom
 /**
  * Tests for the editor pane's drill-in inspector pattern (ADR 0042).
@@ -15,7 +16,8 @@
  * drills out, switching pages while drilled into a block drills out.
  */
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import { cleanup, fireEvent, render } from "@testing-library/preact";
+import { cleanup, fireEvent, render } from "@testing-library/react";
+import { act } from "react";
 import type { BlockEnvelope, Site } from "@sosb/schema";
 import { encodePreviewMessage } from "@sosb/preview-bridge";
 
@@ -384,12 +386,16 @@ describe("EditorApp drill-in inspector", () => {
     ).toBe("acasa");
     await Promise.resolve();
 
-    window.dispatchEvent(
-      new MessageEvent("message", {
-        data: encodePreviewMessage({ type: "navigate", path: "/despre/" }),
-      }),
-    );
-    await Promise.resolve();
+    // The navigate message arrives outside React's event system, so the
+    // resulting state update needs an explicit `act` flush.
+    await act(async () => {
+      window.dispatchEvent(
+        new MessageEvent("message", {
+          data: encodePreviewMessage({ type: "navigate", path: "/despre/" }),
+        }),
+      );
+      await Promise.resolve();
+    });
 
     expect(
       container.querySelector('[data-testid="block-list"]')?.getAttribute("data-page-slug"),

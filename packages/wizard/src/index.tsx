@@ -1,12 +1,13 @@
+/** @jsxImportSource react */
 /**
- * `@sosb/wizard` — 6-step state machine + Preact UI for guided
+ * `@sosb/wizard` — 6-step state machine + React UI for guided
  * onboarding.
  *
  * Tracking issue: #33. ADR 0007 records the design.
  *
  * Public surface (v1):
  *
- *   - `<Wizard initial onProgress onComplete onCancel />` — the Preact
+ *   - `<Wizard initial onProgress onComplete onCancel />` — the React
  *     shell. The host wires `onProgress` to `saveWizardProgress` for
  *     resume-across-reload, `onComplete` to its own "open in editor"
  *     flow, and `onCancel` to the welcome-screen restore.

@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * Pre-export confirmation dialog.
  *
@@ -19,11 +20,12 @@
  * branch is handled by the caller (the editor shell) which simply calls
  * `onExport` directly.
  */
-import type { JSX } from "preact";
-import { useState } from "preact/hooks";
+import type { JSX } from "react";
+import { useState } from "react";
 import type { ValidationIssue, ValidationResult } from "@sosb/schema";
 import { issuePathLabel } from "./field-labels.js";
 import { pathToDotted } from "./issue-navigate.js";
+import type * as React from "react";
 
 const CONFIRM_PHRASE = "DOWNLOAD";
 
@@ -49,7 +51,7 @@ export function ExportConfirmDialog({
     <div
       data-testid="dialog-backdrop"
       data-dialog-backdrop
-      onClick={(event: JSX.TargetedMouseEvent<HTMLDivElement>) => {
+      onClick={(event: React.MouseEvent<HTMLDivElement>) => {
         if (event.target === event.currentTarget) onCancel();
       }}
     >
@@ -60,7 +62,7 @@ export function ExportConfirmDialog({
         aria-describedby={descId}
         data-testid="export-confirm-dialog"
         data-tone={hasErrors ? "error" : "warning"}
-        onKeyDown={(event: JSX.TargetedKeyboardEvent<HTMLDivElement>) => {
+        onKeyDown={(event: React.KeyboardEvent<HTMLDivElement>) => {
           if (event.key === "Escape") {
             event.stopPropagation();
             onCancel();
@@ -90,11 +92,11 @@ export function ExportConfirmDialog({
               type="text"
               data-testid="export-confirm-input"
               value={phrase}
-              onInput={(event: JSX.TargetedEvent<HTMLInputElement>) =>
+              onInput={(event: React.FormEvent<HTMLInputElement>) =>
                 setPhrase(event.currentTarget.value)
               }
               autoComplete="off"
-              spellcheck={false}
+              spellCheck={false}
             />
           </label>
         ) : null}

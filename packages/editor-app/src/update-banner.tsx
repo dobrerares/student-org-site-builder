@@ -1,5 +1,6 @@
+/** @jsxImportSource react */
 /**
- * UpdateBanner — Preact component that surfaces auto-update lifecycle
+ * UpdateBanner — React component that surfaces auto-update lifecycle
  * state (`updateAvailable`, `updateDownloaded`, `updateError`) as a
  * top-of-window banner.
  *
@@ -22,8 +23,8 @@
  * component renders `null`.
  */
 
-import { useEffect, useState } from "preact/hooks";
-import type { JSX } from "preact";
+import { useEffect, useState } from "react";
+import type { JSX } from "react";
 
 export interface UpdateInfo {
   readonly version: string;

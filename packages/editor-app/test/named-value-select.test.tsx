@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 // @vitest-environment jsdom
 /**
  * Tests for the NamedValueSelect component — the generic structural
@@ -7,7 +8,7 @@
  * pattern shared with FontPicker (T14).
  */
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { cleanup, fireEvent, render } from "@testing-library/preact";
+import { cleanup, fireEvent, render } from "@testing-library/react";
 
 import { NamedValueSelect } from "../src/named-value-select.js";
 
