@@ -13,6 +13,56 @@ packages. It is the glossary; architectural decisions live in
 
 ### The data model
 
+**Article** (planned):
+Reusable content with its own public URL, which can be presented or linked
+from multiple Blocks independently of ordinary Pages. Its main content
+is an ordered collection of Blocks.
+_Avoid_: post, embedded page.
+
+**Article translation** (planned):
+A separate Article linked to its counterpart in another language, with
+its own publication state.
+_Avoid_: shared-state translation.
+
+**Article tag** (planned):
+An internal, Site-wide label shared across languages, used by the author to
+select Articles for automatically filtered lists in Blocks. Renaming a tag
+preserves its associations; tags are not public navigation or browsing categories.
+_Avoid_: public category, tag page.
+
+**Article-list block** (planned):
+A Block presenting linked Article cards, selected either automatically
+by Article tag filters ("By tag") or explicitly by the author ("Select articles").
+_Avoid_: tag section, tag archive.
+
+**Article placement** (planned):
+An explicitly chosen linked card for an Article on a Page or another Article. The card
+reflects updates to the referenced Article rather than holding a separate copy.
+_Avoid_: embedded article, article copy.
+
+**Article publication state** (planned):
+An Article's status as Draft, Published, or Unlisted. Changes to this
+state take effect on the live Site after redeployment.
+
+**Article publication date** (planned):
+An author-editable date describing when an Article was published and
+ordering "By tag" lists newest first; it does not schedule publication.
+_Avoid_: release schedule.
+
+**Draft article** (planned):
+An Article retained with its files in the editable project archive, but
+excluded from the exported public Site along with files used only by Draft articles.
+_Avoid_: unlisted article.
+
+**Published article** (planned):
+An Article included in the exported public Site and eligible for automatic discovery.
+_Avoid_: unlisted article.
+
+**Unlisted article** (planned):
+An Article accessible by its public URL but excluded from automatic
+discovery; an author may still explicitly place or link it.
+_Avoid_: draft, private article.
+
 **Site**:
 The top-level user document. Holds organisation identity, theme choice,
 declared languages, and an ordered list of **Pages**. Schema-defined,
@@ -33,6 +83,17 @@ component in `@sosb/renderer`, and one default-data factory in
 `@sosb/editor-app`. New block types land by adding all three.
 _Avoid_: section, component, widget.
 
+**Custom Block** (planned):
+A developer-authored Block type with its own editable fields, supplied
+through an importable builder-specific package. Its content remains
+editable across Theme switches.
+_Avoid_: component, widget, custom section.
+
+**Rich-text Block**:
+A Block of formatted prose. Its planned toolbar-based editing experience
+is shared by Pages and Articles; other Block types retain their dedicated controls.
+_Avoid_: Article editor (when referring only to this Block).
+
 **Block envelope**:
 The outer shape every block shares: `{ id, type, version, data }`. The
 envelope is identical for all block types; the inside (`data`) is the
@@ -46,11 +107,21 @@ document says "a block's data", it means the envelope's `data` field.
 _Avoid_: block content, block fields, block payload.
 
 **Theme**:
-A registered visual treatment identified by a string id (`stub`, `minimal`,
-`modern`, `editorial`, `civic`, `academic`). A theme contributes a CSS
-string and a token table; the renderer composes both into the final
-output. Themes never own user content — only the visual treatment.
+A named visual treatment for a Site, covering its appearance and layout.
+Themes own presentation, while editable content belongs to the Site and
+its Blocks.
 _Avoid_: skin, template, layout.
+
+**Custom Theme** (planned):
+A developer-authored Theme that controls Site styling, page layouts,
+and Block markup. It can be imported, exported, and shared independently
+of Site content.
+_Avoid_: template, skin, custom Site.
+
+**Block design variant** (planned):
+A named presentation of a Block type offered by a Theme and selected by
+the author, such as a centred hero or an image-and-text hero.
+_Avoid_: Block type, Template.
 
 **Token**:
 A CSS custom property exposed on `:root` (`--color-primary`,
@@ -60,11 +131,11 @@ user-set overrides in `site.theme.tokens`. Later layers win.
 _Avoid_: variable, custom property (use these only when speaking about
 the CSS mechanism, not the content).
 
-**Template** (curated):
-A complete pre-built Site shipped from `@sosb/themes/templates/` that
-acts as a real-content seed for new editor sessions. The canonical one is
-the HISTORIPOL Academic demo. Templates are _not_ themes — a template
-chooses one theme and wires content into it.
+**Template**:
+A complete pre-built, editable Site with a chosen Theme, Pages, and sample
+content; the canonical curated example is the HISTORIPOL Academic demo.
+Developer-shared Templates (planned) also include their Theme and required
+Custom Blocks, while the Theme remains independently reusable.
 _Avoid_: starter, preset, sample.
 
 ### The editor
