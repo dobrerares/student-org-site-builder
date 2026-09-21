@@ -18,6 +18,8 @@ export default tseslint.config(
       "**/.claude/**",
       // Codegen output (scripts/gen-fonts.mjs). Large, machine-written, stable.
       "**/*.generated.ts",
+      // Throwaway design prototypes; deliberately unpolished and not shipped.
+      "prototypes/**",
     ],
   },
   eslint.configs.recommended,

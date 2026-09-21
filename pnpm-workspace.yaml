@@ -1,2 +1,6 @@
 packages:
   - "packages/*"
+  # Throwaway prototypes (see prototypes/*/README.md). Never imported by
+  # production packages; they define no `typecheck`/`lint`/`build` scripts, so
+  # the root recursive scripts skip them.
+  - "prototypes/*"
