@@ -182,16 +182,54 @@ export interface EditorAppProps {
 type TabName = "editor" | "preview";
 type PreviewViewport = "fit" | "desktop" | "tablet" | "phone";
 
+/**
+ * The device presets the preview toolbar offers.
+ *
+ * `width`/`height` are CSS pixels of the *simulated* viewport — the layout
+ * size the previewed page is told it has. They are not the size the frame
+ * occupies on screen: the frame is scaled down to fit the preview pane (see
+ * `previewScale`). Before that scaling existed the 1440px desktop frame simply
+ * overflowed the pane on any normal laptop, so the "Desktop" preset showed a
+ * horizontally-clipped page rather than a desktop viewport.
+ *
+ * `fit` has no fixed size — the frame fills the pane and the page lays out at
+ * whatever width that is.
+ */
 const PREVIEW_VIEWPORT_OPTIONS: readonly {
   readonly id: PreviewViewport;
   readonly label: string;
-  readonly size: string;
+  readonly width: number | null;
+  readonly height: number | null;
 }[] = [
-  { id: "fit", label: "Fit", size: "Auto" },
-  { id: "desktop", label: "Desktop", size: "1440 x 900" },
-  { id: "tablet", label: "Tablet", size: "768 x 1024" },
-  { id: "phone", label: "Phone", size: "390 x 844" },
+  { id: "fit", label: "Fit", width: null, height: null },
+  { id: "desktop", label: "Desktop", width: 1440, height: 900 },
+  { id: "tablet", label: "Tablet", width: 768, height: 1024 },
+  { id: "phone", label: "Phone", width: 390, height: 844 },
 ];
+
+/** Human-readable size for a preset, e.g. `1440 x 900` or `Auto`. */
+export function previewViewportSizeLabel(option: {
+  readonly width: number | null;
+  readonly height: number | null;
+}): string {
+  if (option.width === null || option.height === null) return "Auto";
+  return `${option.width} x ${option.height}`;
+}
+
+/**
+ * Scale that fits a `width x height` simulated viewport inside the available
+ * pane, never enlarging past 1:1. Returns 1 when the pane has not been
+ * measured yet (jsdom, first paint) so the frame renders at its true size
+ * rather than collapsing to zero.
+ */
+export function fitPreviewScale(
+  available: { readonly width: number; readonly height: number },
+  viewport: { readonly width: number; readonly height: number },
+): number {
+  if (available.width <= 0 || available.height <= 0) return 1;
+  if (viewport.width <= 0 || viewport.height <= 0) return 1;
+  return Math.min(1, available.width / viewport.width, available.height / viewport.height);
+}
 
 /**
  * Discriminated drill state for the editor pane.
@@ -491,6 +529,63 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   const [panelOpen, setPanelOpen] = useState<boolean>(false);
   const [exportDialog, setExportDialog] = useState<ValidationResult | null>(null);
 
+
+  /**
+   * Device-simulation scaling.
+   *
+   * A preset frame is laid out at its true viewport size (1440x900 and
+   * friends) and then transform-scaled to fit the preview pane. Scaling the
+   * frame rather than shrinking it is what makes the preset honest: the page
+   * inside still believes it has 1440 CSS pixels, so media queries, clamp()
+   * type scales and grid breakpoints all resolve the way they will for a real
+   * desktop visitor.
+   */
+  const previewCanvasRef = useRef<HTMLDivElement | null>(null);
+  const [previewScale, setPreviewScale] = useState<number>(1);
+  const previewViewportOption = PREVIEW_VIEWPORT_OPTIONS.find((o) => o.id === previewViewport);
+  const previewViewportWidth = previewViewportOption?.width ?? null;
+  const previewViewportHeight = previewViewportOption?.height ?? null;
+
+  useEffect(() => {
+    if (previewViewportWidth === null || previewViewportHeight === null) {
+      setPreviewScale(1);
+      return;
+    }
+    const canvas = previewCanvasRef.current;
+    if (canvas === null) return;
+
+    function measure(): void {
+      const node = previewCanvasRef.current;
+      if (node === null) return;
+      const style =
+        typeof getComputedStyle === "function" ? getComputedStyle(node) : undefined;
+      const padX =
+        (Number.parseFloat(style?.paddingLeft ?? "0") || 0) +
+        (Number.parseFloat(style?.paddingRight ?? "0") || 0);
+      const padY =
+        (Number.parseFloat(style?.paddingTop ?? "0") || 0) +
+        (Number.parseFloat(style?.paddingBottom ?? "0") || 0);
+      setPreviewScale(
+        fitPreviewScale(
+          { width: node.clientWidth - padX, height: node.clientHeight - padY },
+          { width: previewViewportWidth!, height: previewViewportHeight! },
+        ),
+      );
+    }
+
+    measure();
+    if (typeof ResizeObserver !== "function") {
+      window.addEventListener("resize", measure);
+      return () => {
+        window.removeEventListener("resize", measure);
+      };
+    }
+    const observer = new ResizeObserver(measure);
+    observer.observe(canvas);
+    return () => {
+      observer.disconnect();
+    };
+  }, [previewViewportWidth, previewViewportHeight]);
 
   // Root ref so issue-navigation queries land in the editor's own DOM
   // tree (and not whatever the host page might have rendered).
@@ -1316,17 +1411,47 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
               data-viewport={option.id}
               data-active={previewViewport === option.id}
               aria-pressed={previewViewport === option.id}
-              title={`${option.label} preview (${option.size})`}
+              title={`${option.label} preview (${previewViewportSizeLabel(option)})`}
               onClick={() => setPreviewViewport(option.id)}
             >
               <span data-testid="viewport-preview-label">{option.label}</span>
-              <span data-testid="viewport-preview-size">{option.size}</span>
+              <span data-testid="viewport-preview-size">
+                {previewViewportSizeLabel(option)}
+              </span>
             </Button>
           ))}
         </div>
       </div>
-      <div data-testid="preview-canvas">
-        <div data-testid="preview-frame-shell" data-preview-viewport={previewViewport}>
+      <div data-testid="preview-canvas" ref={previewCanvasRef}>
+        {/* The sizer occupies the frame's *scaled* footprint, so the canvas
+         * scrolls and centres around what is actually visible rather than
+         * around the frame's full unscaled size. */}
+        <div
+          data-testid="preview-frame-sizer"
+          data-preview-viewport={previewViewport}
+          style={
+            previewViewportWidth === null || previewViewportHeight === null
+              ? undefined
+              : {
+                  width: `${previewViewportWidth * previewScale}px`,
+                  height: `${previewViewportHeight * previewScale}px`,
+                }
+          }
+        >
+        <div
+          data-testid="preview-frame-shell"
+          data-preview-viewport={previewViewport}
+          data-preview-scaled={previewScale < 1 ? "true" : "false"}
+          style={
+            previewViewportWidth === null || previewViewportHeight === null
+              ? undefined
+              : {
+                  width: `${previewViewportWidth}px`,
+                  height: `${previewViewportHeight}px`,
+                  transform: `scale(${previewScale})`,
+                }
+          }
+        >
           {/* Scripts power renderer-owned preview interactions; same-origin keeps blob uploads visible. */}
           <iframe
             // Remounting on the reload key gives the new page/theme/language a
@@ -1341,6 +1466,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
             // replacing the preview document.
             sandbox="allow-scripts allow-same-origin allow-popups"
           />
+        </div>
         </div>
       </div>
     </section>
