@@ -125,6 +125,11 @@ const BLOCK_METADATA: Record<
     label: "Text section",
     description: "Add longer text with headings, lists, and links.",
   },
+  articleList: {
+    category: "optional",
+    label: "Article list",
+    description: "Show cards linking to articles, chosen by tag or picked one by one.",
+  },
   siteFooter: {
     category: "optional",
     label: "Site footer",

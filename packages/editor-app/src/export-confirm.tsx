@@ -26,6 +26,7 @@ import type { JSX } from "react";
 import type * as React from "react";
 import { useState } from "react";
 import type { ValidationIssue, ValidationResult } from "@sosb/schema";
+import { hasBlockingIssues } from "@sosb/schema";
 import { issuePathLabel } from "./field-labels.js";
 import { pathToDotted } from "./issue-navigate.js";
 import { EditorDialog } from "./editor-dialog.js";
@@ -45,8 +46,15 @@ export function ExportConfirmDialog({
   onCancel,
 }: ExportConfirmDialogProps): JSX.Element {
   const hasErrors = result.errors.length > 0;
+  // ADR 0016's rule is "blocking-on-confirmation, never hard-block", and it
+  // still governs every ordinary error. ADR 0048 carves out one narrow
+  // exception: public content that cannot be produced correctly at all — today,
+  // an Article list pointing at a Draft or deleted Article. There is no typed
+  // phrase for those, because there is no correct file to write. Saving the
+  // editable project archive is deliberately unaffected.
+  const blocked = hasBlockingIssues(result);
   const [phrase, setPhrase] = useState<string>("");
-  const confirmEnabled = hasErrors ? phrase === CONFIRM_PHRASE : true;
+  const confirmEnabled = blocked ? false : hasErrors ? phrase === CONFIRM_PHRASE : true;
 
   const headingId = "export-confirm-heading";
   const descId = "export-confirm-description";
@@ -62,12 +70,18 @@ export function ExportConfirmDialog({
     >
       <>
         <h2 id={headingId}>
-          {hasErrors ? "Some things need fixing first" : "Download with warnings?"}
+          {blocked
+            ? "Fix these before downloading the website"
+            : hasErrors
+              ? "Some things need fixing first"
+              : "Download with warnings?"}
         </h2>
         <p id={descId}>
-          {hasErrors
-            ? `${count(result.errors.length, "problem")} and ${count(result.warnings.length, "warning")} were found. Fixing them first is best, but you can still download a copy.`
-            : `${count(result.warnings.length, "warning")} found. These won't break your site, but fixing them will make it better.`}
+          {blocked
+            ? `${count(result.errors.length, "problem")} must be fixed before the website can be built. Your project is still saved — only the website download is affected.`
+            : hasErrors
+              ? `${count(result.errors.length, "problem")} and ${count(result.warnings.length, "warning")} were found. Fixing them first is best, but you can still download a copy.`
+              : `${count(result.warnings.length, "warning")} found. These won't break your site, but fixing them will make it better.`}
         </p>
 
         {hasErrors ? <IssueList severity="error" issues={result.errors} /> : null}
@@ -75,7 +89,7 @@ export function ExportConfirmDialog({
           <IssueList severity="warning" issues={result.warnings} />
         ) : null}
 
-        {hasErrors ? (
+        {hasErrors && !blocked ? (
           <label data-testid="export-confirm-input-label">
             <span>
               To download anyway, type <strong>{CONFIRM_PHRASE}</strong> below:
@@ -101,6 +115,7 @@ export function ExportConfirmDialog({
             type="button"
             data-testid="export-confirm-button"
             disabled={!confirmEnabled}
+            data-blocked={blocked ? "true" : "false"}
             onClick={() => {
               if (confirmEnabled) onConfirm();
             }}

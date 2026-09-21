@@ -30,7 +30,7 @@
  */
 import type { JSX } from "react";
 import { useState } from "react";
-import type { Site } from "@sosb/schema";
+import type { BlockEnvelope, Site } from "@sosb/schema";
 
 import { buildBlockCatalog, type BlockCatalogEntry } from "./block-catalog.js";
 import { IconArrowDown, IconArrowUp, IconGrip, IconPlus, IconTrash } from "./icons.js";
@@ -54,11 +54,20 @@ export interface BlockListEditorProps {
    * drill-in pattern yet.
    */
   readonly onSelect?: (blockId: string) => void;
+  /**
+   * Blocks to edit, overriding the `pageSlug` lookup.
+   *
+   * Articles hold their Blocks outside `site.pages`, so they cannot be found
+   * by slug. Passing them explicitly lets the Articles workspace reuse this
+   * editor verbatim rather than growing a parallel one that would drift in
+   * drag behaviour, keyboard handling, and catalog labels.
+   */
+  readonly blocks?: readonly BlockEnvelope[] | undefined;
 }
 
 export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
   const page = props.site.pages.find((p) => p.slug === props.pageSlug);
-  const blocks = page?.blocks ?? [];
+  const blocks = props.blocks ?? page?.blocks ?? [];
   const catalog = buildBlockCatalog();
   // Index of the row currently hovered by a drag, for the drop indicator.
   const [dropIndex, setDropIndex] = useState<number | null>(null);

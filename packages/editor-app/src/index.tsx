@@ -77,3 +77,43 @@ export {
   type SosbUpdateSurface,
 } from "./sosb-update-bridge.js";
 export { EDITOR_APP_CSS } from "./editor-app-css.js";
+
+// Articles (issue #97 / #98). Exported as standalone components because the
+// navigation redesign in issue #102 will re-home them without rewriting them.
+export { ArticlesPanel } from "./articles-panel.js";
+export type { ArticlesPanelProps } from "./articles-panel.js";
+export { ArticleSettingsForm } from "./article-settings-form.js";
+export type { ApplySiteChange, ArticleSettingsFormProps } from "./article-settings-form.js";
+export { ArticleListInspector } from "./article-list-inspector.js";
+export type { ArticleListInspectorProps } from "./article-list-inspector.js";
+export { ArticleWorkspace } from "./article-workspace.js";
+export type { ArticleWorkspaceProps } from "./article-workspace.js";
+export { TagManager } from "./tag-manager.js";
+export type { TagManagerProps } from "./tag-manager.js";
+export { TagPicker } from "./tag-picker.js";
+export type { TagPickerProps } from "./tag-picker.js";
+export { InfoHint } from "./info-hint.js";
+export type { InfoHintProps } from "./info-hint.js";
+export {
+  EMPTY_ARTICLE_FILTERS,
+  addArticleTranslation,
+  createArticle,
+  createTag,
+  deleteArticle,
+  deleteTag,
+  filterArticles,
+  findTagByLabel,
+  nextArticleId,
+  nextTagId,
+  renameTag,
+  reservedSlugsFor,
+  setArticleSlug,
+  slugifyTitle,
+  tagUsage,
+  uniqueArticleSlug,
+  updateArticle,
+} from "./articles-ops.js";
+export type { ArticleFilters, ArticleRow, CreateArticleInput, TagUsage } from "./articles-ops.js";
+export { iframeSrcdocForArticle } from "./iframe-srcdoc.js";
+export { resolvePreviewTarget } from "./preview-navigation.js";
+export type { PreviewTarget } from "./preview-navigation.js";

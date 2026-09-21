@@ -17,6 +17,7 @@
  */
 import {
   ACTIVITIES_LIST_BLOCK_VERSION,
+  ARTICLE_LIST_BLOCK_VERSION,
   CONTACT_CARD_BLOCK_VERSION,
   CTA_BANNER_BLOCK_VERSION,
   CUSTOM_HTML_BLOCK_VERSION,
@@ -199,6 +200,17 @@ const DEFAULT_BUILDERS: Record<string, DefaultBuilder> = {
       markdown: "## Heading\n\nWrite your text here.",
       titleAlign: "left",
       paragraphAlign: "left",
+    }),
+  },
+  articleList: {
+    version: ARTICLE_LIST_BLOCK_VERSION,
+    // "By tag" with no tags selected is the most useful starting point: the
+    // block immediately shows every published article in the page's language,
+    // so the author sees real content rather than an empty frame.
+    data: () => ({
+      title: "Articles",
+      mode: "byTag",
+      tags: [],
     }),
   },
   siteFooter: {

@@ -99,8 +99,9 @@ import { getAtPath, setAtPath } from "./get-set-path.js";
 import { MEDIA_PICKER_RENDERERS } from "./media-picker-renderers.js";
 import { SpineForm, applyPatch } from "./spine-form.js";
 import { ThemeForm } from "./theme-form.js";
-import { iframeSrcdoc } from "./iframe-srcdoc.js";
-import { resolvePathToPageIndex } from "./preview-navigation.js";
+import { iframeSrcdoc, iframeSrcdocForArticle } from "./iframe-srcdoc.js";
+import { resolvePreviewTarget } from "./preview-navigation.js";
+import type { PreviewTarget } from "./preview-navigation.js";
 // Side-effect import: registers the editor-app stylesheet on `document.head`
 // once, before any component renders. Guarded for SSR / non-DOM tooling.
 import "./editor-app-css.js";
@@ -119,6 +120,9 @@ import {
 } from "./icons.js";
 import { addLanguageVersion, addPage, clonePage, deletePage, movePage } from "./pages-ops.js";
 import { AddBlockDialog } from "./add-block-dialog.js";
+import { ArticlesPanel } from "./articles-panel.js";
+import { ArticleWorkspace } from "./article-workspace.js";
+import { ArticleListInspector } from "./article-list-inspector.js";
 import { BlockListEditor } from "./block-list-editor.js";
 import { BlockForm } from "./block-form.js";
 import { buildBlockCatalog } from "./block-catalog.js";
@@ -268,6 +272,21 @@ type DrillMode =
   | { readonly kind: "settings" }
   | { readonly kind: "theme" }
   | { readonly kind: "page" };
+
+/**
+ * Today's date as `YYYY-MM-DD`, for seeding a new Article's publication date.
+ *
+ * The clock lives here rather than in `articles-ops` so those helpers stay pure
+ * and their tests stay date-independent. Uses local calendar parts rather than
+ * `toISOString`, which would roll an evening in Bucharest back to the previous
+ * day in UTC.
+ */
+function todayIso(): string {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}
 
 /** localStorage key remembering that the getting-started tip was dismissed. */
 const TIP_DISMISSED_KEY = "sosb.editor.tipDismissed";
@@ -490,6 +509,20 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   // on the new page, so the inspector would dangle. See the
   // `prevPageRef`-driven effect below.
   const [drillMode, setDrillMode] = useState<DrillMode>({ kind: "blocks" });
+
+  // Which half of the left pane is showing. Articles get their own destination
+  // rather than sharing the Pages list: issue #102 keeps them separate because
+  // they are a different kind of thing with a different lifecycle, and mixing
+  // them in one list makes both harder to scan. The navigation redesign will
+  // re-home this switch; the components it toggles are built to survive that.
+  const [contentKind, setContentKind] = useState<"pages" | "articles">("pages");
+  const [activeArticleId, setActiveArticleId] = useState<string | null>(null);
+  const articleIndex = (snapshot.articles ?? []).findIndex((a) => a.id === activeArticleId);
+  const activeArticle = articleIndex >= 0 ? snapshot.articles?.[articleIndex] : undefined;
+  // Drop a stale selection when the article is deleted underneath us.
+  useEffect(() => {
+    if (activeArticleId !== null && articleIndex < 0) setActiveArticleId(null);
+  }, [activeArticleId, articleIndex]);
   const prevPageIndexRef = useRef<number>(safeActivePageIndex);
   useEffect(() => {
     if (prevPageIndexRef.current === safeActivePageIndex) return;
@@ -840,13 +873,23 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
    */
   const previewHtml = useMemo(
     () =>
-      iframeSrcdoc(
-        snapshot,
-        snapshot.theme.id,
-        safeActivePageIndex,
-        displayUrlForAssetPath,
-        activeThemeBundle,
-      ),
+      // An Article preview goes through the same renderer call the export
+      // makes, so what the author sees is what ships.
+      contentKind === "articles" && articleIndex >= 0
+        ? iframeSrcdocForArticle(
+            snapshot,
+            snapshot.theme.id,
+            articleIndex,
+            displayUrlForAssetPath,
+            activeThemeBundle,
+          )
+        : iframeSrcdoc(
+            snapshot,
+            snapshot.theme.id,
+            safeActivePageIndex,
+            displayUrlForAssetPath,
+            activeThemeBundle,
+          ),
     // `displayUrlForAssetPath` reads a ref-held cache rather than state, so it
     // is deliberately not a dependency; `assetEpoch` is what actually changes
     // when that cache gains an entry.
@@ -854,7 +897,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     // `activeThemeBundle` *is* a dependency: importing or removing a Theme
     // package changes the bundle without touching the Site snapshot, and
     // without this the preview would keep rendering the previous design.
-    [snapshot, safeActivePageIndex, assetEpoch, activeThemeBundle],
+    [snapshot, safeActivePageIndex, assetEpoch, activeThemeBundle, contentKind, articleIndex],
   );
 
   /**
@@ -864,6 +907,9 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
    * or a disclosure open in a theme that styles it completely differently —
    * so these force a full `srcdoc` reload instead.
    */
+  // Moving between a Page and an Article, or between two Articles, is a
+  // different document for exactly the same reasons — so both join the key.
+  const previewingArticle = contentKind === "articles" && articleIndex >= 0;
   const previewReloadKey = [
     snapshot.theme.id,
     // An imported Theme's version, so re-importing an edited package boots a
@@ -871,8 +917,11 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     // old document's already-resolved `blob:` font URLs, which the import
     // revoked — the page would render the new CSS with no fonts.
     activeThemeBundle?.origin === "package" ? activeThemeBundle.version : "",
-    safeActivePageIndex,
-    snapshot.pages[safeActivePageIndex]?.lang ?? "",
+    previewingArticle ? "article" : "page",
+    previewingArticle ? articleIndex : safeActivePageIndex,
+    previewingArticle
+      ? ((snapshot.articles ?? [])[articleIndex]?.lang ?? "")
+      : (snapshot.pages[safeActivePageIndex]?.lang ?? ""),
   ].join("\u0000");
 
   // The document the iframe boots with. Only replaced on a reload, so the
@@ -929,9 +978,26 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
           return;
         }
         if (message.type !== "navigate") return;
-        const nextIndex = resolvePathToPageIndex(snapshot, message.path, safeActivePageIndex);
-        if (nextIndex === null || nextIndex === safeActivePageIndex) return;
-        setActivePageIndex(nextIndex);
+        // Clicking a link in the preview behaves like the public website
+        // (issue #102), including links into Articles and links a retired
+        // slug would redirect. Relative hrefs resolve against whatever is
+        // currently previewed, which may itself be an Article.
+        const from: PreviewTarget =
+          contentKind === "articles" && articleIndex >= 0
+            ? { kind: "article", index: articleIndex }
+            : { kind: "page", index: safeActivePageIndex };
+        const target = resolvePreviewTarget(snapshot, message.path, from);
+        if (target === null) return;
+        if (target.kind === "article") {
+          const article = (snapshot.articles ?? [])[target.index];
+          if (article === undefined) return;
+          setContentKind("articles");
+          setActiveArticleId(article.id);
+          return;
+        }
+        setContentKind("pages");
+        if (target.index === safeActivePageIndex && contentKind === "pages") return;
+        setActivePageIndex(target.index);
       },
     });
     function onMessage(event: MessageEvent): void {
@@ -1018,6 +1084,19 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   const [pickerOpen, setPickerOpen] = useState<boolean>(false);
 
   function onPickBlockType(type: string): void {
+    if (contentKind === "articles") {
+      if (articleIndex < 0) return;
+      const block = defaultBlockFor(type);
+      applyArticleChange((site) => {
+        const articles = (site.articles ?? []).slice();
+        const article = articles[articleIndex];
+        if (article === undefined) return site;
+        articles[articleIndex] = { ...article, blocks: [...article.blocks, block] };
+        return { ...site, articles };
+      });
+      setPickerOpen(false);
+      return;
+    }
     if (activePageSlug === "") return;
     const block = defaultBlockFor(type);
     const next = addBlockToPage(snapshot, activePageSlug, block);
@@ -1036,6 +1115,97 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     if (activePageSlug === "") return;
     const next = removeBlockFromPage(snapshot, activePageSlug, blockId);
     applySite(next);
+  }
+
+  /**
+   * Apply a pure Site transform from one of the Articles components.
+   *
+   * They are written as `Site -> Site` functions so they stay testable without
+   * the editor; this is the single place that feeds them into the undoable
+   * snapshot, so Articles editing gets undo/redo for free.
+   */
+  function applyArticleChange(mutate: (site: Site) => Site): void {
+    state.update((draft) => {
+      Object.assign(draft, mutate(draft));
+    });
+    pushHistory(state.getSnapshot());
+  }
+
+  function patchArticleBlockData(
+    blockIndex: number,
+    subpath: readonly (string | number)[],
+    value: unknown,
+  ): void {
+    if (articleIndex < 0) return;
+    state.update((draft) => {
+      const dataPath: (string | number)[] = [
+        "articles",
+        articleIndex,
+        "blocks",
+        blockIndex,
+        "data",
+      ];
+      if (subpath.length === 0) {
+        setAtPath(draft as unknown as Record<string, unknown>, dataPath, value);
+        return;
+      }
+      const blockData = getAtPath(draft, dataPath) as Record<string, unknown>;
+      const nextData = applyAltSyncPatches(
+        blockData,
+        expandAltSyncPatches(blockData, subpath, value),
+      );
+      setAtPath(draft as unknown as Record<string, unknown>, dataPath, nextData);
+    });
+    pushHistory(state.getSnapshot());
+  }
+
+  function arrayChangeArticleBlockData(
+    blockIndex: number,
+    subpath: readonly (string | number)[],
+    next: readonly unknown[],
+  ): void {
+    if (articleIndex < 0) return;
+    state.update((draft) => {
+      const dataPath: (string | number)[] = [
+        "articles",
+        articleIndex,
+        "blocks",
+        blockIndex,
+        "data",
+        ...subpath,
+      ];
+      setAtPath(draft as unknown as Record<string, unknown>, dataPath, [...next]);
+    });
+    pushHistory(state.getSnapshot());
+  }
+
+  function onMoveArticleBlock(from: number, to: number): void {
+    if (articleIndex < 0 || from === to) return;
+    applyArticleChange((site) => {
+      const articles = (site.articles ?? []).slice();
+      const article = articles[articleIndex];
+      if (article === undefined) return site;
+      const blocks = article.blocks.slice();
+      const [moved] = blocks.splice(from, 1);
+      if (moved === undefined) return site;
+      blocks.splice(to, 0, moved);
+      articles[articleIndex] = { ...article, blocks };
+      return { ...site, articles };
+    });
+  }
+
+  function onRemoveArticleBlock(blockId: string): void {
+    if (articleIndex < 0) return;
+    applyArticleChange((site) => {
+      const articles = (site.articles ?? []).slice();
+      const article = articles[articleIndex];
+      if (article === undefined) return site;
+      articles[articleIndex] = {
+        ...article,
+        blocks: article.blocks.filter((b) => b.id !== blockId),
+      };
+      return { ...site, articles };
+    });
   }
 
   function handleAddPage(slug: string): void {
@@ -1254,17 +1424,58 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     writeTipDismissed();
   }
 
+  // Minimal, usable wiring: a two-button switch above the list. Issue #102's
+  // accepted design gives Pages and Articles separate destinations in a
+  // persistent navigation; that redesign lands separately, and this switch is
+  // the smallest thing that makes the Articles components reachable today.
+  const contentSwitcher = (
+    <div data-testid="content-kind-switch" role="group" aria-label={t("articles.panel.title")}>
+      <Button
+        type="button"
+        variant={contentKind === "pages" ? "primary" : "ghost"}
+        aria-pressed={contentKind === "pages"}
+        onClick={() => setContentKind("pages")}
+        data-testid="content-kind-pages"
+      >
+        {t("articles.nav.pages")}
+      </Button>
+      <Button
+        type="button"
+        variant={contentKind === "articles" ? "primary" : "ghost"}
+        aria-pressed={contentKind === "articles"}
+        onClick={() => setContentKind("articles")}
+        data-testid="content-kind-articles"
+      >
+        {t("articles.nav.articles")}
+      </Button>
+    </div>
+  );
+
   const pagesListNode = (
-    <PagesList
-      site={snapshot}
-      activeIndex={safeActivePageIndex}
-      onSelect={setActivePageIndex}
-      onAdd={handleAddPage}
-      onClone={handleClonePage}
-      onDelete={handleDeletePage}
-      onMove={handleMovePage}
-      onAddLanguageVersion={handleAddLanguageVersion}
-    />
+    <>
+      {contentSwitcher}
+      {contentKind === "pages" ? (
+        <PagesList
+          site={snapshot}
+          activeIndex={safeActivePageIndex}
+          onSelect={setActivePageIndex}
+          onAdd={handleAddPage}
+          onClone={handleClonePage}
+          onDelete={handleDeletePage}
+          onMove={handleMovePage}
+          onAddLanguageVersion={handleAddLanguageVersion}
+        />
+      ) : (
+        <ArticlesPanel
+          site={snapshot}
+          onApply={applyArticleChange}
+          onSelect={setActiveArticleId}
+          contentLanguage={activePage?.lang ?? snapshot.defaultLanguage}
+          today={todayIso()}
+          activeArticleId={activeArticleId ?? undefined}
+        />
+      )}
+    </>
   );
 
   // Back-affordance shared by the two drilled views. Drills out to the
@@ -1297,7 +1508,27 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   // The inspector's eyebrow + title use the same catalog as the
   // BlockListEditor row that drilled in, keeping visual register aligned.
   let editorPaneBody: JSX.Element;
-  if (drillMode.kind === "page" && activePage !== undefined) {
+  if (contentKind === "articles") {
+    editorPaneBody =
+      activeArticle !== undefined && articleIndex >= 0 ? (
+        <ArticleWorkspace
+          site={snapshot}
+          articleIndex={articleIndex}
+          onApply={applyArticleChange}
+          onBack={() => setActiveArticleId(null)}
+          onPatchBlockData={patchArticleBlockData}
+          onArrayChangeBlockData={arrayChangeArticleBlockData}
+          onMoveBlock={onMoveArticleBlock}
+          onRemoveBlock={onRemoveArticleBlock}
+          onAddBlock={() => setPickerOpen(true)}
+          uploader={uploadAssetForPicker}
+          documentUploader={uploadDocumentForPicker}
+          displayUrlFor={displayUrlForAsset}
+        />
+      ) : (
+        <p data-testid="articles-no-selection">{t("articles.empty")}</p>
+      );
+  } else if (drillMode.kind === "page" && activePage !== undefined) {
     editorPaneBody = (
       <div data-testid="inspector" data-inspector-mode="page" data-page-index={safeActivePageIndex}>
         {backToBlocksButton}
@@ -1394,7 +1625,23 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
           theme={activeThemeBundle}
           onChange={(variant) => applySite(setBlockVariant(snapshot, activeBlock.id, variant))}
         />
-        {activeBlock.type === "customHTML" ? (
+        {activeBlock.type === "articleList" ? (
+          // Hand-coded rather than schema-generated: a generated form would
+          // render `articleIds` and `tags` as arrays of raw ids, which ADR 0044
+          // puts off-limits outright.
+          <ArticleListInspector
+            site={snapshot}
+            value={activeBlock.data}
+            containerLang={activePage?.lang ?? snapshot.defaultLanguage}
+            showTextFields
+            onApply={applyArticleChange}
+            onPatch={(articleListPatch) => {
+              for (const [key, value] of Object.entries(articleListPatch)) {
+                patchBlockData(safeActivePageIndex, activeBlockIndex, [key], value);
+              }
+            }}
+          />
+        ) : activeBlock.type === "customHTML" ? (
           <CustomHtmlBlockForm
             block={activeBlock as CustomHtmlBlock}
             onChange={(nextBlock) => {
