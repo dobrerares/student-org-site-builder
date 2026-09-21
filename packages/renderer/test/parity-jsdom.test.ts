@@ -54,7 +54,6 @@ function underJsdom<T>(fn: () => T): T {
     for (const key of ["window", "document"] as const) {
       const value = previous[key];
       if (value === undefined) {
-        // @ts-expect-error -- restoring deleted global
         delete globalThis[key];
       } else {
         Object.defineProperty(globalThis, key, { configurable: true, value });
