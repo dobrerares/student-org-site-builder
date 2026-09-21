@@ -68,12 +68,17 @@ export function ThemePackagesPanel(props: ThemePackagesPanelProps): JSX.Element 
       </p>
 
       <div data-theme-import>
-        {/* A plain file input, labelled as a button. The native picker is the
+        {/* A plain file input with a visible label. The native picker is the
             only thing that works identically in the browser and in Electron
-            (where it becomes the OS dialog), so there is no second code path. */}
+            (where it becomes the OS dialog), so there is no second code path.
+            The label is not decoration: without it the control reaches a
+            screen reader as an unnamed "file upload button" and axe flags it
+            (ADR 0026). */}
+        <label htmlFor={inputId}>Import a Theme package</label>
         <input
           ref={inputRef}
           id={inputId}
+          aria-describedby={`${inputId}-hint`}
           type="file"
           accept=".zip,.sosb-theme.zip,application/zip"
           data-testid="theme-import-input"
@@ -83,7 +88,9 @@ export function ThemePackagesPanel(props: ThemePackagesPanelProps): JSX.Element 
             if (file !== undefined) void runImport(file);
           }}
         />
-        <Hint className="field-hint">Accepts a .sosb-theme.zip package.</Hint>
+        <Hint className="field-hint" id={`${inputId}-hint`}>
+          Accepts a .sosb-theme.zip package.
+        </Hint>
       </div>
 
       {error !== undefined && (

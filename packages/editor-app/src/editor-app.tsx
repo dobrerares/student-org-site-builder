@@ -757,21 +757,28 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     // package must leave the Site exactly as it found it.
     const loaded = await loadThemePackageFromZip(bytes);
     await installThemePackageIntoVfs(assetVfsRef.current!, loaded);
+    // Re-importing the same id and version with different bytes is the normal
+    // rhythm of authoring a Theme, so the blob cache (keyed on id + version)
+    // has to be dropped on every import rather than trusted to notice.
+    revokeThemeBlobUrls();
     await reloadInstalledThemes();
   }
 
   async function exportThemePackageFile(themeId: string): Promise<void> {
     const { bytes, filename } = await exportInstalledThemePackage(assetVfsRef.current!, themeId);
-    const url = URL.createObjectURL(new Blob([bytes], { type: "application/zip" }));
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = filename;
-    anchor.click();
-    URL.revokeObjectURL(url);
+    // Reuse the Site export's download helper rather than hand-rolling an
+    // anchor: it attaches the element to the document before clicking, which
+    // Firefox requires and a detached anchor silently skips.
+    downloadBlob(new Blob([bytes], { type: "application/zip" }), filename);
   }
 
   async function removeThemePackage(themeId: string): Promise<void> {
     await uninstallThemePackageFromVfs(assetVfsRef.current!, themeId);
+    // Drop the preview blob URLs minted for this Theme. Without this, removing
+    // and re-importing an edited Theme at the same version would keep serving
+    // the old bytes from the blob cache, and the author would conclude their
+    // edits had not taken.
+    revokeThemeBlobUrls();
     await reloadInstalledThemes();
   }
 

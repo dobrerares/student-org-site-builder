@@ -56,8 +56,8 @@ import { applyThemeSwitch, setShellVariant } from "./theme-switch.js";
 function UnsupportedNote(props: { what: string; themeName: string }): JSX.Element {
   return (
     <Hint className="field-hint" data-theme-unsupported={props.what}>
-      This look sets its own {props.what}, so there is nothing to change here. Pick a different look
-      to adjust {props.what}.
+      “{props.themeName}” sets its own {props.what}, so there is nothing to change here. Pick a
+      different look to adjust {props.what}.
     </Hint>
   );
 }
