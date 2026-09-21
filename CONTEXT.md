@@ -234,8 +234,11 @@ font pickers draw from. Mirrors the block catalog pattern. Drives the
 **theme picker**. The `stub` theme id is deliberately omitted from the
 catalog (it's a dev/test fixture, not a user-facing pick); a snapshot
 carrying `theme.id: "stub"` still round-trips, but the picker does not
-offer it. Screenshots deferred past v1 — catalog entries are
-label + description + font lists only.
+offer it. Catalog entries are label + description + font lists only —
+deliberately no hand-written preview metadata. The pickers show a live
+**theme miniature** instead: a scaled-down render of the sample site's
+home page under that theme, produced by the Renderer itself, so it
+cannot drift from the Theme the way hand-maintained swatches did.
 
 **Field-override metadata** (planned):
 Side table(s) in `@sosb/editor-app` augmenting the auto-generated
@@ -333,11 +336,22 @@ iframe (e.g. how it updates) do not change the built site.
 
 **Preview bridge**:
 The postMessage envelope protocol between the editor host and the
-preview iframe. Channel-namespaced and version-gated. v1 is half-built:
-the host posts `siteData` envelopes, but the iframe currently has no JS
-listener (the iframe is static HTML rebuilt via `srcdoc` reassignment on
-every snapshot change). The receiver-side script lands when the
-iframe-reload work is picked up.
+preview iframe. Channel-namespaced and version-gated. Both halves are
+built. The host renders each snapshot with the Renderer and posts the
+HTML as a `previewHtml` envelope; the iframe-side **preview morph
+script** (emitted by the Renderer in preview mode only) applies it to
+the live document with an idempotent DOM diff, so the preview's scroll
+position, open FAQ answers and open lightbox survive an edit. The host
+also still posts `siteData` envelopes — that remains the documented
+extension point for iframe-side consumers that want the data rather
+than the markup, though nothing renders from it (rendering stays
+host-side, so there is exactly one Renderer code path).
+A full `srcdoc` reload is used, deliberately, when the previewed page,
+theme or language changes: those are different documents, and carrying
+state across them would be wrong.
+An interactive preview mode (ADR 0046) is still future work — the
+preview remains a picture the user edits through the forms, not a
+surface they click into.
 
 **Spine patch** vs **block patch**:
 A field edit in the SpineForm produces a "spine patch" with a path

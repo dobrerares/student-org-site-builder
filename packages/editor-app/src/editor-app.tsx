@@ -182,16 +182,54 @@ export interface EditorAppProps {
 type TabName = "editor" | "preview";
 type PreviewViewport = "fit" | "desktop" | "tablet" | "phone";
 
+/**
+ * The device presets the preview toolbar offers.
+ *
+ * `width`/`height` are CSS pixels of the *simulated* viewport — the layout
+ * size the previewed page is told it has. They are not the size the frame
+ * occupies on screen: the frame is scaled down to fit the preview pane (see
+ * `previewScale`). Before that scaling existed the 1440px desktop frame simply
+ * overflowed the pane on any normal laptop, so the "Desktop" preset showed a
+ * horizontally-clipped page rather than a desktop viewport.
+ *
+ * `fit` has no fixed size — the frame fills the pane and the page lays out at
+ * whatever width that is.
+ */
 const PREVIEW_VIEWPORT_OPTIONS: readonly {
   readonly id: PreviewViewport;
   readonly label: string;
-  readonly size: string;
+  readonly width: number | null;
+  readonly height: number | null;
 }[] = [
-  { id: "fit", label: "Fit", size: "Auto" },
-  { id: "desktop", label: "Desktop", size: "1440 x 900" },
-  { id: "tablet", label: "Tablet", size: "768 x 1024" },
-  { id: "phone", label: "Phone", size: "390 x 844" },
+  { id: "fit", label: "Fit", width: null, height: null },
+  { id: "desktop", label: "Desktop", width: 1440, height: 900 },
+  { id: "tablet", label: "Tablet", width: 768, height: 1024 },
+  { id: "phone", label: "Phone", width: 390, height: 844 },
 ];
+
+/** Human-readable size for a preset, e.g. `1440 x 900` or `Auto`. */
+export function previewViewportSizeLabel(option: {
+  readonly width: number | null;
+  readonly height: number | null;
+}): string {
+  if (option.width === null || option.height === null) return "Auto";
+  return `${option.width} x ${option.height}`;
+}
+
+/**
+ * Scale that fits a `width x height` simulated viewport inside the available
+ * pane, never enlarging past 1:1. Returns 1 when the pane has not been
+ * measured yet (jsdom, first paint) so the frame renders at its true size
+ * rather than collapsing to zero.
+ */
+export function fitPreviewScale(
+  available: { readonly width: number; readonly height: number },
+  viewport: { readonly width: number; readonly height: number },
+): number {
+  if (available.width <= 0 || available.height <= 0) return 1;
+  if (viewport.width <= 0 || viewport.height <= 0) return 1;
+  return Math.min(1, available.width / viewport.width, available.height / viewport.height);
+}
 
 /**
  * Discriminated drill state for the editor pane.
@@ -419,6 +457,10 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   const isNarrow = viewportWidth < MOBILE_BREAKPOINT_PX;
   const [activeTab, setActiveTab] = useState<TabName>("editor");
   const [previewViewport, setPreviewViewport] = useState<PreviewViewport>("fit");
+  // Bumped whenever the asset display-URL cache gains entries. The cache is a
+  // ref (it is filled asynchronously), so the memoised preview render has no
+  // other way to learn that a just-uploaded image now has a blob URL.
+  const [assetEpoch, setAssetEpoch] = useState<number>(0);
 
   // The page index currently surfaced in the spine form + preview. Defaults
   // to the home (page 0); reorder/clone/delete update this so the editor
@@ -487,41 +529,61 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   const [panelOpen, setPanelOpen] = useState<boolean>(false);
   const [exportDialog, setExportDialog] = useState<ValidationResult | null>(null);
 
-  // Iframe + preview-bridge wiring. The iframe ref is set when the iframe
-  // mounts; on every snapshot change we (a) update the iframe's srcdoc
-  // baseline and (b) post a `siteData` envelope through the bridge for any
-  // future iframe-side message listener.
-  const iframeRef = useRef<HTMLIFrameElement | null>(null);
-  useEffect(() => {
-    const iframe = iframeRef.current;
-    if (iframe === null) return;
-    const host = createPreviewHost({ iframe });
-    host.postSiteData(snapshot, snapshot.theme.id, safeActivePageIndex);
-  }, [snapshot, safeActivePageIndex]);
+  /**
+   * Device-simulation scaling.
+   *
+   * A preset frame is laid out at its true viewport size (1440x900 and
+   * friends) and then transform-scaled to fit the preview pane. Scaling the
+   * frame rather than shrinking it is what makes the preset honest: the page
+   * inside still believes it has 1440 CSS pixels, so media queries, clamp()
+   * type scales and grid breakpoints all resolve the way they will for a real
+   * desktop visitor.
+   */
+  const previewCanvasRef = useRef<HTMLDivElement | null>(null);
+  const [previewScale, setPreviewScale] = useState<number>(1);
+  const previewViewportOption = PREVIEW_VIEWPORT_OPTIONS.find((o) => o.id === previewViewport);
+  const previewViewportWidth = previewViewportOption?.width ?? null;
+  const previewViewportHeight = previewViewportOption?.height ?? null;
 
-  // Inbound preview events. The renderer's preview-only nav script prevents
-  // normal iframe navigation and posts `{ type: "navigate", path }`; the
-  // editor maps that path back onto `site.pages` and updates the active page.
   useEffect(() => {
-    const iframe = iframeRef.current;
-    if (iframe === null) return;
-    const host = createPreviewHost({
-      iframe,
-      onPreviewEvent(message) {
-        if (message.type !== "navigate") return;
-        const nextIndex = resolvePathToPageIndex(snapshot, message.path);
-        if (nextIndex === null || nextIndex === safeActivePageIndex) return;
-        setActivePageIndex(nextIndex);
-      },
-    });
-    function onMessage(event: MessageEvent): void {
-      host.handleIncomingMessage(event.data);
+    if (previewViewportWidth === null || previewViewportHeight === null) {
+      setPreviewScale(1);
+      return;
     }
-    window.addEventListener("message", onMessage);
+    const canvas = previewCanvasRef.current;
+    if (canvas === null) return;
+
+    function measure(): void {
+      const node = previewCanvasRef.current;
+      if (node === null) return;
+      const style = typeof getComputedStyle === "function" ? getComputedStyle(node) : undefined;
+      const padX =
+        (Number.parseFloat(style?.paddingLeft ?? "0") || 0) +
+        (Number.parseFloat(style?.paddingRight ?? "0") || 0);
+      const padY =
+        (Number.parseFloat(style?.paddingTop ?? "0") || 0) +
+        (Number.parseFloat(style?.paddingBottom ?? "0") || 0);
+      setPreviewScale(
+        fitPreviewScale(
+          { width: node.clientWidth - padX, height: node.clientHeight - padY },
+          { width: previewViewportWidth!, height: previewViewportHeight! },
+        ),
+      );
+    }
+
+    measure();
+    if (typeof ResizeObserver !== "function") {
+      window.addEventListener("resize", measure);
+      return () => {
+        window.removeEventListener("resize", measure);
+      };
+    }
+    const observer = new ResizeObserver(measure);
+    observer.observe(canvas);
     return () => {
-      window.removeEventListener("message", onMessage);
+      observer.disconnect();
     };
-  }, [snapshot, safeActivePageIndex]);
+  }, [previewViewportWidth, previewViewportHeight]);
 
   // Root ref so issue-navigation queries land in the editor's own DOM
   // tree (and not whatever the host page might have rendered).
@@ -642,7 +704,9 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   }, []);
 
   useEffect(() => {
-    void populateAssetDisplayUrls(assetVfsRef.current!, displayUrlCacheRef.current!);
+    void populateAssetDisplayUrls(assetVfsRef.current!, displayUrlCacheRef.current!).then(() => {
+      setAssetEpoch((n) => n + 1);
+    });
   }, []);
 
   function displayUrlForAsset(ref: AssetRefLike): string | undefined {
@@ -661,6 +725,113 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     const hash = dot >= 0 ? filename.slice(0, dot) : filename;
     return displayUrlCacheRef.current!.get(hash);
   }
+
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+
+  /**
+   * Live preview wiring.
+   *
+   * The preview keeps ONE iframe document alive for as long as it is showing
+   * the same page, in the same language, under the same theme. Each edit is
+   * rendered host-side with the real renderer (there is still exactly one
+   * renderer code path — ADR 0005) and posted over the preview bridge; the
+   * renderer's preview-morph script diffs the new markup onto the live
+   * document.
+   *
+   * The previous implementation recomputed the HTML on every React render and
+   * fed it back in as `srcdoc`. Reassigning `srcdoc` rebuilds the document
+   * from scratch, so every keystroke scrolled the preview back to the top,
+   * collapsed any FAQ the user had opened and closed the lightbox — on a long
+   * page the section being edited jumped out of view on every character.
+   */
+  const previewHtml = useMemo(
+    () => iframeSrcdoc(snapshot, snapshot.theme.id, safeActivePageIndex, displayUrlForAssetPath),
+    // `displayUrlForAssetPath` reads a ref-held cache rather than state, so it
+    // is deliberately not a dependency; `assetEpoch` is what actually changes
+    // when that cache gains an entry.
+    [snapshot, safeActivePageIndex, assetEpoch],
+  );
+
+  /**
+   * What makes the preview a *different document* rather than an edit of the
+   * current one. Morphing across any of these would carry over state that no
+   * longer means anything — a scroll offset into the page the user just left,
+   * or a disclosure open in a theme that styles it completely differently —
+   * so these force a full `srcdoc` reload instead.
+   */
+  const previewReloadKey = [
+    snapshot.theme.id,
+    safeActivePageIndex,
+    snapshot.pages[safeActivePageIndex]?.lang ?? "",
+  ].join("\u0000");
+
+  // The document the iframe boots with. Only replaced on a reload, so the
+  // `srcDoc` prop stays referentially stable across edits and React never
+  // reassigns it. Derived during render (rather than in an effect) so the
+  // freshly-keyed iframe boots with matching HTML on its very first paint.
+  const previewBootHtmlRef = useRef<string>(previewHtml);
+  const previewReloadKeyRef = useRef<string>(previewReloadKey);
+  const previewReadyRef = useRef<boolean>(false);
+  const previewPendingHtmlRef = useRef<string | null>(null);
+  if (previewReloadKeyRef.current !== previewReloadKey) {
+    previewReloadKeyRef.current = previewReloadKey;
+    previewBootHtmlRef.current = previewHtml;
+    previewReadyRef.current = false;
+    previewPendingHtmlRef.current = null;
+  }
+
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (iframe === null) return;
+    const host = createPreviewHost({ iframe });
+    // The documented ADR 0005 extension point. Nothing renders from it today
+    // (rendering stays host-side, so there is one renderer code path), but it
+    // is the surface iframe-side consumers are told to listen on.
+    host.postSiteData(snapshot, snapshot.theme.id, safeActivePageIndex);
+    // The boot document already *is* this HTML — posting it would be a no-op
+    // diff, and on first mount the morph script has not booted yet anyway.
+    if (previewHtml === previewBootHtmlRef.current) return;
+    if (!previewReadyRef.current) {
+      // The morph script has not announced itself yet. Hold the newest render
+      // — posting now would land before any listener exists and the edit
+      // would be silently lost.
+      previewPendingHtmlRef.current = previewHtml;
+      return;
+    }
+    host.postPreviewHtml(previewHtml);
+  }, [previewHtml, snapshot, safeActivePageIndex]);
+
+  // Inbound preview events. The renderer's preview-only nav script prevents
+  // normal iframe navigation and posts `{ type: "navigate", path }`; the
+  // editor maps that path back onto `site.pages` and updates the active page.
+  // The morph script posts `{ type: "ready" }` once its listener is wired.
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (iframe === null) return;
+    const host = createPreviewHost({
+      iframe,
+      onPreviewEvent(message) {
+        if (message.type === "ready") {
+          previewReadyRef.current = true;
+          const pending = previewPendingHtmlRef.current;
+          previewPendingHtmlRef.current = null;
+          if (pending !== null) host.postPreviewHtml(pending);
+          return;
+        }
+        if (message.type !== "navigate") return;
+        const nextIndex = resolvePathToPageIndex(snapshot, message.path, safeActivePageIndex);
+        if (nextIndex === null || nextIndex === safeActivePageIndex) return;
+        setActivePageIndex(nextIndex);
+      },
+    });
+    function onMessage(event: MessageEvent): void {
+      host.handleIncomingMessage(event.data);
+    }
+    window.addEventListener("message", onMessage);
+    return () => {
+      window.removeEventListener("message", onMessage);
+    };
+  }, [snapshot, safeActivePageIndex]);
 
   /**
    * Production uploader fed into every mounted `<AssetPicker>` via
@@ -694,6 +865,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       const bytes = await vfs.read(ref.path);
       const blob = new Blob([new Uint8Array(bytes)], { type: ref.mime });
       cache.set(ref.hash, URL.createObjectURL(blob));
+      setAssetEpoch((n) => n + 1);
     }
     // `@sosb/assets`'s runtime `AssetRef` interface is structurally a
     // subset of `@sosb/schema`'s `z.looseObject`-derived `AssetRefLike`
@@ -894,6 +1066,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       }
       await mergeAssetVfs(imported.vfs, vfs);
       await populateAssetDisplayUrls(vfs, displayUrlCacheRef.current!);
+      setAssetEpoch((n) => n + 1);
       historyRef.current = createHistoryStore<Site>({
         initial: structuredClone(imported.siteData),
       });
@@ -1216,12 +1389,6 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     </section>
   );
 
-  const previewSrcdoc = iframeSrcdoc(
-    snapshot,
-    snapshot.theme.id,
-    safeActivePageIndex,
-    displayUrlForAssetPath,
-  );
   const previewPane = (
     <section
       data-testid="preview-pane"
@@ -1242,24 +1409,60 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
               data-viewport={option.id}
               data-active={previewViewport === option.id}
               aria-pressed={previewViewport === option.id}
-              title={`${option.label} preview (${option.size})`}
+              title={`${option.label} preview (${previewViewportSizeLabel(option)})`}
               onClick={() => setPreviewViewport(option.id)}
             >
               <span data-testid="viewport-preview-label">{option.label}</span>
-              <span data-testid="viewport-preview-size">{option.size}</span>
+              <span data-testid="viewport-preview-size">{previewViewportSizeLabel(option)}</span>
             </Button>
           ))}
         </div>
       </div>
-      <div data-testid="preview-canvas">
-        <div data-testid="preview-frame-shell" data-preview-viewport={previewViewport}>
-          {/* Scripts power renderer-owned preview interactions; same-origin keeps blob uploads visible. */}
-          <iframe
-            ref={iframeRef}
-            title={t("pane.preview.label")}
-            srcDoc={previewSrcdoc}
-            sandbox="allow-scripts allow-same-origin"
-          />
+      <div data-testid="preview-canvas" ref={previewCanvasRef}>
+        {/* The sizer occupies the frame's *scaled* footprint, so the canvas
+         * scrolls and centres around what is actually visible rather than
+         * around the frame's full unscaled size. */}
+        <div
+          data-testid="preview-frame-sizer"
+          data-preview-viewport={previewViewport}
+          style={
+            previewViewportWidth === null || previewViewportHeight === null
+              ? undefined
+              : {
+                  width: `${previewViewportWidth * previewScale}px`,
+                  height: `${previewViewportHeight * previewScale}px`,
+                }
+          }
+        >
+          <div
+            data-testid="preview-frame-shell"
+            data-preview-viewport={previewViewport}
+            data-preview-scaled={previewScale < 1 ? "true" : "false"}
+            style={
+              previewViewportWidth === null || previewViewportHeight === null
+                ? undefined
+                : {
+                    width: `${previewViewportWidth}px`,
+                    height: `${previewViewportHeight}px`,
+                    transform: `scale(${previewScale})`,
+                  }
+            }
+          >
+            {/* Scripts power renderer-owned preview interactions; same-origin keeps blob uploads visible. */}
+            <iframe
+              // Remounting on the reload key gives the new page/theme/language a
+              // fresh document; every other edit is applied in place over the
+              // bridge, so this element is deliberately stable across keystrokes.
+              key={previewReloadKey}
+              ref={iframeRef}
+              title={t("pane.preview.label")}
+              srcDoc={previewBootHtmlRef.current}
+              // `allow-popups` lets the preview-nav interceptor open external
+              // links (a partner site, a social profile) in a new tab instead of
+              // replacing the preview document.
+              sandbox="allow-scripts allow-same-origin allow-popups"
+            />
+          </div>
         </div>
       </div>
     </section>

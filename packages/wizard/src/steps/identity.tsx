@@ -14,7 +14,7 @@
  */
 import type { JSX } from "react";
 
-import { buildThemeCatalog } from "@sosb/themes";
+import { ThemeMiniPreview, buildThemeCatalog } from "@sosb/themes";
 
 import type { IdentityData } from "../state-machine.js";
 import { Input } from "@sosb/ui";
@@ -45,10 +45,8 @@ export function IdentityStep(props: IdentityStepProps): JSX.Element {
                 onChange={() => props.onPatch({ themeId: theme.id })}
               />
               <span data-theme-card-body>
-                <span data-theme-card-swatches aria-hidden="true">
-                  {theme.preview.swatches.map((swatch) => (
-                    <span key={swatch} style={{ backgroundColor: swatch }} />
-                  ))}
+                <span data-theme-card-preview>
+                  <ThemeMiniPreview themeId={theme.id} />
                 </span>
                 <span data-theme-card-label>{theme.label}</span>
                 <span data-theme-card-description>{theme.description}</span>

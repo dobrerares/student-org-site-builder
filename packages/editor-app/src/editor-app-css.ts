@@ -517,6 +517,22 @@ body {
   overflow: auto;
   padding: var(--sp-1);
 }
+/* The sizer holds the frame's on-screen (scaled) footprint so the canvas
+ * centres and scrolls around what is visible. In "fit" it is a plain
+ * full-size wrapper. */
+[data-testid="preview-frame-sizer"] {
+  flex: 0 0 auto;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+/* Device presets lay the frame out at its TRUE viewport size and scale it to
+ * fit the pane. The page inside therefore still resolves its media queries
+ * and clamp() type scale against 1440 / 768 / 390 CSS pixels — which is the
+ * whole point of a device preset. The previous rules sized the frame in real
+ * pixels with no transform, so a 1440px desktop frame simply overflowed the
+ * pane on any normal laptop and showed a clipped page. */
 [data-testid="preview-frame-shell"] {
   flex: 0 0 auto;
   display: flex;
@@ -528,18 +544,9 @@ body {
   border-radius: var(--r-md);
   overflow: hidden;
   box-shadow: var(--shadow-md);
-}
-[data-testid="preview-frame-shell"][data-preview-viewport="desktop"] {
-  width: 1440px;
-  height: 900px;
-}
-[data-testid="preview-frame-shell"][data-preview-viewport="tablet"] {
-  width: 768px;
-  height: 1024px;
+  transform-origin: top left;
 }
 [data-testid="preview-frame-shell"][data-preview-viewport="phone"] {
-  width: 390px;
-  height: 844px;
   border-radius: 24px;
   border-width: 6px;
   border-color: var(--ink);
@@ -1623,30 +1630,32 @@ body {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
-[data-theme-preview-swatches] {
-  display: inline-flex;
-  gap: 0;
-  border-radius: 6px;
+/* Theme miniature: a real render of the theme, scaled down. The frame is laid
+ * out at THEME_PREVIEW_VIEWPORT_WIDTH and transform-scaled by the component,
+ * so the wrapper clips it to the miniature's on-screen box. Pointer events
+ * pass through to the radio that wraps it, so clicking the picture selects
+ * the theme. */
+[data-theme-mini-preview] {
+  display: block;
+  position: relative;
   overflow: hidden;
+  border-radius: 8px;
   border: 1px solid var(--rule);
+  background: var(--paper-sunken);
+  pointer-events: none;
+  flex: 0 0 auto;
 }
-[data-theme-preview-swatch] {
-  width: 18px;
-  height: 22px;
+[data-theme-mini-preview-frame] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 0;
+  transform-origin: top left;
+  pointer-events: none;
 }
-[data-theme-preview-type] {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.1;
-  font-size: var(--step--2);
-  color: var(--ink-3);
-}
-[data-theme-preview-type] > strong {
-  font-size: var(--step--1);
-  color: var(--ink);
-}
+
 
 [data-testid="color-picker"] {
   display: flex;

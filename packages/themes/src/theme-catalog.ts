@@ -15,6 +15,13 @@
  * so a theme that lands in the renderer before its catalog entry
  * still renders.
  *
+ * There is deliberately no hand-written preview data here. Entries used to
+ * carry three hex swatches and two sample words for the picker chips; that
+ * was a manual second copy of what the theme CSS already says, free to drift
+ * with nothing to catch it. The pickers now show a real miniature render of
+ * the theme instead (`theme-preview-html.ts` / `theme-mini-preview.tsx`),
+ * which cannot drift because it is the renderer's own output.
+ *
  * Lives in `@sosb/themes` (T17 follow-up to ADR 0043) so that both
  * `@sosb/editor-app` and `@sosb/wizard` can consume it without
  * inverting the dependency graph. The editor-app keeps a back-compat
@@ -32,13 +39,6 @@ export interface ThemeCatalogEntry {
   readonly label: string;
   readonly description: string;
   readonly fonts: ThemeFonts;
-  readonly preview: ThemePreview;
-}
-
-export interface ThemePreview {
-  readonly swatches: readonly string[];
-  readonly headlineSample: string;
-  readonly bodySample: string;
 }
 
 export interface ThemeCatalog {
@@ -55,11 +55,6 @@ const THEME_METADATA: Record<string, Omit<ThemeCatalogEntry, "id">> = {
       headline: ["Source Serif 4", "Fraunces", "Inter"],
       body: ["Inter"],
     },
-    preview: {
-      swatches: ["#1e3a5f", "#b8893e", "#f7f3ea"],
-      headlineSample: "Cercetare",
-      bodySample: "Credible and scholarly.",
-    },
   },
   civic: {
     label: "Activist",
@@ -68,11 +63,6 @@ const THEME_METADATA: Record<string, Omit<ThemeCatalogEntry, "id">> = {
     fonts: {
       headline: ["Archivo", "Space Grotesk", "Inter"],
       body: ["Inter"],
-    },
-    preview: {
-      swatches: ["#cb2b2b", "#17181c", "#ffffff"],
-      headlineSample: "Acțiune",
-      bodySample: "Bold and direct.",
     },
   },
   editorial: {
@@ -83,11 +73,6 @@ const THEME_METADATA: Record<string, Omit<ThemeCatalogEntry, "id">> = {
       headline: ["Fraunces", "Source Serif 4", "Inter"],
       body: ["Inter"],
     },
-    preview: {
-      swatches: ["#c4622d", "#1a1714", "#fbf8f3"],
-      headlineSample: "Revistă",
-      bodySample: "Type-forward, story-led.",
-    },
   },
   minimal: {
     label: "Calm",
@@ -97,11 +82,6 @@ const THEME_METADATA: Record<string, Omit<ThemeCatalogEntry, "id">> = {
       headline: ["Inter"],
       body: ["Inter"],
     },
-    preview: {
-      swatches: ["#1a1a1a", "#767676", "#ffffff"],
-      headlineSample: "Claritate",
-      bodySample: "Quiet and restrained.",
-    },
   },
   modern: {
     label: "Tech",
@@ -110,11 +90,6 @@ const THEME_METADATA: Record<string, Omit<ThemeCatalogEntry, "id">> = {
     fonts: {
       headline: ["Space Grotesk", "Archivo", "Inter"],
       body: ["Inter"],
-    },
-    preview: {
-      swatches: ["#2563eb", "#0f172a", "#ffffff"],
-      headlineSample: "Hackathon",
-      bodySample: "Crisp, bright, geometric.",
     },
   },
 };
@@ -139,7 +114,6 @@ function entryForId(id: string): ThemeCatalogEntry {
     label: humanise(id),
     description: `Theme "${id}".`,
     fonts: { headline: [], body: [] },
-    preview: { swatches: [], headlineSample: "", bodySample: "" },
   };
 }
 

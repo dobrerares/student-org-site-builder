@@ -76,25 +76,17 @@ export async function exportToZip(siteData: unknown, vfs: Vfs): Promise<Blob> {
     await driver.write(`dist/${path}`, typeof value === "string" ? enc.encode(value) : value);
   }
 
-  // The renderer emits relative `assets/...` URLs. Cloudflare Pages serves the
-  // uploaded `dist/` folder as the web root, so user-uploaded assets must also
-  // exist inside `dist/`. Nested pages such as `activitati/index.html` resolve
-  // the same relative URL against their own folder, so mirror assets there too.
-  const pagePrefixes = distAssetPrefixes(dist);
+  // Cloudflare Pages serves the uploaded `dist/` folder as the web root, so
+  // user-uploaded assets must exist inside `dist/` as well as at the archive's
+  // top level. ONE copy is enough: the renderer emits every asset reference
+  // relative to the emitting page's own depth (`../assets/...` on
+  // `activitati/index.html`), so a nested page resolves back to this single
+  // `dist/assets/...` copy. Until that landed, this loop mirrored the whole
+  // asset folder into every nested page directory, which hid the fact that a
+  // raw `dist/` folder — one not produced by this zip — had broken images on
+  // every nested page.
   for (const [assetPath, bytes] of assetBytes) {
-    for (const prefix of pagePrefixes) {
-      await driver.write(`${prefix}${assetPath}`, bytes);
-    }
-  }
-
-  // Build-owned assets, currently self-hosted fonts, need the same nested-page
-  // mirroring for relative CSS URLs like `url(assets/fonts/inter.woff2)`.
-  for (const [path, value] of dist) {
-    if (!path.startsWith("assets/")) continue;
-    const bytes = typeof value === "string" ? enc.encode(value) : value;
-    for (const prefix of pagePrefixes.slice(1)) {
-      await driver.write(`${prefix}${path}`, bytes);
-    }
+    await driver.write(`dist/${assetPath}`, bytes);
   }
 
   // 4. Deployment guide.
@@ -110,16 +102,6 @@ export async function exportToZip(siteData: unknown, vfs: Vfs): Promise<Blob> {
 
   const zipBytes = driver.toZipBytes();
   return new Blob([zipBytes], { type: "application/zip" });
-}
-
-function distAssetPrefixes(dist: Map<string, string | Uint8Array>): string[] {
-  const prefixes = ["dist/"];
-  for (const path of dist.keys()) {
-    if (!path.endsWith("/index.html")) continue;
-    const pageDir = path.slice(0, -"index.html".length);
-    if (pageDir.length > 0) prefixes.push(`dist/${pageDir}`);
-  }
-  return prefixes;
 }
 
 function deployLanguageFor(siteData: unknown): DeployLanguage {

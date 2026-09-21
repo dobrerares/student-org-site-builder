@@ -579,18 +579,35 @@ body {
   gap: 0.3rem;
   min-width: 0;
 }
-[data-theme-card-swatches] {
-  display: inline-flex;
+[data-theme-card-preview] {
+  display: block;
   width: fit-content;
-  border-radius: 6px;
+  margin-bottom: 0.3rem;
+}
+/* Theme miniature: a real render of the theme, scaled down. The frame is laid
+ * out at THEME_PREVIEW_VIEWPORT_WIDTH and transform-scaled by the component,
+ * so the wrapper clips it to the miniature's on-screen box. Pointer events
+ * pass through to the radio that wraps it, so clicking the picture selects
+ * the theme. */
+[data-theme-mini-preview] {
+  display: block;
+  position: relative;
   overflow: hidden;
+  border-radius: 8px;
   border: 1px solid var(--sosb-shell-border);
-  margin-bottom: 0.2rem;
+  background: var(--sosb-shell-border);
+  pointer-events: none;
+  flex: 0 0 auto;
 }
-[data-theme-card-swatches] > span {
-  width: 20px;
-  height: 20px;
+[data-theme-mini-preview-frame] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 0;
+  transform-origin: top left;
+  pointer-events: none;
 }
+
 [data-theme-card-label] {
   font-size: 1rem;
   font-weight: 700;

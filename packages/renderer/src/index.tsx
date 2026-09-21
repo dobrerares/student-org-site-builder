@@ -17,7 +17,8 @@ import type { Site } from "@sosb/schema";
 import { PageShell } from "./page-shell.js";
 import { emitTokenRoot, resolveFontFamilies } from "./tokens.js";
 import type { AssetUrlForPath } from "./asset-url.js";
-import { resolveAssetUrl } from "./asset-url.js";
+import { assetPrefixForDistPath, depthAwareAssetResolver, resolveAssetUrl } from "./asset-url.js";
+import { pageDistPath } from "./routing.js";
 import { FONT_ASSET_PREFIX, FONT_FACE_REGISTRY, woff2Base64 } from "./fonts/registry.js";
 import { base64ToBytes } from "./fonts/bytes.js";
 import { STUB_THEME_CSS, STUB_THEME_ID } from "./themes/stub.js";
@@ -96,8 +97,16 @@ export function renderSite(data: Site, themeId: string, opts?: RenderOptions): s
   }
 
   const mode = opts?.mode ?? "deploy";
-  const css = composeCss(data, themeId, opts?.assetUrlForPath);
-  const fontPreloads = fontPreloadHrefsFor(data, themeId, opts?.assetUrlForPath);
+  // Asset references are emitted relative to the page's own directory, so a
+  // nested page (`activitati/index.html`) points at `../assets/…`. See
+  // `assetPrefixForDistPath`. The editor preview's blob resolver still wins
+  // for any path it can resolve.
+  const assetUrlForPath = depthAwareAssetResolver(
+    opts?.assetUrlForPath,
+    assetPrefixForDistPath(pageDistPath(data, page)),
+  );
+  const css = composeCss(data, themeId, assetUrlForPath);
+  const fontPreloads = fontPreloadHrefsFor(data, themeId, assetUrlForPath);
   const body = render(
     <PageShell
       site={data}
@@ -105,7 +114,7 @@ export function renderSite(data: Site, themeId: string, opts?: RenderOptions): s
       css={css}
       fontPreloads={fontPreloads}
       mode={mode}
-      assetUrlForPath={opts?.assetUrlForPath}
+      assetUrlForPath={assetUrlForPath}
     />,
   );
   return `<!doctype html>${body}`;
@@ -305,6 +314,14 @@ export type { HreflangEntry, LanguageSwitcherEntry } from "./routing.js";
 export { EMBED_LAZY_LOAD_SCRIPT } from "./blocks/embed-lazy-loader.js";
 export { resolveEmbed } from "./blocks/embed.js";
 export { FAQ_ACCORDION_SCRIPT_SOURCE, FAQ_ENHANCED_ATTR } from "./blocks/faq.script.js";
+export { PREVIEW_NAV_SCRIPT, PREVIEW_NAV_SCRIPT_MARKER } from "./preview-nav-script.js";
+export { PREVIEW_MORPH_SCRIPT, PREVIEW_MORPH_SCRIPT_MARKER } from "./preview-morph-script.js";
+export {
+  assetPrefixForDistPath,
+  depthAwareAssetResolver,
+  isDepthIndependentRef,
+} from "./asset-url.js";
+export type { AssetUrlForPath } from "./asset-url.js";
 
 // Self-hosted font primitives. The editor preview mints blob URLs from these
 // so its in-memory resolver can satisfy the `assets/fonts/<file>.woff2` paths

@@ -40,10 +40,35 @@ describe("renderer CSP", () => {
     expect(csp).not.toContain("unsafe-eval");
   });
 
-  test("allows the data:/blob: image and data: font sources the builder uses offline", () => {
+  test("allows the data:/blob: image sources the builder uses offline", () => {
+    // Uploaded images are held in memory and shown through `blob:` object
+    // URLs; `data:` covers inline SVG and tiny placeholders.
     const csp = cspContent();
     expect(csp).toContain("img-src 'self' data: blob:");
-    expect(csp).toContain("font-src 'self' data:");
+  });
+
+  test("allows blob: fonts — the preview mints object URLs for self-hosted woff2", () => {
+    // The renderer emits `@font-face { src: url(assets/fonts/<f>.woff2) }`.
+    // A deployed site serves those as real files, but the editor preview has
+    // no server, so `font-blobs.ts` mints a `blob:` URL per face from the
+    // bundled base64 (see `getFontBlobUrls`). Without `blob:` here the
+    // packaged app silently fell back to a system font, so the preview
+    // misrepresented every theme's typography — the exact kind of
+    // preview/export divergence this policy is supposed to permit.
+    const csp = cspContent();
+    expect(csp).toMatch(/font-src [^;]*\bblob:/);
+    expect(csp).toMatch(/font-src [^;]*'self'/);
+    expect(csp).toMatch(/font-src [^;]*\bdata:/);
+  });
+
+  test("asset blob: URLs are permitted wherever the preview can mint them", () => {
+    // Every directive the editor resolves an in-memory asset through must
+    // accept blob:. If a future theme asset lands in a new directive (audio,
+    // video, …) it needs the same treatment — this test is the checklist.
+    const csp = cspContent();
+    for (const directive of ["img-src", "font-src"]) {
+      expect(csp).toMatch(new RegExp(`${directive} [^;]*\\bblob:`));
+    }
   });
 
   test("declares no remote origin — the packaged app runs entirely offline", () => {

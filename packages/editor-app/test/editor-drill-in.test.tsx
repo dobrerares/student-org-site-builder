@@ -22,6 +22,7 @@ import type { BlockEnvelope, Site } from "@sosb/schema";
 import { encodePreviewMessage } from "@sosb/preview-bridge";
 
 import minimal from "./fixtures/minimal-site.json" with { type: "json" };
+import { announcePreviewReady, capturePreviewMessages } from "./helpers/preview.js";
 import { EditorApp } from "../src/editor-app.js";
 
 const baseSite = minimal as unknown as Site;
@@ -170,6 +171,13 @@ describe("EditorApp drill-in inspector", () => {
       <EditorApp initial={initial} onExport={(s) => seenSnapshots.push(s)} />,
     );
 
+    // Watch what the host pushes into the live preview. Edits reach the
+    // preview as `previewHtml` messages now, not as a `srcdoc` rewrite.
+    const preview = capturePreviewMessages(
+      container.querySelector<HTMLIFrameElement>('[data-testid="preview-pane"] iframe')!,
+    );
+    announcePreviewReady();
+
     // Drill into the first block (blk_home_hero on `acasa`).
     fireEvent.click(
       container.querySelector<HTMLButtonElement>('[data-testid="block-row-select"]')!,
@@ -182,12 +190,8 @@ describe("EditorApp drill-in inspector", () => {
     expect(titleInput).not.toBeNull();
     fireEvent.input(titleInput!, { target: { value: "Edited Title" } });
 
-    // The preview iframe's srcdoc should now reflect the new title.
-    const iframe = container.querySelector<HTMLIFrameElement>(
-      '[data-testid="preview-pane"] iframe',
-    );
-    expect(iframe).not.toBeNull();
-    expect(iframe!.getAttribute("srcdoc")).toContain("Edited Title");
+    // The preview must now be showing the new title.
+    expect(preview.latestHtml()).toContain("Edited Title");
 
     // Trigger an export to capture the live snapshot.
     fireEvent.click(container.querySelector<HTMLButtonElement>('button[data-action="export"]')!);
@@ -200,6 +204,10 @@ describe("EditorApp drill-in inspector", () => {
 
   test("adding a nested team social row creates editable defaults and keeps preview rendering", () => {
     const { container } = render(<EditorApp initial={siteWithTeamGrid()} />);
+    const preview = capturePreviewMessages(
+      container.querySelector<HTMLIFrameElement>('[data-testid="preview-pane"] iframe')!,
+    );
+    announcePreviewReady();
 
     fireEvent.click(
       container.querySelector<HTMLButtonElement>('[data-testid="block-row-select"]')!,
@@ -223,14 +231,15 @@ describe("EditorApp drill-in inspector", () => {
     expect(platform?.value).toBe("website");
     expect(url?.value).toBe("/");
 
-    const iframe = container.querySelector<HTMLIFrameElement>(
-      '[data-testid="preview-pane"] iframe',
-    );
-    expect(iframe?.getAttribute("srcdoc")).toContain("team-person__social--website");
+    expect(preview.latestHtml()).toContain("team-person__social--website");
   });
 
   test("customHTML drills into the dedicated textarea and safety-warning form", () => {
     const { container } = render(<EditorApp initial={siteWithCustomHtml()} />);
+    const preview = capturePreviewMessages(
+      container.querySelector<HTMLIFrameElement>('[data-testid="preview-pane"] iframe')!,
+    );
+    announcePreviewReady();
 
     fireEvent.click(
       container.querySelector<HTMLButtonElement>('[data-testid="block-row-select"]')!,
@@ -244,10 +253,7 @@ describe("EditorApp drill-in inspector", () => {
 
     fireEvent.input(textarea!, { target: { value: "<p>Edited custom HTML</p>" } });
 
-    const iframe = container.querySelector<HTMLIFrameElement>(
-      '[data-testid="preview-pane"] iframe',
-    );
-    expect(iframe?.getAttribute("srcdoc")).toContain("Edited custom HTML");
+    expect(preview.latestHtml()).toContain("Edited custom HTML");
 
     const sanitize = container.querySelector<HTMLInputElement>('[data-field="data.sanitize"]');
     expect(sanitize).not.toBeNull();
