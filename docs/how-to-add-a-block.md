@@ -230,6 +230,54 @@ the canonical pattern). Unknown block types fall through to
 `<!-- unknown block: <type> -->` HTML comments per the
 preserve-unknown-keys policy.
 
+### Site-aware blocks
+
+Most blocks render from their own `data` alone. A block that needs to read
+the rest of the Site — `articleList` is the first — receives a
+`BlockRenderContext` instead of a widening parameter list:
+
+```ts
+interface BlockRenderContext {
+  readonly site: Site;
+  readonly lang: string; // the containing Page's or Article's language
+  readonly assetUrlForPath: AssetUrlForPath | undefined;
+  readonly containerArticleId?: string | undefined;
+}
+```
+
+Two rules come with it:
+
+- **Put the selection logic in `@sosb/schema`, not in the renderer.** The
+  renderer draws the result, but the validator and the editor Inspector need
+  the _same_ answer. `resolveArticleSelection` lives in the schema package for
+  exactly this reason: three implementations of "which articles match" would
+  drift, and the drift would be invisible until an export produced a list the
+  preview never showed.
+- **Determinism still binds.** Sort with a total order (break ties on a
+  permanent id, never on array position) so the golden files stay byte-stable.
+
+### Blocks whose data is references, not content
+
+`articleList` stores tag ids and Article ids. The form-generator would render
+those as arrays of raw text inputs, which ADR 0044 puts off-limits — they are
+identifiers, not things a human types. Such a block needs a **hand-coded
+Inspector** registered in the editor's block-inspector branch, the same way
+`customHTML` is. Landing the schema without that Inspector is a regression
+against ADR 0044, not a follow-up.
+
+`ArticleListInspector` is the worked example: it shows resolved matches by
+calling the shared resolver, labels each candidate with its language and
+publication state, and offers Move up / Move down beside any drag affordance
+(issue #102 — drag alone is unusable on a phone and invisible to keyboard
+users).
+
+### Longer help belongs behind an (i) icon
+
+Per issue #102's global presentation rule, explanatory copy goes in an
+`InfoHint` popover rather than as persistent prose next to the field. Use
+`FieldHint` only for short always-visible nudges. The editor tests assert the
+distinction, because it is easy to regress by "just adding a sentence".
+
 ### Multi-parent setup for image-bearing blocks (#11, #12, …)
 
 Blocks that carry assets — `image`, `gallery`, hero with a
@@ -451,6 +499,11 @@ When you're ready to send the PR, walk through this list:
 - [ ] Page-shell dispatch wires the new component.
 - [ ] Editor catalog metadata in
       `packages/editor-app/src/block-catalog.ts`.
+- [ ] Hand-coded Inspector when the block's data is identifiers rather
+      than authored content (ADR 0044).
+- [ ] Site-aware blocks read `BlockRenderContext`, and their selection
+      logic lives in `@sosb/schema` so the renderer, the validator, and
+      the editor cannot disagree.
 - [ ] Default-data builder in
       `packages/editor-app/src/block-defaults.ts`.
 - [ ] Schema unit tests (well-formed / required-missing /

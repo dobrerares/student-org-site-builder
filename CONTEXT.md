@@ -13,60 +13,63 @@ packages. It is the glossary; architectural decisions live in
 
 ### The data model
 
-**Article** (planned):
+**Article**:
 Reusable content with its own public URL, which can be presented or linked
 from multiple Blocks independently of ordinary Pages. Its main content
 is an ordered collection of Blocks.
 _Avoid_: post, embedded page.
 
-**Article translation** (planned):
+**Article translation**:
 A separate Article linked to its counterpart in another language, with
 its own publication state.
 _Avoid_: shared-state translation.
 
-**Article tag** (planned):
+**Article tag**:
 An internal, Site-wide label shared across languages, used by the author to
 select Articles for automatically filtered lists in Blocks. Renaming a tag
 preserves its associations; tags are not public navigation or browsing categories.
 _Avoid_: public category, tag page.
 
-**Article-list block** (planned):
+**Article-list block**:
 A Block presenting linked Article cards, selected either automatically
 by Article tag filters ("By tag") or explicitly by the author ("Select articles").
 _Avoid_: tag section, tag archive.
 
-**Article placement** (planned):
+**Article placement**:
 An explicitly chosen linked card for an Article on a Page or another Article. The card
 reflects updates to the referenced Article rather than holding a separate copy.
 _Avoid_: embedded article, article copy.
 
-**Article publication state** (planned):
+**Article publication state**:
 An Article's status as Draft, Published, or Unlisted. Changes to this
 state take effect on the live Site after redeployment.
 
-**Article publication date** (planned):
+**Article publication date**:
 An author-editable date describing when an Article was published and
 ordering "By tag" lists newest first; it does not schedule publication.
 _Avoid_: release schedule.
 
-**Draft article** (planned):
+**Draft article**:
 An Article retained with its files in the editable project archive, but
 excluded from the exported public Site along with files used only by Draft articles.
 _Avoid_: unlisted article.
 
-**Published article** (planned):
+**Published article**:
 An Article included in the exported public Site and eligible for automatic discovery.
 _Avoid_: unlisted article.
 
-**Unlisted article** (planned):
+**Unlisted article**:
 An Article accessible by its public URL but excluded from automatic
 discovery; an author may still explicitly place or link it.
 _Avoid_: draft, private article.
 
 **Site**:
 The top-level user document. Holds organisation identity, theme choice,
-declared languages, and an ordered list of **Pages**. Schema-defined,
-versioned, the only thing the Renderer takes as input.
+declared languages, an ordered list of **Pages**, and — since Articles
+landed — `articles[]` plus the site-wide **Article tag** registry `tags[]`.
+Both are optional, so a Site authored before Articles existed parses
+unchanged. Schema-defined, versioned, the only thing the Renderer takes as
+input.
 _Avoid_: project, config, document.
 
 **Page**:
@@ -170,6 +173,47 @@ Custom Blocks, while the Theme remains independently reusable.
 _Avoid_: starter, preset, sample.
 
 ### The editor
+
+**Article identity**:
+An Article's permanent `id`, generated once and never changed. Every
+reference to an Article — explicit Article-list selections, translation
+links — resolves through it, so renames and slug edits never break a
+reference. Deliberately distinct from the Article's URL, which is mutable.
+A new Article never reuses an id that anything still references.
+_Avoid_: article key, slug (the slug is the URL, not the identity).
+
+**Slug history**:
+The retired slugs an Article has previously used, held on the Article and
+reserved against other Articles in the same language for as long as it
+exists. Exported as static redirect stubs once the Article is Published or
+Unlisted. Permanent deletion releases them for reuse.
+_Avoid_: aliases, old URLs.
+
+**Translation group**:
+The shared id linking an Article to its counterparts in other languages.
+A group id rather than pairwise links, so the relationship cannot end up
+half-written. Each member keeps its own publication state, and automatic
+translation links offer only Published counterparts — deliberately unlike
+the language-home fallback Pages use (ADR 0015 vs ADR 0047).
+_Avoid_: localizedAs (that is the Page mechanism, and it is slug-based).
+
+**Article selection**:
+The configuration shared by an **Article-list block** and an Article's
+Related Articles setting: mode (`byTag` / `selected`), tag ids, explicit
+Article ids in author order, an optional limit, and sort. Resolved by
+`resolveArticleSelection` in `@sosb/schema` — the one implementation the
+Renderer, the validator, and the editor Inspector all call, so a preview
+can never disagree with what exports.
+_Avoid_: list config, filter.
+
+**Blocking issue**:
+A validation `error` carrying `blocking: true`, which the pre-export
+dialog will not let the author override. ADR 0016's "never hard-block"
+rule still governs every other error; this is the narrow ADR 0048 carve-out
+for public content that cannot be produced correctly at all — today, an
+active explicit Article-list selection pointing at a Draft or deleted
+Article. Saving the editable archive is never gated by it.
+_Avoid_: fatal error, hard error.
 
 **Site spine**:
 Everything in the Site schema _except_ `pages[].blocks` **and `theme`**.
@@ -410,8 +454,12 @@ pre-export confirm dialog.
 
 ## Relationships
 
-- A **Site** has one **Theme** and one or more **Pages**
+- A **Site** has one **Theme**, one or more **Pages**, and zero or more
+  **Articles** plus a shared **Article tag** registry
 - A **Page** has zero or more **Blocks** in an explicit order
+- An **Article** has zero or more **Blocks** in an explicit order, the same
+  envelope Pages use, plus its own title, date, summary, cover, tags, and
+  publication state as automatic fields rather than Blocks
 - A **Block** has exactly one **Block envelope** wrapping one **Block data**
   payload typed by `KnownBlockSchemas[type]`
 - A **Theme** contributes **Tokens** to `:root`; user overrides in
