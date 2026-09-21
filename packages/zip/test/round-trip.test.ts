@@ -38,8 +38,41 @@ describe("exportToZip", () => {
     expect(paths).toContain("assets/4a91d2.jpg");
     expect(paths).toContain("dist/assets/8e3a7f.png");
     expect(paths).toContain("dist/assets/4a91d2.jpg");
-    expect(paths).toContain("dist/despre/assets/8e3a7f.png");
-    expect(paths).toContain("dist/despre/assets/4a91d2.jpg");
+    // Exactly ONE copy inside dist/. Nested pages reach it through the
+    // renderer's depth-relative `../assets/...` references, so the export no
+    // longer mirrors the asset folder into every page directory.
+    expect(paths).not.toContain("dist/despre/assets/8e3a7f.png");
+    expect(paths).not.toContain("dist/despre/assets/4a91d2.jpg");
+    expect(paths.filter((p) => p.endsWith("8e3a7f.png")).sort()).toEqual([
+      "assets/8e3a7f.png",
+      "dist/assets/8e3a7f.png",
+    ]);
+  });
+
+  test("a nested page reaches the single dist/assets copy through ../ references", async () => {
+    const assets = new MemoryDriver();
+    await assets.write("assets/8e3a7f.png", new Uint8Array([0x89, 0x50, 0x4e, 0x47]));
+    await assets.write("assets/4a91d2.jpg", new Uint8Array([0xff, 0xd8, 0xff, 0xe0]));
+    const blob = await exportToZip(historipol, assets);
+    const inspector = ZipDriver.fromZipBytes(await blobToBytes(blob));
+    const paths = await inspector.list();
+
+    const nestedPages = paths.filter(
+      (p) => p.startsWith("dist/") && p.endsWith("/index.html") && p !== "dist/index.html",
+    );
+    expect(nestedPages.length).toBeGreaterThan(0);
+
+    for (const pagePath of nestedPages) {
+      const html = new TextDecoder().decode(await inspector.read(pagePath));
+      // Depth of the page below dist/ == number of `../` hops it must use.
+      const depth = pagePath.slice("dist/".length).split("/").length - 1;
+      const hops = "../".repeat(depth);
+      for (const ref of html.matchAll(/(?:src|href)="((?:\.\.\/)*assets\/[^"]+)"/g)) {
+        expect(ref[1]).toBe(`${hops}${ref[1]!.replace(/^(?:\.\.\/)+/, "")}`);
+        // And the file it points at actually exists in the archive.
+        expect(paths).toContain(`dist/${ref[1]!.replace(/^(?:\.\.\/)+/, "")}`);
+      }
+    }
   });
 
   test("ships self-hosted theme fonts as binary woff2 under dist/assets/fonts/ (PR-F2b)", async () => {
@@ -61,18 +94,20 @@ describe("exportToZip", () => {
     }
   });
 
-  test("mirrors build-owned dist assets for nested page-relative URLs", async () => {
+  test("ships build-owned dist assets exactly once — nested pages reach them via ../", async () => {
     const blob = await exportToZip(historipol, new MemoryDriver());
     const inspector = ZipDriver.fromZipBytes(await blobToBytes(blob));
     const paths = await inspector.list();
     const rootFont = paths.find((p) => p.startsWith("dist/assets/fonts/") && p.endsWith(".woff2"));
     expect(rootFont).toBeDefined();
 
-    const nestedFont = rootFont!.replace("dist/assets/", "dist/despre/assets/");
-    expect(paths).toContain(nestedFont);
-    expect(Array.from(await inspector.read(nestedFont))).toEqual(
-      Array.from(await inspector.read(rootFont!)),
-    );
+    // No per-page duplicate of the font bytes anywhere in the archive.
+    const fontCopies = paths.filter((p) => p.endsWith(rootFont!.slice("dist/assets/".length)));
+    expect(fontCopies).toEqual([rootFont]);
+
+    // The nested page's @font-face URL hops back up to that single copy.
+    const nestedHtml = new TextDecoder().decode(await inspector.read("dist/despre/index.html"));
+    expect(nestedHtml).toContain(`url(../${rootFont!.slice("dist/".length)})`);
   });
 
   test("dist/index.html is the rendered static site, not a placeholder", async () => {

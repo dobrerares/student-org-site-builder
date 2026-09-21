@@ -17,7 +17,12 @@ import type { Site } from "@sosb/schema";
 import { PageShell } from "./page-shell.js";
 import { emitTokenRoot, resolveFontFamilies } from "./tokens.js";
 import type { AssetUrlForPath } from "./asset-url.js";
-import { resolveAssetUrl } from "./asset-url.js";
+import {
+  assetPrefixForDistPath,
+  depthAwareAssetResolver,
+  resolveAssetUrl,
+} from "./asset-url.js";
+import { pageDistPath } from "./routing.js";
 import { FONT_ASSET_PREFIX, FONT_FACE_REGISTRY, woff2Base64 } from "./fonts/registry.js";
 import { base64ToBytes } from "./fonts/bytes.js";
 import { STUB_THEME_CSS, STUB_THEME_ID } from "./themes/stub.js";
@@ -96,8 +101,16 @@ export function renderSite(data: Site, themeId: string, opts?: RenderOptions): s
   }
 
   const mode = opts?.mode ?? "deploy";
-  const css = composeCss(data, themeId, opts?.assetUrlForPath);
-  const fontPreloads = fontPreloadHrefsFor(data, themeId, opts?.assetUrlForPath);
+  // Asset references are emitted relative to the page's own directory, so a
+  // nested page (`activitati/index.html`) points at `../assets/…`. See
+  // `assetPrefixForDistPath`. The editor preview's blob resolver still wins
+  // for any path it can resolve.
+  const assetUrlForPath = depthAwareAssetResolver(
+    opts?.assetUrlForPath,
+    assetPrefixForDistPath(pageDistPath(data, page)),
+  );
+  const css = composeCss(data, themeId, assetUrlForPath);
+  const fontPreloads = fontPreloadHrefsFor(data, themeId, assetUrlForPath);
   const body = render(
     <PageShell
       site={data}
@@ -105,7 +118,7 @@ export function renderSite(data: Site, themeId: string, opts?: RenderOptions): s
       css={css}
       fontPreloads={fontPreloads}
       mode={mode}
-      assetUrlForPath={opts?.assetUrlForPath}
+      assetUrlForPath={assetUrlForPath}
     />,
   );
   return `<!doctype html>${body}`;

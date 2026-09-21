@@ -232,7 +232,12 @@ function normaliseSiteUrl(siteUrl: string | undefined): string | undefined {
 function absolutise(siteUrl: string, ref: string): string {
   if (/^https?:\/\//i.test(ref) || ref.startsWith("//")) return ref;
   if (ref.startsWith("/")) return `${siteUrl}${ref}`;
-  return `${siteUrl}/${ref}`;
+  // The renderer prefixes asset references with one `../` per level of page
+  // depth so a nested page resolves them against the site root. Those hops are
+  // exactly what an absolute URL replaces, so strip them before joining rather
+  // than emitting `https://example.org/../assets/hero.jpg`.
+  const rooted = ref.replace(/^(?:\.\.\/)+/, "");
+  return `${siteUrl}/${rooted}`;
 }
 
 /**
