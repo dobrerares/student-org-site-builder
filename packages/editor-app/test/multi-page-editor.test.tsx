@@ -61,19 +61,24 @@ describe("EditorApp — multi-page wiring", () => {
       value: 1200,
     });
     const { container } = render(<EditorApp initial={makeMultiPageSite()} />);
-    const iframe = container.querySelector<HTMLIFrameElement>(
-      '[data-testid="preview-pane"] iframe',
-    );
-    expect(iframe).not.toBeNull();
+    const frame = (): HTMLIFrameElement =>
+      container.querySelector<HTMLIFrameElement>('[data-testid="preview-pane"] iframe')!;
+    const first = frame();
+    expect(first).not.toBeNull();
     // Initial: home page is active.
-    expect(iframe!.getAttribute("srcdoc")).toContain("Stub — Acasă");
+    expect(first.getAttribute("srcdoc")).toContain("Stub — Acasă");
 
     // Click 'Despre' in the list and expect the preview to switch.
     const selectAbout = container.querySelector<HTMLButtonElement>(
       '[data-action="select"][data-index="1"]',
     );
     fireEvent.click(selectAbout!);
-    expect(iframe!.getAttribute("srcdoc")).toContain("Stub — Despre");
+
+    // A different page is a different document: the iframe is remounted with
+    // a fresh boot `srcdoc` rather than being morphed in place, so the element
+    // has to be re-queried.
+    expect(frame()).not.toBe(first);
+    expect(frame().getAttribute("srcdoc")).toContain("Stub — Despre");
   });
 
   test("adding a page lengthens the list", () => {

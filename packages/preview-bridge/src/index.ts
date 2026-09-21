@@ -4,8 +4,17 @@
  *
  * The protocol is intentionally narrow:
  *
+ * - Host → Iframe: `{ type: "previewHtml", html }`. The host has already
+ *   rendered the snapshot with the real renderer; the iframe applies the HTML
+ *   to its live document with an idempotent DOM diff (see the renderer's
+ *   `preview-morph-script.ts`) so scroll position, open FAQ answers and an
+ *   open lightbox survive the update. This is the message that actually
+ *   drives the live preview.
  * - Host → Iframe: `{ type: "siteData", siteData, themeId, pageIndex? }`.
- *   The iframe re-renders by calling `renderSite(...)` on the new payload.
+ *   The original ADR 0005 envelope, kept because it is the documented
+ *   extension point for iframe-side consumers that want the data rather than
+ *   the markup. Nothing in the editor renders from it today — rendering stays
+ *   host-side so there is exactly one renderer code path.
  * - Iframe → Host: `{ type: "ready" }` once the iframe's bootstrapper has
  *   wired up its message listener; `{ type: "error", message }` if a render
  *   throws; `{ type: "navigate", path }` when a user clicks a nav or
@@ -28,12 +37,19 @@ export const PREVIEW_BRIDGE_CHANNEL = "sosb:preview" as const;
 /** Bumped on incompatible payload changes. v1 ships with version 1. */
 export const PREVIEW_BRIDGE_VERSION = 1 as const;
 
-export type HostMessage = {
+export type SiteDataHostMessage = {
   readonly type: "siteData";
   readonly siteData: Site;
   readonly themeId: string;
   readonly pageIndex?: number;
 };
+
+export type PreviewHtmlHostMessage = {
+  readonly type: "previewHtml";
+  readonly html: string;
+};
+
+export type HostMessage = SiteDataHostMessage | PreviewHtmlHostMessage;
 
 export type PreviewMessage =
   | { readonly type: "ready" }
@@ -66,15 +82,21 @@ export function encodePreviewMessage(msg: PreviewMessage): BridgeEnvelope<Previe
 export function decodeHostMessage(raw: unknown): HostMessage | null {
   const env = decodeEnvelope(raw);
   if (env === null) return null;
-  const payload = env.payload as Partial<HostMessage>;
+  const payload = env.payload as { type?: unknown };
+  if (payload.type === "previewHtml") {
+    const htmlPayload = payload as { html?: unknown };
+    if (typeof htmlPayload.html !== "string" || htmlPayload.html.length === 0) return null;
+    return { type: "previewHtml", html: htmlPayload.html };
+  }
   if (payload.type !== "siteData") return null;
-  if (typeof payload.themeId !== "string") return null;
-  if (payload.siteData === undefined || payload.siteData === null) return null;
+  const sitePayload = payload as Partial<SiteDataHostMessage>;
+  if (typeof sitePayload.themeId !== "string") return null;
+  if (sitePayload.siteData === undefined || sitePayload.siteData === null) return null;
   const result: HostMessage = {
     type: "siteData",
-    siteData: payload.siteData as Site,
-    themeId: payload.themeId,
-    ...(typeof payload.pageIndex === "number" ? { pageIndex: payload.pageIndex } : {}),
+    siteData: sitePayload.siteData as Site,
+    themeId: sitePayload.themeId,
+    ...(typeof sitePayload.pageIndex === "number" ? { pageIndex: sitePayload.pageIndex } : {}),
   };
   return result;
 }
@@ -122,6 +144,12 @@ export interface PreviewHostOptions {
 export interface PreviewHost {
   /** Post a fresh siteData payload into the iframe. */
   postSiteData(siteData: Site, themeId: string, pageIndex?: number): void;
+  /**
+   * Post freshly-rendered preview HTML into the iframe for in-place
+   * application. The iframe keeps its document — and therefore its scroll
+   * position and open disclosure state — and diffs the new markup onto it.
+   */
+  postPreviewHtml(html: string): void;
   /** Process an inbound `MessageEvent.data` (or any raw value). */
   handleIncomingMessage(raw: unknown): void;
 }
@@ -147,6 +175,10 @@ export function createPreviewHost(options: PreviewHostOptions): PreviewHost {
       });
       // The iframe's contentWindow may be null if the iframe hasn't loaded
       // yet. We tolerate that — the next siteData edit will re-fire.
+      iframe.contentWindow?.postMessage(envelope, "*");
+    },
+    postPreviewHtml(html: string): void {
+      const envelope = encodeHostMessage({ type: "previewHtml", html });
       iframe.contentWindow?.postMessage(envelope, "*");
     },
     handleIncomingMessage(raw: unknown): void {

@@ -419,6 +419,10 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   const isNarrow = viewportWidth < MOBILE_BREAKPOINT_PX;
   const [activeTab, setActiveTab] = useState<TabName>("editor");
   const [previewViewport, setPreviewViewport] = useState<PreviewViewport>("fit");
+  // Bumped whenever the asset display-URL cache gains entries. The cache is a
+  // ref (it is filled asynchronously), so the memoised preview render has no
+  // other way to learn that a just-uploaded image now has a blob URL.
+  const [assetEpoch, setAssetEpoch] = useState<number>(0);
 
   // The page index currently surfaced in the spine form + preview. Defaults
   // to the home (page 0); reorder/clone/delete update this so the editor
@@ -487,41 +491,6 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   const [panelOpen, setPanelOpen] = useState<boolean>(false);
   const [exportDialog, setExportDialog] = useState<ValidationResult | null>(null);
 
-  // Iframe + preview-bridge wiring. The iframe ref is set when the iframe
-  // mounts; on every snapshot change we (a) update the iframe's srcdoc
-  // baseline and (b) post a `siteData` envelope through the bridge for any
-  // future iframe-side message listener.
-  const iframeRef = useRef<HTMLIFrameElement | null>(null);
-  useEffect(() => {
-    const iframe = iframeRef.current;
-    if (iframe === null) return;
-    const host = createPreviewHost({ iframe });
-    host.postSiteData(snapshot, snapshot.theme.id, safeActivePageIndex);
-  }, [snapshot, safeActivePageIndex]);
-
-  // Inbound preview events. The renderer's preview-only nav script prevents
-  // normal iframe navigation and posts `{ type: "navigate", path }`; the
-  // editor maps that path back onto `site.pages` and updates the active page.
-  useEffect(() => {
-    const iframe = iframeRef.current;
-    if (iframe === null) return;
-    const host = createPreviewHost({
-      iframe,
-      onPreviewEvent(message) {
-        if (message.type !== "navigate") return;
-        const nextIndex = resolvePathToPageIndex(snapshot, message.path, safeActivePageIndex);
-        if (nextIndex === null || nextIndex === safeActivePageIndex) return;
-        setActivePageIndex(nextIndex);
-      },
-    });
-    function onMessage(event: MessageEvent): void {
-      host.handleIncomingMessage(event.data);
-    }
-    window.addEventListener("message", onMessage);
-    return () => {
-      window.removeEventListener("message", onMessage);
-    };
-  }, [snapshot, safeActivePageIndex]);
 
   // Root ref so issue-navigation queries land in the editor's own DOM
   // tree (and not whatever the host page might have rendered).
@@ -642,7 +611,9 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   }, []);
 
   useEffect(() => {
-    void populateAssetDisplayUrls(assetVfsRef.current!, displayUrlCacheRef.current!);
+    void populateAssetDisplayUrls(assetVfsRef.current!, displayUrlCacheRef.current!).then(() => {
+      setAssetEpoch((n) => n + 1);
+    });
   }, []);
 
   function displayUrlForAsset(ref: AssetRefLike): string | undefined {
@@ -661,6 +632,113 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     const hash = dot >= 0 ? filename.slice(0, dot) : filename;
     return displayUrlCacheRef.current!.get(hash);
   }
+
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+
+  /**
+   * Live preview wiring.
+   *
+   * The preview keeps ONE iframe document alive for as long as it is showing
+   * the same page, in the same language, under the same theme. Each edit is
+   * rendered host-side with the real renderer (there is still exactly one
+   * renderer code path — ADR 0005) and posted over the preview bridge; the
+   * renderer's preview-morph script diffs the new markup onto the live
+   * document.
+   *
+   * The previous implementation recomputed the HTML on every React render and
+   * fed it back in as `srcdoc`. Reassigning `srcdoc` rebuilds the document
+   * from scratch, so every keystroke scrolled the preview back to the top,
+   * collapsed any FAQ the user had opened and closed the lightbox — on a long
+   * page the section being edited jumped out of view on every character.
+   */
+  const previewHtml = useMemo(
+    () =>
+      iframeSrcdoc(snapshot, snapshot.theme.id, safeActivePageIndex, displayUrlForAssetPath),
+    // `displayUrlForAssetPath` reads a ref-held cache; `assetEpoch` is what
+    // actually changes when that cache gains an entry.
+    [snapshot, safeActivePageIndex, assetEpoch], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  /**
+   * What makes the preview a *different document* rather than an edit of the
+   * current one. Morphing across any of these would carry over state that no
+   * longer means anything — a scroll offset into the page the user just left,
+   * or a disclosure open in a theme that styles it completely differently —
+   * so these force a full `srcdoc` reload instead.
+   */
+  const previewReloadKey = [
+    snapshot.theme.id,
+    safeActivePageIndex,
+    snapshot.pages[safeActivePageIndex]?.lang ?? "",
+  ].join("\u0000");
+
+  // The document the iframe boots with. Only replaced on a reload, so the
+  // `srcDoc` prop stays referentially stable across edits and React never
+  // reassigns it. Derived during render (rather than in an effect) so the
+  // freshly-keyed iframe boots with matching HTML on its very first paint.
+  const previewBootHtmlRef = useRef<string>(previewHtml);
+  const previewReloadKeyRef = useRef<string>(previewReloadKey);
+  const previewReadyRef = useRef<boolean>(false);
+  const previewPendingHtmlRef = useRef<string | null>(null);
+  if (previewReloadKeyRef.current !== previewReloadKey) {
+    previewReloadKeyRef.current = previewReloadKey;
+    previewBootHtmlRef.current = previewHtml;
+    previewReadyRef.current = false;
+    previewPendingHtmlRef.current = null;
+  }
+
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (iframe === null) return;
+    const host = createPreviewHost({ iframe });
+    // The documented ADR 0005 extension point. Nothing renders from it today
+    // (rendering stays host-side, so there is one renderer code path), but it
+    // is the surface iframe-side consumers are told to listen on.
+    host.postSiteData(snapshot, snapshot.theme.id, safeActivePageIndex);
+    // The boot document already *is* this HTML — posting it would be a no-op
+    // diff, and on first mount the morph script has not booted yet anyway.
+    if (previewHtml === previewBootHtmlRef.current) return;
+    if (!previewReadyRef.current) {
+      // The morph script has not announced itself yet. Hold the newest render
+      // — posting now would land before any listener exists and the edit
+      // would be silently lost.
+      previewPendingHtmlRef.current = previewHtml;
+      return;
+    }
+    host.postPreviewHtml(previewHtml);
+  }, [previewHtml, snapshot, safeActivePageIndex]);
+
+  // Inbound preview events. The renderer's preview-only nav script prevents
+  // normal iframe navigation and posts `{ type: "navigate", path }`; the
+  // editor maps that path back onto `site.pages` and updates the active page.
+  // The morph script posts `{ type: "ready" }` once its listener is wired.
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (iframe === null) return;
+    const host = createPreviewHost({
+      iframe,
+      onPreviewEvent(message) {
+        if (message.type === "ready") {
+          previewReadyRef.current = true;
+          const pending = previewPendingHtmlRef.current;
+          previewPendingHtmlRef.current = null;
+          if (pending !== null) host.postPreviewHtml(pending);
+          return;
+        }
+        if (message.type !== "navigate") return;
+        const nextIndex = resolvePathToPageIndex(snapshot, message.path, safeActivePageIndex);
+        if (nextIndex === null || nextIndex === safeActivePageIndex) return;
+        setActivePageIndex(nextIndex);
+      },
+    });
+    function onMessage(event: MessageEvent): void {
+      host.handleIncomingMessage(event.data);
+    }
+    window.addEventListener("message", onMessage);
+    return () => {
+      window.removeEventListener("message", onMessage);
+    };
+  }, [snapshot, safeActivePageIndex]);
 
   /**
    * Production uploader fed into every mounted `<AssetPicker>` via
@@ -694,6 +772,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       const bytes = await vfs.read(ref.path);
       const blob = new Blob([new Uint8Array(bytes)], { type: ref.mime });
       cache.set(ref.hash, URL.createObjectURL(blob));
+      setAssetEpoch((n) => n + 1);
     }
     // `@sosb/assets`'s runtime `AssetRef` interface is structurally a
     // subset of `@sosb/schema`'s `z.looseObject`-derived `AssetRefLike`
@@ -894,6 +973,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       }
       await mergeAssetVfs(imported.vfs, vfs);
       await populateAssetDisplayUrls(vfs, displayUrlCacheRef.current!);
+      setAssetEpoch((n) => n + 1);
       historyRef.current = createHistoryStore<Site>({
         initial: structuredClone(imported.siteData),
       });
@@ -1216,12 +1296,6 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     </section>
   );
 
-  const previewSrcdoc = iframeSrcdoc(
-    snapshot,
-    snapshot.theme.id,
-    safeActivePageIndex,
-    displayUrlForAssetPath,
-  );
   const previewPane = (
     <section
       data-testid="preview-pane"
@@ -1255,9 +1329,13 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
         <div data-testid="preview-frame-shell" data-preview-viewport={previewViewport}>
           {/* Scripts power renderer-owned preview interactions; same-origin keeps blob uploads visible. */}
           <iframe
+            // Remounting on the reload key gives the new page/theme/language a
+            // fresh document; every other edit is applied in place over the
+            // bridge, so this element is deliberately stable across keystrokes.
+            key={previewReloadKey}
             ref={iframeRef}
             title={t("pane.preview.label")}
-            srcDoc={previewSrcdoc}
+            srcDoc={previewBootHtmlRef.current}
             // `allow-popups` lets the preview-nav interceptor open external
             // links (a partner site, a social profile) in a new tab instead of
             // replacing the preview document.

@@ -318,6 +318,14 @@ export type { HreflangEntry, LanguageSwitcherEntry } from "./routing.js";
 export { EMBED_LAZY_LOAD_SCRIPT } from "./blocks/embed-lazy-loader.js";
 export { resolveEmbed } from "./blocks/embed.js";
 export { FAQ_ACCORDION_SCRIPT_SOURCE, FAQ_ENHANCED_ATTR } from "./blocks/faq.script.js";
+export { PREVIEW_NAV_SCRIPT, PREVIEW_NAV_SCRIPT_MARKER } from "./preview-nav-script.js";
+export { PREVIEW_MORPH_SCRIPT, PREVIEW_MORPH_SCRIPT_MARKER } from "./preview-morph-script.js";
+export {
+  assetPrefixForDistPath,
+  depthAwareAssetResolver,
+  isDepthIndependentRef,
+} from "./asset-url.js";
+export type { AssetUrlForPath } from "./asset-url.js";
 
 // Self-hosted font primitives. The editor preview mints blob URLs from these
 // so its in-memory resolver can satisfy the `assets/fonts/<file>.woff2` paths

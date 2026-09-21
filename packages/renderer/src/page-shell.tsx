@@ -47,6 +47,7 @@ import {
   pagePath,
 } from "./routing.js";
 import { PREVIEW_NAV_SCRIPT, PREVIEW_NAV_SCRIPT_MARKER } from "./preview-nav-script.js";
+import { PREVIEW_MORPH_SCRIPT, PREVIEW_MORPH_SCRIPT_MARKER } from "./preview-morph-script.js";
 import type { AssetUrlForPath } from "./asset-url.js";
 import { resolveAssetUrl } from "./asset-url.js";
 
@@ -271,7 +272,7 @@ export function PageShell(props: {
   // the page — hero CTAs, CTA banners, footer and rich-text links — so on a
   // single-page site the first CTA click navigated the preview iframe off the
   // editor's origin.
-  const needsPreviewNavScript = mode === "preview";
+  const isPreviewMode = mode === "preview";
 
   return (
     <html lang={page.lang}>
@@ -403,10 +404,19 @@ export function PageShell(props: {
             dangerouslySetInnerHTML={{ __html: EVENT_LIST_PAST_FADE_SCRIPT }}
           />
         )}
-        {needsPreviewNavScript && (
+        {isPreviewMode && (
           <script
             {...{ [PREVIEW_NAV_SCRIPT_MARKER]: "" }}
             dangerouslySetInnerHTML={{ __html: PREVIEW_NAV_SCRIPT }}
+          />
+        )}
+        {/* In-place update receiver. Emitted last so the document it morphs is
+         * fully parsed, and after the nav script so a single reload installs
+         * both. See `preview-morph-script.ts`. */}
+        {isPreviewMode && (
+          <script
+            {...{ [PREVIEW_MORPH_SCRIPT_MARKER]: "" }}
+            dangerouslySetInnerHTML={{ __html: PREVIEW_MORPH_SCRIPT }}
           />
         )}
       </body>
