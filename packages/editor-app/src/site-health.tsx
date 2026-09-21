@@ -22,7 +22,7 @@
  *           >
  *             <span data-issue-message>...</span>
  *             <span data-issue-path>pages.1.slug</span>
- *           </button>
+ *           </Button>
  *         </li>
  *       </ul>
  *     </div>
@@ -38,6 +38,7 @@ import type { JSX } from "react";
 import type { ValidationIssue, ValidationResult } from "@sosb/schema";
 import { issuePathLabel } from "./field-labels.js";
 import { pathToDotted } from "./issue-navigate.js";
+import { Button } from "@sosb/ui";
 
 export interface SiteHealthPanelProps {
   readonly result: ValidationResult;
@@ -103,7 +104,7 @@ function IssueRow({ severity, issue, onJump }: IssueRowProps): JSX.Element {
   const dotted = pathToDotted(issue.path);
   const location = issuePathLabel(issue.path);
   return (
-    <button
+    <Button
       type="button"
       data-issue
       data-severity={severity}
@@ -113,6 +114,6 @@ function IssueRow({ severity, issue, onJump }: IssueRowProps): JSX.Element {
     >
       <span data-issue-message>{issue.message}</span>
       <span data-issue-path> {location}</span>
-    </button>
+    </Button>
   );
 }

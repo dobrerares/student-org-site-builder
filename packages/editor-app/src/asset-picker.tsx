@@ -36,6 +36,7 @@ import type { JSX } from "react";
 import { useRef, useState } from "react";
 import type { AssetRefLike } from "@sosb/schema";
 import type * as React from "react";
+import { Button, Input } from "@sosb/ui";
 
 export interface AssetPickerProps {
   readonly value: AssetRefLike | undefined;
@@ -143,23 +144,23 @@ export function AssetPicker(props: AssetPickerProps): JSX.Element {
             alt={props.value!.alt}
             onError={() => setErrorHash(props.value!.hash)}
           />
-          <button
+          <Button
             type="button"
             data-testid="asset-picker-replace"
             disabled={isUploading}
             onClick={triggerFilePicker}
           >
             Replace image
-          </button>
+          </Button>
           {props.onClear !== undefined ? (
-            <button
+            <Button
               type="button"
               data-testid="asset-picker-remove"
               disabled={isUploading}
               onClick={props.onClear}
             >
               Remove image
-            </button>
+            </Button>
           ) : null}
         </>
       ) : null}
@@ -167,29 +168,29 @@ export function AssetPicker(props: AssetPickerProps): JSX.Element {
       {hasValue && imageErrored ? (
         <div data-testid="asset-picker-missing" role="status">
           <span>Missing image — the asset bytes could not be loaded.</span>
-          <button
+          <Button
             type="button"
             data-testid="asset-picker-reupload"
             disabled={isUploading}
             onClick={triggerFilePicker}
           >
             Re-upload
-          </button>
+          </Button>
         </div>
       ) : null}
 
       {!hasValue ? (
-        <button
+        <Button
           type="button"
           data-testid="asset-picker-add"
           disabled={isUploading}
           onClick={triggerFilePicker}
         >
           Add image
-        </button>
+        </Button>
       ) : null}
 
-      <input
+      <Input
         ref={fileInputRef}
         type="file"
         accept="image/*"

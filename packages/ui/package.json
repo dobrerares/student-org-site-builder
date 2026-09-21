@@ -12,7 +12,11 @@
       "types": "./src/index.ts",
       "default": "./src/index.ts"
     },
-    "./styles.css": "./src/styles/builder.generated.css"
+    "./styles.css": "./src/styles/builder.generated.css",
+    "./css": {
+      "types": "./src/styles/builder-css.generated.ts",
+      "default": "./src/styles/builder-css.generated.ts"
+    }
   },
   "scripts": {
     "build:css": "node ./scripts/build-css.mjs",

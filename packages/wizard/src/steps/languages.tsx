@@ -10,6 +10,7 @@
 import type { JSX } from "react";
 
 import type { LanguagesData, LanguagesMode } from "../state-machine.js";
+import { NativeSelect } from "@sosb/ui";
 
 export interface LanguagesStepProps {
   readonly data: LanguagesData;
@@ -36,7 +37,7 @@ export function LanguagesStep(props: LanguagesStepProps): JSX.Element {
 
       <label>
         <span>Mode</span>
-        <select
+        <NativeSelect
           data-field="languages.mode"
           value={mode}
           onChange={(e) =>
@@ -47,12 +48,12 @@ export function LanguagesStep(props: LanguagesStepProps): JSX.Element {
         >
           <option value="single">Single language</option>
           <option value="bilingual">Bilingual</option>
-        </select>
+        </NativeSelect>
       </label>
 
       <label>
         <span>Default language</span>
-        <select
+        <NativeSelect
           data-field="languages.defaultLanguage"
           value={defaultLanguage}
           onChange={(e) =>
@@ -66,13 +67,13 @@ export function LanguagesStep(props: LanguagesStepProps): JSX.Element {
               {l.label}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
 
       {mode === "bilingual" && (
         <label>
           <span>Secondary language</span>
-          <select
+          <NativeSelect
             data-field="languages.secondaryLanguage"
             value={secondaryLanguage ?? ""}
             onChange={(e) =>
@@ -87,7 +88,7 @@ export function LanguagesStep(props: LanguagesStepProps): JSX.Element {
                 {l.label}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
       )}
     </fieldset>

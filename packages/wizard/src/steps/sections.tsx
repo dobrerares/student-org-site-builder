@@ -10,6 +10,7 @@
 import type { JSX } from "react";
 
 import type { SectionsData } from "../state-machine.js";
+import { Input } from "@sosb/ui";
 
 export interface SectionsStepProps {
   readonly data: SectionsData;
@@ -51,7 +52,7 @@ export function SectionsStep(props: SectionsStepProps): JSX.Element {
         {MANDATORY_BLOCKS.map((block) => (
           <li key={block.id}>
             <label>
-              <input
+              <Input
                 type="checkbox"
                 data-field={`sections.${block.id}`}
                 checked={selected.includes(block.id)}

@@ -28,6 +28,7 @@
 import type { JSX } from "react";
 
 import { buildThemeCatalog } from "./theme-catalog.js";
+import { Input } from "@sosb/ui";
 
 export interface ThemePickerProps {
   readonly value: string;
@@ -61,7 +62,7 @@ export function ThemePicker(props: ThemePickerProps): JSX.Element {
               data-theme-id={entry.id}
               data-active={isActive ? "true" : "false"}
             >
-              <input
+              <Input
                 type="radio"
                 name={RADIO_GROUP_NAME}
                 value={entry.id}

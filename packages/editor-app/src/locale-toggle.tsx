@@ -19,6 +19,7 @@ import { SUPPORTED_LOCALES, type Locale } from "@sosb/i18n";
 
 import { useTranslator } from "./i18n-context.js";
 import type * as React from "react";
+import { NativeSelect } from "@sosb/ui";
 
 const LOCALE_LABEL_KEY: Readonly<
   Record<Locale, "settings.locale.option.ro" | "settings.locale.option.en">
@@ -34,7 +35,7 @@ export function LocaleToggle(): JSX.Element {
       <legend>{t("settings.locale.legend")}</legend>
       <label>
         <span>{t("settings.locale.label")}</span>
-        <select
+        <NativeSelect
           data-testid="locale-select"
           value={t.locale}
           onChange={(event: React.FormEvent<HTMLSelectElement>) => {
@@ -53,7 +54,7 @@ export function LocaleToggle(): JSX.Element {
               {t(LOCALE_LABEL_KEY[locale])}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
       <p data-testid="locale-help">{t("settings.locale.help")}</p>
     </fieldset>

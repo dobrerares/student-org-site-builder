@@ -25,6 +25,7 @@
 
 import { useEffect, useState } from "react";
 import type { JSX } from "react";
+import { Button } from "@sosb/ui";
 
 export interface UpdateInfo {
   readonly version: string;
@@ -84,13 +85,13 @@ export function UpdateBanner(props: UpdateBannerProps): JSX.Element | null {
     return (
       <aside data-testid="update-banner-error" role="alert">
         <span>Update failed: {phase.err.message}</span>
-        <button
+        <Button
           type="button"
           data-testid="update-error-dismiss"
           onClick={() => setPhase({ kind: "idle" })}
         >
           Dismiss
-        </button>
+        </Button>
       </aside>
     );
   }
@@ -105,7 +106,7 @@ export function UpdateBanner(props: UpdateBannerProps): JSX.Element | null {
           : `Update ${info.version} available — downloading…`}
       </span>
       {phase.kind === "downloaded" ? (
-        <button
+        <Button
           type="button"
           data-testid="update-restart"
           onClick={() => {
@@ -113,9 +114,9 @@ export function UpdateBanner(props: UpdateBannerProps): JSX.Element | null {
           }}
         >
           Restart now
-        </button>
+        </Button>
       ) : null}
-      <button
+      <Button
         type="button"
         data-testid="update-later"
         onClick={() => {
@@ -124,7 +125,7 @@ export function UpdateBanner(props: UpdateBannerProps): JSX.Element | null {
         }}
       >
         Later
-      </button>
+      </Button>
     </aside>
   );
 }

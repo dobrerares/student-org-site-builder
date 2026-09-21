@@ -41,6 +41,7 @@ import type { JSX } from "react";
 import { useId } from "react";
 import { onColorFor } from "@sosb/renderer";
 import type * as React from "react";
+import { Button, Input } from "@sosb/ui";
 
 export interface ColorPickerProps {
   readonly value: string | undefined;
@@ -85,7 +86,7 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
       {props.hint !== undefined ? <p className="field-hint">{props.hint}</p> : null}
       <div data-color-picker-row>
         <span data-color-swatch style={hasValue ? { background: props.value! } : undefined}>
-          <input
+          <Input
             id={inputId}
             type="color"
             value={swatchValue}
@@ -117,9 +118,9 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
           {hasValue ? props.value!.toUpperCase() : "Theme default"}
         </span>
         {hasValue ? (
-          <button type="button" data-testid="color-picker-reset" onClick={handleReset}>
+          <Button type="button" data-testid="color-picker-reset" onClick={handleReset}>
             Reset to default
-          </button>
+          </Button>
         ) : (
           <span data-testid="color-picker-default-note" role="status">
             (using theme default)

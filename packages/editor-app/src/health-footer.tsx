@@ -15,7 +15,7 @@
  *       <span data-count="error">3 errors</span>
  *       <span data-count="warning">7 warnings</span>
  *       <span data-count="info">2 info</span>
- *     </button>
+ *     </Button>
  *   </footer>
  *
  * The `aria-controls`/`aria-expanded` wiring is what assistive tech relies
@@ -26,6 +26,7 @@ import type { JSX } from "react";
 import type { ValidationResult } from "@sosb/schema";
 
 import { IconCheck, IconChevronUp } from "./icons.js";
+import { Button } from "@sosb/ui";
 
 export interface HealthFooterProps {
   readonly result: ValidationResult;
@@ -52,7 +53,7 @@ export function HealthFooter({
 
   return (
     <footer data-testid="health-footer" data-tone={tone}>
-      <button
+      <Button
         type="button"
         data-testid="health-footer-toggle"
         aria-controls="site-health-panel"
@@ -77,7 +78,7 @@ export function HealthFooter({
         <span data-health-chevron>
           <IconChevronUp size={14} />
         </span>
-      </button>
+      </Button>
     </footer>
   );
 }

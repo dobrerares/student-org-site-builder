@@ -23,11 +23,23 @@ const baseSite = minimal as unknown as Site;
 afterEach(() => cleanup());
 
 async function runAxe(node: HTMLElement): Promise<axe.AxeResults> {
-  return axe.run(node, {
-    rules: {
-      "color-contrast": { enabled: false },
+  return axe.run(
+    {
+      include: [node],
+      // Base UI's dialog brackets its popup with two visually hidden
+      // `role="button"` focus guards (`data-base-ui-focus-guard`). They are
+      // sentinels for the focus trap, never reachable as commands, and they
+      // are empty by construction — so axe's `aria-command-name` rule fires
+      // on an upstream implementation detail we do not author and must not
+      // "fix" by giving them names. Everything else in the dialog is audited.
+      exclude: [["[data-base-ui-focus-guard]"]],
     },
-  });
+    {
+      rules: {
+        "color-contrast": { enabled: false },
+      },
+    },
+  );
 }
 
 describe("AddBlockDialog axe-core accessibility", () => {

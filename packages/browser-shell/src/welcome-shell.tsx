@@ -17,6 +17,7 @@ import {
 import { openPreferredPersistentVfs } from "./persistent-vfs/preferred.js";
 import "./welcome-shell-css.js";
 import type * as React from "react";
+import { Button } from "@sosb/ui";
 
 export interface WelcomeLoadedSite {
   readonly site: Site;
@@ -236,7 +237,7 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
 
       <nav aria-label="Start options">
         {draft !== null ? (
-          <button
+          <Button
             type="button"
             data-testid="welcome-action-continue"
             onClick={() => {
@@ -249,9 +250,9 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
           >
             <span data-action-title>Continue where you left off</span>
             <span data-action-detail>Your draft is saved in this browser</span>
-          </button>
+          </Button>
         ) : null}
-        <button
+        <Button
           type="button"
           data-testid="welcome-action-wizard"
           onClick={() => setMode({ kind: "wizard" })}
@@ -264,8 +265,8 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
               ? "The easiest start: we build the first version for you"
               : "Pick up the setup you started earlier"}
           </span>
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           data-testid="welcome-action-template"
           disabled={primaryTemplate === undefined}
@@ -277,8 +278,8 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
         >
           <span data-action-title>Start from an example site</span>
           <span data-action-detail>A full demo site you replace with your own content</span>
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           data-testid="welcome-action-import"
           disabled={props.onImportSite === undefined}
@@ -292,8 +293,8 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
               ? "Saved-site opening is unavailable here"
               : "Pick the .zip you downloaded from this app"}
           </span>
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           data-testid="welcome-action-blank"
           onClick={() => {
@@ -302,7 +303,7 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
         >
           <span data-action-title>Start from scratch</span>
           <span data-action-detail>One empty page, you add the rest</span>
-        </button>
+        </Button>
       </nav>
 
       {importError !== null ? (
@@ -318,7 +319,7 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
             <ol>
               {props.recentSites.map((entry) => (
                 <li key={entry}>
-                  <button
+                  <Button
                     type="button"
                     data-testid="welcome-recent-site"
                     disabled={props.onOpenRecent === undefined}
@@ -327,7 +328,7 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
                     }}
                   >
                     {entry}
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ol>

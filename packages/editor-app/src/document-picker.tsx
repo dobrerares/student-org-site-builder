@@ -38,6 +38,7 @@ import type { JSX } from "react";
 import { useRef, useState } from "react";
 import type { DocumentAssetRef } from "@sosb/schema";
 import type * as React from "react";
+import { Button, Input } from "@sosb/ui";
 
 /**
  * Loose runtime view over `DocumentAssetRef`. Matches the schema's
@@ -199,27 +200,27 @@ export function DocumentPicker(props: DocumentPickerProps): JSX.Element {
           <span data-testid="document-picker-filename">{filenameFor(props.value)}</span>
           <span data-testid="document-picker-type">{typeLabelFor(props.value!.mime)}</span>
           <span data-testid="document-picker-size">{formatByteSize(props.value!.byteSize)}</span>
-          <button
+          <Button
             type="button"
             data-testid="document-picker-replace"
             disabled={isUploading}
             onClick={triggerFilePicker}
           >
             Replace document
-          </button>
+          </Button>
         </div>
       ) : (
-        <button
+        <Button
           type="button"
           data-testid="document-picker-add"
           disabled={isUploading}
           onClick={triggerFilePicker}
         >
           Add document
-        </button>
+        </Button>
       )}
 
-      <input
+      <Input
         ref={fileInputRef}
         type="file"
         data-testid="document-picker-file-input"

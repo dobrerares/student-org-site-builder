@@ -27,6 +27,7 @@
 import type { JSX } from "react";
 import type { CustomHtmlBlock } from "@sosb/schema";
 import type * as React from "react";
+import { Input, Textarea } from "@sosb/ui";
 
 export interface CustomHtmlBlockFormProps {
   readonly block: CustomHtmlBlock;
@@ -65,7 +66,7 @@ export function CustomHtmlBlockForm(props: CustomHtmlBlockFormProps): JSX.Elemen
 
       <label data-field-label="data.html">
         <span>Embed code</span>
-        <textarea
+        <Textarea
           data-field="data.html"
           rows={8}
           value={html}
@@ -76,7 +77,7 @@ export function CustomHtmlBlockForm(props: CustomHtmlBlockFormProps): JSX.Elemen
       </label>
 
       <label data-field-label="data.sanitize">
-        <input
+        <Input
           type="checkbox"
           data-field="data.sanitize"
           checked={sanitize}

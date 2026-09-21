@@ -23,6 +23,7 @@ import { useId } from "react";
 
 import { IconChevronRight } from "./icons.js";
 import { summarizeLabels } from "./field-tiers.js";
+import { Button } from "@sosb/ui";
 
 export interface MoreOptionsProps {
   /** `true` when the section is expanded. */
@@ -40,7 +41,7 @@ export function MoreOptions({ open, onToggle, labels, children }: MoreOptionsPro
   const summary = summarizeLabels(labels);
   return (
     <section data-testid="more-options" data-more-options data-open={open}>
-      <button
+      <Button
         type="button"
         data-testid="advanced-toggle"
         data-more-options-toggle
@@ -61,7 +62,7 @@ export function MoreOptions({ open, onToggle, labels, children }: MoreOptionsPro
                 : "Rarely needed — sensible values are already filled in."}
           </small>
         </span>
-      </button>
+      </Button>
       {open ? (
         <div id={panelId} data-testid="more-options-panel" data-more-options-panel>
           {children}

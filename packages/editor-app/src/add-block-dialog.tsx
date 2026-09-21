@@ -11,17 +11,22 @@
  * - Search filter narrows by label or description.
  * - Escape closes; click on an entry picks it.
  *
- * Accessibility: `role="dialog"` + `aria-modal="true"` + an accessible
- * label, focus on the search box on open, every entry is a real
+ * Accessibility: the overlay is `@sosb/ui`'s Base UI dialog via
+ * `<EditorDialog>`, so focus is trapped inside while open and returns to
+ * whatever opened it on close. `role="dialog"` + `aria-modal="true"` + an
+ * accessible label come from the primitive; the search box takes initial
+ * focus so a keyboard user can type immediately; every entry is a real
  * `<button type="button">` so keyboard activation works. A backdrop sits
  * behind the dialog; clicking it dismisses, matching the Escape key.
  */
 import type { JSX } from "react";
+import type * as React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { buildBlockCatalog, type BlockCatalogEntry } from "./block-catalog.js";
+import { EditorDialog } from "./editor-dialog.js";
 import { IconClose } from "./icons.js";
-import type * as React from "react";
+import { Button, Input } from "@sosb/ui";
 
 const CATEGORY_LABELS: Record<string, string> = {
   mandatory: "Essentials",
@@ -44,21 +49,16 @@ export interface AddBlockDialogProps {
   readonly onClose: () => void;
 }
 
-export function AddBlockDialog(props: AddBlockDialogProps): JSX.Element | null {
+export function AddBlockDialog(props: AddBlockDialogProps): JSX.Element {
   const catalog = useMemo(() => buildBlockCatalog(), []);
   const [query, setQuery] = useState<string>("");
   const searchRef = useRef<HTMLInputElement | null>(null);
 
-  // Focus the search input on open so a keyboard user can type immediately.
+  // Reset the filter when the dialog closes, so reopening starts clean.
+  // Initial focus is Base UI's job now — see `initialFocus` below.
   useEffect(() => {
-    if (props.open) {
-      searchRef.current?.focus();
-    } else {
-      setQuery("");
-    }
+    if (!props.open) setQuery("");
   }, [props.open]);
-
-  if (!props.open) return null;
 
   const trimmed = query.trim().toLowerCase();
   function matches(entry: BlockCatalogEntry): boolean {
@@ -78,26 +78,14 @@ export function AddBlockDialog(props: AddBlockDialogProps): JSX.Element | null {
     .filter((group) => group.entries.length > 0);
 
   return (
-    <div
-      data-testid="dialog-backdrop"
-      data-dialog-backdrop
-      onClick={(event: React.MouseEvent<HTMLDivElement>) => {
-        if (event.target === event.currentTarget) props.onClose();
-      }}
+    <EditorDialog
+      open={props.open}
+      onClose={props.onClose}
+      testId="add-block-dialog"
+      label="Add a page section"
+      initialFocus={searchRef}
     >
-      <div
-        data-testid="add-block-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Add a page section"
-        tabIndex={-1}
-        onKeyDown={(event: React.KeyboardEvent<HTMLDivElement>): void => {
-          if (event.key === "Escape") {
-            event.stopPropagation();
-            props.onClose();
-          }
-        }}
-      >
+      <>
         <header>
           <div>
             <h2>Add a page section</h2>
@@ -105,7 +93,7 @@ export function AddBlockDialog(props: AddBlockDialogProps): JSX.Element | null {
               Pick a section. It lands at the bottom of the page; you can move it after.
             </p>
           </div>
-          <button
+          <Button
             type="button"
             data-testid="add-block-close"
             data-icon-button
@@ -114,12 +102,12 @@ export function AddBlockDialog(props: AddBlockDialogProps): JSX.Element | null {
             onClick={props.onClose}
           >
             <IconClose size={18} />
-          </button>
+          </Button>
         </header>
 
         <label data-testid="add-block-search-label">
           <span>Search</span>
-          <input
+          <Input
             ref={searchRef}
             type="search"
             data-testid="add-block-search"
@@ -144,7 +132,7 @@ export function AddBlockDialog(props: AddBlockDialogProps): JSX.Element | null {
                 <ul>
                   {group.entries.map((entry) => (
                     <li key={entry.type}>
-                      <button
+                      <Button
                         type="button"
                         data-testid="add-block-entry"
                         data-block-type={entry.type}
@@ -152,7 +140,7 @@ export function AddBlockDialog(props: AddBlockDialogProps): JSX.Element | null {
                       >
                         <span data-testid="add-block-entry-label">{entry.label}</span>
                         <span data-testid="add-block-entry-description">{entry.description}</span>
-                      </button>
+                      </Button>
                     </li>
                   ))}
                 </ul>
@@ -160,7 +148,7 @@ export function AddBlockDialog(props: AddBlockDialogProps): JSX.Element | null {
             ))}
           </ul>
         )}
-      </div>
-    </div>
+      </>
+    </EditorDialog>
   );
 }

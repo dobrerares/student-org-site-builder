@@ -9,7 +9,7 @@
  */
 import { createRoot } from "react-dom/client";
 import { flushSync } from "react-dom";
-import "@sosb/ui/styles.css";
+import { injectBuilderCss } from "@sosb/ui/css";
 import type { Site } from "@sosb/schema";
 
 import { EditorApp } from "../packages/editor-app/src/index.js";
@@ -24,6 +24,7 @@ declare global {
 
 window.__sosbEditor = {
   mount(site, container) {
+    injectBuilderCss();
     const root = createRoot(container);
     // `flushSync` so the spec can query the DOM straight after `mount()`
     // returns — `createRoot().render()` is otherwise scheduled.

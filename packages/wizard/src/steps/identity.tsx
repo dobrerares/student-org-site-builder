@@ -17,6 +17,7 @@ import type { JSX } from "react";
 import { buildThemeCatalog } from "@sosb/themes";
 
 import type { IdentityData } from "../state-machine.js";
+import { Input } from "@sosb/ui";
 
 export interface IdentityStepProps {
   readonly data: IdentityData;
@@ -35,7 +36,7 @@ export function IdentityStep(props: IdentityStepProps): JSX.Element {
         {THEMES.map((theme) => (
           <li key={theme.id}>
             <label>
-              <input
+              <Input
                 type="radio"
                 name="theme"
                 value={theme.id}

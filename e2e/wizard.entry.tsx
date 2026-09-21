@@ -9,7 +9,7 @@
  */
 import { createRoot } from "react-dom/client";
 import { flushSync } from "react-dom";
-import "@sosb/ui/styles.css";
+import { injectBuilderCss } from "@sosb/ui/css";
 import type { Site } from "@sosb/schema";
 
 import { Wizard } from "../packages/wizard/src/index.js";
@@ -36,6 +36,7 @@ const bridge: WizardBridge = {
   completed: null,
   cancelled: false,
   mount(opts, container) {
+    injectBuilderCss();
     const root = createRoot(container);
     // `flushSync` so the spec can query the DOM straight after `mount()`
     // returns — `createRoot().render()` is otherwise scheduled.

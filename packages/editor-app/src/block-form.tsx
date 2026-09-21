@@ -61,6 +61,7 @@ import { MEDIA_PICKER_RENDERERS } from "./media-picker-renderers.js";
 import { rebaseElement } from "./rebase-element.js";
 import { IconArrowDown, IconArrowUp, IconPlus, IconTrash } from "./icons.js";
 import type * as React from "react";
+import { Button, Input, NativeSelect, Textarea } from "@sosb/ui";
 
 /**
  * Schema-identity registry consumed by the form-generator walk.
@@ -319,7 +320,7 @@ function FieldRenderer({
                     <span className="block-form__item-index" aria-hidden="true">
                       {idx + 1} of {items.length}
                     </span>
-                    <button
+                    <Button
                       type="button"
                       data-action="move-up"
                       data-icon-button
@@ -329,8 +330,8 @@ function FieldRenderer({
                       onClick={() => move(idx, idx - 1)}
                     >
                       <IconArrowUp size={15} />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
                       data-action="move-down"
                       data-icon-button
@@ -340,8 +341,8 @@ function FieldRenderer({
                       onClick={() => move(idx, idx + 1)}
                     >
                       <IconArrowDown size={15} />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
                       data-action="remove"
                       data-tone="danger"
@@ -351,17 +352,17 @@ function FieldRenderer({
                     >
                       <IconTrash size={15} />
                       <span>Remove</span>
-                    </button>
+                    </Button>
                   </div>
                 </li>
               );
             })}
           </ol>
           {items.length === 0 ? <p data-array-empty>Nothing here yet.</p> : null}
-          <button type="button" data-action="add" data-variant="secondary" onClick={add}>
+          <Button type="button" data-action="add" data-variant="secondary" onClick={add}>
             <IconPlus size={15} />
             <span>Add item</span>
-          </button>
+          </Button>
         </fieldset>
       );
     }
@@ -372,7 +373,7 @@ function FieldRenderer({
         <label data-field-label={dottedPath} data-multiline={multiline}>
           <span>{label}</span>
           {multiline ? (
-            <textarea
+            <Textarea
               data-field={dottedPath}
               rows={4}
               value={typeof value === "string" ? value : ""}
@@ -384,7 +385,7 @@ function FieldRenderer({
               }}
             />
           ) : (
-            <input
+            <Input
               type="text"
               data-field={dottedPath}
               value={typeof value === "string" ? value : ""}
@@ -405,7 +406,7 @@ function FieldRenderer({
       return (
         <label data-field-label={dottedPath}>
           <span>{label}</span>
-          <input
+          <Input
             type="number"
             data-field={dottedPath}
             value={typeof value === "number" ? String(value) : ""}
@@ -425,7 +426,7 @@ function FieldRenderer({
     case "boolean":
       return (
         <label data-field-label={dottedPath}>
-          <input
+          <Input
             type="checkbox"
             data-field={dottedPath}
             checked={value === true}
@@ -441,7 +442,7 @@ function FieldRenderer({
       return (
         <label data-field-label={dottedPath}>
           <span>{label}</span>
-          <select
+          <NativeSelect
             data-field={dottedPath}
             value={typeof value === "string" ? value : ""}
             onChange={(event: React.FormEvent<HTMLSelectElement>) => {
@@ -455,7 +456,7 @@ function FieldRenderer({
                 {optionLabel(option)}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
       );
 
@@ -490,7 +491,7 @@ function FieldRenderer({
             <legend>{label}</legend>
             <label data-field-label={`${dottedPath}.0`}>
               <span>Latitude</span>
-              <input
+              <Input
                 type="number"
                 step="any"
                 data-field={`${dottedPath}.0`}
@@ -502,7 +503,7 @@ function FieldRenderer({
             </label>
             <label data-field-label={`${dottedPath}.1`}>
               <span>Longitude</span>
-              <input
+              <Input
                 type="number"
                 step="any"
                 data-field={`${dottedPath}.1`}

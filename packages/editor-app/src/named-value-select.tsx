@@ -34,6 +34,7 @@
 import type { JSX } from "react";
 import { useId } from "react";
 import type * as React from "react";
+import { NativeSelect } from "@sosb/ui";
 
 export interface NamedValueOption {
   readonly value: string;
@@ -72,7 +73,7 @@ export function NamedValueSelect(props: NamedValueSelectProps): JSX.Element {
         </label>
       ) : null}
       {props.hint !== undefined ? <p className="field-hint">{props.hint}</p> : null}
-      <select
+      <NativeSelect
         id={selectId}
         value={trimmed}
         onChange={handleChange}
@@ -89,7 +90,7 @@ export function NamedValueSelect(props: NamedValueSelectProps): JSX.Element {
             Custom: {trimmed}
           </option>
         )}
-      </select>
+      </NativeSelect>
     </div>
   );
 }

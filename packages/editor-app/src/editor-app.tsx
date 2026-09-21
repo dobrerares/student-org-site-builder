@@ -150,6 +150,7 @@ import {
   populateAssetDisplayUrls,
 } from "./site-io.js";
 import { fontBlobUrlForPath, revokeFontBlobUrls } from "./font-blobs.js";
+import { Button, Tabs } from "@sosb/ui";
 
 const MOBILE_BREAKPOINT_PX = 768;
 
@@ -963,7 +964,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   // Back-affordance shared by the two drilled views. Drills out to the
   // un-drilled `blocks` view, mirroring the Escape keyboard handler.
   const backToBlocksButton = (
-    <button
+    <Button
       type="button"
       data-testid="drill-back"
       data-action="drill-back"
@@ -971,7 +972,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     >
       <IconArrowLeft size={16} />
       <span>Back to page sections</span>
-    </button>
+    </Button>
   );
 
   // Per-page settings form: the `pages.[]` element node from the spine
@@ -1127,7 +1128,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
         ) : null}
         <nav data-testid="drill-links" aria-label="More settings">
           {activePage !== undefined ? (
-            <button
+            <Button
               type="button"
               data-testid="page-settings-link"
               data-action="drill-page"
@@ -1143,9 +1144,9 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
                 </span>
               </span>
               <IconChevronRight size={16} />
-            </button>
+            </Button>
           ) : null}
-          <button
+          <Button
             type="button"
             data-testid="site-settings-link"
             data-action="drill-settings"
@@ -1161,8 +1162,8 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
               </span>
             </span>
             <IconChevronRight size={16} />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             data-testid="drill-in-theme"
             data-action="drill-theme"
@@ -1176,7 +1177,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
               <span data-testid="drill-in-theme-hint">Look, colours, fonts and spacing</span>
             </span>
             <IconChevronRight size={16} />
-          </button>
+          </Button>
         </nav>
       </>
     );
@@ -1197,7 +1198,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
               site as a folder ready to publish.
             </p>
           </div>
-          <button
+          <Button
             type="button"
             data-icon-button
             data-testid="getting-started-dismiss"
@@ -1206,7 +1207,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
             onClick={dismissTip}
           >
             <IconClose size={16} />
-          </button>
+          </Button>
         </aside>
       ) : null}
       {pagesListNode}
@@ -1234,7 +1235,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
           aria-label="Preview viewport size"
         >
           {PREVIEW_VIEWPORT_OPTIONS.map((option) => (
-            <button
+            <Button
               key={option.id}
               type="button"
               data-testid="viewport-preview-option"
@@ -1246,7 +1247,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
             >
               <span data-testid="viewport-preview-label">{option.label}</span>
               <span data-testid="viewport-preview-size">{option.size}</span>
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -1284,27 +1285,36 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
         saveStatus={saveStatus}
       />
       {isNarrow ? (
-        <div data-testid="layout-tabs">
-          <div role="tablist">
-            <button
-              type="button"
-              data-testid="layout-tab"
-              data-active={activeTab === "editor"}
-              onClick={() => setActiveTab("editor")}
-            >
+        // Narrow layout: real tabs from `@sosb/ui` (Base UI). The previous
+        // markup was a `role="tablist"` wrapper around two plain buttons —
+        // no `role="tab"`, no `aria-selected`, no panel association and no
+        // arrow-key travel. The shared primitive supplies all four; the
+        // `data-testid` / `data-active` hooks the stylesheet and tests use
+        // are preserved.
+        <Tabs.Root
+          data-testid="layout-tabs"
+          value={activeTab}
+          onValueChange={(value) => setActiveTab(value as TabName)}
+        >
+          <Tabs.List>
+            <Tabs.Tab value="editor" data-testid="layout-tab" data-active={activeTab === "editor"}>
               {t("tabs.editor")}
-            </button>
-            <button
-              type="button"
+            </Tabs.Tab>
+            <Tabs.Tab
+              value="preview"
               data-testid="layout-tab"
               data-active={activeTab === "preview"}
-              onClick={() => setActiveTab("preview")}
             >
               {t("tabs.preview")}
-            </button>
-          </div>
-          {activeTab === "editor" ? editorPane : previewPane}
-        </div>
+            </Tabs.Tab>
+          </Tabs.List>
+          {/* Only the active pane is mounted: the preview iframe is
+              expensive, and mounting both would double the renderer work
+              on every edit. */}
+          <Tabs.Panel value={activeTab}>
+            {activeTab === "editor" ? editorPane : previewPane}
+          </Tabs.Panel>
+        </Tabs.Root>
       ) : (
         <div data-testid="layout-two-pane">
           {editorPane}
@@ -1369,7 +1379,7 @@ function TopBar(props: TopBarProps): JSX.Element {
       </p>
       <div data-topbar-actions>
         <span data-button-group role="group" aria-label="History">
-          <button
+          <Button
             type="button"
             data-testid="undo-button"
             data-action="undo"
@@ -1380,8 +1390,8 @@ function TopBar(props: TopBarProps): JSX.Element {
             onClick={props.onUndo}
           >
             <IconUndo size={16} />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             data-testid="redo-button"
             data-action="redo"
@@ -1392,25 +1402,25 @@ function TopBar(props: TopBarProps): JSX.Element {
             onClick={props.onRedo}
           >
             <IconRedo size={16} />
-          </button>
+          </Button>
         </span>
-        <button
+        <Button
           type="button"
           data-action="import"
           title="Open a .zip you downloaded earlier"
           onClick={props.onImport}
         >
           {t("topbar.import")}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           data-action="reset"
           title="Go back to the start screen"
           onClick={props.onReset}
         >
           {t("topbar.reset")}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           data-action="export"
           data-variant="primary"
@@ -1418,7 +1428,7 @@ function TopBar(props: TopBarProps): JSX.Element {
           onClick={props.onExport}
         >
           {t("topbar.export")}
-        </button>
+        </Button>
       </div>
     </header>
   );

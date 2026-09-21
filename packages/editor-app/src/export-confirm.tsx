@@ -11,7 +11,9 @@
  *    anyway" button is enabled immediately. Lists every warning in the
  *    dialog body.
  *
- * Implements the WAI-ARIA dialog pattern:
+ * Implements the WAI-ARIA dialog pattern through `<EditorDialog>` (Base UI
+ * via `@sosb/ui`), which adds the focus trap and focus return the
+ * hand-rolled overlay never had:
  *  - `role="dialog"`, `aria-modal="true"`.
  *  - `aria-labelledby` points at the heading.
  *  - `aria-describedby` points at the explanatory paragraph.
@@ -21,11 +23,13 @@
  * `onExport` directly.
  */
 import type { JSX } from "react";
+import type * as React from "react";
 import { useState } from "react";
 import type { ValidationIssue, ValidationResult } from "@sosb/schema";
 import { issuePathLabel } from "./field-labels.js";
 import { pathToDotted } from "./issue-navigate.js";
-import type * as React from "react";
+import { EditorDialog } from "./editor-dialog.js";
+import { Button, Input } from "@sosb/ui";
 
 const CONFIRM_PHRASE = "DOWNLOAD";
 
@@ -48,27 +52,15 @@ export function ExportConfirmDialog({
   const descId = "export-confirm-description";
 
   return (
-    <div
-      data-testid="dialog-backdrop"
-      data-dialog-backdrop
-      onClick={(event: React.MouseEvent<HTMLDivElement>) => {
-        if (event.target === event.currentTarget) onCancel();
-      }}
+    <EditorDialog
+      open
+      onClose={onCancel}
+      testId="export-confirm-dialog"
+      labelledBy={headingId}
+      describedBy={descId}
+      tone={hasErrors ? "error" : "warning"}
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={headingId}
-        aria-describedby={descId}
-        data-testid="export-confirm-dialog"
-        data-tone={hasErrors ? "error" : "warning"}
-        onKeyDown={(event: React.KeyboardEvent<HTMLDivElement>) => {
-          if (event.key === "Escape") {
-            event.stopPropagation();
-            onCancel();
-          }
-        }}
-      >
+      <>
         <h2 id={headingId}>
           {hasErrors ? "Some things need fixing first" : "Download with warnings?"}
         </h2>
@@ -88,7 +80,7 @@ export function ExportConfirmDialog({
             <span>
               To download anyway, type <strong>{CONFIRM_PHRASE}</strong> below:
             </span>
-            <input
+            <Input
               type="text"
               data-testid="export-confirm-input"
               value={phrase}
@@ -102,10 +94,10 @@ export function ExportConfirmDialog({
         ) : null}
 
         <div data-testid="export-confirm-actions">
-          <button type="button" data-testid="export-cancel-button" onClick={() => onCancel()}>
+          <Button type="button" data-testid="export-cancel-button" onClick={() => onCancel()}>
             {hasErrors ? "Go back and fix" : "Cancel"}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             data-testid="export-confirm-button"
             disabled={!confirmEnabled}
@@ -114,10 +106,10 @@ export function ExportConfirmDialog({
             }}
           >
             Download anyway
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
+      </>
+    </EditorDialog>
   );
 }
 

@@ -1735,13 +1735,19 @@ body {
 /* ============================================================
  * 15. Dialogs
  * ============================================================ */
+/*
+ * Dialog chrome.
+ *
+ * Since the editor's modals moved onto Base UI (via EditorDialog), the
+ * backdrop and the popup are *siblings* in a portal rather than parent and
+ * child, so the backdrop no longer centres the dialog — the popup positions
+ * itself. The backdrop must also sit strictly below the popup, or it
+ * swallows every click inside the dialog.
+ */
 [data-dialog-backdrop] {
   position: fixed;
   inset: 0;
   z-index: 100;
-  display: grid;
-  place-items: center;
-  padding: var(--sp-4);
   background: rgba(17, 24, 39, 0.45);
   backdrop-filter: blur(2px);
   animation: sosb-fade-in 120ms ease;
@@ -1754,9 +1760,18 @@ body {
   from { opacity: 0; transform: translateY(8px) scale(0.98); }
   to { opacity: 1; transform: none; }
 }
+/*
+ * Positioning and centring come from the shared dialog popup in
+ * @sosb/ui, which uses Tailwind's 'translate' longhand. Do NOT add a
+ * transform: translate(-50%, -50%) here: 'translate' and 'transform'
+ * compose, so the dialog would be offset twice and land off-screen.
+ * Only the z-index needs stating, so the popup clears the backdrop's
+ * unlayered z-index above.
+ */
 [data-testid="add-block-dialog"],
 [data-testid="export-confirm-dialog"] {
-  width: min(760px, 100%);
+  z-index: 101;
+  width: min(760px, calc(100vw - 2 * var(--sp-4)));
   max-height: min(86vh, 800px);
   overflow-y: auto;
   background: var(--paper-raised);
@@ -2325,10 +2340,7 @@ button[data-issue] [data-issue-path]::before {
   [data-testid="export-confirm-dialog"] {
     max-height: 92vh;
     padding: var(--sp-3);
-  }
-  [data-dialog-backdrop] {
-    padding: var(--sp-2);
-    align-items: end;
+    width: calc(100vw - 2 * var(--sp-2));
   }
 }
 `;

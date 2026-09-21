@@ -35,6 +35,7 @@ import { nativeLanguageName } from "@sosb/renderer";
 import { missingTranslationLanguages } from "./pages-ops.js";
 import { IconArrowDown, IconArrowUp, IconCopy, IconPlus, IconTrash } from "./icons.js";
 import type * as React from "react";
+import { Button, Input } from "@sosb/ui";
 
 export interface PagesListProps {
   readonly site: Site;
@@ -133,7 +134,7 @@ export function PagesList(props: PagesListProps): JSX.Element {
         data-active={isActive}
         aria-current={isActive ? "true" : undefined}
       >
-        <button
+        <Button
           type="button"
           data-action="select"
           data-index={idx}
@@ -146,9 +147,9 @@ export function PagesList(props: PagesListProps): JSX.Element {
             {isMultiLanguage ? <span data-field="lang">{page.lang}</span> : null}
             {!page.showInNav ? <span data-page-hidden>hidden from menu</span> : null}
           </span>
-        </button>
+        </Button>
         <span data-row-actions role="group" aria-label={`Actions for ${page.navLabel}`}>
-          <button
+          <Button
             type="button"
             data-action="move-up"
             data-icon-button
@@ -159,8 +160,8 @@ export function PagesList(props: PagesListProps): JSX.Element {
             title="Move up in the menu"
           >
             <IconArrowUp size={15} />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             data-action="move-down"
             data-icon-button
@@ -171,8 +172,8 @@ export function PagesList(props: PagesListProps): JSX.Element {
             title="Move down in the menu"
           >
             <IconArrowDown size={15} />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             data-action="clone"
             data-icon-button
@@ -182,8 +183,8 @@ export function PagesList(props: PagesListProps): JSX.Element {
             title="Duplicate this page"
           >
             <IconCopy size={15} />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             data-action="delete"
             data-icon-button={confirming ? undefined : true}
@@ -206,7 +207,7 @@ export function PagesList(props: PagesListProps): JSX.Element {
           >
             <IconTrash size={15} />
             {confirming ? <span>Confirm delete</span> : null}
-          </button>
+          </Button>
         </span>
         {missing.length > 0 && (
           <span data-testid="missing-translation-indicator" role="status">
@@ -214,7 +215,7 @@ export function PagesList(props: PagesListProps): JSX.Element {
           </span>
         )}
         {missing.map((lng) => (
-          <button
+          <Button
             key={lng}
             type="button"
             data-action="add-language-version"
@@ -226,7 +227,7 @@ export function PagesList(props: PagesListProps): JSX.Element {
           >
             <IconPlus size={14} />
             <span>Add {nativeLanguageName(lng)} version</span>
-          </button>
+          </Button>
         ))}
       </li>
     );
@@ -276,7 +277,7 @@ export function PagesList(props: PagesListProps): JSX.Element {
       >
         <label>
           <span>Add a page</span>
-          <input
+          <Input
             type="text"
             data-testid="pages-list-add-slug"
             value={newSlug}
@@ -288,9 +289,9 @@ export function PagesList(props: PagesListProps): JSX.Element {
             autoComplete="off"
           />
         </label>
-        <button type="submit" data-action="add" data-variant="primary">
+        <Button type="submit" data-action="add" data-variant="primary">
           Create page
-        </button>
+        </Button>
         <p data-form-help>
           {newSlug.trim().length > 0 && checkSlug(newSlug.trim()) !== null
             ? `Link will be /${slugify(newSlug) || "…"}`

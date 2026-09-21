@@ -14,6 +14,7 @@
  * every field's markup unconditionally.
  */
 import type { JSX } from "react";
+import { Hint } from "@sosb/ui";
 
 export interface FieldHintProps {
   /** Advisory text; when `undefined`, nothing renders. */
@@ -22,9 +23,11 @@ export interface FieldHintProps {
 
 export function FieldHint(props: FieldHintProps): JSX.Element | null {
   if (props.hint === undefined) return null;
+  // `field-hint` is kept: the editor stylesheet targets it, and unlayered
+  // rules there outrank the shared package's `@layer utilities` defaults.
   return (
-    <p className="field-hint" data-testid="field-hint">
+    <Hint className="field-hint" data-testid="field-hint">
       {props.hint}
-    </p>
+    </Hint>
   );
 }

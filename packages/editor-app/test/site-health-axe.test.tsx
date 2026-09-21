@@ -24,11 +24,22 @@ const site = tiered as unknown as Site;
  */
 
 async function axeCheck(node: Element): Promise<void> {
-  const results = await axe.run(node, {
-    rules: {
-      "color-contrast": { enabled: false },
+  const results = await axe.run(
+    {
+      include: [node],
+      // Base UI's dialog brackets its popup with two visually hidden
+      // `role="button"` focus guards (`data-base-ui-focus-guard`). They are
+      // sentinels for the focus trap, never reachable as commands, and
+      // empty by construction — so axe's `aria-command-name` rule fires on
+      // an upstream implementation detail. Everything we author is audited.
+      exclude: [["[data-base-ui-focus-guard]"]],
     },
-  });
+    {
+      rules: {
+        "color-contrast": { enabled: false },
+      },
+    },
+  );
   expect(results.violations).toEqual([]);
 }
 

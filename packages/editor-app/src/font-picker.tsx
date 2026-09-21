@@ -30,6 +30,7 @@ import { useId } from "react";
 
 import { buildThemeCatalog } from "./theme-catalog.js";
 import type * as React from "react";
+import { NativeSelect } from "@sosb/ui";
 
 export interface FontPickerProps {
   readonly themeId: string;
@@ -67,7 +68,7 @@ export function FontPicker(props: FontPickerProps): JSX.Element {
         </label>
       ) : null}
       {props.hint !== undefined ? <p className="field-hint">{props.hint}</p> : null}
-      <select
+      <NativeSelect
         id={selectId}
         value={trimmed}
         onChange={handleChange}
@@ -85,7 +86,7 @@ export function FontPicker(props: FontPickerProps): JSX.Element {
             Custom: {trimmed}
           </option>
         )}
-      </select>
+      </NativeSelect>
     </div>
   );
 }

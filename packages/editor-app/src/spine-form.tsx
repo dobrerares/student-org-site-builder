@@ -40,6 +40,7 @@ import { MoreOptions } from "./more-options.js";
 import { rebaseElement } from "./rebase-element.js";
 import { isLongTextField } from "./block-form.js";
 import type * as React from "react";
+import { Button, Input, NativeSelect, Textarea } from "@sosb/ui";
 
 export interface SpineFormProps {
   readonly fields: FieldNode[];
@@ -206,7 +207,7 @@ function FieldRenderer({
                     <span className="block-form__item-index" aria-hidden="true">
                       {idx + 1} of {items.length}
                     </span>
-                    <button
+                    <Button
                       type="button"
                       data-action="move-up"
                       data-icon-button
@@ -216,8 +217,8 @@ function FieldRenderer({
                       onClick={() => move(idx, idx - 1)}
                     >
                       <IconArrowUp size={15} />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
                       data-action="move-down"
                       data-icon-button
@@ -227,8 +228,8 @@ function FieldRenderer({
                       onClick={() => move(idx, idx + 1)}
                     >
                       <IconArrowDown size={15} />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
                       data-action="remove"
                       data-tone="danger"
@@ -238,7 +239,7 @@ function FieldRenderer({
                     >
                       <IconTrash size={15} />
                       <span>Remove</span>
-                    </button>
+                    </Button>
                   </div>
                 </li>
               );
@@ -249,10 +250,10 @@ function FieldRenderer({
               {t("form.array.empty")}
             </p>
           ) : null}
-          <button type="button" data-action="add" data-variant="secondary" onClick={add}>
+          <Button type="button" data-action="add" data-variant="secondary" onClick={add}>
             <IconPlus size={15} />
             <span>Add {singular(label)}</span>
-          </button>
+          </Button>
         </fieldset>
       );
     }
@@ -265,7 +266,7 @@ function FieldRenderer({
         <label data-field-label={dottedPath} data-multiline={multiline}>
           <span>{label}</span>
           {multiline ? (
-            <textarea
+            <Textarea
               data-field={dottedPath}
               rows={3}
               value={typeof value === "string" ? value : ""}
@@ -277,7 +278,7 @@ function FieldRenderer({
               }}
             />
           ) : (
-            <input
+            <Input
               type={inputTypeFor(node.name)}
               data-field={dottedPath}
               list={listId}
@@ -306,7 +307,7 @@ function FieldRenderer({
       return (
         <label data-field-label={dottedPath}>
           <span>{label}</span>
-          <input
+          <Input
             type="number"
             data-field={dottedPath}
             value={typeof value === "number" ? String(value) : ""}
@@ -327,7 +328,7 @@ function FieldRenderer({
     case "boolean":
       return (
         <label data-field-label={dottedPath}>
-          <input
+          <Input
             type="checkbox"
             data-field={dottedPath}
             checked={value === true}
@@ -344,7 +345,7 @@ function FieldRenderer({
       return (
         <label data-field-label={dottedPath}>
           <span>{label}</span>
-          <select
+          <NativeSelect
             data-field={dottedPath}
             value={typeof value === "string" ? value : ""}
             onChange={(event: React.FormEvent<HTMLSelectElement>) => {
@@ -357,7 +358,7 @@ function FieldRenderer({
                 {optionLabel(option)}
               </option>
             ))}
-          </select>
+          </NativeSelect>
           <FieldHint hint={node.hint} />
         </label>
       );
@@ -413,7 +414,7 @@ function FieldRenderer({
         return (
           <label data-field-label={dottedPath}>
             <span>{label}</span>
-            <select
+            <NativeSelect
               data-field={dottedPath}
               value={current}
               onChange={(event: React.FormEvent<HTMLSelectElement>) => {
@@ -425,7 +426,7 @@ function FieldRenderer({
                   {languageOptionLabel(code)}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
             <FieldHint
               hint={node.hint ?? "Visitors see this language first. It needs at least one page."}
             />
@@ -462,7 +463,7 @@ function FieldRenderer({
                 const locked = checked && (isDefault || hasPages);
                 return (
                   <label key={code} data-choice data-checked={checked}>
-                    <input
+                    <Input
                       type="checkbox"
                       data-field={`${dottedPath}.${code}`}
                       checked={checked}
