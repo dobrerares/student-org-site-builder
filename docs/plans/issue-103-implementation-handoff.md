@@ -63,6 +63,29 @@ of [issue #102](../plans/issue-102-builder-workflows.md), under
   reference. The rule is narrow — anything also used by public content stays,
   and unreferenced orphans stay.
 
+### Interaction with #116 (preview fidelity)
+
+Articles are the deepest URLs the builder emits — `articles/<slug>/` and
+`<lang>/articles/<slug>/` — so they are the sharpest test of #116's
+depth-aware asset prefix. `renderSite` computes the prefix from the
+Article's own dist path; reusing a Page's would emit `../assets/…` from a
+directory needing `../../`. Regression tests pin both depths, the font URLs,
+the preview resolver's precedence over the prefix, and the fact that an
+article card on a Page uses the _Page's_ depth rather than the linked
+Article's.
+
+Zip export keeps #116's single `dist/assets/…` copy; the Draft-only filter
+simply skips entries before that copy is written, rather than reinstating the
+per-directory mirroring #116 removed.
+
+Preview navigation merges with #116's relative-href normalisation, so an
+author-written relative link resolves into an Article exactly as an absolute
+one does. The base a relative href resolves against can itself be an Article,
+so `resolvePreviewTarget` takes a `PreviewTarget` rather than a page index.
+The preview reload key includes which Article is shown, because morphing
+between two Articles would carry a scroll offset into a document the reader
+has left.
+
 ### Editor (`@sosb/editor-app`)
 
 `ArticlesPanel`, `ArticleSettingsForm`, `ArticleListInspector`, `TagManager`,
