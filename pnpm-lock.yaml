@@ -235,6 +235,9 @@ importers:
       '@sosb/build':
         specifier: workspace:*
         version: link:../build
+      '@sosb/markdown':
+        specifier: workspace:*
+        version: link:../markdown
       '@testing-library/dom':
         specifier: 10.4.1
         version: 10.4.1
