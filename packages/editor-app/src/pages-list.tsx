@@ -36,6 +36,7 @@ import { missingTranslationLanguages } from "./pages-ops.js";
 import { IconArrowDown, IconArrowUp, IconCopy, IconPlus, IconTrash } from "./icons.js";
 import type * as React from "react";
 import { Button, Input } from "@sosb/ui";
+import { useTranslator } from "./i18n-context.js";
 
 export interface PagesListProps {
   readonly site: Site;
@@ -50,6 +51,16 @@ export interface PagesListProps {
    * language. Optional so monolingual editors don't have to wire it up.
    */
   readonly onAddLanguageVersion?: (index: number, targetLang: string) => void;
+  /**
+   * Free-text filter over menu label and slug (issue #102's Pages
+   * destination). Non-matching rows are omitted from the render, but every
+   * row keeps the index of its page in `site.pages` — the select, move,
+   * clone and delete callbacks all address pages by that index, so filtering
+   * the array instead would silently operate on the wrong page.
+   */
+  readonly query?: string;
+  /** Hide the inline "add a page" form — the destination has its own. */
+  readonly hideAddForm?: boolean;
 }
 
 /**
@@ -68,6 +79,7 @@ function slugify(raw: string): string {
 export function PagesList(props: PagesListProps): JSX.Element {
   const { site, activeIndex, onSelect, onAdd, onClone, onDelete, onMove, onAddLanguageVersion } =
     props;
+  const t = useTranslator();
   const [newSlug, setNewSlug] = useState("");
   const [addError, setAddError] = useState<string | null>(null);
   const [confirmIndex, setConfirmIndex] = useState<number | null>(null);
@@ -118,6 +130,15 @@ export function PagesList(props: PagesListProps): JSX.Element {
   }
 
   const isMultiLanguage = site.languages.length >= 2;
+
+  const needle = (props.query ?? "").trim().toLowerCase();
+  function matchesQuery(page: Page): boolean {
+    if (needle === "") return true;
+    return (
+      page.navLabel.toLowerCase().includes(needle) || page.slug.toLowerCase().includes(needle)
+    );
+  }
+  const anyMatch = site.pages.some(matchesQuery);
 
   function renderRow(page: Page, idx: number): JSX.Element {
     const isActive = idx === activeIndex;
@@ -241,12 +262,16 @@ export function PagesList(props: PagesListProps): JSX.Element {
           <p data-section-hint>Each page becomes an entry in your site menu.</p>
         </div>
       </header>
-      {isMultiLanguage ? (
+      {!anyMatch ? (
+        <p data-testid="pages-list-no-matches" data-empty-state>
+          {t("pages.empty.filtered")}
+        </p>
+      ) : isMultiLanguage ? (
         <div data-testid="pages-list-grouped">
           {site.languages.map((lang) => {
             const indexed = site.pages
               .map((page, idx) => ({ page, idx }))
-              .filter(({ page }) => page.lang === lang);
+              .filter(({ page }) => page.lang === lang && matchesQuery(page));
             if (indexed.length === 0) return null;
             return (
               <section
@@ -265,9 +290,10 @@ export function PagesList(props: PagesListProps): JSX.Element {
         </div>
       ) : (
         <ol data-testid="pages-list-items">
-          {site.pages.map((page: Page, idx) => renderRow(page, idx))}
+          {site.pages.map((page: Page, idx) => (matchesQuery(page) ? renderRow(page, idx) : null))}
         </ol>
       )}
+      {props.hideAddForm === true ? null : (
       <form
         data-testid="pages-list-add"
         onSubmit={(event) => {
@@ -303,6 +329,7 @@ export function PagesList(props: PagesListProps): JSX.Element {
           </p>
         )}
       </form>
+      )}
     </section>
   );
 }
