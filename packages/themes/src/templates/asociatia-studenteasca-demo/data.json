@@ -44,7 +44,9 @@
     }
   },
   "defaultLanguage": "ro",
-  "languages": ["ro"],
+  "languages": [
+    "ro"
+  ],
   "pages": [
     {
       "slug": "acasa",
@@ -79,9 +81,22 @@
         {
           "id": "blk_home_intro",
           "type": "richText",
-          "version": 1,
+          "version": 2,
           "data": {
-            "markdown": "Suntem o asociație studențească dedicată sprijinirii colegilor noștri pe parcursul anilor universitari. Organizăm conferințe, ateliere practice, vizite de studiu și activități de voluntariat. Toate proiectele noastre pornesc de la o singură întrebare: ce ne-ar fi fost de folos nouă, în primul an? Răspunsurile devin programe concrete pentru fiecare nouă generație."
+            "doc": {
+              "version": 1,
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Suntem o asociație studențească dedicată sprijinirii colegilor noștri pe parcursul anilor universitari. Organizăm conferințe, ateliere practice, vizite de studiu și activități de voluntariat. Toate proiectele noastre pornesc de la o singură întrebare: ce ne-ar fi fost de folos nouă, în primul an? Răspunsurile devin programe concrete pentru fiecare nouă generație."
+                    }
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -312,8 +327,14 @@
             "contactTitle": "Contact",
             "email": "contact@demo-asociatie.example",
             "socials": [
-              { "platform": "instagram", "url": "https://instagram.com/demo-asociatie" },
-              { "platform": "facebook", "url": "https://facebook.com/demo-asociatie" }
+              {
+                "platform": "instagram",
+                "url": "https://instagram.com/demo-asociatie"
+              },
+              {
+                "platform": "facebook",
+                "url": "https://facebook.com/demo-asociatie"
+              }
             ],
             "membership": {
               "text": "Asociația Demo este membră a Federației Demo",
@@ -356,9 +377,51 @@
         {
           "id": "blk_about_mission",
           "type": "richText",
-          "version": 1,
+          "version": 2,
           "data": {
-            "markdown": "## Misiunea noastră\n\nSă oferim fiecărui student din comunitatea noastră un cadru în care poate să își dezvolte gândirea critică, abilitățile de comunicare și încrederea în propria voce.\n\n## Viziunea noastră\n\nO universitate în care studenții nu sunt doar destinatari ai educației, ci coautori activi ai vieții academice — prin proiecte, evenimente și inițiative pe care le construiesc împreună."
+            "doc": {
+              "version": 1,
+              "content": [
+                {
+                  "type": "heading",
+                  "level": 2,
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Misiunea noastră"
+                    }
+                  ]
+                },
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Să oferim fiecărui student din comunitatea noastră un cadru în care poate să își dezvolte gândirea critică, abilitățile de comunicare și încrederea în propria voce."
+                    }
+                  ]
+                },
+                {
+                  "type": "heading",
+                  "level": 2,
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Viziunea noastră"
+                    }
+                  ]
+                },
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "O universitate în care studenții nu sunt doar destinatari ai educației, ci coautori activi ai vieții academice — prin proiecte, evenimente și inițiative pe care le construiesc împreună."
+                    }
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -623,14 +686,26 @@
             "phone": "+40 700 000 000",
             "hours": "Luni–Vineri, 10:00–17:00",
             "socials": [
-              { "platform": "instagram", "url": "https://instagram.com/demo-asociatie" },
-              { "platform": "facebook", "url": "https://facebook.com/demo-asociatie" },
-              { "platform": "linkedin", "url": "https://linkedin.com/company/demo-asociatie" }
+              {
+                "platform": "instagram",
+                "url": "https://instagram.com/demo-asociatie"
+              },
+              {
+                "platform": "facebook",
+                "url": "https://facebook.com/demo-asociatie"
+              },
+              {
+                "platform": "linkedin",
+                "url": "https://linkedin.com/company/demo-asociatie"
+              }
             ],
             "mapEmbed": {
               "enabled": true,
               "provider": "osm",
-              "coordinates": [44.4268, 26.1025],
+              "coordinates": [
+                44.4268,
+                26.1025
+              ],
               "zoom": 14
             }
           }
@@ -652,8 +727,14 @@
             "contactTitle": "Contact",
             "email": "contact@demo-asociatie.example",
             "socials": [
-              { "platform": "instagram", "url": "https://instagram.com/demo-asociatie" },
-              { "platform": "facebook", "url": "https://facebook.com/demo-asociatie" }
+              {
+                "platform": "instagram",
+                "url": "https://instagram.com/demo-asociatie"
+              },
+              {
+                "platform": "facebook",
+                "url": "https://facebook.com/demo-asociatie"
+              }
             ],
             "membership": {
               "text": "Asociația Demo este membră a Federației Demo",

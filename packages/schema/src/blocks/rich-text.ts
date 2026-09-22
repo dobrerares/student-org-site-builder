@@ -1,32 +1,39 @@
 import { z } from "zod";
+import {
+  RICH_TEXT_ALIGNMENTS,
+  RichTextDocumentSchema,
+  type RichTextAlignment,
+} from "../rich-text-doc.js";
 
-export const RICH_TEXT_ALIGNMENTS = ["left", "center", "right", "justify"] as const;
-export type RichTextAlignment = (typeof RICH_TEXT_ALIGNMENTS)[number];
+export { RICH_TEXT_ALIGNMENTS };
+export type { RichTextAlignment };
 
 const RichTextAlignmentSchema = z.enum(RICH_TEXT_ALIGNMENTS);
 
 /**
- * RichText block — markdown-prose section with the strict whitelist subset.
+ * RichText block — prose section carrying a structured Rich-text document.
  *
- * Per the PRD (Implementation Decisions → Block library), markdown rendering
- * uses a strict whitelist: bold, italic, links, lists, headings (h2-h4),
- * inline code, blockquotes. No raw HTML in markdown. XSS-safe by
- * construction. The actual parsing + sanitisation lives in
- * `@sosb/markdown`; this schema only carries the source string.
+ * Version 2 (ADR 0048, issue #100) replaces version 1's `markdown` string
+ * with `doc`, a versioned structured document. The rationale is in the ADR:
+ * headings, lists, quotes and inline marks were already expressible in
+ * Markdown, but images by asset reference and internal links by target
+ * identity are not, and a lossy Markdown round trip cannot carry them.
  *
- * The schema is declared with `looseObject` so unknown fields survive a
- * round-trip read-write-read (the v1 forward-compatibility contract). The
- * `markdown` field is a string — empty is allowed at the schema layer
- * (placeholder content); future work can add a quality-nudge warning if a
- * richText block is empty when the page is exported.
+ * Legacy `{ markdown }` blocks convert automatically on load — see the
+ * `richText` entry in `BLOCK_MIGRATIONS` (`migrate.ts`). The conversion is
+ * meaning-preserving: `@sosb/markdown`'s converter and the Renderer's
+ * document serialiser together reproduce the byte-exact HTML the Markdown
+ * renderer produced, which is asserted by the migration golden tests.
+ *
+ * `titleAlign` / `paragraphAlign` survive unchanged. They are Block-level
+ * presentation defaults consumed by Themes as data attributes; per-node
+ * `align` in the document overrides them for individual paragraphs.
+ *
+ * ADR 0034 still governs the Markdown fields of *other* Blocks (FAQ answers,
+ * quote text). This migration is scoped to the Rich-text Block only.
  */
 export const RichTextDataSchema = z.looseObject({
-  markdown: z.string(),
-  /**
-   * Optional presentation controls for generated prose. Kept separate so an
-   * org can align headings differently from body copy; themes consume these as
-   * data attributes and old sites without the fields keep their existing flow.
-   */
+  doc: RichTextDocumentSchema,
   titleAlign: RichTextAlignmentSchema.optional(),
   paragraphAlign: RichTextAlignmentSchema.optional(),
 });
@@ -34,11 +41,11 @@ export const RichTextDataSchema = z.looseObject({
 export const RichTextBlockSchema = z.looseObject({
   id: z.string().min(1),
   type: z.literal("richText"),
-  version: z.literal(1),
+  version: z.literal(2),
   data: RichTextDataSchema,
 });
 
-export const RICH_TEXT_BLOCK_VERSION = 1 as const;
+export const RICH_TEXT_BLOCK_VERSION = 2 as const;
 
 export type RichTextBlock = z.infer<typeof RichTextBlockSchema>;
 export type RichTextData = z.infer<typeof RichTextDataSchema>;

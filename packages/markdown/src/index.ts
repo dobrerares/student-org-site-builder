@@ -26,3 +26,11 @@ export { markdownToHtml } from "./md.js";
 export { renderInline as markdownInlineToHtml } from "./inline.js";
 export { sanitizeUrl } from "./sanitize-url.js";
 export { escapeText, escapeAttr } from "./escape.js";
+export { markdownToRichTextDoc, parseBlocks, parseInline } from "./to-doc.js";
+export type {
+  DocLinkTarget,
+  DocMark,
+  DocNode,
+  DocTextNode,
+  RichTextDocumentLike,
+} from "./to-doc.js";

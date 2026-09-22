@@ -66,6 +66,17 @@ const PageSeoSchema = z.looseObject({
 });
 
 export const PageSchema = z.looseObject({
+  /**
+   * Permanent Page identity, independent of `slug` and `lang`.
+   *
+   * Optional because every project written before ADR 0048 lacks it, and
+   * ADR 0002's round-trip contract forbids inventing fields on load. It is
+   * assigned lazily: the first time an author links prose at a Page, the
+   * editor stamps an id on it (`ensurePageId` in `@sosb/editor-app`).
+   * Rich-text links store this id rather than a URL, so a slug rename
+   * cannot break them.
+   */
+  id: z.string().min(1).optional(),
   slug: z.string().min(1),
   lang: z.string().min(1),
   navLabel: z.string().min(1),
@@ -96,6 +107,16 @@ export const SiteSchema = z.looseObject({
 
 export type Site = z.infer<typeof SiteSchema>;
 export type Page = z.infer<typeof PageSchema>;
+
+/**
+ * Find a Page by its permanent id. Returns `undefined` when no Page carries
+ * the id — the Page was deleted, or the reference arrived from a different
+ * project. Callers render the referring prose link as unlinked text and
+ * raise a Site Health warning (ADR 0048); they never drop the reference.
+ */
+export function pageById(site: Site, id: string): Page | undefined {
+  return site.pages.find((page) => page.id === id);
+}
 export type Theme = z.infer<typeof ThemeSchema>;
 export type Org = z.infer<typeof OrgSchema>;
 

@@ -7,6 +7,14 @@ import type { ArticleSelection } from "./blocks/article-list.js";
 import { DEFAULT_ARTICLE_LIST_MODE } from "./blocks/article-list.js";
 import { SiteSchema } from "./site.js";
 import { checkSlug } from "./slug.js";
+import {
+  collectRichTextImages,
+  collectRichTextLinkTargets,
+  collectUnsupportedRichText,
+  isEmptyRichTextDocument,
+  type RichTextDocument,
+  type RichTextLinkTarget,
+} from "./rich-text-doc.js";
 
 /**
  * Canonical theme IDs the renderer ships. Per ADR 0044 Corollary 3 the
@@ -70,14 +78,22 @@ export interface ValidationIssue {
   message: string;
   /**
    * Marks an `error` that the pre-export confirmation must NOT let the author
-   * override. ADR 0016's rule is "blocking-on-confirmation, never hard-block";
-   * ADR 0048 carves out a narrow exception for public content that cannot be
-   * produced correctly at all — today, an active explicit Article-list
-   * selection pointing at a Draft or deleted Article.
+   * override.
    *
-   * The exception is deliberately narrow. Draft-only problems never set this,
-   * and saving the editable archive is never gated by it, so an author can
-   * always keep working and always keep their project.
+   * ADR 0016's rule is "blocking-on-confirmation, never hard-block". ADR 0048
+   * carves out a narrow exception for public output that would be silently
+   * wrong rather than merely imperfect. There are exactly three cases:
+   *
+   * - an active explicit Article-list selection pointing at a Draft or
+   *   deleted Article (issue #97);
+   * - rich-text content this editor cannot render (issue #100);
+   * - a rich-text image whose bytes are gone (issue #100).
+   *
+   * Forcing any of them through would publish a page missing the author's
+   * work. Saving the editable project archive stays available in every case —
+   * the block is on generating public output, never on keeping your work.
+   *
+   * Problems confined to Draft content are never blocking.
    */
   blocking?: boolean;
 }
@@ -94,6 +110,42 @@ export interface ValidationResult {
 export function hasBlockingIssues(result: ValidationResult): boolean {
   return result.errors.some((issue) => issue.blocking === true);
 }
+
+/**
+ * Host-supplied capabilities validation cannot derive from the Site data
+ * alone. Both are optional: without them the corresponding checks are simply
+ * not run, which keeps `validate(data)` a pure one-argument function for the
+ * many call sites that only care about structure.
+ */
+export interface ValidateOptions {
+  /**
+   * Whether a canonical `assets/…` VFS path currently has bytes. The editor
+   * backs this with its project VFS. Needed because an asset reference is
+   * structurally complete even when the file behind it is gone — the case
+   * ADR 0048 makes a non-overridable public-export blocker.
+   */
+  readonly assetPathExists?: (path: string) => boolean;
+}
+
+/**
+ * Everything a Block rule may need beyond the Block itself.
+ *
+ * `publicContent` is the Draft carve-out: issue #100 is explicit that
+ * problems confined to Draft content must not affect public-export
+ * eligibility, so the same rule produces a blocking error inside a Page and
+ * a plain error inside a Draft Article.
+ */
+interface BlockRuleContext {
+  readonly publicContent: boolean;
+  readonly assetPathExists?: ((path: string) => boolean) | undefined;
+  /** Resolves a rich-text link target, or `null` when it no longer exists. */
+  readonly resolveLinkTarget?: ((target: RichTextLinkTarget) => LinkTargetState) | undefined;
+}
+
+/** What a stored link target currently points at. */
+type LinkTargetState = "ok" | "missing" | "draft";
+
+const PUBLIC_BLOCK_CONTEXT: BlockRuleContext = { publicContent: true };
 
 function emptyResult(): ValidationResult {
   return { errors: [], warnings: [], info: [], ok: true };
@@ -135,14 +187,14 @@ function zodIssuesToErrors(parseResult: ParseResultLike, codePrefix: string): Va
  * the input is so malformed it can't be parsed — `errors` is populated and
  * `warnings` / `info` stay empty.
  */
-export function validate(data: unknown): ValidationResult {
+export function validate(data: unknown, options: ValidateOptions = {}): ValidationResult {
   const result = emptyResult();
 
   const siteParse = SiteSchema.safeParse(data);
   result.errors.push(...zodIssuesToErrors(siteParse, "site"));
 
   if (siteParse.success) {
-    runSiteRules(siteParse.data, result);
+    runSiteRules(siteParse.data, result, options);
   }
 
   return finalize(result);
@@ -192,7 +244,11 @@ type KnownBlockData = z.infer<(typeof KnownBlockSchemas)[keyof typeof KnownBlock
 // Rule passes (PRD-listed quality nudges layered on top of schema parse).
 // ---------------------------------------------------------------------------
 
-function runSiteRules(site: z.infer<typeof SiteSchema>, result: ValidationResult): void {
+function runSiteRules(
+  site: z.infer<typeof SiteSchema>,
+  result: ValidationResult,
+  options: ValidateOptions = {},
+): void {
   // Errors: every page's `lang` must appear in the languages list.
   site.pages.forEach((page, idx) => {
     if (!site.languages.includes(page.lang)) {
@@ -316,8 +372,17 @@ function runSiteRules(site: z.infer<typeof SiteSchema>, result: ValidationResult
   // Deep-schema parse failures become `error` issues with paths rebased
   // onto the site, so callers see schema violations regardless of where
   // they nest. Quality nudges (warnings) come from `runBlockRules`.
+  // Pages are always public content: there is no Draft Page state. The
+  // context is built once and reused so the link resolver's index is not
+  // rebuilt per Block.
+  const blockContext: BlockRuleContext = {
+    publicContent: true,
+    assetPathExists: options.assetPathExists,
+    resolveLinkTarget: makeLinkTargetResolver(site),
+  };
+
   site.pages.forEach((page, pageIdx) => {
-    runBlocksDeep(page.blocks, ["pages", pageIdx, "blocks"], result);
+    runBlocksDeep(page.blocks, ["pages", pageIdx, "blocks"], result, blockContext);
   });
 
   // Warning: org logo without sibling logoAlt (accessibility nudge, mirrors hero).
@@ -354,7 +419,7 @@ function runSiteRules(site: z.infer<typeof SiteSchema>, result: ValidationResult
     });
   }
 
-  runArticleRules(site, result);
+  runArticleRules(site, result, blockContext);
   runArticleReferenceRules(site, result);
   runThemeContrastRules(site, result);
   runOversizedImageRules(site, result);
@@ -364,11 +429,18 @@ function runSiteRules(site: z.infer<typeof SiteSchema>, result: ValidationResult
  * Deep-parse and rule-check a block list hanging off `basePath`, rebasing every
  * produced issue onto that path. Shared by Pages and Articles so both surfaces
  * report block problems identically.
+ *
+ * `context` carries the Draft carve-out. A Block inside a Draft Article is not
+ * public content, so the ADR 0048 rules that would otherwise produce a
+ * non-overridable export blocker produce an ordinary error there instead —
+ * issue #100 is explicit that Draft-only problems must not affect
+ * public-export eligibility.
  */
 function runBlocksDeep(
   blocks: readonly z.infer<typeof BlockEnvelopeSchema>[],
   basePath: (string | number)[],
   result: ValidationResult,
+  context: BlockRuleContext = PUBLIC_BLOCK_CONTEXT,
 ): void {
   blocks.forEach((block, blockIdx) => {
     if (!isKnownBlockType(block.type)) return;
@@ -386,7 +458,7 @@ function runBlocksDeep(
       return;
     }
     const childResult = emptyResult();
-    runBlockRules(known.data as KnownBlockData, childResult);
+    runBlockRules(known.data as KnownBlockData, childResult, context);
     for (const issue of [...childResult.errors, ...childResult.warnings, ...childResult.info]) {
       const rebased: ValidationIssue = { ...issue, path: [...basePath, blockIdx, ...issue.path] };
       if (issue.severity === "error") result.errors.push(rebased);
@@ -408,7 +480,11 @@ function runBlocksDeep(
  * is a warning or an un-overridable export blocker depends on the publication
  * state of whatever *contains* the reference, not on the Article itself.
  */
-function runArticleRules(site: z.infer<typeof SiteSchema>, result: ValidationResult): void {
+function runArticleRules(
+  site: z.infer<typeof SiteSchema>,
+  result: ValidationResult,
+  blockContext: BlockRuleContext,
+): void {
   const articles = articlesOf(site);
   const tags = site.tags ?? [];
 
@@ -587,7 +663,13 @@ function runArticleRules(site: z.infer<typeof SiteSchema>, result: ValidationRes
       });
     }
 
-    runBlocksDeep(article.blocks, ["articles", idx, "blocks"], result);
+    // The Draft carve-out, at the one place it can be decided: a Draft is
+    // never emitted to the public Site, so nothing inside it can make public
+    // output wrong. Unlisted Articles *are* emitted, so they count as public.
+    runBlocksDeep(article.blocks, ["articles", idx, "blocks"], result, {
+      ...blockContext,
+      publicContent: article.state !== "draft",
+    });
   });
 }
 
@@ -861,7 +943,143 @@ function formatBytes(bytes: number): string {
   return `${Math.round(bytes / 1024)} KB`;
 }
 
-function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
+/**
+ * Build the rich-text link resolver for a Site.
+ *
+ * Pages resolve by their permanent `id`. Articles resolve through
+ * `site.articles` when issue #97's data is present, reporting `"draft"`
+ * separately from `"missing"` so the author gets the right advice: a Draft
+ * target is repairable by publishing it, a missing one by repointing the
+ * link. Both render as unlinked text.
+ *
+ * Articles are read structurally rather than through the Article schema so
+ * this rule works whether or not the project carries any.
+ */
+function makeLinkTargetResolver(
+  site: z.infer<typeof SiteSchema>,
+): (target: RichTextLinkTarget) => LinkTargetState {
+  const pageIds = new Set<string>();
+  for (const page of site.pages) {
+    const id = (page as { id?: unknown }).id;
+    if (typeof id === "string" && id.length > 0) pageIds.add(id);
+  }
+
+  const articleStates = new Map<string, string>();
+  const articles = (site as { articles?: unknown }).articles;
+  if (Array.isArray(articles)) {
+    for (const article of articles) {
+      if (typeof article !== "object" || article === null) continue;
+      const entry = article as { id?: unknown; state?: unknown };
+      if (typeof entry.id !== "string" || entry.id.length === 0) continue;
+      articleStates.set(entry.id, typeof entry.state === "string" ? entry.state : "published");
+    }
+  }
+
+  return (target: RichTextLinkTarget): LinkTargetState => {
+    if (target.kind === "page") return pageIds.has(target.pageId) ? "ok" : "missing";
+    if (target.kind === "article") {
+      const state = articleStates.get(target.articleId);
+      if (state === undefined) return "missing";
+      // Unlisted Articles are legitimate link targets (issue #100); only
+      // Drafts are unreachable for visitors.
+      return state === "draft" ? "draft" : "ok";
+    }
+    return "ok";
+  };
+}
+
+/**
+ * Rich-text document rules (ADR 0048, issue #100).
+ *
+ * Four findings, with deliberately different weights:
+ *
+ * - **Empty document** — warning. A placeholder Block is a normal editing
+ *   state, same as the Markdown rule it replaces.
+ * - **Unsupported content** — error, blocking in public content. The editor
+ *   cannot render it and must not simplify it away, so publishing would drop
+ *   the author's words silently.
+ * - **Missing image bytes** — error, blocking in public content, for the same
+ *   reason. Only checked when the host supplies `assetPathExists`.
+ * - **Missing image description / broken link** — warnings. Both still
+ *   produce meaningful output (an image with no alt, unlinked text), so they
+ *   nudge rather than block.
+ */
+function runRichTextRules(
+  doc: RichTextDocument | undefined,
+  result: ValidationResult,
+  context: BlockRuleContext,
+): void {
+  if (doc === undefined) return;
+
+  if (isEmptyRichTextDocument(doc)) {
+    result.warnings.push({
+      severity: "warning",
+      path: ["data", "doc"],
+      code: "block.richText.doc.empty",
+      message: "This text section is empty. Add content or remove the section.",
+    });
+  }
+
+  for (const found of collectUnsupportedRichText(doc)) {
+    result.errors.push({
+      severity: "error",
+      path: ["data", "doc", ...found.path],
+      code: "block.richText.content.unsupported",
+      message:
+        `This text section contains "${found.type}" content that this version of the editor ` +
+        "cannot show or publish. It has been kept exactly as it was — update the editor to edit it.",
+      ...(context.publicContent ? { blocking: true } : {}),
+    });
+  }
+
+  for (const image of collectRichTextImages(doc)) {
+    if (typeof image.asset.alt !== "string" || image.asset.alt.trim().length === 0) {
+      result.warnings.push({
+        severity: "warning",
+        path: ["data", "doc", ...image.path, "alt"],
+        code: "block.richText.image.alt.missing",
+        message: "This image needs a short description for people using screen readers.",
+      });
+    }
+    if (context.assetPathExists !== undefined && !context.assetPathExists(image.asset.path)) {
+      result.errors.push({
+        severity: "error",
+        path: ["data", "doc", ...image.path],
+        code: "block.richText.image.bytes.missing",
+        message:
+          "The image file for this text section is missing from the project. Upload it again " +
+          "or remove the image.",
+        ...(context.publicContent ? { blocking: true } : {}),
+      });
+    }
+  }
+
+  if (context.resolveLinkTarget !== undefined) {
+    for (const link of collectRichTextLinkTargets(doc)) {
+      if (link.target.kind === "external") continue;
+      const state = context.resolveLinkTarget(link.target);
+      if (state === "ok") continue;
+      result.warnings.push({
+        severity: "warning",
+        path: ["data", "doc", ...link.path],
+        code:
+          state === "draft" ? "block.richText.link.draft" : "block.richText.link.missing",
+        message:
+          state === "draft"
+            ? "A link in this text section points at a Draft, which visitors cannot open. " +
+              "It will show as plain text until the Draft is published."
+            : "A link in this text section points at something that no longer exists. " +
+              "It will show as plain text until you repoint it.",
+      });
+    }
+  }
+}
+
+function runBlockRules(
+  block: KnownBlockData,
+  result: ValidationResult,
+  context: BlockRuleContext = PUBLIC_BLOCK_CONTEXT,
+): void {
   // The discriminator (`block.type`) survives schema-level `looseObject`
   // because each known block declares it as `z.literal(...)`. The switch
   // covers every entry of `KnownBlockSchemas`; the default branch is
@@ -962,18 +1180,7 @@ function runBlockRules(block: KnownBlockData, result: ValidationResult): void {
       break;
     }
     case "richText": {
-      // Warning: a richText block with no prose is a quality nudge, not a
-      // hard error (the schema accepts the empty case so a placeholder
-      // block can be added before the user has written content).
-      const md = block.data.markdown;
-      if (typeof md !== "string" || md.trim().length === 0) {
-        result.warnings.push({
-          severity: "warning",
-          path: ["data", "markdown"],
-          code: "block.richText.markdown.empty",
-          message: "This text section is empty. Add content or remove the section.",
-        });
-      }
+      runRichTextRules(block.data.doc as RichTextDocument | undefined, result, context);
       break;
     }
     case "quote": {

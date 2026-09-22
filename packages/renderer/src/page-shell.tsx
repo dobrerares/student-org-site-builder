@@ -61,6 +61,8 @@ import type { AssetUrlForPath } from "./asset-url.js";
 import { resolveAssetUrl } from "./asset-url.js";
 import type { ThemeBundle } from "./theme-bundle.js";
 import { activeBlockVariant } from "./theme-reference.js";
+import type { RichTextRenderContext } from "./rich-text-html.js";
+import { makeRichTextLinkResolver } from "./rich-text-links.js";
 
 /**
  * The design variant to hand a block component, or `undefined`.
@@ -168,6 +170,12 @@ interface BlockRenderContext {
   readonly theme?: ThemeBundle | undefined;
   /** Set only when the blocks belong to an Article. */
   readonly containerArticleId?: string | undefined;
+  /**
+   * Asset and link resolution for Rich-text documents (ADR 0048). Built once
+   * per rendered document rather than per Block: the link resolver indexes
+   * the Site's Pages and Articles.
+   */
+  readonly richText?: RichTextRenderContext | undefined;
 }
 
 function renderBlock(block: BlockEnvelope, ctx: BlockRenderContext): preact.JSX.Element | null {
@@ -196,7 +204,13 @@ function renderBlock(block: BlockEnvelope, ctx: BlockRenderContext): preact.JSX.
     );
   }
   if (block.type === "richText") {
-    return <RichText block={block as unknown as RichTextBlock} variant={variant} />;
+    return (
+      <RichText
+        block={block as unknown as RichTextBlock}
+        variant={variant}
+        context={ctx.richText}
+      />
+    );
   }
   if (block.type === "quote") {
     return (
@@ -381,7 +395,15 @@ export function PageShell(props: {
   } = props;
   const contentBlocks = page.blocks.filter((block) => block.type !== "siteFooter");
   const footerBlocks = page.blocks.filter((block) => block.type === "siteFooter");
-  const ctx: BlockRenderContext = { site, lang: page.lang, assetUrlForPath, theme };
+  const ctx: BlockRenderContext = {
+    site,
+    lang: page.lang,
+    assetUrlForPath,
+    theme,
+    // Built once per document: the link resolver indexes the Site's Pages and
+    // Articles, which would be wasteful to rebuild per Block.
+    richText: { assetUrlForPath, resolveLink: makeRichTextLinkResolver(site) },
+  };
 
   const target: ShellTarget = {
     lang: page.lang,
@@ -577,6 +599,10 @@ export function ArticleShell(props: {
     assetUrlForPath,
     theme,
     containerArticleId: article.id,
+    // Article bodies start with a Rich-text Block, so this is not optional
+    // decoration: without it every prose link inside an Article would render
+    // as unlinked text.
+    richText: { assetUrlForPath, resolveLink: makeRichTextLinkResolver(site) },
   };
 
   // Articles have no site-footer Block of their own; they inherit one from

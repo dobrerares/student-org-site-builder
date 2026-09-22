@@ -344,6 +344,9 @@ importers:
 
   packages/schema:
     dependencies:
+      '@sosb/markdown':
+        specifier: workspace:*
+        version: link:../markdown
       zod:
         specifier: ^4.4.3
         version: 4.4.3

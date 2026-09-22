@@ -12,7 +12,9 @@
     }
   },
   "defaultLanguage": "ro",
-  "languages": ["ro"],
+  "languages": [
+    "ro"
+  ],
   "pages": [
     {
       "slug": "despre",
@@ -28,9 +30,154 @@
         {
           "id": "blk_about_intro",
           "type": "richText",
-          "version": 1,
+          "version": 2,
           "data": {
-            "markdown": "## Despre noi\n\nSuntem o asociație **studențească** fondată în *2024*.\n\nValorile noastre:\n\n- Cercetare\n- Comunitate\n- Implicare\n\n> Calitatea nu este opțională.\n\nVizitați [site-ul nostru](https://anosr.ro) pentru detalii."
+            "doc": {
+              "version": 1,
+              "content": [
+                {
+                  "type": "heading",
+                  "level": 2,
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Despre noi"
+                    }
+                  ]
+                },
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Suntem o asociație "
+                    },
+                    {
+                      "type": "text",
+                      "text": "studențească",
+                      "marks": [
+                        {
+                          "type": "bold"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": " fondată în "
+                    },
+                    {
+                      "type": "text",
+                      "text": "2024",
+                      "marks": [
+                        {
+                          "type": "italic"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "."
+                    }
+                  ]
+                },
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Valorile noastre:"
+                    }
+                  ]
+                },
+                {
+                  "type": "bulletList",
+                  "content": [
+                    {
+                      "type": "listItem",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "Cercetare"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "listItem",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "Comunitate"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "listItem",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "Implicare"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "blockquote",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Calitatea nu este opțională."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Vizitați "
+                    },
+                    {
+                      "type": "text",
+                      "text": "site-ul nostru",
+                      "marks": [
+                        {
+                          "type": "link",
+                          "target": {
+                            "kind": "external",
+                            "href": "https://anosr.ro"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": " pentru detalii."
+                    }
+                  ]
+                }
+              ]
+            }
           }
         }
       ]

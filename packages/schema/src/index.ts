@@ -10,7 +10,7 @@
  */
 
 // Site spine
-export { PageSchema, SITE_SCHEMA_VERSION, SiteSchema, parseSite } from "./site.js";
+export { PageSchema, SITE_SCHEMA_VERSION, SiteSchema, pageById, parseSite } from "./site.js";
 export type { Org, Page, Site, Theme } from "./site.js";
 
 // Articles
@@ -38,6 +38,51 @@ export type {
   ArticleSelectionIssue,
   ArticleSelectionProblem,
 } from "./article-select.js";
+// Structured Rich-text documents (ADR 0048)
+export {
+  RICH_TEXT_ALIGNMENTS,
+  RICH_TEXT_BLOCK_NODE_TYPES,
+  RICH_TEXT_DOC_VERSION,
+  RICH_TEXT_HEADING_LEVELS,
+  RICH_TEXT_INLINE_NODE_TYPES,
+  RICH_TEXT_MARK_TYPES,
+  RICH_TEXT_NODE_TYPES,
+  RICH_TEXT_SIMPLE_MARKS,
+  RichTextArticleLinkSchema,
+  RichTextDocumentSchema,
+  RichTextExternalLinkSchema,
+  RichTextHardBreakSchema,
+  RichTextImageAssetSchema,
+  RichTextImageNodeSchema,
+  RichTextInlineNodeSchema,
+  RichTextLinkMarkSchema,
+  RichTextLinkTargetSchema,
+  RichTextMarkSchema,
+  RichTextNodeSchema,
+  RichTextPageLinkSchema,
+  RichTextTextNodeSchema,
+  RichTextUnknownNodeSchema,
+  collectRichTextImages,
+  collectRichTextLinkTargets,
+  collectUnsupportedRichText,
+  emptyRichTextDocument,
+  isEmptyRichTextDocument,
+  isKnownRichTextMarkType,
+  isKnownRichTextNodeType,
+  walkRichTextNodes,
+} from "./rich-text-doc.js";
+export type {
+  RichTextAlignment,
+  RichTextDocument,
+  RichTextHeadingLevel,
+  RichTextImageAsset,
+  RichTextInlineNode,
+  RichTextLinkTarget,
+  RichTextMark,
+  RichTextNode,
+  RichTextSimpleMarkType,
+  RichTextUnknownNode,
+} from "./rich-text-doc.js";
 
 // Page slug rules (multi-page support)
 export { SLUG_PATTERN, checkSlug, isValidSlug } from "./slug.js";
@@ -91,7 +136,6 @@ export {
   QUOTE_BLOCK_VERSION,
   QuoteBlockSchema,
   QuoteDataSchema,
-  RICH_TEXT_ALIGNMENTS,
   RICH_TEXT_BLOCK_VERSION,
   RichTextBlockSchema,
   RichTextDataSchema,
@@ -195,7 +239,6 @@ export type {
   ActivityItem,
   ActivityLink,
   RichTextBlock,
-  RichTextAlignment,
   RichTextData,
   SiteFooterBlock,
   SiteFooterData,
@@ -210,7 +253,7 @@ export {
   validate,
   validateBlock,
 } from "./validate.js";
-export type { Severity, ValidationIssue, ValidationResult } from "./validate.js";
+export type { Severity, ValidateOptions, ValidationIssue, ValidationResult } from "./validate.js";
 
 // Migration
 export { BLOCK_MIGRATIONS, SITE_MIGRATIONS, migrateBlock, migrateSite } from "./migrate.js";
@@ -219,4 +262,5 @@ export type {
   BlockMigrationResult,
   SiteMigration,
   SiteMigrationResult,
+  AppliedBlockMigration,
 } from "./migrate.js";
