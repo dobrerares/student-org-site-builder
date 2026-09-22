@@ -63,9 +63,22 @@ function tallSite(): Record<string, unknown> {
     blocks.push({
       id: `blk_prose_${i}`,
       type: "richText",
-      version: 1,
+      version: 2,
       data: {
-        markdown: `## Secțiunea ${i}\n\nText de umplutură pentru a face pagina lungă. `.repeat(6),
+        // The editor mounts this fixture directly, without the zip import's
+        // migration pass, so it has to be at the current Block version.
+        doc: {
+          version: 1,
+          content: [
+            { type: "heading", level: 2, content: [{ type: "text", text: `Secțiunea ${i}` }] },
+            {
+              type: "paragraph",
+              content: [
+                { type: "text", text: "Text de umplutură pentru a face pagina lungă. ".repeat(6) },
+              ],
+            },
+          ],
+        },
       },
     });
   }

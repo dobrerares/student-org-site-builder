@@ -39,8 +39,8 @@
  *
  * This module does not import `@sosb/schema` — `@sosb/schema` imports *it*,
  * for the migration table. The types below are structural mirrors of
- * `RichTextDocument` and are checked against the real schema in
- * `packages/schema/test/richtext-migration.test.ts`.
+ * `RichTextDocument`; `packages/schema/test/richtext-migration.test.ts`
+ * checks that what this module emits parses under the real schema.
  */
 
 import { findClosing, findClosingItalic, parseLink } from "./inline.js";
