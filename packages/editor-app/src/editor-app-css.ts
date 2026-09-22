@@ -25,6 +25,31 @@
  *
  * Override any of these at the consuming-document level to retheme without
  * forking this file.
+ *
+ * Cascade position (issue #102)
+ * -----------------------------
+ * Everything below is wrapped in `@layer sosb-editor`, whose position is
+ * fixed by `@sosb/ui`'s `builder.css`:
+ *
+ *     @layer theme, base, sosb-editor, components, utilities;
+ *
+ * This sheet used to be entirely unlayered, which meant it beat every rule
+ * `@sosb/ui` shipped no matter how specific — a shared `<Button>` could ask
+ * for the design system's chrome and silently keep the editor's instead. The
+ * shared components are built from Tailwind utilities, so putting this sheet
+ * below `utilities` is what finally lets them look like themselves.
+ *
+ * What still works: this sheet outranks the shared `base` reset, so it keeps
+ * owning the shell's layout, the generated forms and the panels — the things
+ * `@sosb/ui` has no opinion about. What changed: it no longer re-skins the
+ * shared controls. Where a control needs a tone the design system does not
+ * have by default, express it on the component (see `data-tone="danger"` in
+ * `packages/ui/src/components/button.tsx`) rather than by re-styling it here.
+ *
+ * The layer statement lives in `builder.css` rather than here because layer
+ * order is set by first declaration, and `builder.css` is *prepended* to the
+ * head while this sheet is appended — so `builder.css` is always parsed
+ * first, whichever order the two modules happen to load in.
  */
 
 // Side-effect import: registers Inter @font-face rules before the stylesheet
@@ -34,6 +59,7 @@ import "./editor-fonts.js";
 const STYLE_ELEMENT_ID = "sosb-editor-app-style";
 
 export const EDITOR_APP_CSS = String.raw`
+@layer sosb-editor {
 /* ============================================================
  * 1. Design tokens
  * ============================================================ */
@@ -44,49 +70,57 @@ export const EDITOR_APP_CSS = String.raw`
     "Liberation Mono", monospace;
 
   /* Ground */
-  --paper:         #f4f6f8;
+  --paper:         #f6f7f9;
   --paper-raised:  #ffffff;
-  --paper-sunken:  #eceff3;
-  --paper-deep:    #dfe4ea;
+  --paper-sunken:  #eef0f3;
+  --paper-deep:    #e3e7ec;
 
   /* Ink */
-  --ink:    #111827;
-  --ink-2:  #374151;
-  --ink-3:  #6b7280;
-  --ink-4:  #9ca3af;
+  --ink:    #10161f;
+  --ink-2:  #3c4655;
+  --ink-3:  #6a7381;
+  --ink-4:  #98a0ac;
 
   /* Rules */
-  --rule:       #e2e6eb;
-  --rule-soft:  #eef1f4;
-  --rule-strong: #cbd2db;
+  --rule:       #e4e7eb;
+  --rule-soft:  #eff1f4;
+  --rule-strong: #ccd2da;
 
   /* Accent (teal) */
   --accent:        #0f766e;
   --accent-strong: #0b5f59;
-  --accent-soft:   #e3f3f0;
-  --accent-ring:   rgba(15, 118, 110, 0.28);
+  --accent-soft:   #e6f2f0;
+  --accent-ring:   rgba(15, 118, 110, 0.22);
 
   /* Severity */
   --error:      #b42318;
   --error-soft: #fee4e2;
-  --warn:       #b54708;
+  --warn:       #92400e;
   --warn-soft:  #fef0c7;
   --info:       #175cd3;
   --info-soft:  #dbe9ff;
   --ok:         #067647;
-  --ok-soft:    #d1fadf;
+  --ok-soft:    #d6f5e3;
 
-  /* Type scale */
+  /* Type scale — 11 · 12 · 13 · 14 · 16 · 20 · 26 · 32 (issue #102).
+   * Eight steps, no in-between sizes: a heading that is not on the scale
+   * reads as a mistake rather than as emphasis. */
+  --step--3: 0.6875rem;  /* 11px */
   --step--2: 0.75rem;    /* 12px */
   --step--1: 0.8125rem;  /* 13px */
   --step-0:  0.875rem;   /* 14px */
   --step-1:  1rem;       /* 16px */
-  --step-2:  1.125rem;   /* 18px */
-  --step-3:  1.375rem;   /* 22px */
-  --step-4:  1.75rem;    /* 28px */
-  --step-5:  2.25rem;    /* 36px */
+  --step-2:  1.25rem;    /* 20px */
+  --step-3:  1.625rem;   /* 26px */
+  --step-4:  2rem;       /* 32px */
+  --step-5:  2rem;       /* 32px — the scale tops out here */
 
-  /* Spacing */
+  /* Line heights */
+  --lh-tight: 1.2;
+  --lh-snug:  1.35;
+  --lh-body:  1.55;
+
+  /* Spacing — 4 · 8 · 12 · 16 · 24 · 32 · 48 */
   --sp-0: 0.25rem;
   --sp-1: 0.5rem;
   --sp-2: 0.75rem;
@@ -97,15 +131,21 @@ export const EDITOR_APP_CSS = String.raw`
 
   /* Shape + motion */
   --r-sm: 6px;
-  --r-md: 10px;
-  --r-lg: 14px;
-  --shadow-sm: 0 1px 2px rgba(17, 24, 39, 0.06);
-  --shadow-md: 0 4px 12px -2px rgba(17, 24, 39, 0.10), 0 1px 3px rgba(17, 24, 39, 0.06);
-  --shadow-lg: 0 24px 60px -20px rgba(17, 24, 39, 0.35), 0 8px 24px -12px rgba(17, 24, 39, 0.18);
+  --r-md: 8px;   /* control radius */
+  --r-lg: 12px;  /* card radius */
+  --r-pill: 999px;
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --shadow-md: 0 2px 8px rgba(16, 24, 40, 0.07);
+  --shadow-lg: 0 24px 56px rgba(16, 24, 40, 0.24);
+  --shadow-pop: 0 8px 24px rgba(16, 24, 40, 0.12);
   --topbar-h: 56px;
+  --panebar-h: 44px;
   --footer-h: 44px;
+  --nav-w: 216px;
+  --edit-w: 420px;
   --transition: 140ms ease;
-  --control-h: 38px;
+  --control-h: 36px;
+  --control-h-sm: 28px;
 }
 
 /* ============================================================
@@ -2761,6 +2801,7 @@ button[data-issue] [data-issue-path]::before {
   align-items: center;
   gap: var(--sp-2);
   min-height: 24px;
+}
 }
 `;
 

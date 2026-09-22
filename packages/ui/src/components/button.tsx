@@ -19,7 +19,20 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../lib/cn.js";
 
 export const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-(--radius-sosb-md) font-medium whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-55",
+  [
+    "inline-flex items-center justify-center gap-2 rounded-(--radius-sosb-md)",
+    "font-medium whitespace-nowrap transition-colors",
+    "disabled:pointer-events-none disabled:opacity-55",
+    // `data-tone="danger"` is how the editor marks destructive row actions
+    // (remove a Block, delete a Page). It used to be styled by the editor's
+    // own sheet, which now sits in a lower layer than these utilities — so
+    // the tone has to be expressed here or the red would simply be lost.
+    // The attribute selector also out-specifies the variant's own colour,
+    // which is what lets one attribute re-tone any variant.
+    "data-[tone=danger]:text-destructive",
+    "data-[tone=danger]:hover:bg-destructive/10",
+    "data-[tone=danger]:hover:text-destructive",
+  ].join(" "),
   {
     variants: {
       variant: {
@@ -30,13 +43,18 @@ export const buttonVariants = cva(
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
       },
       size: {
-        sm: "h-8 px-2.5 text-[0.8125rem]",
-        md: "h-9 px-3.5 text-sm",
-        lg: "h-11 px-5 text-base",
+        // One control system (issue #102): 36px standard, 28px compact.
+        sm: "h-7 gap-1.5 px-2.5 text-(length:--sosb-text-sm)",
+        md: "h-9 px-3.5 text-(length:--sosb-text-body)",
+        lg: "h-11 px-5 text-(length:--sosb-text-lg)",
         icon: "h-9 w-9 p-0",
+        "icon-sm": "h-7 w-7 p-0",
       },
     },
-    defaultVariants: { variant: "secondary", size: "md" },
+    // The prototype's resting button is a white card with a hairline border,
+    // not a grey fill — the grey one is reserved for controls that sit on
+    // white and need to read as recessed.
+    defaultVariants: { variant: "outline", size: "md" },
   },
 );
 
