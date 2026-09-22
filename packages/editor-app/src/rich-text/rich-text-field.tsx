@@ -15,10 +15,12 @@
  *
  * The implementation:
  *
- * - **Local history is Tiptap's.** The editing surface carries
- *   `data-rich-text-surface`, and the editor's global Ctrl+Z handler ignores
- *   key events originating inside it. ProseMirror's own history plugin sees
- *   the keystroke and undoes a typing step. No custom keymap, no race.
+ * - **Local history is Tiptap's.** The whole field — text and toolbar —
+ *   carries `data-rich-text-surface`, and the editor's global Ctrl+Z handler
+ *   ignores key events originating inside it. With the caret in the text,
+ *   ProseMirror's own history plugin sees the keystroke and undoes a typing
+ *   step; with focus on a toolbar button, the field forwards it to the same
+ *   local history. No custom keymap, no race.
  * - **Every change is committed immediately, without a history entry.**
  *   `onPatchQuiet` writes the document straight into Site data, so preview,
  *   validation and export are never stale. What it does *not* do is push a
@@ -206,12 +208,37 @@ function EditableRichText(
     commitVisitRef.current();
   }, []);
 
+  // Ctrl/Cmd+Z with focus on a toolbar button is still "inside rich-text
+  // editing" (issue #100): it undoes the last local step, exactly as it
+  // would with the caret in the text. Inside the text itself ProseMirror's
+  // own keymap has already handled the keystroke, so those are left alone.
+  // Either way the event never reaches the editor shell's Site-history
+  // handler — the wrapper carries the marker that handler checks for.
+  const onKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (editor === null) return;
+      if (event.key !== "z" && event.key !== "Z") return;
+      if (!(event.ctrlKey || event.metaKey)) return;
+      if (editor.view.dom.contains(event.target as Node)) return;
+      event.preventDefault();
+      if (event.shiftKey) editor.chain().focus().redo().run();
+      else editor.chain().focus().undo().run();
+    },
+    [editor],
+  );
+
   if (editor === null) {
     return <div data-testid="rich-text-loading" />;
   }
 
   return (
-    <div data-testid="rich-text-field" data-field="doc" onBlur={onBlur}>
+    <div
+      data-testid="rich-text-field"
+      data-field="doc"
+      data-rich-text-surface=""
+      onBlur={onBlur}
+      onKeyDown={onKeyDown}
+    >
       <RichTextToolbar
         editor={editor}
         revision={revision}

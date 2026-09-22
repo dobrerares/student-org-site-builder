@@ -22,7 +22,7 @@
  */
 
 import { Extension, Mark, Node, mergeAttributes } from "@tiptap/core";
-import type { RichTextLinkTarget } from "@sosb/schema";
+import { isAcceptableLinkUrl, type RichTextLinkTarget } from "@sosb/schema";
 import { SOSB_IMAGE_NODE, SOSB_LINK_MARK } from "./doc-prosemirror.js";
 
 declare module "@tiptap/core" {
@@ -49,11 +49,18 @@ declare module "@tiptap/core" {
  * drift. What the author needs to see is *that* the words are a link and
  * which thing it points at — the latter comes from the link dialog and the
  * `data-link-kind` attribute, not from the href.
+ *
+ * External hrefs are re-checked against the schema's own rule before they
+ * touch the DOM. The dialog already refuses unsafe schemes, but a project
+ * file can be hand-edited, and an `<a href="javascript:…">` inside a
+ * contenteditable is still an `<a href="javascript:…">`.
  */
 function editorHref(target: unknown): string {
   if (typeof target === "object" && target !== null) {
     const t = target as { kind?: unknown; href?: unknown };
-    if (t.kind === "external" && typeof t.href === "string") return t.href;
+    if (t.kind === "external" && typeof t.href === "string" && isAcceptableLinkUrl(t.href)) {
+      return t.href;
+    }
   }
   return "#";
 }
