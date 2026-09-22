@@ -42,7 +42,9 @@ interface ArticleLike {
  * The serialiser turns `null` into unlinked text; validation raises the
  * matching Site Health warning. Neither drops the author's words.
  */
-export function makeRichTextLinkResolver(site: Site): (target: RichTextLinkTarget) => string | null {
+export function makeRichTextLinkResolver(
+  site: Site,
+): (target: RichTextLinkTarget) => string | null {
   return (target: RichTextLinkTarget): string | null => {
     if (target.kind === "external") {
       return typeof target.href === "string" ? target.href : null;

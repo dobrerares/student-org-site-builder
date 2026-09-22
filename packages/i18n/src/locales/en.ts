@@ -322,7 +322,8 @@ export const en: EnglishCatalog = {
   // Rich-text editor (ADR 0048)
   "richText.editor.label": "Text content",
   "richText.editor.placeholder": "Write your text here…",
-  "richText.editor.help": "Use the buttons above to add headings, lists, quotes, links and images. Ctrl+Z undoes your last change while you are typing here.",
+  "richText.editor.help":
+    "Use the buttons above to add headings, lists, quotes, links and images. Ctrl+Z undoes your last change while you are typing here.",
   "richText.toolbar.label": "Text formatting",
   "richText.toolbar.bold": "Bold",
   "richText.toolbar.italic": "Italic",
@@ -342,7 +343,8 @@ export const en: EnglishCatalog = {
   "richText.toolbar.undo": "Undo (Ctrl+Z)",
   "richText.toolbar.redo": "Redo (Ctrl+Shift+Z)",
   "richText.link.title": "Link",
-  "richText.link.description": "Link to one of your own pages or articles, or to an address on the web.",
+  "richText.link.description":
+    "Link to one of your own pages or articles, or to an address on the web.",
   "richText.link.tab.internal": "This site",
   "richText.link.tab.external": "Web address",
   "richText.link.search.label": "Search pages and articles",
@@ -350,19 +352,23 @@ export const en: EnglishCatalog = {
   "richText.link.search.empty": "Nothing matches that search.",
   "richText.link.kind.page": "Page",
   "richText.link.kind.article": "Article",
-  "richText.link.draftWarning": "This is a Draft. Visitors cannot open it, so the link will show as plain text until you publish it.",
+  "richText.link.draftWarning":
+    "This is a Draft. Visitors cannot open it, so the link will show as plain text until you publish it.",
   "richText.link.external.label": "Web, email or phone address",
   "richText.link.external.placeholder": "https://example.org",
-  "richText.link.external.help": "Web addresses start with https://, email addresses with mailto:, phone numbers with tel:.",
+  "richText.link.external.help":
+    "Web addresses start with https://, email addresses with mailto:, phone numbers with tel:.",
   "richText.link.external.invalid": "That does not look like a web, email or phone address.",
   "richText.link.action.apply": "Add link",
   "richText.link.action.remove": "Remove link",
   "richText.link.action.cancel": "Cancel",
   "richText.link.selectionRequired": "Select the words you want to turn into a link first.",
   "richText.image.title": "Image",
-  "richText.image.description": "The image is stored with your project, so it stays available when you reopen it.",
+  "richText.image.description":
+    "The image is stored with your project, so it stays available when you reopen it.",
   "richText.image.alt.label": "Image description",
-  "richText.image.alt.help": "One short sentence describing what the image shows, for people using screen readers.",
+  "richText.image.alt.help":
+    "One short sentence describing what the image shows, for people using screen readers.",
   "richText.image.caption.label": "Caption (optional)",
   "richText.image.caption.help": "Shown under the image on the published page.",
   "richText.image.action.choose": "Choose an image",
@@ -371,7 +377,8 @@ export const en: EnglishCatalog = {
   "richText.image.uploading": "Adding image…",
   "richText.image.failed": "That image could not be added.",
   "richText.unsupported.title": "This text cannot be edited here",
-  "richText.unsupported.body": "It was made with a newer version of the editor. Your content is kept exactly as it was, and nothing has been changed or removed. Update the editor to edit it, or remove this section.",
+  "richText.unsupported.body":
+    "It was made with a newer version of the editor. Your content is kept exactly as it was, and nothing has been changed or removed. Update the editor to edit it, or remove this section.",
 
   // Welcome screen
   "welcome.title": "Build your organisation's website",

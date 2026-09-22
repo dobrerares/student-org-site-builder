@@ -77,10 +77,7 @@ export function matchesQuery(option: LinkTargetOption, query: string): boolean {
 }
 
 function fold(value: string): string {
-  return value
-    .toLocaleLowerCase("ro")
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "");
+  return value.toLocaleLowerCase("ro").normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
 /**

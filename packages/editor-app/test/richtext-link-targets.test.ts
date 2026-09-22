@@ -32,7 +32,11 @@ function page(slug: string, navLabel: string, extra: Record<string, unknown> = {
 describe("linkTargetsFor", () => {
   test("lists Pages then Articles for the requested language only", () => {
     const site = siteWith(
-      [page("acasa", "Acasă"), page("despre", "Despre"), { ...(page("about", "About") as object), lang: "en" }],
+      [
+        page("acasa", "Acasă"),
+        page("despre", "Despre"),
+        { ...(page("about", "About") as object), lang: "en" },
+      ],
       [
         { id: "a1", lang: "ro", slug: "stire", title: "O știre", state: "published" },
         { id: "a2", lang: "en", slug: "news", title: "News", state: "published" },
@@ -44,9 +48,10 @@ describe("linkTargetsFor", () => {
   });
 
   test("shows the URL a visitor would see as the secondary line", () => {
-    const site = siteWith([page("despre", "Despre")], [
-      { id: "a1", lang: "ro", slug: "stire", title: "O știre", state: "published" },
-    ]);
+    const site = siteWith(
+      [page("despre", "Despre")],
+      [{ id: "a1", lang: "ro", slug: "stire", title: "O știre", state: "published" }],
+    );
     const options = linkTargetsFor(site, "ro");
     expect(options[0]?.hint).toBe("/despre/");
     expect(options[1]?.hint).toBe("/articles/stire/");
@@ -55,9 +60,10 @@ describe("linkTargetsFor", () => {
   test("includes Drafts, flagged", () => {
     // Linking ahead of publication is a normal way to work; issue #100 asks
     // for a warning, not a prohibition.
-    const site = siteWith([page("acasa", "Acasă")], [
-      { id: "a1", lang: "ro", slug: "ciorna", title: "Ciornă", state: "draft" },
-    ]);
+    const site = siteWith(
+      [page("acasa", "Acasă")],
+      [{ id: "a1", lang: "ro", slug: "ciorna", title: "Ciornă", state: "draft" }],
+    );
     const draft = linkTargetsFor(site, "ro").find((o) => o.kind === "article");
     expect(draft?.isDraft).toBe(true);
   });
@@ -132,9 +138,10 @@ describe("resolveTarget — lazy Page identity", () => {
   test("Article targets use the id the Article already has", () => {
     // Articles carry a permanent id from creation (issue #97), so there is
     // nothing to assign — only to read.
-    const site = siteWith([page("acasa", "Acasă")], [
-      { id: "art_42", lang: "ro", slug: "stire", title: "O știre", state: "published" },
-    ]);
+    const site = siteWith(
+      [page("acasa", "Acasă")],
+      [{ id: "art_42", lang: "ro", slug: "stire", title: "O știre", state: "published" }],
+    );
     const option = linkTargetsFor(site, "ro").find((o) => o.kind === "article")!;
     const { site: next, target } = resolveTarget(site, option, makePageIdFactory(site));
     expect(target).toEqual({ kind: "article", articleId: "art_42" });

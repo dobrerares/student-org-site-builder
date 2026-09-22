@@ -113,7 +113,10 @@ function serializeBlock(node: RichTextNode, ctx: RichTextRenderContext): string 
       // the legacy Markdown renderer produced, so migrated lists stay
       // byte-identical, and it is the conventional HTML for a tight list.
       const children = anyNode.content ?? [];
-      const only = children.length === 1 ? (children[0] as { type: string; align?: unknown; content?: readonly RichTextNode[] }) : undefined;
+      const only =
+        children.length === 1
+          ? (children[0] as { type: string; align?: unknown; content?: readonly RichTextNode[] })
+          : undefined;
       if (only !== undefined && only.type === "paragraph" && only.align === undefined) {
         return `<li>${serializeInline(only.content, ctx)}</li>`;
       }
@@ -138,16 +141,10 @@ function serializeBlock(node: RichTextNode, ctx: RichTextRenderContext): string 
 }
 
 function alignAttr(align: unknown): string {
-  return typeof align === "string" && align.length > 0
-    ? ` data-align="${escapeAttr(align)}"`
-    : "";
+  return typeof align === "string" && align.length > 0 ? ` data-align="${escapeAttr(align)}"` : "";
 }
 
-function serializeImage(
-  asset: unknown,
-  caption: unknown,
-  ctx: RichTextRenderContext,
-): string {
+function serializeImage(asset: unknown, caption: unknown, ctx: RichTextRenderContext): string {
   if (typeof asset !== "object" || asset === null) return "";
   const ref = asset as {
     path?: unknown;
@@ -160,7 +157,10 @@ function serializeImage(
   const src = ctx.assetUrlForPath?.(ref.path) ?? ref.path;
   const alt = typeof ref.alt === "string" ? ref.alt : "";
   const dims =
-    typeof ref.width === "number" && ref.width > 0 && typeof ref.height === "number" && ref.height > 0
+    typeof ref.width === "number" &&
+    ref.width > 0 &&
+    typeof ref.height === "number" &&
+    ref.height > 0
       ? ` width="${escapeAttr(String(Math.trunc(ref.width)))}" height="${escapeAttr(String(Math.trunc(ref.height)))}"`
       : "";
 
@@ -169,7 +169,8 @@ function serializeImage(
     ` loading="lazy" decoding="async" />`;
 
   const captionText = typeof caption === "string" ? caption.trim() : "";
-  const figcaption = captionText === "" ? "" : `<figcaption>${escapeText(captionText)}</figcaption>`;
+  const figcaption =
+    captionText === "" ? "" : `<figcaption>${escapeText(captionText)}</figcaption>`;
   return `<figure class="rich-text-figure">${img}${figcaption}</figure>`;
 }
 

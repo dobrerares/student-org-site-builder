@@ -54,7 +54,9 @@ export type ProseMirrorDoc = PmNode;
 // ---------------------------------------------------------------------------
 
 export function docToProseMirror(doc: RichTextDocument | undefined): ProseMirrorDoc {
-  const content = (doc?.content ?? []).map(nodeToPm).filter((node): node is PmNode => node !== null);
+  const content = (doc?.content ?? [])
+    .map(nodeToPm)
+    .filter((node): node is PmNode => node !== null);
   // ProseMirror's `doc` node requires at least one block child under the
   // default schema. An empty stored document is a normal state (a freshly
   // added Block), so seed it with the empty paragraph the author will type
@@ -201,16 +203,19 @@ function nodeFromPm(node: PmNode): RichTextNode | null {
       const text = typeof node.text === "string" ? node.text : "";
       if (text.length === 0) return null;
       const marks = (node.marks ?? []).map(markFromPm).filter((m): m is RichTextMark => m !== null);
-      return (
-        marks.length > 0 ? { type: "text", text, marks } : { type: "text", text }
-      ) as unknown as RichTextNode;
+      return (marks.length > 0
+        ? { type: "text", text, marks }
+        : { type: "text", text }) as unknown as RichTextNode;
     }
 
     case "hardBreak":
       return { type: "hardBreak" } as unknown as RichTextNode;
 
     case "paragraph":
-      return withAlign({ type: "paragraph", content: childrenFromPm(node.content) }, attrs["align"]);
+      return withAlign(
+        { type: "paragraph", content: childrenFromPm(node.content) },
+        attrs["align"],
+      );
 
     case "heading":
       return withAlign(

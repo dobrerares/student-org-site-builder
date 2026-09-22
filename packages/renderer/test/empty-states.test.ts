@@ -93,7 +93,12 @@ const CASES: readonly Case[] = [
       id: "blk_empty",
       type: "richText",
       version: 2,
-      data: { doc: { version: 1, content: [{ type: "paragraph", content: [{ type: "text", text: "   " }] }] } },
+      data: {
+        doc: {
+          version: 1,
+          content: [{ type: "paragraph", content: [{ type: "text", text: "   " }] }],
+        },
+      },
     },
     full: {
       id: "blk_full",
@@ -420,7 +425,10 @@ describe("empty-state suppression — surrounding blocks are unaffected", () => 
         type: "richText",
         version: 2,
         data: {
-          doc: { version: 1, content: [{ type: "paragraph", content: [{ type: "text", text: "Before." }] }] },
+          doc: {
+            version: 1,
+            content: [{ type: "paragraph", content: [{ type: "text", text: "Before." }] }],
+          },
         },
       },
       {
@@ -434,7 +442,10 @@ describe("empty-state suppression — surrounding blocks are unaffected", () => 
         type: "richText",
         version: 2,
         data: {
-          doc: { version: 1, content: [{ type: "paragraph", content: [{ type: "text", text: "After." }] }] },
+          doc: {
+            version: 1,
+            content: [{ type: "paragraph", content: [{ type: "text", text: "After." }] }],
+          },
         },
       },
     ] as unknown as Site["pages"][number]["blocks"];

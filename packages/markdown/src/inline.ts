@@ -143,7 +143,10 @@ export function findClosingItalic(text: string, from: number, marker: string): n
  *
  * Supports balanced brackets inside the link text — `[text [nested]]`.
  */
-export function parseLink(text: string, start: number): { text: string; url: string; end: number } | null {
+export function parseLink(
+  text: string,
+  start: number,
+): { text: string; url: string; end: number } | null {
   if (text[start] !== "[") return null;
 
   // Find the matching `]` allowing one level of bracket nesting.

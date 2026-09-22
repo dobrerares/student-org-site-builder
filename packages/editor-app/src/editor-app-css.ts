@@ -1746,8 +1746,7 @@ body {
  * compose, so the dialog would be offset twice and land off-screen.
  * Only the z-index needs stating, so the popup clears the backdrop's
  * unlayered z-index above.
- */
-/*
+ *
  * Keyed on the popup's own ARIA contract rather than on a list of test ids.
  * The id list was a trap: a new dialog that forgot to join it rendered in
  * document flow *behind* the fixed backdrop, which then swallowed every

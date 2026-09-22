@@ -186,7 +186,10 @@ function collectList(
     // (`listItem` holds Block nodes). The serialiser suppresses the wrapping
     // `<p>` for a single-paragraph item so the emitted `<li>` stays identical
     // to the legacy renderer's.
-    items.push({ type: "listItem", content: [{ type: "paragraph", content: parseInline(itemText) }] });
+    items.push({
+      type: "listItem",
+      content: [{ type: "paragraph", content: parseInline(itemText) }],
+    });
     i++;
   }
   return { node: { type: kind === "ul" ? "bulletList" : "orderedList", content: items }, next: i };

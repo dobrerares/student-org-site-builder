@@ -16,7 +16,12 @@ import type { JSX } from "react";
 import type { Editor } from "@tiptap/core";
 import { useTranslator } from "../i18n-context.js";
 import { IconRedo, IconUndo } from "../icons.js";
-import { Toolbar, ToolbarButton, ToolbarGroup, ToolbarSeparator } from "../vendor/editorcn/toolbar.js";
+import {
+  Toolbar,
+  ToolbarButton,
+  ToolbarGroup,
+  ToolbarSeparator,
+} from "../vendor/editorcn/toolbar.js";
 import {
   IconBold,
   IconBulletList,

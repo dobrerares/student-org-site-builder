@@ -2,10 +2,15 @@
 /**
  * Vendored editorcn toolbar primitives.
  *
- * See `README.md` in this directory for the upstream revision, the licence,
- * and the list of local changes. Edit this file freely — ADR 0049 makes
- * local adaptations and manually reviewed upstream updates a repository
- * responsibility, not a package-update one.
+ * Derived from shadcn-labs/editorcn at `99232190` (MIT — see `LICENSE` and
+ * `README.md` in this directory, which record the upstream revision and every
+ * local change). Upstream files: `rte-toolbar.tsx`, `ui/rte-button.tsx`,
+ * `ui/rte-button-group.tsx`, `ui/rte-separator.tsx`.
+ *
+ * Edit this file freely. ADR 0049 makes local adaptations and manually
+ * reviewed upstream updates a repository responsibility, not a package-update
+ * one — but add anything you change to the README's list, because a future
+ * sync has to re-apply it by hand.
  *
  * The primitives are deliberately dumb: a roving-focus container, a pressed-
  * state button, a group and a separator. They know nothing about Tiptap,
@@ -38,9 +43,7 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
     if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
     const root = ref.current;
     if (root === null) return;
-    const buttons = Array.from(
-      root.querySelectorAll<HTMLButtonElement>("button:not([disabled])"),
-    );
+    const buttons = Array.from(root.querySelectorAll<HTMLButtonElement>("button:not([disabled])"));
     if (buttons.length === 0) return;
     const current = buttons.indexOf(document.activeElement as HTMLButtonElement);
     if (current === -1) return;

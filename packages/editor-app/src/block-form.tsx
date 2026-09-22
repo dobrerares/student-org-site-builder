@@ -158,7 +158,9 @@ export interface BlockFormProps<TData> {
    * keystroke, while every change still reaches preview and export
    * immediately. Falls back to `onPatch` when the host does not supply it.
    */
-  readonly onPatchQuiet?: ((path: readonly (string | number)[], value: unknown) => void) | undefined;
+  readonly onPatchQuiet?:
+    | ((path: readonly (string | number)[], value: unknown) => void)
+    | undefined;
 }
 
 export function BlockForm<TData>(props: BlockFormProps<TData>): JSX.Element {

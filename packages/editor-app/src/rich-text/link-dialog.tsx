@@ -59,10 +59,7 @@ export function RichTextLinkDialog(props: RichTextLinkDialogProps): JSX.Element 
     setShowInvalid(false);
   }, [props.open]);
 
-  const options = useMemo(
-    () => linkTargetsFor(props.site, props.lang),
-    [props.site, props.lang],
-  );
+  const options = useMemo(() => linkTargetsFor(props.site, props.lang), [props.site, props.lang]);
   const visible = useMemo(
     () => options.filter((option) => matchesQuery(option, query)),
     [options, query],
@@ -127,7 +124,11 @@ export function RichTextLinkDialog(props: RichTextLinkDialogProps): JSX.Element 
           {visible.length === 0 ? (
             <p data-testid="rich-text-link-empty">{t("richText.link.search.empty")}</p>
           ) : (
-            <ul data-testid="rich-text-link-results" role="listbox" aria-label={t("richText.link.search.label")}>
+            <ul
+              data-testid="rich-text-link-results"
+              role="listbox"
+              aria-label={t("richText.link.search.label")}
+            >
               {visible.map((option) => (
                 <li key={option.key}>
                   <button

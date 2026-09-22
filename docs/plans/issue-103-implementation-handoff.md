@@ -227,3 +227,183 @@ Inspector and PR #116's preview fidelity.
 - **Prototype validation.** Issue #102's interactive prototype was built and
   accepted (#113). The production surfaces follow its visual system; a
   round of use by an actual student member is still the real validation.
+
+## Rich text: delivered
+
+Implements [issue #100](issue-100-rich-text-contract.md) and the Tiptap half of
+[issue #101](issue-101-builder-ui-stack.md), under
+[ADR 0048](../adr/0048-structured-rich-text-block-content.md) and
+[ADR 0049](../adr/0049-react-builder-ui-and-preact-renderer.md).
+
+### Schema (`@sosb/schema`)
+
+- `RichTextDocument` v1 (`src/rich-text-doc.ts`): `{ version, content }` over
+  paragraphs, h2–h4 headings, bullet and ordered lists, blockquotes and images,
+  with `bold` / `italic` / `underline` / `strike` / `code` / `link` marks on
+  text. The document version is **independent of** the Block version, so the
+  vocabulary can grow without a Block migration.
+- **Marks are stored outermost-first.** `[{bold},{link}]` serialises to
+  `<strong><a>…</a></strong>`; the reverse array gives the reverse nesting.
+  This is what makes byte-exact Markdown parity achievable — a canonical mark
+  order could not reproduce both `**[a](u)**` and `[**a**](u)`.
+- **Link targets are identities, not URLs**: `{kind:"page", pageId}`,
+  `{kind:"article", articleId}`, `{kind:"external", href}`.
+- `Page.id` — new, **optional**, permanent, and assigned lazily by the link
+  picker. Optional because ADR 0002 forbids inventing fields when a project is
+  merely opened; assigned at the first moment it means something.
+- Images use `RichTextImageAssetSchema`, structurally the canonical
+  `AssetRefSchema` with `alt` relaxed to allow empty. The canonical `min(1)`
+  would turn a missing description into a parse error, and issue #100 requires
+  it to be a warning that never makes a project unopenable.
+- Unknown nodes and marks parse as loose objects and round-trip verbatim.
+- `richText` Block **v1 → v2**, registered in `BLOCK_MIGRATIONS` and run at
+  load time — `migrateSite` now walks every Block container on the Site
+  (`pages`, and `articles` when present), which it did not do before.
+  `SiteMigrationResult` gained `blockMigrations[]`.
+- `ValidationIssue.blocking` and `hasBlockingIssues` (see the conflict note
+  below), plus the rules: `doc.empty` (warning),
+  `content.unsupported` (error, blocking in public content),
+  `image.bytes.missing` (error, blocking in public content),
+  `image.alt.missing` (warning), `link.missing` / `link.draft` (warnings).
+- `validate(data, options?)` gained `assetPathExists`. Byte presence cannot be
+  derived from Site data, so the host injects it; without it the check simply
+  does not run rather than guessing. The editor backs it with the display-URL
+  cache, which is already the synchronous view of what the project VFS holds
+  and is keyed by the same content hash every asset path carries — so the
+  check costs a `Map` lookup and validation stays synchronous.
+
+### Markdown migration (`@sosb/markdown`)
+
+- `markdownToRichTextDoc` mirrors the existing block and inline grammar rule
+  for rule, reusing `inline.ts`'s delimiter-scanning helpers so the two paths
+  cannot drift on matching.
+- **The parity claim is proved, not asserted.** Every Markdown string ever
+  committed as `richText` content, the whole ADR 0034 whitelist, and the full
+  XSS corpus — 179 cases — produce **byte-identical HTML** through the document
+  path and the legacy renderer
+  (`packages/renderer/test/markdown-migration-golden.test.ts`). Including the
+  XSS corpus is deliberate: it certifies the new serialiser is exactly as
+  conservative as the one whose safety the corpus already covers.
+- One known, documented deviation: two adjacent non-empty constructs carrying
+  the same mark (`**a****b**`) merge into one element. The flat document format
+  cannot distinguish them and the rendered result is identical. Empty spans do
+  _not_ merge — that case is load-bearing and tested.
+
+### Renderer (`@sosb/renderer`)
+
+- `renderRichTextDocToHtml` — a plain string function, not a component. The
+  legacy renderer it must reproduce is a string function, mark nesting is a
+  stack problem that reads badly as JSX, and the Block has always handed inner
+  HTML to `dangerouslySetInnerHTML`.
+- Safety by construction, as in `@sosb/markdown`: output built tag by tag,
+  every text through `escapeText`, every attribute through `escapeAttr`, every
+  href re-checked by `sanitizeUrl`. Structured storage does not make imported
+  content trusted.
+- `makeRichTextLinkResolver` resolves targets against the Site. Unresolvable
+  targets — deleted Page, missing Article, Draft Article — render as unlinked
+  text, keeping the author's words. Unlisted Articles are valid targets.
+- Images route through the same depth-aware asset resolver every other
+  image-bearing Block uses: `blob:` in preview, `../assets/…` in a build.
+- Theme CSS for figures and captions, `<u>` / `<s>`, list-item paragraphs, the
+  unsupported placeholder, and per-node `data-align`. The alignment selectors
+  name their element on purpose: without it they score (0,3,0) against the
+  Block-level defaults' (0,3,1) and silently lose.
+
+### Editor (`@sosb/editor-app`)
+
+- Tiptap 3.31.3 + a vendored editorcn toolbar
+  (`src/vendor/editorcn/`, upstream `99232190`, MIT — the README records every
+  local change). editorcn is not published to npm, so copying is the only
+  option regardless of ADR 0049's instruction.
+- `doc-prosemirror.ts` translates both ways, so ProseMirror's internals never
+  become the file format. Round-trip fidelity is tested, including over every
+  migrated-Markdown document.
+- Dispatched by **schema identity** (`RichTextDocumentSchema` → `"rich-text"`),
+  the same mechanism the asset pickers use. `MEDIA_PICKER_RENDERERS` is now
+  `SCHEMA_FIELD_RENDERERS`, with the old name kept as an alias.
+- Link dialog: an Internal tab searching Pages and Articles (case- and
+  diacritic-insensitive), and an External tab validated against the schema's
+  own `isAcceptableLinkUrl`. Selecting a Draft warns but is allowed.
+- Image insertion reuses `<AssetPicker>` — one upload path in the codebase, so
+  the archive round trip and "no re-uploads on reopen" come for free. The
+  description is captured in the dialog because a document node has no sibling
+  field to put it in.
+- ro + en strings for all 52 new keys.
+
+### Undo — the decision the contract asked for
+
+Issue #100 requires two histories that do not fight. The implementation:
+
+- **Local history is Tiptap's own.** The surface carries
+  `data-rich-text-surface`; the editor's global Ctrl+Z handler returns early
+  for events originating inside it, and ProseMirror's history plugin handles
+  the keystroke. No custom keymap, no race.
+- **Every keystroke is saved immediately, with no history entry.** A new
+  `onPatchQuiet` writes straight into Site data, so preview, validation and
+  export are never stale. That is the literal reading of "history grouping does
+  not buffer saved content": the saving and the grouping are decoupled.
+- **One Site-history entry per editing visit**, pushed on blur or on unmount —
+  and switching Block, Page or Article _is_ an unmount from the field's point
+  of view, which is exactly the boundary the contract names.
+
+Rejected: debouncing snapshots on a timer. It would have made the number of
+undo entries depend on typing speed, which is not a contract anyone can reason
+about.
+
+### Unsupported content — the strongest simplification of the lot
+
+If a document contains a node or mark this version does not understand, **Tiptap
+is never mounted**. The Block renders read-only with an explanation naming the
+unreadable types, and the document passes through untouched; a test asserts
+`onChange` is never called.
+
+The alternative — round-tripping unknown content through a ProseMirror schema
+that has no node for it — is precisely how the automatic simplification ADR
+0048 forbids would happen by accident. This is coarser than "only the affected
+part is read-only", and it is the version that cannot lose data.
+
+## Conflicts the Articles rebase will hit
+
+`feat/rich-text` was written on `main` before PR #117 landed, so both branches
+independently add some of the same things. None of it is a real disagreement.
+
+1. **`ValidationIssue.blocking` + `hasBlockingIssues`.** Both branches add
+   them, deliberately identical in shape and semantics. Keep one copy; keep the
+   union of the doc comments.
+2. **`runSiteRules`' per-page Block loop.** #117 extracts it into
+   `runBlocksDeep`; this branch adds a `blockContext` argument to the
+   `runBlockRules` call inside it. Resolution: keep #117's extraction and
+   thread the context through it, passing `publicContent: false` for Blocks
+   inside a Draft Article. That is the last piece of the Draft carve-out —
+   everything else already honours it.
+3. **`packages/renderer/src/rich-text-links.ts`** duplicates `articlePath`'s
+   rule because it could not import a symbol that did not exist yet. After the
+   rebase, delete the local `ARTICLE_ROUTE_PREFIX` and `articleHref` and call
+   the shared `articlePath(site, article)` from `routing.ts`. Marked with a
+   `REBASE NOTE` in the file.
+4. **`page-shell.tsx`.** #117 extracts `DocumentShell`; this branch adds a
+   `richTextContext` built once per page and threaded into `renderBlock`. Build
+   it once in the shared shell so Articles get it too.
+5. **Export-gate surfacing.** #117 wires `hasBlockingIssues` into
+   `export-confirm.tsx`. This branch's blockers flow through that same gate
+   with no further work — they are the same field.
+6. **`docs/plans/issue-103-implementation-handoff.md`** — this file. Keep both
+   sections.
+
+## Still open
+
+- **Paste handling is Tiptap's default**, not issue #100's specified
+  behaviour. Supported formatting survives; the contract additionally requires
+  flattening tables to readable text, routing clipboard image _files_ through
+  the asset pipeline, and omitting remotely hosted images with a notice. The
+  custom `sosbLink` and `sosbImage` nodes both decline to parse pasted HTML, so
+  nothing unsafe or unowned enters a document — pasted links and images arrive
+  as plain text rather than as the wrong thing. Finishing this needs a
+  `handlePaste` on the editor.
+- **Input-method composition is untested.** The contract calls for it
+  explicitly; jsdom cannot exercise it and it was not tried in a real browser.
+- **Electron and the offline archive were not launched.** Both build, and the
+  archive's size budget still passes, but neither was driven by hand with the
+  rich-text editor in it.
+- **No `figure` support in `@sosb/markdown`'s legacy path**, by design — images
+  were never in the ADR 0034 subset, so nothing migrates into one.

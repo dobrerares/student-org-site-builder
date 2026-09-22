@@ -1062,8 +1062,7 @@ function runRichTextRules(
       result.warnings.push({
         severity: "warning",
         path: ["data", "doc", ...link.path],
-        code:
-          state === "draft" ? "block.richText.link.draft" : "block.richText.link.missing",
+        code: state === "draft" ? "block.richText.link.draft" : "block.richText.link.missing",
         message:
           state === "draft"
             ? "A link in this text section points at a Draft, which visitors cannot open. " +

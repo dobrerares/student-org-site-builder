@@ -45,14 +45,20 @@ describe("document ↔ ProseMirror round trip", () => {
       {
         type: "bulletList",
         content: [
-          { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "a" }] }] },
+          {
+            type: "listItem",
+            content: [{ type: "paragraph", content: [{ type: "text", text: "a" }] }],
+          },
         ],
       },
       {
         type: "orderedList",
         start: 4,
         content: [
-          { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "b" }] }] },
+          {
+            type: "listItem",
+            content: [{ type: "paragraph", content: [{ type: "text", text: "b" }] }],
+          },
         ],
       },
       {

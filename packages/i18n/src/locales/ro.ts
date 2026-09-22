@@ -337,7 +337,8 @@ export const ro: RomanianCatalog = {
   // Rich-text editor (ADR 0048)
   "richText.editor.label": "Conținut text",
   "richText.editor.placeholder": "Scrie textul aici…",
-  "richText.editor.help": "Folosește butoanele de mai sus pentru titluri, liste, citate, linkuri și imagini. Ctrl+Z anulează ultima modificare cât timp scrii aici.",
+  "richText.editor.help":
+    "Folosește butoanele de mai sus pentru titluri, liste, citate, linkuri și imagini. Ctrl+Z anulează ultima modificare cât timp scrii aici.",
   "richText.toolbar.label": "Formatare text",
   "richText.toolbar.bold": "Îngroșat",
   "richText.toolbar.italic": "Cursiv",
@@ -357,7 +358,8 @@ export const ro: RomanianCatalog = {
   "richText.toolbar.undo": "Anulează (Ctrl+Z)",
   "richText.toolbar.redo": "Refă (Ctrl+Shift+Z)",
   "richText.link.title": "Link",
-  "richText.link.description": "Trimite către una dintre paginile sau articolele tale, ori către o adresă de pe web.",
+  "richText.link.description":
+    "Trimite către una dintre paginile sau articolele tale, ori către o adresă de pe web.",
   "richText.link.tab.internal": "Acest site",
   "richText.link.tab.external": "Adresă web",
   "richText.link.search.label": "Caută pagini și articole",
@@ -365,19 +367,24 @@ export const ro: RomanianCatalog = {
   "richText.link.search.empty": "Nimic nu corespunde căutării.",
   "richText.link.kind.page": "Pagină",
   "richText.link.kind.article": "Articol",
-  "richText.link.draftWarning": "Aceasta este o ciornă. Vizitatorii nu o pot deschide, așa că linkul va apărea ca text simplu până o publici.",
+  "richText.link.draftWarning":
+    "Aceasta este o ciornă. Vizitatorii nu o pot deschide, așa că linkul va apărea ca text simplu până o publici.",
   "richText.link.external.label": "Adresă web, e-mail sau telefon",
   "richText.link.external.placeholder": "https://exemplu.ro",
-  "richText.link.external.help": "Adresele web încep cu https://, cele de e-mail cu mailto:, iar numerele de telefon cu tel:.",
+  "richText.link.external.help":
+    "Adresele web încep cu https://, cele de e-mail cu mailto:, iar numerele de telefon cu tel:.",
   "richText.link.external.invalid": "Aceasta nu pare o adresă web, de e-mail sau de telefon.",
   "richText.link.action.apply": "Adaugă link",
   "richText.link.action.remove": "Elimină linkul",
   "richText.link.action.cancel": "Renunță",
-  "richText.link.selectionRequired": "Selectează mai întâi cuvintele pe care vrei să le transformi în link.",
+  "richText.link.selectionRequired":
+    "Selectează mai întâi cuvintele pe care vrei să le transformi în link.",
   "richText.image.title": "Imagine",
-  "richText.image.description": "Imaginea se păstrează în proiect, așa că rămâne disponibilă când îl redeschizi.",
+  "richText.image.description":
+    "Imaginea se păstrează în proiect, așa că rămâne disponibilă când îl redeschizi.",
   "richText.image.alt.label": "Descrierea imaginii",
-  "richText.image.alt.help": "O propoziție scurtă care descrie ce se vede, pentru cei care folosesc cititoare de ecran.",
+  "richText.image.alt.help":
+    "O propoziție scurtă care descrie ce se vede, pentru cei care folosesc cititoare de ecran.",
   "richText.image.caption.label": "Legendă (opțional)",
   "richText.image.caption.help": "Se afișează sub imagine pe pagina publicată.",
   "richText.image.action.choose": "Alege o imagine",
@@ -386,7 +393,8 @@ export const ro: RomanianCatalog = {
   "richText.image.uploading": "Se adaugă imaginea…",
   "richText.image.failed": "Imaginea nu a putut fi adăugată.",
   "richText.unsupported.title": "Acest text nu poate fi editat aici",
-  "richText.unsupported.body": "A fost creat cu o versiune mai nouă a editorului. Conținutul este păstrat exact așa cum era; nimic nu a fost modificat sau șters. Actualizează editorul ca să îl poți edita sau elimină această secțiune.",
+  "richText.unsupported.body":
+    "A fost creat cu o versiune mai nouă a editorului. Conținutul este păstrat exact așa cum era; nimic nu a fost modificat sau șters. Actualizează editorul ca să îl poți edita sau elimină această secțiune.",
 
   // Welcome screen
   "welcome.title": "Construiește site-ul organizației tale",

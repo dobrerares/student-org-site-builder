@@ -73,19 +73,13 @@ describe("renderSite — richText block (structural)", () => {
     // The mark array's order is the element nesting. Both orders are legal
     // and they are not the same document.
     const boldOutside = renderSite(
-      withDoc(
-        clone(),
-        doc(para(text("x", [{ type: "bold" }, { type: "italic" }]))),
-      ),
+      withDoc(clone(), doc(para(text("x", [{ type: "bold" }, { type: "italic" }])))),
       "stub",
     );
     expect(boldOutside).toContain("<strong><em>x</em></strong>");
 
     const italicOutside = renderSite(
-      withDoc(
-        clone(),
-        doc(para(text("x", [{ type: "italic" }, { type: "bold" }]))),
-      ),
+      withDoc(clone(), doc(para(text("x", [{ type: "italic" }, { type: "bold" }])))),
       "stub",
     );
     expect(italicOutside).toContain("<em><strong>x</strong></em>");
@@ -140,7 +134,10 @@ describe("renderSite — richText block (structural)", () => {
     const html = renderSite(
       withDoc(
         clone(),
-        doc({ type: "heading", level: 2, content: [text("Despre noi")] }, para(text("Un paragraf."))),
+        doc(
+          { type: "heading", level: 2, content: [text("Despre noi")] },
+          para(text("Un paragraf.")),
+        ),
         { titleAlign: "left", paragraphAlign: "justify" },
       ),
       "academic",
@@ -228,7 +225,7 @@ describe("renderSite — richText images", () => {
   });
 
   test("omits the caption element when there is no caption", () => {
-    const { caption: _caption, ...noCaption } = image;
+    const noCaption = { type: image.type, asset: image.asset };
     const html = renderSite(withDoc(clone(), doc(noCaption)), "stub");
     expect(html).toContain("<figure");
     expect(html).not.toContain("<figcaption>");

@@ -139,14 +139,7 @@ export function IconHeading(props: IconProps & { level: 2 | 3 | 4 }): JSX.Elemen
       <path d="M5 5v14" />
       <path d="M13 5v14" />
       <path d="M5 12h8" />
-      <text
-        x="16"
-        y="19"
-        fontSize="10"
-        stroke="none"
-        fill="currentColor"
-        fontFamily="inherit"
-      >
+      <text x="16" y="19" fontSize="10" stroke="none" fill="currentColor" fontFamily="inherit">
         {props.level}
       </text>
     </svg>

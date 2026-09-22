@@ -140,11 +140,11 @@ function EditableRichText(
 
   const initialContent = useMemo(
     () => docToProseMirror(props.value),
-    // Intentionally computed once per mount. Tiptap owns the document while
-    // it is mounted; re-seeding it from props on every keystroke would fight
-    // the editor for the caret. Remounting happens when the Block changes,
-    // which is exactly when re-seeding is correct.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Intentionally computed once per mount, so `props.value` is deliberately
+    // absent from the dependency list. Tiptap owns the document while it is
+    // mounted; re-seeding it from props on every keystroke would fight the
+    // editor for the caret. Remounting happens when the Block changes, which
+    // is exactly when re-seeding is correct.
     [],
   );
 

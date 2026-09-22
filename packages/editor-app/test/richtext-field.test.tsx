@@ -169,9 +169,9 @@ describe("RichTextField — unsupported content", () => {
     const { container } = render(
       <RichTextField value={unreadable} onChange={vi.fn()} context={contextWith()} />,
     );
-    expect(container.querySelector('[data-testid="rich-text-unsupported-types"]')?.textContent).toBe(
-      "futureCallout",
-    );
+    expect(
+      container.querySelector('[data-testid="rich-text-unsupported-types"]')?.textContent,
+    ).toBe("futureCallout");
   });
 
   test("never calls onChange, so the document cannot be simplified by opening it", async () => {
