@@ -46,7 +46,8 @@ state take effect on the live Site after redeployment.
 
 **Article publication date**:
 An author-editable date describing when an Article was published and
-ordering "By tag" lists newest first; it does not schedule publication.
+ordering "By tag" lists, newest first by default; it does not schedule
+publication. "Select articles" lists keep the author's own order instead.
 _Avoid_: release schedule.
 
 **Draft article**:
@@ -83,7 +84,9 @@ _Avoid_: route, view, screen.
 A self-contained, schema-typed unit of page content (a hero, an FAQ, a
 team grid). Each block type has one schema in `@sosb/schema`, one renderer
 component in `@sosb/renderer`, and one default-data factory in
-`@sosb/editor-app`. New block types land by adding all three.
+`@sosb/editor-app`. Those three are the minimum; a block that is visible to
+authors also needs theme CSS and `@sosb/i18n` strings. `docs/how-to-add-a-block.md`
+has the full checklist.
 _Avoid_: section, component, widget.
 
 **Custom Block** (planned):

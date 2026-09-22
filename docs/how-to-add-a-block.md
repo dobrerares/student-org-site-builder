@@ -233,17 +233,25 @@ preserve-unknown-keys policy.
 ### Site-aware blocks
 
 Most blocks render from their own `data` alone. A block that needs to read
-the rest of the Site — `articleList` is the first — receives a
-`BlockRenderContext` instead of a widening parameter list:
+the rest of the Site — `articleList` is the first — is reached through a
+`BlockRenderContext`, the record `page-shell.tsx` threads to its dispatcher
+instead of growing another positional argument:
 
 ```ts
 interface BlockRenderContext {
   readonly site: Site;
   readonly lang: string; // the containing Page's or Article's language
   readonly assetUrlForPath: AssetUrlForPath | undefined;
+  readonly theme?: ThemeBundle | undefined; // for the block's design variant
   readonly containerArticleId?: string | undefined;
 }
 ```
+
+The type is internal to `page-shell.tsx` and is **not** exported from
+`@sosb/renderer`. The dispatcher unpacks it into ordinary props, so your block
+component still takes explicit arguments (`ArticleList` takes `block`, `site`,
+`lang`, `containerArticleId`, `assetUrlForPath`). What the context buys is that
+the next site-aware block does not churn every call site again.
 
 Two rules come with it:
 
@@ -261,15 +269,18 @@ Two rules come with it:
 `articleList` stores tag ids and Article ids. The form-generator would render
 those as arrays of raw text inputs, which ADR 0044 puts off-limits — they are
 identifiers, not things a human types. Such a block needs a **hand-coded
-Inspector** registered in the editor's block-inspector branch, the same way
-`customHTML` is. Landing the schema without that Inspector is a regression
+Inspector**, registered in the by-type ternary chain that picks the Inspector
+body in `packages/editor-app/src/editor-app.tsx` (and, for a block an Article
+can hold, the matching chain in `article-workspace.tsx`), the same way
+`customHTML` is. Export it from `packages/editor-app/src/index.tsx` so the
+shells can reach it. Landing the schema without that Inspector is a regression
 against ADR 0044, not a follow-up.
 
 `ArticleListInspector` is the worked example: it shows resolved matches by
 calling the shared resolver, labels each candidate with its language and
-publication state, and offers Move up / Move down beside any drag affordance
-(issue #102 — drag alone is unusable on a phone and invisible to keyboard
-users).
+publication state, and reorders with Move up / Move down buttons rather than a
+drag handle (issue #102 — drag alone is unusable on a phone and invisible to
+keyboard users; the Block outline offers both because it already had drag).
 
 ### Longer help belongs behind an (i) icon
 
@@ -367,12 +378,14 @@ flags (ADR 0005). New blocks usually need **no form code at all**
 — the auto-generated form covers strings, numbers, booleans, enums,
 and nested objects out of the box.
 
-Hand-coded forms are reserved for blocks with truly unusual UX:
-the gallery (drag-reorderable items), the FAQ (variable-length
-items), the team block (grouped lists), the embed block (provider
-whitelist UI). When those land they will document their patterns;
-v1 blocks should default to the auto-generated form unless their
-issue body says otherwise.
+Hand-coded forms are reserved for blocks the generated form cannot
+serve at all. In practice that has turned out to be a narrower set
+than this guide once predicted: the gallery, FAQ, team and embed
+blocks all shipped on the generated form. The two hand-coded editors
+in the repo are `custom-html-form.tsx` (raw markup needs its own
+safety affordances) and `article-list-inspector.tsx` (its data is
+identifiers, see "Blocks whose data is references" above). Default to
+the auto-generated form unless your block meets that bar.
 
 ## Step 6 — Tests
 
@@ -501,9 +514,24 @@ When you're ready to send the PR, walk through this list:
       `packages/editor-app/src/block-catalog.ts`.
 - [ ] Hand-coded Inspector when the block's data is identifiers rather
       than authored content (ADR 0044).
-- [ ] Site-aware blocks read `BlockRenderContext`, and their selection
-      logic lives in `@sosb/schema` so the renderer, the validator, and
-      the editor cannot disagree.
+- [ ] Site-aware blocks are dispatched through `BlockRenderContext`, and
+      their selection logic lives in `@sosb/schema` so the renderer, the
+      validator, and the editor cannot disagree.
+- [ ] Theme CSS for the block in `packages/renderer/src/themes/` — the
+      stub baseline, `production-base.ts`, and each production theme.
+      A block with no rules there renders unstyled under every theme.
+- [ ] Editor-facing strings in `packages/i18n/src/locales/` (`keys.ts`
+      plus **both** `en.ts` and `ro.ts`; parity is CI-enforced).
+- [ ] Public re-exports: renderer helpers from
+      `packages/renderer/src/index.tsx`, editor components from
+      `packages/editor-app/src/index.tsx`.
+- [ ] Whole-Site validation when the block holds cross-references.
+      `runBlockRules` sees one block in isolation and is reachable via
+      `validateBlock`, which has no Site at all — reference checks belong
+      in a site-level rule instead.
+- [ ] Referential cleanup in the editor when the block points at
+      something deletable, so deleting the target does not leave a
+      dangling id behind.
 - [ ] Default-data builder in
       `packages/editor-app/src/block-defaults.ts`.
 - [ ] Schema unit tests (well-formed / required-missing /

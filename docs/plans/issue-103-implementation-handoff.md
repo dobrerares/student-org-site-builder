@@ -39,7 +39,13 @@ of [issue #102](../plans/issue-102-builder-workflows.md), under
 
 - Pages and Articles share one `DocumentShell`, so the `<head>`, navigation,
   language switcher, and per-page script gating have a single implementation.
-  Page output is byte-identical after the refactor.
+  Page _markup_ is byte-identical after the refactor: the only change to the
+  existing golden files is the `[data-block="articleList"]` rules inserted into
+  the inlined stylesheet, which every theme now carries.
+- Articles render through the same Theme bundle a Page does (ADR 0052), so a
+  Block inside an Article gets the same `data-variant` treatment, and
+  `applyThemeSwitch` / `setBlockVariant` walk `site.articles` as well as
+  `site.pages`.
 - Article page: automatic title, date, summary and cover above the Block list,
   tag labels (plain text — there are no tag pages), Related Articles after.
 - `articleList` block with cards (cover, title, date, summary, link). An empty
