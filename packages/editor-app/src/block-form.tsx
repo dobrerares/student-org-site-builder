@@ -45,7 +45,7 @@
 import type { JSX } from "react";
 import { useState } from "react";
 import type { ZodType } from "zod";
-import type { AssetRefLike, DocumentAssetRef } from "@sosb/schema";
+import type { AssetRefLike, DocumentAssetRef, RichTextDocument } from "@sosb/schema";
 
 import { expandAltSyncPatches, suggestedAltForAssetPath } from "./alt-sync.js";
 import { partitionByTier, tierSummaryLabels } from "./field-tiers.js";
@@ -57,7 +57,8 @@ import { getAtPath } from "./get-set-path.js";
 import { AssetPicker } from "./asset-picker.js";
 import { DocumentPicker, type DocumentAssetRefLike } from "./document-picker.js";
 import { fieldLabel, optionLabel } from "./field-labels.js";
-import { MEDIA_PICKER_RENDERERS } from "./media-picker-renderers.js";
+import { SCHEMA_FIELD_RENDERERS, MEDIA_PICKER_RENDERERS } from "./media-picker-renderers.js";
+import { RichTextField, type RichTextFieldContext } from "./rich-text/rich-text-field.js";
 import { rebaseElement } from "./rebase-element.js";
 import { IconArrowDown, IconArrowUp, IconPlus, IconTrash } from "./icons.js";
 import type * as React from "react";
@@ -87,7 +88,7 @@ import { Button, Input, NativeSelect, Textarea } from "@sosb/ui";
  * They share the same UX (upload + preview + alt-edit), so the renderer
  * arm below (`node.renderer === "asset-picker"`) is shared.
  */
-export { MEDIA_PICKER_RENDERERS };
+export { MEDIA_PICKER_RENDERERS, SCHEMA_FIELD_RENDERERS };
 
 export interface BlockFormProps<TData> {
   /** The block's data schema (e.g. `ValueListDataSchema`). */
@@ -141,6 +142,23 @@ export interface BlockFormProps<TData> {
    * can inject ad-hoc overrides to exercise tier hiding.
    */
   readonly overrides?: readonly FieldOverride[];
+  /**
+   * Site-aware plumbing for the rich-text editor (ADR 0048/0049). Only the
+   * `richText` Block needs it; every other form passes nothing and the
+   * field falls back to a read-only notice if it is ever reached without
+   * one. Bundled as a single object because `BlockForm` and `FieldRenderer`
+   * only forward it — neither has any business knowing what is inside.
+   */
+  readonly richText?: RichTextFieldContext | undefined;
+  /**
+   * Patch a leaf field *without* pushing a Site-history entry.
+   *
+   * Exists for the rich-text editor, whose history contract (issue #100)
+   * is one Site-history entry per editing visit rather than one per
+   * keystroke, while every change still reaches preview and export
+   * immediately. Falls back to `onPatch` when the host does not supply it.
+   */
+  readonly onPatchQuiet?: ((path: readonly (string | number)[], value: unknown) => void) | undefined;
 }
 
 export function BlockForm<TData>(props: BlockFormProps<TData>): JSX.Element {
@@ -148,7 +166,7 @@ export function BlockForm<TData>(props: BlockFormProps<TData>): JSX.Element {
   // remounting the form starts collapsed again.
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const fields = fieldsFromSchema(props.schema, {
-    schemaRenderers: MEDIA_PICKER_RENDERERS,
+    schemaRenderers: SCHEMA_FIELD_RENDERERS,
     overrides: props.overrides ?? [],
   });
   // Advanced-tier fields are lifted out of the schema order and rendered
@@ -163,6 +181,8 @@ export function BlockForm<TData>(props: BlockFormProps<TData>): JSX.Element {
     uploader: props.uploader,
     documentUploader: props.documentUploader,
     displayUrlFor: props.displayUrlFor,
+    richText: props.richText,
+    onPatchQuiet: props.onPatchQuiet,
   };
   return (
     <form data-testid="block-form" onSubmit={(event) => event.preventDefault()}>
@@ -212,6 +232,8 @@ interface FieldRendererProps {
    * with `tier === "hidden"` are dropped regardless (ADR 0043).
    */
   readonly showAdvanced: boolean;
+  readonly richText: RichTextFieldContext | undefined;
+  readonly onPatchQuiet: ((path: readonly (string | number)[], value: unknown) => void) | undefined;
 }
 
 function FieldRenderer({
@@ -224,6 +246,8 @@ function FieldRenderer({
   documentUploader,
   displayUrlFor,
   showAdvanced,
+  richText,
+  onPatchQuiet,
 }: FieldRendererProps): JSX.Element | null {
   // Tier-based visibility filter (ADR 0043). Hidden fields are NEVER
   // rendered; advanced fields require the toggle to be on. Default-tier
@@ -256,6 +280,8 @@ function FieldRenderer({
               documentUploader={documentUploader}
               displayUrlFor={displayUrlFor}
               showAdvanced={showAdvanced}
+              richText={richText}
+              onPatchQuiet={onPatchQuiet}
             />
           ))}
         </fieldset>
@@ -311,6 +337,8 @@ function FieldRenderer({
                     documentUploader={documentUploader}
                     displayUrlFor={displayUrlFor}
                     showAdvanced={showAdvanced}
+                    richText={richText}
+                    onPatchQuiet={onPatchQuiet}
                   />
                   <div
                     className="block-form__item-controls"
@@ -552,6 +580,22 @@ function FieldRenderer({
               }
             }}
             uploader={documentUploader}
+          />
+        );
+      }
+      if (node.renderer === "rich-text") {
+        // Without a host context the editor cannot offer a link picker or an
+        // asset uploader, so it would be a text box that silently loses
+        // half its features. Rendering the inert marker instead makes the
+        // missing wiring obvious at the call site.
+        if (richText === undefined) {
+          return <span data-field={dottedPath} data-kind="custom" data-renderer="rich-text" />;
+        }
+        return (
+          <RichTextField
+            value={value as RichTextDocument | undefined}
+            onChange={(next) => (onPatchQuiet ?? onPatch)(node.path, next)}
+            context={richText}
           />
         );
       }

@@ -1073,6 +1073,109 @@ body {
   line-height: 1.45;
 }
 
+/* --- Rich-text editor (ADR 0048/0049) ------------------------------------
+ *
+ * Chrome for the Tiptap surface. Deliberately NOT a preview of the public
+ * site: the Theme owns how prose looks when published, and dressing the
+ * editing surface up as the finished page would promise a fidelity the
+ * builder does not have. What it does promise is legible structure —
+ * headings look like headings, lists like lists — so the author can see what
+ * they are marking up.
+ */
+[data-testid="editor-pane"] [data-testid="rich-text-field"] {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+[data-testid="editor-pane"] .rich-text-toolbar {
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-2) var(--radius-2) 0 0;
+  border-bottom: 0;
+  background: var(--surface-2);
+}
+[data-testid="editor-pane"] .rich-text-editing {
+  min-height: 12rem;
+  padding: 10px 12px;
+  border: 1px solid var(--line-2);
+  border-radius: 0 0 var(--radius-2) var(--radius-2);
+  background: var(--surface-1);
+  overflow-wrap: anywhere;
+}
+[data-testid="editor-pane"] .rich-text-editing:focus-visible {
+  outline: 2px solid var(--accent-1);
+  outline-offset: -1px;
+}
+[data-testid="editor-pane"] .rich-text-editing > * {
+  margin: 0 0 0.65em 0;
+}
+[data-testid="editor-pane"] .rich-text-editing > *:last-child {
+  margin-bottom: 0;
+}
+[data-testid="editor-pane"] .rich-text-editing :is(h2, h3, h4) {
+  font-weight: 650;
+  line-height: 1.25;
+}
+[data-testid="editor-pane"] .rich-text-editing h2 {
+  font-size: var(--step-1);
+}
+[data-testid="editor-pane"] .rich-text-editing h3 {
+  font-size: var(--step-0);
+}
+[data-testid="editor-pane"] .rich-text-editing h4 {
+  font-size: var(--step--1);
+}
+[data-testid="editor-pane"] .rich-text-editing :is(ul, ol) {
+  padding-left: 1.4em;
+}
+[data-testid="editor-pane"] .rich-text-editing blockquote {
+  padding-left: 0.8em;
+  border-left: 3px solid var(--line-2);
+  color: var(--ink-2);
+}
+[data-testid="editor-pane"] .rich-text-editing code {
+  padding: 0 0.25em;
+  border-radius: var(--radius-1);
+  background: var(--surface-2);
+}
+/* An internal link has no meaningful href while editing (the Renderer
+ * resolves it), so the cue that it *is* a link has to come from styling. */
+[data-testid="editor-pane"] .rich-text-editing a {
+  color: var(--accent-1);
+  text-decoration: underline;
+}
+[data-testid="editor-pane"] .rich-text-editing a[data-link-kind="page"],
+[data-testid="editor-pane"] .rich-text-editing a[data-link-kind="article"] {
+  text-decoration-style: dashed;
+}
+[data-testid="editor-pane"] .rich-text-editing figure {
+  margin: 0 0 0.65em 0;
+}
+[data-testid="editor-pane"] .rich-text-editing figure img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-1);
+}
+[data-testid="editor-pane"] .rich-text-editing figcaption {
+  margin-top: 4px;
+  font-size: var(--step--2);
+  color: var(--ink-3);
+}
+[data-testid="editor-pane"] .rich-text-editing .ProseMirror-selectednode {
+  outline: 2px solid var(--accent-1);
+}
+[data-testid="editor-pane"] [data-testid="rich-text-unsupported"] {
+  padding: 12px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-2);
+  background: var(--surface-2);
+}
+[data-testid="editor-pane"] [data-testid="rich-text-unsupported-types"] {
+  font-family: ui-monospace, monospace;
+  font-size: var(--step--2);
+  color: var(--ink-3);
+}
+
 [data-testid="editor-pane"] input[type="text"],
 [data-testid="editor-pane"] input[type="number"],
 [data-testid="editor-pane"] input[type="search"],

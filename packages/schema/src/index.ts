@@ -86,6 +86,7 @@ export type {
 
 // Page slug rules (multi-page support)
 export { SLUG_PATTERN, checkSlug, isValidSlug } from "./slug.js";
+export { SAFE_URL_SCHEMES, isAcceptableLinkUrl } from "./url.js";
 export type { SlugValidationFailure } from "./slug.js";
 
 // Blocks
