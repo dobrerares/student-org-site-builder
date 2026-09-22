@@ -220,3 +220,9 @@ export type {
   SiteMigration,
   SiteMigrationResult,
 } from "./migrate.js";
+
+// URL safety. The same predicate the link-bearing Block schemas validate with,
+// re-exported because the renderer's Theme-design tree validator has to apply
+// exactly this rule to a `href`/`src` a Theme produced (ADR 0053). Two
+// implementations of "is this link publishable?" is one too many.
+export { SAFE_URL_SCHEMES, isAcceptableLinkUrl } from "./url.js";

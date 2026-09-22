@@ -13,11 +13,13 @@
  * themes are expressed as bundles too, so `renderSite` has exactly one code
  * path and there is no "custom theme" branch to drift.
  *
- * Phase one is declarative: a bundle carries no executable code. Phase two
- * (Custom Blocks) adds render hooks; the bundle is an interface, so that is
- * an additive change — see ADR 0050's forward-compatibility section.
+ * Phase two adds two optional fields — `render` and `publicScript` — exactly
+ * as ADR 0050 promised: the bundle is an interface, so executable rendering is
+ * an *additive* change and a declarative Theme is still a complete bundle.
+ * See ADR 0053.
  */
 
+import type { ThemePublicScript, ThemeRenderModule } from "./theme-render.js";
 import { STUB_THEME_CSS, STUB_THEME_ID } from "./themes/stub.js";
 import { PRODUCTION_SITE_BASE_CSS } from "./themes/production-base.js";
 import {
@@ -138,6 +140,18 @@ export interface ThemeBundle {
   readonly fontSource: ThemeFontSource;
   /** Decorative files the CSS references, keyed by bundle-relative path. */
   readonly assets: ReadonlyMap<string, Uint8Array>;
+  /**
+   * The Theme's executable design (`render.js`), already loaded into its
+   * sandbox (ADR 0053). Absent for built-in Themes and for declarative
+   * packages, and the renderer treats absence as "use the built-in designs" —
+   * which is why phase-one packages keep rendering exactly as they did.
+   */
+  readonly render?: ThemeRenderModule | undefined;
+  /**
+   * The Theme's public-site script (`public.js`) and its declared external
+   * dependencies. Emitted into the built Site; never run during a render.
+   */
+  readonly publicScript?: ThemePublicScript | undefined;
 }
 
 /**

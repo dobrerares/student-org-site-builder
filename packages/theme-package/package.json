@@ -12,9 +12,11 @@
     "build": "tsc --build"
   },
   "dependencies": {
+    "@jitl/quickjs-singlefile-browser-release-sync": "0.32.0",
     "@sosb/renderer": "workspace:*",
     "@sosb/schema": "workspace:*",
     "@sosb/vfs": "workspace:*",
+    "quickjs-emscripten-core": "0.32.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
