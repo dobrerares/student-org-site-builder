@@ -71,6 +71,11 @@ describe("createArticle", () => {
     expect(article.publishedAt).toBe(TODAY);
     expect(article.blocks).toHaveLength(1);
     expect(article.blocks[0]?.type).toBe("richText");
+    // Seeded at the current Block version with an empty structured document
+    // (ADR 0048). A `{ markdown }` payload here would never be migrated —
+    // migrations key on the version, and this Block is born current.
+    expect(article.blocks[0]?.version).toBe(2);
+    expect(article.blocks[0]?.data).toEqual({ doc: { version: 1, content: [] } });
   });
 
   test("the created site still validates", () => {

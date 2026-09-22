@@ -1,7 +1,7 @@
 /** @jsxImportSource react */
 // @vitest-environment jsdom
 import { describe, expect, test, afterEach } from "vitest";
-import { render, cleanup, fireEvent } from "@testing-library/react";
+import { render, cleanup, fireEvent, waitFor } from "@testing-library/react";
 import type { Site } from "@sosb/schema";
 import { validate } from "@sosb/schema";
 import { EditorApp } from "../src/editor-app.js";
@@ -91,6 +91,22 @@ describe("editor shell — Articles destination and workspace", () => {
     const inspector = getByTestId("inspector");
     expect(inspector.getAttribute("data-inspector-mode")).toBe("block");
     expect(inspector.getAttribute("data-block-type")).toBe("richText");
+  });
+
+  test("a Rich-text Block inside an Article gets the toolbar editor", async () => {
+    // Issue #100: Pages and Articles share the same editor. An Article body
+    // *starts* with a Rich-text Block, so if the workspace forgot to hand
+    // the form its Site-aware context the author could not write at all —
+    // the field would render as an inert marker instead.
+    const { getByTestId, container } = render(<EditorApp initial={siteWithArticle()} />);
+    fireEvent.click(getByTestId("content-kind-articles"));
+    fireEvent.click(getByTestId("article-open-art_1"));
+    fireEvent.click(getByTestId("block-list").querySelector('[data-testid="block-row-select"]')!);
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="rich-text-surface"]')).not.toBeNull(),
+    );
+    expect(container.querySelector('[data-renderer="rich-text"]')).toBeNull();
+    expect(container.querySelector('[role="toolbar"]')).not.toBeNull();
   });
 
   test("related articles is off by default and preserves settings when toggled", () => {
