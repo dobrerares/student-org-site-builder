@@ -13,6 +13,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { loadThemePackage, type LoadedThemePackage } from "./load.js";
+import { initThemeSandbox } from "./sandbox.js";
 
 /** Files we never treat as part of a package, whatever the directory holds. */
 const IGNORED = new Set([".DS_Store", "Thumbs.db", "node_modules", ".git"]);
@@ -43,4 +44,19 @@ export function loadThemePackageFromDirectory(dir: string): LoadedThemePackage {
   const files = new Map<string, Uint8Array>();
   collect(dir, dir, files);
   return loadThemePackage(files);
+}
+
+/**
+ * As `loadThemePackageFromDirectory`, but starts the Theme sandbox first.
+ *
+ * The synchronous form is kept because most callers — the golden tests, the
+ * CSS checks — load declarative packages and reading a directory synchronously
+ * is the simplest thing that works. A package with a `render.js` needs the
+ * WASM engine instantiated, which is a promise exactly once per process, so a
+ * caller that might meet one uses this instead of remembering to
+ * `await initThemeSandbox()` by hand.
+ */
+export async function loadThemePackageFromDirectoryAsync(dir: string): Promise<LoadedThemePackage> {
+  await initThemeSandbox();
+  return loadThemePackageFromDirectory(dir);
 }

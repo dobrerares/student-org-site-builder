@@ -24,6 +24,13 @@ export type ThemePackageErrorCode =
   | "path-unsafe"
   /** The CSS reaches for the network — forbidden offline (ADR 0046). */
   | "css-unsafe"
+  /**
+   * `render.js` will not load: a syntax error, no `export default`, an
+   * `import` of another module, or a runaway top-level loop. Rejected at
+   * import time rather than at render time, because a Theme whose design
+   * throws on every page is not a Theme the author should be able to select.
+   */
+  | "render-invalid"
   /** The package is structurally fine but too large to be reasonable. */
   | "package-too-large";
 

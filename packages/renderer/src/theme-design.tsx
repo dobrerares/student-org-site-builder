@@ -275,7 +275,19 @@ function asRenderError(
   subject: string,
   blockType: string | undefined,
 ): ThemeRenderError {
-  if (isThemeRenderError(cause)) return cause;
+  // Re-stamped rather than passed through: the sandbox knows the Block *type*
+  // it was asked to render but not which Block instance, and "the partners
+  // Block failed" is a much worse message on a page with four of them than
+  // "block p3 (org.example/partners) failed".
+  if (isThemeRenderError(cause)) {
+    return new ThemeRenderError({
+      code: cause.code,
+      themeId: cause.themeId,
+      subject,
+      blockType,
+      detail: cause.detail,
+    });
+  }
   return new ThemeRenderError({
     code: "threw",
     themeId: bundle.id,

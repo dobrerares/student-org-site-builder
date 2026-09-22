@@ -24,7 +24,20 @@ export {
   THEME_VERSION_RE,
   ThemeManifestSchema,
 } from "./manifest.js";
-export type { ThemeManifest, ThemeManifestFont, ThemeManifestVariant } from "./manifest.js";
+export type {
+  ThemeManifest,
+  ThemeManifestFont,
+  ThemeManifestPublicScript,
+  ThemeManifestVariant,
+} from "./manifest.js";
+
+export {
+  RENDER_MODULE_MAX_BYTES,
+  ThemeSandboxNotReadyError,
+  compileThemeRenderModule,
+  initThemeSandbox,
+  themeSandboxReady,
+} from "./sandbox.js";
 
 export { assertThemeCssIsOffline, referencedLocalUrls } from "./css-safety.js";
 

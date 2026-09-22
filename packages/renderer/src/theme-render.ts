@@ -75,6 +75,8 @@ export class ThemeRenderError extends Error {
   public readonly subject: string;
   /** The failing Block's type, absent for the shell. */
   public readonly blockType: string | undefined;
+  /** The message without the "Theme X failed to render Y" preamble. */
+  public readonly detail: string;
 
   constructor(args: {
     code: ThemeRenderErrorCode;
@@ -92,6 +94,7 @@ export class ThemeRenderError extends Error {
     this.themeId = args.themeId;
     this.subject = args.subject;
     this.blockType = args.blockType;
+    this.detail = args.detail;
   }
 }
 
