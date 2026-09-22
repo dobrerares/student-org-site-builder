@@ -101,6 +101,24 @@ export function applyThemeSwitch(site: Site, toThemeId: string, toTheme?: ThemeB
     theme.shellVariantsByTheme = shellMemory;
   }
 
+  // Articles hold Blocks outside `site.pages`, and those Blocks render through
+  // exactly the same variant machinery (`ArticleShell` passes the resolved
+  // Theme into the block-render context). Missing them here would leave an
+  // Article's Blocks carrying a choice made under the *outgoing* Theme: the
+  // renderer's `offersBlockVariant` gate hides most of the damage, but a
+  // variant id both Themes happen to use would silently apply a design the
+  // author never picked for the new Theme — and switching back would not
+  // restore the old one, because nothing was ever filed away.
+  const withArticles =
+    site.articles === undefined
+      ? {}
+      : {
+          articles: site.articles.map((article) => ({
+            ...article,
+            blocks: article.blocks.map((block) => switchBlockVariant(block, fromThemeId, toTheme)),
+          })),
+        };
+
   return {
     ...site,
     theme,
@@ -108,26 +126,40 @@ export function applyThemeSwitch(site: Site, toThemeId: string, toTheme?: ThemeB
       ...page,
       blocks: page.blocks.map((block) => switchBlockVariant(block, fromThemeId, toTheme)),
     })),
+    ...withArticles,
   };
 }
 
-/** Set (or clear) the live variant of one Block, by id. */
+/**
+ * Set (or clear) the live variant of one Block, by id.
+ *
+ * Searches Articles as well as Pages. Block ids are unique across the whole
+ * Site, so "by id" means by id — scoping the search to `site.pages` made the
+ * Variant control a no-op for any Block inside an Article.
+ */
 export function setBlockVariant(site: Site, blockId: string, variant: string | undefined): Site {
+  const apply = (block: BlockEnvelope): BlockEnvelope => {
+    if (block.id !== blockId) return block;
+    const next: BlockEnvelope = { ...block };
+    if (variant === undefined) {
+      delete (next as { variant?: string }).variant;
+    } else {
+      next.variant = variant;
+    }
+    return next;
+  };
+
   return {
     ...site,
-    pages: site.pages.map((page) => ({
-      ...page,
-      blocks: page.blocks.map((block) => {
-        if (block.id !== blockId) return block;
-        const next: BlockEnvelope = { ...block };
-        if (variant === undefined) {
-          delete (next as { variant?: string }).variant;
-        } else {
-          next.variant = variant;
-        }
-        return next;
-      }),
-    })),
+    pages: site.pages.map((page) => ({ ...page, blocks: page.blocks.map(apply) })),
+    ...(site.articles === undefined
+      ? {}
+      : {
+          articles: site.articles.map((article) => ({
+            ...article,
+            blocks: article.blocks.map(apply),
+          })),
+        }),
   };
 }
 

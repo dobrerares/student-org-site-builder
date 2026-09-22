@@ -1532,6 +1532,10 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
           onBack={() => setActiveArticleId(null)}
           onOpenArticle={setActiveArticleId}
           today={todayIso()}
+          theme={activeThemeBundle}
+          onSetBlockVariant={(blockId, variant) =>
+            applySite(setBlockVariant(snapshot, blockId, variant))
+          }
           onPatchBlockData={patchArticleBlockData}
           onArrayChangeBlockData={arrayChangeArticleBlockData}
           onMoveBlock={onMoveArticleBlock}

@@ -66,6 +66,39 @@ function site(block: Partial<BlockEnvelope> = {}): Site {
 
 const heroOf = (s: Site): BlockEnvelope => s.pages[0]!.blocks[0]!;
 
+/**
+ * The same Site with one Article whose body holds a hero Block. Articles keep
+ * their Blocks outside `site.pages`, and those Blocks render through the same
+ * variant machinery, so every rule here has to hold for them too.
+ */
+function siteWithArticle(block: Partial<BlockEnvelope> = {}): Site {
+  const base = site();
+  return {
+    ...base,
+    articles: [
+      {
+        id: "art_1",
+        lang: "ro",
+        slug: "gala",
+        title: "Gala",
+        publishedAt: "2026-06-12",
+        state: "published",
+        blocks: [
+          {
+            id: "blk_article_hero",
+            type: "hero",
+            version: 1,
+            data: { title: "Gala" },
+            ...block,
+          } as BlockEnvelope,
+        ],
+      },
+    ],
+  } as Site;
+}
+
+const articleHeroOf = (s: Site): BlockEnvelope => s.articles![0]!.blocks[0]!;
+
 describe("applyThemeSwitch", () => {
   test("files the outgoing choice and clears a variant the new Theme lacks", () => {
     const next = applyThemeSwitch(site({ variant: "split" }), THEME_B.id, THEME_B);
@@ -145,5 +178,37 @@ describe("themeRemovalBlockedReason", () => {
 
   test("allows removing any other Theme", () => {
     expect(themeRemovalBlockedReason(site(), THEME_B.id)).toBeUndefined();
+  });
+});
+
+describe("Articles share the Page variant machinery", () => {
+  test("a theme switch files and clears an Article Block's variant too", () => {
+    const next = applyThemeSwitch(siteWithArticle({ variant: "split" }), THEME_B.id, THEME_B);
+    // Without this, the Article kept `variant: "split"` after switching away:
+    // harmless while the new Theme has no such id, and a design the author
+    // never chose the moment it does.
+    expect(articleHeroOf(next).variant).toBeUndefined();
+    expect(articleHeroOf(next).variantsByTheme).toEqual({ [THEME_A.id]: "split" });
+  });
+
+  test("switching back restores an Article Block's remembered choice", () => {
+    const away = applyThemeSwitch(siteWithArticle({ variant: "split" }), THEME_B.id, THEME_B);
+    const back = applyThemeSwitch(away, THEME_A.id, THEME_A);
+    expect(articleHeroOf(back).variant).toBe("split");
+  });
+
+  test("setBlockVariant reaches a Block inside an Article", () => {
+    const next = setBlockVariant(siteWithArticle(), "blk_article_hero", "spotlight");
+    expect(articleHeroOf(next).variant).toBe("spotlight");
+    // And clearing it removes the key rather than storing undefined.
+    const cleared = setBlockVariant(next, "blk_article_hero", undefined);
+    expect("variant" in articleHeroOf(cleared)).toBe(false);
+  });
+
+  test("a Site with no articles is left without an articles key", () => {
+    const next = applyThemeSwitch(site({ variant: "split" }), THEME_B.id, THEME_B);
+    // ADR 0002 round-trip identity: absent stays absent.
+    expect("articles" in next).toBe(false);
+    expect("articles" in setBlockVariant(site(), "blk_hero", "split")).toBe(false);
   });
 });

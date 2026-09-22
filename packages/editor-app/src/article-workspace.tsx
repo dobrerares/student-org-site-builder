@@ -22,11 +22,13 @@ import type {
   DocumentAssetRef,
   Site,
 } from "@sosb/schema";
+import type { ThemeBundle } from "@sosb/renderer";
 import { KnownBlockSchemas } from "@sosb/schema";
 import type { ZodType } from "zod";
 import { Button, Label } from "@sosb/ui";
 import { BlockForm } from "./block-form.js";
 import { BlockListEditor } from "./block-list-editor.js";
+import { BlockVariantControl } from "./block-variant-control.js";
 import { CustomHtmlBlockForm } from "./custom-html-form.js";
 import { buildBlockCatalog } from "./block-catalog.js";
 import { defaultArrayItemForBlock } from "./block-array-defaults.js";
@@ -70,6 +72,15 @@ export interface ArticleWorkspaceProps {
   readonly uploader: (file: File) => Promise<AssetRefLike>;
   readonly documentUploader: (file: File) => Promise<DocumentAssetRef>;
   readonly displayUrlFor?: ((ref: AssetRefLike) => string | undefined) | undefined;
+  /**
+   * Active Theme, for the per-Block Variant control. An Article's Blocks
+   * render through the same variant machinery a Page's do, so withholding the
+   * control here would make the same Block configurable on a Page and not in
+   * an Article.
+   */
+  readonly theme?: ThemeBundle | undefined;
+  /** Set (or clear) a Block's design variant. */
+  readonly onSetBlockVariant?: ((blockId: string, variant: string | undefined) => void) | undefined;
 }
 
 export function ArticleWorkspace(props: ArticleWorkspaceProps): JSX.Element | null {
@@ -127,6 +138,13 @@ export function ArticleWorkspace(props: ArticleWorkspaceProps): JSX.Element | nu
           <span data-testid="inspector-eyebrow">{entry.label}</span>
           <h2>{blockTitle}</h2>
         </header>
+        {props.onSetBlockVariant !== undefined && (
+          <BlockVariantControl
+            block={activeBlock}
+            theme={props.theme}
+            onChange={(variant) => props.onSetBlockVariant?.(activeBlock.id, variant)}
+          />
+        )}
         {activeBlock.type === "articleList" ? (
           <ArticleListInspector
             site={props.site}
