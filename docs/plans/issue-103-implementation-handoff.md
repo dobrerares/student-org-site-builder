@@ -333,16 +333,35 @@ Implements [issue #100](issue-100-rich-text-contract.md) and the Tiptap half of
   the archive round trip and "no re-uploads on reopen" come for free. The
   description is captured in the dialog because a document node has no sibling
   field to put it in.
-- ro + en strings for all 52 new keys.
+- **Articles get the same editor.** `ArticleWorkspace` hands `BlockForm` the
+  rich-text context and the quiet patch exactly as the Page Inspector does,
+  with the link picker scoped to the Article's own language; `createArticle`
+  seeds an empty structured document at the current Block version. Without
+  either, the seeded Block in a new Article rendered as an inert marker and
+  the author could not write at all — the Articles e2e now types through the
+  toolbar editor and asserts the bold lands in the exported HTML.
+- **The autosave restore migrates.** The browser shell's "Continue draft"
+  was the one load path that bypassed `importFromZip`; it now runs
+  `migrateSite` before `parseSite`, so a draft saved by an older editor opens
+  exactly as a zip of it would.
+- **Editor hrefs are re-checked.** The editing surface only puts an external
+  href on its `<a>` when `isAcceptableLinkUrl` accepts it; internal targets
+  show `#`. A hand-edited `javascript:` target is inert in the editor as well
+  as in the Renderer.
+- ro + en strings for all 48 new keys.
 
 ### Undo — the decision the contract asked for
 
 Issue #100 requires two histories that do not fight. The implementation:
 
-- **Local history is Tiptap's own.** The surface carries
-  `data-rich-text-surface`; the editor's global Ctrl+Z handler returns early
-  for events originating inside it, and ProseMirror's history plugin handles
-  the keystroke. No custom keymap, no race.
+- **Local history is Tiptap's own.** The whole field — text and toolbar —
+  carries `data-rich-text-surface`; the editor's global Ctrl+Z handler returns
+  early for events originating inside it. With the caret in the text,
+  ProseMirror's history plugin handles the keystroke; with focus on a toolbar
+  button, the field forwards it to the same local history. The global handler
+  also stands down inside any open modal (`aria-modal`), so the link and image
+  dialogs cannot rewind Site history underneath the mounted editor. No custom
+  keymap, no race.
 - **Every keystroke is saved immediately, with no history entry.** A new
   `onPatchQuiet` writes straight into Site data, so preview, validation and
   export are never stale. That is the literal reading of "history grouping does

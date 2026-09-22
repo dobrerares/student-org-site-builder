@@ -321,7 +321,6 @@ export const en: EnglishCatalog = {
 
   // Rich-text editor (ADR 0048)
   "richText.editor.label": "Text content",
-  "richText.editor.placeholder": "Write your text here…",
   "richText.editor.help":
     "Use the buttons above to add headings, lists, quotes, links and images. Ctrl+Z undoes your last change while you are typing here.",
   "richText.toolbar.label": "Text formatting",
@@ -371,11 +370,8 @@ export const en: EnglishCatalog = {
     "One short sentence describing what the image shows, for people using screen readers.",
   "richText.image.caption.label": "Caption (optional)",
   "richText.image.caption.help": "Shown under the image on the published page.",
-  "richText.image.action.choose": "Choose an image",
   "richText.image.action.insert": "Add image",
   "richText.image.action.cancel": "Cancel",
-  "richText.image.uploading": "Adding image…",
-  "richText.image.failed": "That image could not be added.",
   "richText.unsupported.title": "This text cannot be edited here",
   "richText.unsupported.body":
     "It was made with a newer version of the editor. Your content is kept exactly as it was, and nothing has been changed or removed. Update the editor to edit it, or remove this section.",

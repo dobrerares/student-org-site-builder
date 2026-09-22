@@ -336,7 +336,6 @@ export const ro: RomanianCatalog = {
 
   // Rich-text editor (ADR 0048)
   "richText.editor.label": "Conținut text",
-  "richText.editor.placeholder": "Scrie textul aici…",
   "richText.editor.help":
     "Folosește butoanele de mai sus pentru titluri, liste, citate, linkuri și imagini. Ctrl+Z anulează ultima modificare cât timp scrii aici.",
   "richText.toolbar.label": "Formatare text",
@@ -387,11 +386,8 @@ export const ro: RomanianCatalog = {
     "O propoziție scurtă care descrie ce se vede, pentru cei care folosesc cititoare de ecran.",
   "richText.image.caption.label": "Legendă (opțional)",
   "richText.image.caption.help": "Se afișează sub imagine pe pagina publicată.",
-  "richText.image.action.choose": "Alege o imagine",
   "richText.image.action.insert": "Adaugă imaginea",
   "richText.image.action.cancel": "Renunță",
-  "richText.image.uploading": "Se adaugă imaginea…",
-  "richText.image.failed": "Imaginea nu a putut fi adăugată.",
   "richText.unsupported.title": "Acest text nu poate fi editat aici",
   "richText.unsupported.body":
     "A fost creat cu o versiune mai nouă a editorului. Conținutul este păstrat exact așa cum era; nimic nu a fost modificat sau șters. Actualizează editorul ca să îl poți edita sau elimină această secțiune.",

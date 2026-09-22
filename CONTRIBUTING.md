@@ -99,7 +99,7 @@ The 17 packages are:
 | --------------- | ----------------------------------------------------------------------------------------------- |
 | `schema`        | Block + site schemas, validation, severity tiers, migrations, preserve-unknown-keys.            |
 | `renderer`      | Pure `(siteData, themeId) -> HTML`. Same code in browser preview and Node build.                |
-| `markdown`      | Strict-whitelist sanitised markdown for `richText`, `faq`, `quote`.                             |
+| `markdown`      | Strict-whitelist sanitised markdown for `faq` and `quote`, plus the legacy Rich-text converter. |
 | `vfs`           | Virtual filesystem with multiple drivers (Memory, IndexedDB, OPFS, Electron FS, Zip).           |
 | `assets`        | Image processing pipeline; environment-specific implementations behind a unified interface.     |
 | `zip`           | Bidirectional import/export with round-trip preservation.                                       |

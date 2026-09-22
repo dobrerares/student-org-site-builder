@@ -48,7 +48,6 @@ export type EditorMessageKey =
   | "form.field.unset"
   // Rich-text editor (ADR 0048)
   | "richText.editor.label"
-  | "richText.editor.placeholder"
   | "richText.editor.help"
   | "richText.toolbar.label"
   | "richText.toolbar.bold"
@@ -92,11 +91,8 @@ export type EditorMessageKey =
   | "richText.image.alt.help"
   | "richText.image.caption.label"
   | "richText.image.caption.help"
-  | "richText.image.action.choose"
   | "richText.image.action.insert"
   | "richText.image.action.cancel"
-  | "richText.image.uploading"
-  | "richText.image.failed"
   | "richText.unsupported.title"
   | "richText.unsupported.body"
   // Settings — locale
