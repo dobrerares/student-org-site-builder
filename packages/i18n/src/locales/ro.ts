@@ -161,6 +161,114 @@ export const ro: RomanianCatalog = {
   "articleList.intro": "Text introductiv",
 
   // Wizard step titles
+  // Builder shell — persistent navigation and top-bar actions
+  "builder.nav.label": "Principal",
+  "builder.nav.group.site": "Site",
+  "builder.nav.group.create": "Creează",
+  "builder.nav.overview": "Prezentare generală",
+  "builder.nav.pages": "Pagini",
+  "builder.nav.articles": "Articole",
+  "builder.nav.theme": "Temă",
+  "builder.nav.settings": "Setările site-ului",
+  "builder.nav.open": "Deschide meniul principal",
+  "builder.nav.close": "Închide meniul",
+  "builder.nav.contentLanguage": "Limba conținutului",
+  "builder.action.createPage": "Creează pagină",
+  "builder.action.createArticle": "Creează articol",
+  "builder.action.save": "Salvează proiectul",
+  "builder.action.export": "Exportă site-ul",
+  "builder.action.export.count": "Exportă site-ul ({count})",
+  "builder.save.unsaved": "Modificări nesalvate",
+  "builder.save.never": "Încă nesalvat",
+  "builder.save.downloaded": "Copie descărcată: {when}",
+  "builder.save.downloaded.never": "niciodată",
+  "builder.save.info.label": "Despre salvare și export",
+  "builder.save.info":
+    "Salvează proiectul păstrează lucrul tău în acest browser, inclusiv ciornele, ca să poți continua mai târziu. Exportă site-ul descarcă site-ul public pe calculatorul tău; apoi îl încarci la găzduire ca vizitatorii să îl vadă.",
+
+  // Content overview
+  "overview.title": "Prezentare generală",
+  "overview.theme": "Temă: {theme}",
+  "overview.pages.title": "Pagini",
+  "overview.pages.info":
+    "Părțile fixe ale site-ului: acasă, despre, înscriere și orice pagină de listare pe care o construiești. Articolele sunt texte cu dată și au destinația lor separată.",
+  "overview.pages.all": "Toate paginile",
+  "overview.pages.blocks": "{count, plural, one {# bloc} other {# blocuri}}",
+  "overview.pages.empty": "Nicio pagină încă.",
+  "overview.articles.title": "Articole",
+  "overview.articles.all": "Toate articolele",
+  "overview.articles.empty": "Niciun articol încă.",
+  "overview.health.title": "Starea site-ului",
+  "overview.health.info":
+    "Tot ce a observat aplicația despre acest proiect. Problemele marcate ca blocante trebuie rezolvate înainte de a putea exporta site-ul; avertismentele sunt sfaturi pe care le poți urma când vrei. Salvarea proiectului funcționează întotdeauna.",
+  "overview.health.allGood": "Totul e în regulă",
+  "overview.health.summary": "{errors} de rezolvat · {warnings} de verificat",
+  "overview.health.empty": "Nimic nu îți cere atenția.",
+  "overview.finding.fix": "Rezolvă",
+  "overview.finding.info.label": "Despre această problemă",
+  "overview.finding.blocks": "Blochează exportul site-ului.",
+  "overview.finding.noBlock": "Nu blochează exportul.",
+
+  // Pages destination
+  "pages.title": "Pagini",
+  "pages.info":
+    "Fiecare pagină devine o intrare în meniul site-ului, dacă nu o ascunzi. Alege una ca să îi editezi secțiunile.",
+  "pages.search.label": "Caută pagini",
+  "pages.search.placeholder": "Caută pagini după nume",
+  "pages.empty.filtered": "Nimic nu se potrivește cu această căutare. Încearcă una mai scurtă.",
+  "pages.meta.inMenu": "în meniu",
+  "pages.meta.hidden": "ascunsă din meniu",
+
+  // Editing workspace
+  "workspace.back.pages": "Toate paginile",
+  "workspace.back.articles": "Toate articolele",
+  "workspace.back.content": "Înapoi la „{title}”",
+  "workspace.title.page": "Titlul paginii",
+  "workspace.title.article": "Titlul articolului",
+  "workspace.settings.page": "Setările paginii",
+  "workspace.settings.article": "Setările articolului",
+  "workspace.settings.page.hint": "Eticheta din meniu, adresa web, previzualizarea în căutări",
+  "workspace.settings.article.hint":
+    "Rezumat, imagine de copertă, data publicării, etichete, adresă web",
+  "workspace.blocks": "Blocuri",
+  "workspace.blocks.info":
+    "Blocurile sunt piesele din care e făcut acest conținut, în ordinea în care apar. Alege unul ca să îl editezi. Trage de mâner sau folosește Mută mai sus și Mută mai jos ca să le reordonezi.",
+  "workspace.tabs.label": "Arată editarea sau previzualizarea",
+  "workspace.tab.edit": "Editare",
+  "workspace.tab.preview": "Previzualizare",
+  "workspace.missing": "Acest conținut nu mai există.",
+
+  // Preview pane
+  "preview.title": "Previzualizare",
+  "preview.info":
+    "Linkurile și cardurile de aici se comportă ca pe site-ul real, așa că poți naviga la fel ca un vizitator. Folosește Editează această pagină sau Editează acest articol ca să deschizi ce vezi.",
+  "preview.edit.page": "Editează această pagină",
+  "preview.edit.article": "Editează acest articol",
+  "preview.back.page": "Înapoi la această pagină",
+  "preview.back.article": "Înapoi la acest articol",
+  "preview.viewport.label": "Dimensiunea previzualizării",
+  "preview.viewport.fit": "Potrivit",
+  "preview.viewport.desktop": "Desktop",
+  "preview.viewport.tablet": "Tabletă",
+  "preview.viewport.phone": "Telefon",
+
+  // Export readiness panel
+  "export.title": "Exportă site-ul",
+  "export.info.label": "Despre export",
+  "export.info":
+    "Exportul construiește site-ul public ca folder și îl descarcă pe acest calculator. Nu actualizează site-ul pe care îl văd vizitatorii — tot trebuie să încarci folderul exportat la găzduirea ta. Ciornele nu fac niciodată parte din export, iar salvarea proiectului rămâne disponibilă chiar și când există probleme listate aici.",
+  "export.blockers": "Rezolvă mai întâi acestea ({count})",
+  "export.warnings": "De verificat ({count})",
+  "export.warnings.info": "Acestea nu opresc exportul. Rezolvă-le când ai timp.",
+  "export.ready": "Gata de export.",
+  "export.ready.detail": "Ciornele rămân pe loc; restul va fi scris în export.",
+  "export.action": "Exportă site-ul",
+  "export.cancel": "Anulează",
+  "export.override.label": "Ca să exporți oricum, scrie {phrase} mai jos:",
+  "export.override.hint": "Cel mai bine e să le rezolvi întâi, dar poți exporta oricum o copie.",
+  "export.blocked.note":
+    "Acestea trebuie rezolvate înainte ca site-ul să poată fi construit. Proiectul tău rămâne salvat — doar exportul site-ului este afectat.",
+
   "wizard.step.basics.title": "Date de bază",
   "wizard.step.identity.title": "Identitate",
   "wizard.step.sections.title": "Secțiuni",

@@ -3,6 +3,13 @@
  *
  * Keys are dot-namespaced by surface:
  *
+ *   - `builder.*`           the redesigned shell: persistent navigation,
+ *                           top-bar actions, and local save status (#102)
+ *   - `overview.*`          the content Overview a Site opens into (#102)
+ *   - `pages.*`             the Pages destination's list (#102)
+ *   - `workspace.*`         the focused Page / Article editing workspace (#102)
+ *   - `preview.*`           the adjacent preview pane and its device presets
+ *   - `export.*`            the export readiness panel (#102)
  *   - `topbar.*`            top-bar action buttons in the editor shell
  *   - `tabs.*`              the narrow-layout tab labels (Editor / Preview)
  *   - `pane.*`              ARIA labels and headings on the two panes
@@ -138,6 +145,99 @@ export type EditorMessageKey =
   | "articleList.missing"
   | "articleList.heading"
   | "articleList.intro"
+  // Builder shell — persistent navigation and top-bar actions (issue #102)
+  | "builder.nav.label"
+  | "builder.nav.group.site"
+  | "builder.nav.group.create"
+  | "builder.nav.overview"
+  | "builder.nav.pages"
+  | "builder.nav.articles"
+  | "builder.nav.theme"
+  | "builder.nav.settings"
+  | "builder.nav.open"
+  | "builder.nav.close"
+  | "builder.nav.contentLanguage"
+  | "builder.action.createPage"
+  | "builder.action.createArticle"
+  | "builder.action.save"
+  | "builder.action.export"
+  | "builder.action.export.count"
+  | "builder.save.unsaved"
+  | "builder.save.never"
+  | "builder.save.downloaded"
+  | "builder.save.downloaded.never"
+  | "builder.save.info.label"
+  | "builder.save.info"
+  // Content overview
+  | "overview.title"
+  | "overview.theme"
+  | "overview.pages.title"
+  | "overview.pages.info"
+  | "overview.pages.all"
+  | "overview.pages.blocks"
+  | "overview.pages.empty"
+  | "overview.articles.title"
+  | "overview.articles.all"
+  | "overview.articles.empty"
+  | "overview.health.title"
+  | "overview.health.info"
+  | "overview.health.allGood"
+  | "overview.health.summary"
+  | "overview.health.empty"
+  | "overview.finding.fix"
+  | "overview.finding.info.label"
+  | "overview.finding.blocks"
+  | "overview.finding.noBlock"
+  // Pages destination
+  | "pages.title"
+  | "pages.info"
+  | "pages.search.label"
+  | "pages.search.placeholder"
+  | "pages.empty.filtered"
+  | "pages.meta.inMenu"
+  | "pages.meta.hidden"
+  // Editing workspace
+  | "workspace.back.pages"
+  | "workspace.back.articles"
+  | "workspace.back.content"
+  | "workspace.title.page"
+  | "workspace.title.article"
+  | "workspace.settings.page"
+  | "workspace.settings.article"
+  | "workspace.settings.page.hint"
+  | "workspace.settings.article.hint"
+  | "workspace.blocks"
+  | "workspace.blocks.info"
+  | "workspace.tabs.label"
+  | "workspace.tab.edit"
+  | "workspace.tab.preview"
+  | "workspace.missing"
+  // Preview pane
+  | "preview.title"
+  | "preview.info"
+  | "preview.edit.page"
+  | "preview.edit.article"
+  | "preview.back.page"
+  | "preview.back.article"
+  | "preview.viewport.label"
+  | "preview.viewport.fit"
+  | "preview.viewport.desktop"
+  | "preview.viewport.tablet"
+  | "preview.viewport.phone"
+  // Export readiness panel
+  | "export.title"
+  | "export.info.label"
+  | "export.info"
+  | "export.blockers"
+  | "export.warnings"
+  | "export.warnings.info"
+  | "export.ready"
+  | "export.ready.detail"
+  | "export.action"
+  | "export.cancel"
+  | "export.override.label"
+  | "export.override.hint"
+  | "export.blocked.note"
   // Wizard step titles
   | "wizard.step.basics.title"
   | "wizard.step.identity.title"

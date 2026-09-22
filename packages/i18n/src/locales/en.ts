@@ -147,6 +147,113 @@ export const en: EnglishCatalog = {
   "articleList.intro": "Intro text",
 
   // Wizard step titles
+  // Builder shell — persistent navigation and top-bar actions
+  "builder.nav.label": "Main",
+  "builder.nav.group.site": "Site",
+  "builder.nav.group.create": "Create",
+  "builder.nav.overview": "Overview",
+  "builder.nav.pages": "Pages",
+  "builder.nav.articles": "Articles",
+  "builder.nav.theme": "Theme",
+  "builder.nav.settings": "Site settings",
+  "builder.nav.open": "Open the main menu",
+  "builder.nav.close": "Close menu",
+  "builder.nav.contentLanguage": "Content language",
+  "builder.action.createPage": "Create Page",
+  "builder.action.createArticle": "Create Article",
+  "builder.action.save": "Save project",
+  "builder.action.export": "Export website",
+  "builder.action.export.count": "Export website ({count})",
+  "builder.save.unsaved": "Unsaved changes",
+  "builder.save.never": "Not saved yet",
+  "builder.save.downloaded": "Downloaded copy: {when}",
+  "builder.save.downloaded.never": "never",
+  "builder.save.info.label": "About saving and exporting",
+  "builder.save.info":
+    "Save project keeps your work in this browser, Drafts included, so you can carry on later. Export website downloads the public website to your computer; you then upload it to your hosting for visitors to see it.",
+
+  // Content overview
+  "overview.title": "Overview",
+  "overview.theme": "Theme: {theme}",
+  "overview.pages.title": "Pages",
+  "overview.pages.info":
+    "The fixed parts of your website: home, about, join, and any listing page you build. Articles are dated pieces of writing and live in their own destination.",
+  "overview.pages.all": "All pages",
+  "overview.pages.blocks": "{count, plural, one {# block} other {# blocks}}",
+  "overview.pages.empty": "No pages yet.",
+  "overview.articles.title": "Articles",
+  "overview.articles.all": "All articles",
+  "overview.articles.empty": "No articles yet.",
+  "overview.health.title": "Site Health",
+  "overview.health.info":
+    "Everything the builder has noticed about this project. Problems marked as blocking must be fixed before you can export the website; warnings are advice you can act on whenever you like. Saving your project always works.",
+  "overview.health.allGood": "All good",
+  "overview.health.summary": "{errors} to fix · {warnings} to look at",
+  "overview.health.empty": "Nothing needs your attention.",
+  "overview.finding.fix": "Fix",
+  "overview.finding.info.label": "About this problem",
+  "overview.finding.blocks": "Blocks exporting the website.",
+  "overview.finding.noBlock": "Does not block exporting.",
+
+  // Pages destination
+  "pages.title": "Pages",
+  "pages.info":
+    "Every page becomes an entry in your site menu unless you hide it. Choose one to edit its sections.",
+  "pages.search.label": "Search pages",
+  "pages.search.placeholder": "Search pages by name",
+  "pages.empty.filtered": "Nothing matches that search. Try a shorter one.",
+  "pages.meta.inMenu": "in the menu",
+  "pages.meta.hidden": "hidden from the menu",
+
+  // Editing workspace
+  "workspace.back.pages": "All pages",
+  "workspace.back.articles": "All articles",
+  "workspace.back.content": "Back to “{title}”",
+  "workspace.title.page": "Page title",
+  "workspace.title.article": "Article title",
+  "workspace.settings.page": "Page settings",
+  "workspace.settings.article": "Article settings",
+  "workspace.settings.page.hint": "Menu label, web address, search preview",
+  "workspace.settings.article.hint": "Summary, cover image, publication date, tags, web address",
+  "workspace.blocks": "Blocks",
+  "workspace.blocks.info":
+    "Blocks are the pieces this content is made of, in the order they appear. Choose one to edit it. Drag the handle, or use Move up and Move down, to reorder them.",
+  "workspace.tabs.label": "Show editing or preview",
+  "workspace.tab.edit": "Edit",
+  "workspace.tab.preview": "Preview",
+  "workspace.missing": "This content no longer exists.",
+
+  // Preview pane
+  "preview.title": "Preview",
+  "preview.info":
+    "Links and cards here behave like the real website, so you can click through it the way a visitor would. Use Edit this Page or Edit this Article to open whatever you are looking at.",
+  "preview.edit.page": "Edit this Page",
+  "preview.edit.article": "Edit this Article",
+  "preview.back.page": "Back to this page",
+  "preview.back.article": "Back to this article",
+  "preview.viewport.label": "Preview viewport size",
+  "preview.viewport.fit": "Fit",
+  "preview.viewport.desktop": "Desktop",
+  "preview.viewport.tablet": "Tablet",
+  "preview.viewport.phone": "Phone",
+
+  // Export readiness panel
+  "export.title": "Export website",
+  "export.info.label": "About exporting",
+  "export.info":
+    "Exporting builds the public website as a folder and downloads it to this computer. It does not update the website your visitors see — you still have to upload the exported folder to your hosting. Drafts are never part of the export, and saving your project stays available even while there are problems listed here.",
+  "export.blockers": "Fix these first ({count})",
+  "export.warnings": "Worth a look ({count})",
+  "export.warnings.info": "These do not stop the export. Fix them when you have time.",
+  "export.ready": "Ready to export.",
+  "export.ready.detail": "Drafts stay behind; everything else will be written out.",
+  "export.action": "Export website",
+  "export.cancel": "Cancel",
+  "export.override.label": "To export anyway, type {phrase} below:",
+  "export.override.hint": "Fixing these first is best, but you can still export a copy.",
+  "export.blocked.note":
+    "These must be fixed before the website can be built. Your project is still saved — only the website export is affected.",
+
   "wizard.step.basics.title": "Basics",
   "wizard.step.identity.title": "Identity",
   "wizard.step.sections.title": "Sections",
