@@ -34,6 +34,24 @@ export interface BlockCatalogGroup {
   readonly entries: BlockCatalogEntry[];
 }
 
+export interface BlockCatalogOptions {
+  /**
+   * Block types to leave out of the listing.
+   *
+   * Used by the Articles workspace: issue #97 pins the Article-list block to
+   * the Related Articles setting at the end of an Article "rather than
+   * allowing such lists anywhere in its main content", and an Article has no
+   * site footer of its own (it inherits its language's). Offering either in
+   * the picker would let an author add a Block that the contract says cannot
+   * live there — and, for `siteFooter`, one the renderer silently drops.
+   *
+   * `entryFor` deliberately ignores this: an excluded type may still exist in
+   * a project (hand-edited, or added before this rule), and its Inspector row
+   * still needs a label.
+   */
+  readonly exclude?: readonly string[] | undefined;
+}
+
 export interface BlockCatalog {
   /** Every entry, ordered by category then label. */
   readonly entries: BlockCatalogEntry[];
@@ -125,6 +143,11 @@ const BLOCK_METADATA: Record<
     label: "Text section",
     description: "Add longer text with headings, lists, and links.",
   },
+  articleList: {
+    category: "optional",
+    label: "Article list",
+    description: "Show cards linking to articles, chosen by tag or picked one by one.",
+  },
   siteFooter: {
     category: "optional",
     label: "Site footer",
@@ -178,8 +201,9 @@ function entryForType(type: string): BlockCatalogEntry {
  * Build a catalog from the live schema registry. The catalog is a fresh
  * object on each call; callers can memoise it as needed.
  */
-export function buildBlockCatalog(): BlockCatalog {
-  const types = Object.keys(KnownBlockSchemas);
+export function buildBlockCatalog(options: BlockCatalogOptions = {}): BlockCatalog {
+  const excluded = new Set(options.exclude ?? []);
+  const types = Object.keys(KnownBlockSchemas).filter((type) => !excluded.has(type));
   const entries = types.map(entryForType).sort((a, b) => {
     const byCategory = CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category);
     if (byCategory !== 0) return byCategory;

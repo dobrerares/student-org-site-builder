@@ -24,8 +24,8 @@
  * snapshots stable across runs.
  */
 
-import type { BlockEnvelope, Org, Page, Site } from "@sosb/schema";
-import { navPagesFor, pagePath } from "@sosb/renderer";
+import type { Article, BlockEnvelope, Org, Page, Site } from "@sosb/schema";
+import { articlePath, navPagesFor, pagePath } from "@sosb/renderer";
 
 /**
  * The shape of a single JSON-LD blob ready for emission. Keys are emitted
@@ -65,6 +65,67 @@ export function jsonLdBlobsForPage(
   }
   const breadcrumbs = breadcrumbListBlob(site, page, siteUrl);
   if (breadcrumbs !== undefined) blobs.push(breadcrumbs);
+  return blobs;
+}
+
+/**
+ * JSON-LD for an Article page: Organization, then one `Article` blob, then the
+ * same block-derived blobs an ordinary Page would produce.
+ *
+ * `Article` rather than `BlogPosting`: the content model here is "organisation
+ * publishes a piece", not a personal blog, and `Article` is the type Google
+ * documents for that case. `datePublished` carries the author-set publication
+ * date, which describes rather than schedules — a future date is therefore
+ * emitted as-is rather than suppressed.
+ *
+ * `publisher` reuses the Organization blob so the two never disagree.
+ */
+export function jsonLdBlobsForArticle(
+  site: Site,
+  article: Article,
+  siteUrl: string | undefined,
+): JsonLdBlob[] {
+  const blobs: JsonLdBlob[] = [];
+  const organization = organizationBlob(site.org, siteUrl);
+  blobs.push(organization);
+
+  const blob: JsonLdBlob = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: article.title,
+    datePublished: article.publishedAt,
+    inLanguage: article.lang,
+    mainEntityOfPage: absolutiseUrl(siteUrl, articlePath(site, article)),
+  };
+  if (typeof article.summary === "string" && article.summary.length > 0) {
+    blob.description = article.summary;
+  }
+  const coverPath =
+    typeof article.cover === "object" &&
+    article.cover !== null &&
+    typeof (article.cover as { path?: unknown }).path === "string"
+      ? (article.cover as { path: string }).path
+      : undefined;
+  if (coverPath !== undefined && coverPath.length > 0) {
+    blob.image = absolutiseUrl(siteUrl, coverPath);
+  }
+  blob.publisher = {
+    "@type": "Organization",
+    name: site.org.name,
+    ...(typeof organization.logo === "string" ? { logo: organization.logo } : {}),
+  };
+  blobs.push(blob);
+
+  for (const block of article.blocks) {
+    if (block.type === "teamGrid") {
+      blobs.push(...personBlobsFromTeamGrid(block, siteUrl));
+    } else if (block.type === "eventList") {
+      blobs.push(...eventBlobsFromEventList(block, siteUrl));
+    } else if (block.type === "faq") {
+      const faq = faqPageBlobFromFaq(block);
+      if (faq !== undefined) blobs.push(faq);
+    }
+  }
   return blobs;
 }
 

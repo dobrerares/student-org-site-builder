@@ -59,4 +59,21 @@ describe("buildBlockCatalog", () => {
     expect(unknown.label).toBe("Brand new block");
     expect(unknown.description.length).toBeGreaterThan(0);
   });
+
+  test("exclude hides types from entries and groups but not from entryFor", () => {
+    const catalog = buildBlockCatalog({ exclude: ["articleList", "siteFooter"] });
+    const types = catalog.entries.map((entry) => entry.type);
+    expect(types).not.toContain("articleList");
+    expect(types).not.toContain("siteFooter");
+    for (const group of catalog.groups) {
+      expect(group.entries.map((entry) => entry.type)).not.toContain("articleList");
+    }
+    // An excluded type can still exist in a project, so its row still needs a
+    // label in the Inspector.
+    expect(catalog.entryFor("articleList").label).toBe("Article list");
+  });
+
+  test("no exclude list leaves every registry type visible", () => {
+    expect(buildBlockCatalog().entries.map((entry) => entry.type)).toContain("articleList");
+  });
 });

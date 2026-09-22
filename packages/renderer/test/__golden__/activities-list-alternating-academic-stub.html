@@ -940,6 +940,121 @@ main { display: block; }
 [data-block="event-list"] [data-event-id].is-past {
   opacity: 0.55;
 }
+[data-block="articleList"] {
+  padding: var(--space-lg) var(--space-md);
+}
+[data-block="articleList"] .article-list__title {
+  font-family: var(--font-headline);
+  margin: 0 0 var(--space-sm) 0;
+  color: var(--color-primary);
+}
+[data-block="articleList"] .article-list__intro {
+  margin: 0 0 var(--space-md) 0;
+  color: var(--color-fg);
+}
+[data-block="articleList"] .article-list__empty {
+  margin: 0;
+  color: var(--color-muted);
+}
+[data-block="articleList"] .article-list__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-md);
+}
+[data-block="articleList"] .article-list__item {
+  display: flex;
+}
+.article-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.article-card__media img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.article-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding-top: var(--space-md);
+}
+.article-card__title {
+  font-family: var(--font-headline);
+  margin: 0;
+  color: var(--color-primary);
+}
+.article-card__title a {
+  color: inherit;
+  text-decoration: none;
+}
+.article-card__title a:hover {
+  text-decoration: underline;
+}
+.article-card__date {
+  display: block;
+  color: var(--color-muted);
+}
+.article-card__summary {
+  margin: 0;
+  color: var(--color-fg);
+}
+.article {
+  display: block;
+  padding: var(--space-lg) var(--space-md);
+}
+.article__header {
+  margin: 0 0 var(--space-lg) 0;
+}
+.article__title {
+  font-family: var(--font-headline);
+  margin: 0 0 var(--space-sm) 0;
+  color: var(--color-primary);
+}
+.article__date {
+  display: block;
+  color: var(--color-muted);
+  margin: 0 0 var(--space-md) 0;
+}
+.article__summary {
+  margin: 0 0 var(--space-md) 0;
+  color: var(--color-fg);
+}
+.article__cover {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.article__cover img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.article__body > [data-block] {
+  padding-left: 0;
+  padding-right: 0;
+}
+.article__tags {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin: var(--space-lg) 0 0 0;
+  padding: 0;
+}
+.article__tag {
+  color: var(--color-muted);
+  border: 1px solid var(--color-muted);
+  border-radius: var(--radius-sm);
+  padding: var(--space-xs) var(--space-sm);
+}
+[data-article-related] {
+  padding: var(--space-lg) var(--space-md);
+}
 [data-site-nav] {
   padding: var(--space-md);
   border-bottom: 1px solid var(--color-muted);
@@ -987,6 +1102,7 @@ main { display: block; }
   --site-max-width: 72rem;
   --site-wide-width: 84rem;
   --site-readable-width: 46rem;
+  --article-card-hover-shadow: 0 10px 28px rgba(var(--color-fg-rgb), 0.1);
 }
 html {
   min-height: 100%;
@@ -1584,6 +1700,126 @@ main > [data-block] {
   color: var(--color-on-image);
   text-shadow: 0 1px 3px rgba(var(--color-fg-rgb), 0.5);
 }
+[data-block="articleList"] > :is(
+  .article-list__title,
+  .article-list__intro,
+  .article-list__items,
+  .article-list__empty
+) {
+  width: min(100%, var(--site-max-width));
+  margin-inline: auto;
+}
+[data-block="articleList"] {
+  padding-block: var(--space-xl);
+}
+[data-block="articleList"] .article-list__intro {
+  max-width: var(--site-readable-width);
+  color: var(--color-muted);
+}
+[data-block="articleList"] .article-list__items {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+  gap: var(--space-lg);
+}
+[data-block="articleList"] .article-card {
+  background: var(--color-bg);
+  border: 1px solid rgba(var(--color-fg-rgb), 0.12);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease;
+}
+[data-block="articleList"] .article-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(var(--color-primary-rgb), 0.35);
+  box-shadow: var(--article-card-hover-shadow);
+}
+[data-block="articleList"] .article-card:focus-within {
+  border-color: rgba(var(--color-primary-rgb), 0.55);
+}
+[data-block="articleList"] .article-card__media {
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: rgba(var(--color-fg-rgb), 0.05);
+}
+[data-block="articleList"] .article-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+[data-block="articleList"] .article-card__body {
+  padding: var(--space-md);
+  gap: var(--space-sm);
+}
+[data-block="articleList"] .article-card__title {
+  font-size: 1.1875rem;
+  line-height: 1.3;
+}
+[data-block="articleList"] .article-card__date {
+  order: -1;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+[data-block="articleList"] .article-card__summary {
+  color: var(--color-muted);
+  font-size: 0.9375rem;
+}
+.article {
+  width: min(100%, var(--site-readable-width));
+  margin-inline: auto;
+  padding-block: var(--space-xl);
+}
+.article__title {
+  font-size: clamp(1.9rem, 1.2rem + 2.2vw, 3rem);
+  line-height: 1.15;
+  margin-bottom: var(--space-md);
+}
+.article__date {
+  font-size: 0.8125rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.article__summary {
+  font-size: 1.125rem;
+  line-height: 1.6;
+  color: var(--color-muted);
+}
+.article__cover {
+  margin-top: var(--space-lg);
+}
+.article__cover img {
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+.article__body > [data-block] {
+  padding-block: var(--space-md);
+}
+.article__body > [data-block="richText"] .rich-text,
+.article__body > [data-block="quote"] {
+  width: 100%;
+}
+.article__tags {
+  border-top: 1px solid rgba(var(--color-fg-rgb), 0.12);
+  padding-top: var(--space-md);
+}
+.article__tag {
+  font-size: 0.8125rem;
+  border-color: rgba(var(--color-fg-rgb), 0.2);
+}
+[data-article-related] {
+  border-top: 1px solid rgba(var(--color-fg-rgb), 0.12);
+  margin-top: var(--space-xl);
+  background: rgba(var(--color-fg-rgb), 0.02);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-block="articleList"] .article-card {
+    transition: none;
+  }
+  [data-block="articleList"] .article-card:hover {
+    transform: none;
+  }
+}
 @media (max-width: 640px) {
   [data-site-nav] .site-nav__inner {
     justify-content: center;
@@ -1694,4 +1930,34 @@ a:hover, a:focus-visible { text-decoration-thickness: 2px; }
 }
 [data-block="valueList"] .value-list__items {
   gap: var(--space-xl);
+}
+
+[data-block="articleList"] .article-card {
+  border-radius: var(--radius-sm);
+}
+[data-block="articleList"] .article-card__title {
+  font-family: var(--font-headline);
+  font-size: 1.125rem;
+  line-height: 1.35;
+}
+[data-block="articleList"] .article-card__date {
+  font-variant: small-caps;
+  text-transform: none;
+  letter-spacing: 0.04em;
+  font-size: 0.8125rem;
+}
+.article__date {
+  font-variant: small-caps;
+  text-transform: none;
+  letter-spacing: 0.04em;
+}
+.article__summary {
+  font-family: var(--font-headline);
+}
+.article__cover {
+  border-radius: var(--radius-sm);
+}
+.article__tag {
+  border-radius: var(--radius-sm);
+  font-variant: small-caps;
 }</style></head><body><main><section data-block="activitiesList" data-block-id="blk_act_alt" data-layout="alternating" aria-labelledby="blk_act_alt__title"><div class="activities-list__inner"><h2 id="blk_act_alt__title" class="activities-list__title">Activitățile noastre</h2><p class="activities-list__intro">Trei direcții principale.</p><ul class="activities-list__items" role="list"><li class="activities-list__item" data-item-index="0"><div class="activities-list__media"><img src="assets/abc1234567890def.jpg" alt="Lab" width="800" height="533" loading="lazy"/></div><div class="activities-list__body"><h3 id="blk_act_alt__item_0__title" class="activities-list__item-title">Cercetare</h3><span class="activities-list__badge" data-badge="Sezonier">Sezonier</span><p class="activities-list__description">Proiecte cu profesori.</p></div></li><li class="activities-list__item" data-item-index="1"><div class="activities-list__media"><img src="assets/def4567890abc123.jpg" alt="Voluntari" width="800" height="533" loading="lazy"/></div><div class="activities-list__body"><h3 id="blk_act_alt__item_1__title" class="activities-list__item-title">Voluntariat</h3><p class="activities-list__description">Comunitate locală.</p><a href="/voluntariat" class="activities-list__cta" data-cta="explicit">Înscrie-te</a></div></li></ul></div></section></main></body></html>

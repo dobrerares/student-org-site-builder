@@ -26,4 +26,20 @@ describe("field-labels", () => {
       "Pages > page 1 > Page sections > section 3 > Data > Image description",
     );
   });
+
+  test("article issue paths read as articles, not as anonymous items", () => {
+    expect(issuePathLabel(["articles", 0, "slug"])).toBe(
+      "Articles > article 1 > Article link name",
+    );
+    expect(issuePathLabel(["articles", 2, "coverAlt"])).toBe(
+      "Articles > article 3 > Cover image description",
+    );
+    expect(issuePathLabel(["articles", 0, "relatedArticles", "articleIds", 1])).toBe(
+      "Articles > article 1 > Related articles > Chosen articles > item 2",
+    );
+  });
+
+  test("a page slug keeps its own wording", () => {
+    expect(issuePathLabel(["pages", 0, "slug"])).toBe("Pages > page 1 > Page link name");
+  });
 });

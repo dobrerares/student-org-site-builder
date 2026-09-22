@@ -14,11 +14,11 @@
 
 import { render } from "preact-render-to-string";
 import type { Site } from "@sosb/schema";
-import { PageShell } from "./page-shell.js";
+import { ArticleShell, PageShell } from "./page-shell.js";
 import { emitTokenRoot, resolveFontFamilies } from "./tokens.js";
 import type { AssetUrlForPath } from "./asset-url.js";
 import { assetPrefixForDistPath, depthAwareAssetResolver, resolveAssetUrl } from "./asset-url.js";
-import { pageDistPath } from "./routing.js";
+import { articleDistPath, pageDistPath } from "./routing.js";
 import { FONT_ASSET_PREFIX, FONT_FACE_REGISTRY, woff2Base64 } from "./fonts/registry.js";
 import { base64ToBytes } from "./fonts/bytes.js";
 import { STUB_THEME_ID } from "./themes/stub.js";
@@ -43,6 +43,16 @@ export interface RenderOptions {
    * editor preview also picks a single page at a time.
    */
   readonly pageIndex?: number;
+  /**
+   * Index into `site.articles` to render instead of a Page. Mutually exclusive
+   * with `pageIndex`, which is ignored when this is set.
+   *
+   * Articles are a separate axis rather than extra entries in `site.pages`
+   * because they carry their own publication state, URL namespace, and
+   * translation rules (ADR 0047); folding them into `pages` would push those
+   * rules into every Page code path that has nothing to do with them.
+   */
+  readonly articleIndex?: number;
   /**
    * Render target. Defaults to `"deploy"` — built static sites never carry
    * preview-only behaviour. When set to `"preview"`, the renderer emits a
@@ -93,6 +103,56 @@ export interface RenderOptions {
  * @returns       A complete HTML document beginning with `<!doctype html>`.
  */
 export function renderSite(data: Site, themeId: string, opts?: RenderOptions): string {
+  const mode = opts?.mode ?? "deploy";
+
+  // Theme resolution is document-kind agnostic and happens once: a Page and an
+  // Article rendered under the same Site must agree about the theme, its CSS,
+  // and which shell variant applies. Resolving it separately in each branch is
+  // how the two would quietly drift.
+  const bundle = resolveThemeBundle(themeId, opts?.theme);
+  // A shell variant only applies when the *active* theme actually offers it.
+  // Gating here (rather than trusting the saved value) means a choice left
+  // over from another theme cannot leak a dangling attribute into the output.
+  const savedShellVariant = (data.theme as { shellVariant?: unknown }).shellVariant;
+  const shellVariant =
+    typeof savedShellVariant === "string" && offersShellVariant(bundle, savedShellVariant)
+      ? savedShellVariant
+      : undefined;
+
+  const articleIndex = opts?.articleIndex;
+  if (articleIndex !== undefined) {
+    const articles = data.articles ?? [];
+    const article = articles[articleIndex];
+    if (article === undefined) {
+      throw new Error(
+        `renderSite: articleIndex ${articleIndex} is out of range (site has ${articles.length} articles)`,
+      );
+    }
+    // Articles sit one or two directories deeper than any Page
+    // (`articles/<slug>/`, `<lang>/articles/<slug>/`), so the depth prefix has
+    // to come from the Article's own dist path. Reusing a Page's prefix here
+    // would emit `../assets/…` from a directory that needs `../../assets/…`.
+    const assetUrlForPath = depthAwareAssetResolver(
+      opts?.assetUrlForPath,
+      assetPrefixForDistPath(articleDistPath(data, article)),
+    );
+    const css = composeCss(data, bundle, assetUrlForPath);
+    const fontPreloads = fontPreloadHrefsFor(data, bundle, assetUrlForPath);
+    const articleBody = render(
+      <ArticleShell
+        site={data}
+        article={article}
+        css={css}
+        fontPreloads={fontPreloads}
+        mode={mode}
+        assetUrlForPath={assetUrlForPath}
+        theme={bundle}
+        shellVariant={shellVariant}
+      />,
+    );
+    return `<!doctype html>${articleBody}`;
+  }
+
   const pageIndex = opts?.pageIndex ?? 0;
   const page = data.pages[pageIndex];
   if (page === undefined) {
@@ -101,7 +161,6 @@ export function renderSite(data: Site, themeId: string, opts?: RenderOptions): s
     );
   }
 
-  const mode = opts?.mode ?? "deploy";
   // Asset references are emitted relative to the page's own directory, so a
   // nested page (`activitati/index.html`) points at `../assets/…`. See
   // `assetPrefixForDistPath`. The editor preview's blob resolver still wins
@@ -115,17 +174,8 @@ export function renderSite(data: Site, themeId: string, opts?: RenderOptions): s
     opts?.assetUrlForPath,
     assetPrefixForDistPath(pageDistPath(data, page)),
   );
-  const bundle = resolveThemeBundle(themeId, opts?.theme);
   const css = composeCss(data, bundle, assetUrlForPath);
   const fontPreloads = fontPreloadHrefsFor(data, bundle, assetUrlForPath);
-  // A shell variant only applies when the *active* theme actually offers it.
-  // Gating here (rather than trusting the saved value) means a choice left
-  // over from another theme cannot leak a dangling attribute into the output.
-  const savedShellVariant = (data.theme as { shellVariant?: unknown }).shellVariant;
-  const shellVariant =
-    typeof savedShellVariant === "string" && offersShellVariant(bundle, savedShellVariant)
-      ? savedShellVariant
-      : undefined;
   const body = render(
     <PageShell
       site={data}
@@ -350,6 +400,12 @@ export { EDITORIAL_THEME_ID } from "./themes/editorial.js";
 export { CIVIC_THEME_ID } from "./themes/civic.js";
 export { ACADEMIC_THEME_ID } from "./themes/academic.js";
 export {
+  articleDistPath,
+  articleHistoricalPath,
+  articleHreflangEntriesFor,
+  articleLanguageSwitcherEntriesFor,
+  articlePath,
+  articleRedirectsFor,
   homePageIndex,
   homePagePathForLanguage,
   hreflangEntriesFor,
@@ -357,10 +413,12 @@ export {
   languageSwitcherEntriesFor,
   nativeLanguageName,
   navPagesFor,
+  navPagesForLanguage,
   pageDistPath,
   pagePath,
 } from "./routing.js";
-export type { HreflangEntry, LanguageSwitcherEntry } from "./routing.js";
+export type { ArticleRedirect, HreflangEntry, LanguageSwitcherEntry } from "./routing.js";
+export { articleCopy, formatArticleDate } from "./article-text.js";
 export { EMBED_LAZY_LOAD_SCRIPT } from "./blocks/embed-lazy-loader.js";
 export { resolveEmbed } from "./blocks/embed.js";
 export { FAQ_ACCORDION_SCRIPT_SOURCE, FAQ_ENHANCED_ATTR } from "./blocks/faq.script.js";

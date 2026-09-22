@@ -7,6 +7,7 @@ import type { ThemeBundle } from "@sosb/renderer";
 import { installedThemeIds, loadThemePackageFromVfs } from "@sosb/theme-package";
 
 import { generateDeployMd, type DeployLanguage } from "./deploy-md.js";
+import { draftOnlyAssetPaths } from "./draft-assets.js";
 
 const enc = new TextEncoder();
 
@@ -37,6 +38,7 @@ export function serializeSiteData(siteData: unknown): Uint8Array {
  * assets/...metadata     # whatever the asset VFS holds — copied verbatim
  * dist/                  # built static site ready for Cloudflare Pages
  * dist/assets/<hash>...  # deployable copies of referenced user assets
+ *                        # (minus files only Draft articles use)
  * DEPLOY.md              # generated Cloudflare Pages guide
  * ```
  *
@@ -105,12 +107,15 @@ export async function exportToZip(siteData: unknown, vfs: Vfs): Promise<Blob> {
   // user-uploaded assets must exist inside `dist/` as well as at the archive's
   // top level. ONE copy is enough: the renderer emits every asset reference
   // relative to the emitting page's own depth (`../assets/...` on
-  // `activitati/index.html`), so a nested page resolves back to this single
-  // `dist/assets/...` copy. Until that landed, this loop mirrored the whole
-  // asset folder into every nested page directory, which hid the fact that a
-  // raw `dist/` folder — one not produced by this zip — had broken images on
-  // every nested page.
+  // `activitati/index.html`, `../../assets/...` on an Article), so a nested
+  // page resolves back to this single `dist/assets/...` copy.
+  //
+  // Files used only by Draft Articles stop here: they stay in `assets/` above
+  // (the editable archive keeps everything) but never reach `dist/`, because
+  // Drafts are not part of the public Site (ADR 0047).
+  const draftOnly = draftOnlyAssetPaths(siteData);
   for (const [assetPath, bytes] of assetBytes) {
+    if (draftOnly.has(assetPath)) continue;
     await driver.write(`dist/${assetPath}`, bytes);
   }
 

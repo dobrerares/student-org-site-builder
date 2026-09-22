@@ -19,6 +19,32 @@ import type { Site } from "@sosb/schema";
 import type { RenderOptions } from "@sosb/renderer";
 import { renderPreviewHtml } from "./preview-html.js";
 
+/**
+ * Preview an Article instead of a Page.
+ *
+ * Kept as a separate entry point rather than an overload of `iframeSrcdoc`
+ * because the two take different index spaces (`site.pages` vs `site.articles`)
+ * and a single numeric parameter meaning either would be an easy thing to get
+ * silently wrong at a call site.
+ */
+export function iframeSrcdocForArticle(
+  site: Site,
+  themeId: string,
+  articleIndex: number,
+  assetUrlForPath?: RenderOptions["assetUrlForPath"],
+  theme?: RenderOptions["theme"],
+): string {
+  return renderPreviewHtml(site, themeId, {
+    mode: "preview",
+    articleIndex,
+    ...(assetUrlForPath !== undefined ? { assetUrlForPath } : {}),
+    // Same resolved bundle the Page preview and the export use (ADR 0052).
+    // An Article previewed under a different theme object than the Page next
+    // to it is exactly the drift the seam exists to prevent.
+    ...(theme !== undefined ? { theme } : {}),
+  });
+}
+
 export function iframeSrcdoc(
   site: Site,
   themeId: string,

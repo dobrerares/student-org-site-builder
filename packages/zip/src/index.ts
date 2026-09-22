@@ -22,4 +22,5 @@ export type { ImportResult } from "./import.js";
 export { ZipImportError } from "./errors.js";
 export type { ZipImportErrorCode } from "./errors.js";
 export { generateDeployMd } from "./deploy-md.js";
+export { draftOnlyAssetPaths } from "./draft-assets.js";
 export type { DeployLanguage, DeployMdInput } from "./deploy-md.js";

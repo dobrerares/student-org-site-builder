@@ -47,10 +47,19 @@ export interface AddBlockDialogProps {
   readonly onPick: (type: string) => void;
   /** Called when the user dismisses the dialog (Escape, backdrop, etc.). */
   readonly onClose: () => void;
+  /**
+   * Block types to hide. The Articles workspace passes the types issue #97
+   * does not allow inside an Article's main content.
+   */
+  readonly excludeTypes?: readonly string[] | undefined;
 }
 
 export function AddBlockDialog(props: AddBlockDialogProps): JSX.Element {
-  const catalog = useMemo(() => buildBlockCatalog(), []);
+  const excludeKey = (props.excludeTypes ?? []).join(",");
+  const catalog = useMemo(
+    () => buildBlockCatalog({ exclude: excludeKey === "" ? [] : excludeKey.split(",") }),
+    [excludeKey],
+  );
   const [query, setQuery] = useState<string>("");
   const searchRef = useRef<HTMLInputElement | null>(null);
 

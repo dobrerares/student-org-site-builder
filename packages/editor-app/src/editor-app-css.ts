@@ -1777,6 +1777,14 @@ body {
  * Only the z-index needs stating, so the popup clears the backdrop's
  * unlayered z-index above.
  */
+/*
+ * Keyed on the popup's own ARIA contract rather than on a list of test ids.
+ * The id list was a trap: a new dialog that forgot to join it rendered in
+ * document flow *behind* the fixed backdrop, which then swallowed every
+ * click on it. Every EditorDialog popup sets aria-modal, so this cannot be
+ * forgotten.
+ */
+[data-dialog-host] [aria-modal="true"],
 [data-testid="add-block-dialog"],
 [data-testid="export-confirm-dialog"] {
   z-index: 101;
@@ -1790,8 +1798,20 @@ body {
   box-shadow: var(--shadow-lg);
   animation: sosb-pop-in 160ms ease;
 }
-[data-testid="export-confirm-dialog"] {
+[data-testid="export-confirm-dialog"],
+[data-testid="tag-delete-dialog"],
+[data-testid="article-delete-dialog"] {
   width: min(600px, 100%);
+}
+[data-testid="article-create-dialog"] {
+  width: min(460px, 100%);
+}
+[data-testid="article-create-dialog"] h2,
+[data-testid="tag-manager-dialog"] h2,
+[data-testid="article-delete-dialog"] h2,
+[data-testid="tag-delete-dialog"] h2 {
+  margin: 0 0 var(--sp-3) 0;
+  font-size: var(--step-1, 1.125rem);
 }
 [data-testid="add-block-dialog"] > header {
   display: flex;
@@ -2354,9 +2374,17 @@ button[data-issue] [data-issue-path]::before {
    * translate: none cancels the shared popup's Tailwind centring, which
    * uses the translate longhand. Leaving it in place would drag the sheet
    * half its own height off the bottom of the screen.
+   *
+   * Keyed on the same aria-modal contract the desktop rule above uses, for
+   * two reasons. Every EditorDialog docks on a phone, including the Articles
+   * ones, without anyone remembering to join a list. And — the reason this
+   * had to change — a media query contributes nothing to specificity, so the
+   * old data-testid selector (0,1,0) lost to the desktop
+   * [data-dialog-host] [aria-modal="true"] (0,2,0) and the sheet stopped
+   * being full-bleed: it rendered at calc(100vw - 2 * var(--sp-4)) instead
+   * of reaching both gutters.
    */
-  [data-testid="add-block-dialog"],
-  [data-testid="export-confirm-dialog"] {
+  [data-dialog-host] [aria-modal="true"] {
     top: auto;
     bottom: var(--sp-2);
     left: var(--sp-2);
@@ -2366,6 +2394,373 @@ button[data-issue] [data-issue-path]::before {
     padding: var(--sp-3);
     width: auto;
   }
+}
+
+/* ---------------------------------------------------------------------------
+ * Articles (issue #97 / #98)
+ *
+ * Scoped to the editor root like every other rule in this sheet. The visual
+ * register deliberately matches the Pages list: the two are siblings behind
+ * one switch, and looking different would imply they behave differently.
+ * ------------------------------------------------------------------------- */
+
+[data-testid="editor-app"] [data-testid="content-kind-switch"] {
+  display: flex;
+  gap: var(--sp-1);
+  padding: var(--sp-2);
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+[data-testid="editor-app"] .articles-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  min-height: 0;
+  overflow-y: auto;
+}
+
+[data-testid="editor-app"] .articles-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+[data-testid="editor-app"] .articles-panel__filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--sp-2);
+}
+
+[data-testid="editor-app"] .articles-panel__filter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+[data-testid="editor-app"] .articles-panel__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+[data-testid="editor-app"] .articles-panel__list > li {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  border: 1px solid var(--rule-soft);
+  border-radius: var(--r-md);
+  background: var(--paper-raised);
+  padding-right: var(--sp-1);
+  transition: var(--transition);
+}
+
+[data-testid="editor-app"] .articles-panel__list > li[data-active="true"] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-ring);
+}
+
+[data-testid="editor-app"] .articles-panel__row {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  padding: var(--sp-2);
+  background: none;
+  border: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border-radius: var(--r-md);
+}
+
+[data-testid="editor-app"] .articles-panel__row-title {
+  flex: 1;
+  min-width: 8rem;
+  font-weight: 600;
+}
+
+[data-testid="editor-app"] .articles-panel__badge {
+  font-size: var(--step--2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--r-sm);
+  background: var(--paper-sunken);
+  color: var(--ink-muted, inherit);
+}
+
+[data-testid="editor-app"] .articles-panel__badge[data-article-state="published"] {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+[data-testid="editor-app"] .articles-panel__badge[data-article-state="draft"] {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+[data-testid="editor-app"] .articles-panel__badge[data-article-state="unlisted"] {
+  background: var(--info-soft);
+  color: var(--info);
+}
+
+[data-testid="editor-app"] .articles-panel__date {
+  font-size: var(--step--2);
+  font-variant-numeric: tabular-nums;
+}
+
+[data-testid="editor-app"] .articles-panel__empty,
+[data-testid="editor-app"] .tag-manager__empty,
+[data-testid="editor-app"] .article-list-inspector__note {
+  font-size: var(--step--1);
+  margin: 0;
+}
+
+[data-testid="editor-app"] .articles-panel__dialog-actions,
+[data-testid="editor-app"] .tag-manager__dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+
+/* Article settings ------------------------------------------------------- */
+
+[data-testid="editor-app"] .article-settings,
+[data-testid="editor-app"] .article-list-inspector {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+[data-testid="editor-app"] .article-settings__field,
+[data-testid="editor-app"] .article-list-inspector__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+[data-testid="editor-app"] .article-settings__label-row,
+[data-testid="editor-app"] .article-list-inspector__label-row,
+[data-testid="editor-app"] .article-workspace__label-row,
+[data-testid="editor-app"] .tag-picker__heading {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+[data-testid="editor-app"] .article-settings__error,
+[data-testid="editor-app"] .tag-manager__error {
+  margin: 0;
+  color: var(--error);
+  font-size: var(--step--1);
+}
+
+/* The (i) affordance ----------------------------------------------------- */
+
+[data-testid="editor-app"] .info-hint__trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* WCAG 2.2 target size: the icon is 14px, the hit area is not. */
+  min-width: 24px;
+  min-height: 24px;
+  border-radius: 999px;
+  border: 0;
+  background: none;
+  color: inherit;
+  opacity: 0.7;
+  cursor: pointer;
+}
+
+[data-testid="editor-app"] .info-hint__trigger:hover,
+[data-testid="editor-app"] .info-hint__trigger:focus-visible {
+  opacity: 1;
+  background: var(--paper-sunken);
+}
+
+/* Tags ------------------------------------------------------------------- */
+
+[data-testid="editor-app"] .tag-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+[data-testid="editor-app"] .tag-picker__selected,
+[data-testid="editor-app"] .tag-picker__options {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
+
+[data-testid="editor-app"] .tag-picker__chip,
+[data-testid="editor-app"] .tag-picker__option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  min-height: 24px;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  background: var(--paper-raised);
+  font: inherit;
+  font-size: var(--step--1);
+  color: inherit;
+  cursor: pointer;
+}
+
+[data-testid="editor-app"] .tag-picker__chip {
+  background: var(--accent-soft);
+  border-color: var(--accent-ring);
+}
+
+[data-testid="editor-app"] .tag-manager {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+[data-testid="editor-app"] .tag-manager__create {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+[data-testid="editor-app"] .tag-manager__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+[data-testid="editor-app"] .tag-manager__list > li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  padding: var(--sp-2);
+  border: 1px solid var(--rule-soft);
+  border-radius: var(--r-md);
+}
+
+[data-testid="editor-app"] .tag-manager__label {
+  flex: 1;
+  font-weight: 600;
+}
+
+/* Article-list configuration --------------------------------------------- */
+
+[data-testid="editor-app"] .article-list-inspector__modes {
+  border: 1px solid var(--rule-soft);
+  border-radius: var(--r-md);
+  padding: var(--sp-2);
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+[data-testid="editor-app"] .article-list-inspector__modes legend {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: 0 var(--sp-1);
+  font-weight: 600;
+}
+
+[data-testid="editor-app"] .article-list-inspector__mode {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 24px;
+}
+
+[data-testid="editor-app"] .article-list-inspector__candidates,
+[data-testid="editor-app"] .article-list-inspector__selected,
+[data-testid="editor-app"] .article-list-inspector__preview ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+[data-testid="editor-app"] .article-list-inspector__selected > li,
+[data-testid="editor-app"] .article-list-inspector__preview li {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-2);
+  border: 1px solid var(--rule-soft);
+  border-radius: var(--r-sm);
+}
+
+[data-testid="editor-app"] .article-list-inspector__selected-title,
+[data-testid="editor-app"] .article-list-inspector__candidate-title,
+[data-testid="editor-app"] .article-list-inspector__preview li > span:first-child {
+  flex: 1;
+  min-width: 6rem;
+}
+
+[data-testid="editor-app"] .article-list-inspector__candidate {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  min-height: 24px;
+  padding: var(--sp-1) var(--sp-2);
+  border: 1px dashed var(--rule);
+  border-radius: var(--r-sm);
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+[data-testid="editor-app"] .article-list-inspector__meta {
+  font-size: var(--step--2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.75;
+}
+
+[data-testid="editor-app"] .article-list-inspector__preview h3 {
+  font-size: var(--step--1);
+  margin: 0 0 var(--sp-1) 0;
+}
+
+/* Article workspace ------------------------------------------------------ */
+
+[data-testid="editor-app"] .article-workspace__blocks,
+[data-testid="editor-app"] .article-workspace__related {
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--rule-soft);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+[data-testid="editor-app"] .article-workspace__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 24px;
 }
 `;
 

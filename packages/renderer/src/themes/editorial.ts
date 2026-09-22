@@ -215,4 +215,42 @@ a:hover, a:focus-visible { text-decoration-thickness: 2px; }
     align-items: end;
   }
 }
+
+[data-block="articleList"] .article-card {
+  border-radius: 0;
+  border-width: 0 0 1px 0;
+  background: transparent;
+}
+[data-block="articleList"] .article-card__body {
+  padding-inline: 0;
+}
+[data-block="articleList"] .article-card__title {
+  font-size: 1.375rem;
+  letter-spacing: -0.01em;
+}
+[data-block="articleList"] .article-card__date {
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0.01em;
+  font-size: 0.8125rem;
+}
+.article__title {
+  letter-spacing: -0.02em;
+}
+.article__summary {
+  font-family: var(--font-headline);
+  font-style: italic;
+}
+.article__date {
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+.article__cover {
+  border-radius: 0;
+}
+.article__tag {
+  border-radius: 0;
+  font-style: italic;
+}
 `.trim();

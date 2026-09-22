@@ -123,4 +123,27 @@ a:hover {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
+
+[data-block="articleList"] .article-card {
+  border-radius: var(--radius-lg);
+  border-top: 3px solid var(--color-accent);
+}
+[data-block="articleList"] .article-card__date {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+[data-block="articleList"] .article-card__title a:hover {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+.article__cover {
+  border-radius: var(--radius-lg);
+}
+.article__date {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+.article__tag {
+  border-radius: 999px;
+}
 `.trim();
