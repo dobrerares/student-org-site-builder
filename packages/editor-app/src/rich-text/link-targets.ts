@@ -7,7 +7,7 @@
  * easier to reason about — and test — without a React tree around it.
  */
 
-import type { RichTextLinkTarget, Site } from "@sosb/schema";
+import { ARTICLE_ROUTE_PREFIX, articlesOf, type RichTextLinkTarget, type Site } from "@sosb/schema";
 
 export interface LinkTargetOption {
   /** Stable key for list rendering; not the stored identity. */
@@ -47,24 +47,23 @@ export function linkTargetsFor(site: Site, lang: string): LinkTargetOption[] {
     });
   });
 
-  const articles = (site as { articles?: unknown }).articles;
-  if (Array.isArray(articles)) {
-    articles.forEach((entry, index) => {
-      if (typeof entry !== "object" || entry === null) return;
-      const article = entry as { lang?: unknown; title?: unknown; slug?: unknown; state?: unknown };
-      if (article.lang !== lang) return;
-      const slug = typeof article.slug === "string" ? article.slug : "";
-      out.push({
-        key: `article:${index}`,
-        kind: "article",
-        label: typeof article.title === "string" ? article.title : slug,
-        hint: `/articles/${slug}/`,
-        lang,
-        isDraft: article.state === "draft",
-        index,
-      });
+  articlesOf(site).forEach((article, index) => {
+    if (article.lang !== lang) return;
+    out.push({
+      key: `article:${index}`,
+      kind: "article",
+      label: article.title,
+      // The path a visitor would see. Secondary-language Articles carry the
+      // language segment, exactly as `articlePath` emits it.
+      hint:
+        article.lang === site.defaultLanguage
+          ? `/${ARTICLE_ROUTE_PREFIX}/${article.slug}/`
+          : `/${article.lang}/${ARTICLE_ROUTE_PREFIX}/${article.slug}/`,
+      lang,
+      isDraft: article.state === "draft",
+      index,
     });
-  }
+  });
 
   return out;
 }
@@ -97,10 +96,10 @@ export function resolveTarget(
   nextId: () => string,
 ): { site: Site; target: RichTextLinkTarget } {
   if (option.kind === "article") {
-    const articles = (site as { articles?: unknown[] }).articles ?? [];
-    const article = articles[option.index] as { id?: unknown } | undefined;
-    const id = typeof article?.id === "string" ? article.id : "";
-    return { site, target: { kind: "article", articleId: id } };
+    // Articles carry a permanent id from creation (issue #97), so there is
+    // nothing to assign — only to read.
+    const article = articlesOf(site)[option.index];
+    return { site, target: { kind: "article", articleId: article?.id ?? "" } };
   }
 
   const page = site.pages[option.index];

@@ -14,8 +14,14 @@
   "defaultLanguage": "ro",
   "languages": ["ro", "en"],
   "tags": [
-    { "id": "tag_evenimente", "label": "Evenimente" },
-    { "id": "tag_proiecte", "label": "Proiecte" }
+    {
+      "id": "tag_evenimente",
+      "label": "Evenimente"
+    },
+    {
+      "id": "tag_proiecte",
+      "label": "Proiecte"
+    }
   ],
   "pages": [
     {
@@ -83,9 +89,44 @@
         {
           "id": "blk_gala_body",
           "type": "richText",
-          "version": 1,
+          "version": 2,
           "data": {
-            "markdown": "Gala a adunat peste **200 de studenți** din toate facultățile.\n\nMulțumim tuturor voluntarilor."
+            "doc": {
+              "version": 1,
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Gala a adunat peste "
+                    },
+                    {
+                      "type": "text",
+                      "text": "200 de studenți",
+                      "marks": [
+                        {
+                          "type": "bold"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": " din toate facultățile."
+                    }
+                  ]
+                },
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Mulțumim tuturor voluntarilor."
+                    }
+                  ]
+                }
+              ]
+            }
           }
         }
       ]
@@ -103,8 +144,23 @@
         {
           "id": "blk_atelier_body",
           "type": "richText",
-          "version": 1,
-          "data": { "markdown": "Ne-am întâlnit în fiecare marți." }
+          "version": 2,
+          "data": {
+            "doc": {
+              "version": 1,
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Ne-am întâlnit în fiecare marți."
+                    }
+                  ]
+                }
+              ]
+            }
+          }
         }
       ]
     },
@@ -131,8 +187,23 @@
         {
           "id": "blk_raport_body",
           "type": "richText",
-          "version": 1,
-          "data": { "markdown": "Detalii interne." }
+          "version": 2,
+          "data": {
+            "doc": {
+              "version": 1,
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Detalii interne."
+                    }
+                  ]
+                }
+              ]
+            }
+          }
         }
       ]
     },
@@ -150,8 +221,36 @@
         {
           "id": "blk_gala_en_body",
           "type": "richText",
-          "version": 1,
-          "data": { "markdown": "The gala gathered over **200 students**." }
+          "version": 2,
+          "data": {
+            "doc": {
+              "version": 1,
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "The gala gathered over "
+                    },
+                    {
+                      "type": "text",
+                      "text": "200 students",
+                      "marks": [
+                        {
+                          "type": "bold"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "."
+                    }
+                  ]
+                }
+              ]
+            }
+          }
         }
       ]
     }

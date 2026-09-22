@@ -535,6 +535,45 @@ main { display: block; }
   padding: 0 var(--space-xs);
   border-radius: var(--radius-sm);
 }
+[data-block="richText"] .rich-text :is(ul, ol) {
+  padding-left: var(--space-lg);
+}
+[data-block="richText"] .rich-text li > p {
+  margin: 0 0 var(--space-xs) 0;
+}
+[data-block="richText"] .rich-text li > p:last-child {
+  margin-bottom: 0;
+}
+[data-block="richText"] .rich-text s {
+  text-decoration-color: var(--color-muted);
+}
+[data-block="richText"] .rich-text-figure {
+  margin: 0 0 var(--space-md) 0;
+}
+[data-block="richText"] .rich-text-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+}
+[data-block="richText"] .rich-text-figure figcaption {
+  margin-top: var(--space-xs);
+  color: var(--color-muted);
+  font-size: 0.9em;
+}
+/*
+ * Unsupported content is an empty element: the Renderer will not invent a
+ * rendering for content it cannot read, and ADR 0048 forbids simplifying it
+ * away. It also never reaches a built site — it is a non-overridable export
+ * blocker — so these rules only ever apply in the editor preview, where the
+ * author needs to see that something is there.
+ */
+[data-block="richText"] .rich-text-unsupported {
+  min-height: var(--space-lg);
+  margin: 0 0 var(--space-md) 0;
+  border: 1px dashed var(--color-muted);
+  border-radius: var(--radius-sm);
+}
 [data-block="quote"] {
   margin: 0;
   padding: var(--space-lg) var(--space-md);
@@ -1200,7 +1239,7 @@ main > [data-block] {
   width: min(100%, var(--site-readable-width));
   margin-inline: auto;
 }
-[data-block="richText"] .rich-text > :is(p, ul, ol, blockquote, h2, h3, h4) {
+[data-block="richText"] .rich-text > :is(p, ul, ol, blockquote, h2, h3, h4, figure) {
   max-width: none;
 }
 [data-block="richText"][data-title-align="left"] .rich-text :is(h2, h3, h4),
@@ -1217,6 +1256,29 @@ main > [data-block] {
 }
 [data-block="richText"][data-title-align="justify"] .rich-text :is(h2, h3, h4),
 [data-block="richText"][data-paragraph-align="justify"] .rich-text :is(p, ul, ol, blockquote) {
+  text-align: justify;
+  text-align-last: left;
+}
+/*
+ * Per-node alignment (ADR 0048): a paragraph or heading carrying its own
+ * align attribute overrides the Block-level data-title-align /
+ * data-paragraph-align defaults above.
+ *
+ * The element list is not decoration - it is what makes these rules win.
+ * The Block-level selectors score (0,3,1); a bare
+ * .rich-text [data-align="left"] would score (0,3,0) and silently lose.
+ * Naming the element as well takes these to (0,4,1).
+ */
+[data-block="richText"] .rich-text :is(p, h2, h3, h4, ul, ol, blockquote)[data-align="left"] {
+  text-align: left;
+}
+[data-block="richText"] .rich-text :is(p, h2, h3, h4, ul, ol, blockquote)[data-align="center"] {
+  text-align: center;
+}
+[data-block="richText"] .rich-text :is(p, h2, h3, h4, ul, ol, blockquote)[data-align="right"] {
+  text-align: right;
+}
+[data-block="richText"] .rich-text :is(p, h2, h3, h4, ul, ol, blockquote)[data-align="justify"] {
   text-align: justify;
   text-align-last: left;
 }

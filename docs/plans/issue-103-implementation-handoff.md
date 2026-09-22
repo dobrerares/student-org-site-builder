@@ -247,7 +247,9 @@ Implements [issue #100](issue-100-rich-text-contract.md) and the Tiptap half of
   This is what makes byte-exact Markdown parity achievable — a canonical mark
   order could not reproduce both `**[a](u)**` and `[**a**](u)`.
 - **Link targets are identities, not URLs**: `{kind:"page", pageId}`,
-  `{kind:"article", articleId}`, `{kind:"external", href}`.
+  `{kind:"article", articleId}`, `{kind:"external", href}`. The Renderer
+  resolves them with `pagePath` / `articlePath`, so an Article link carries
+  its language segment and a slug rename moves every link that pointed at it.
 - `Page.id` — new, **optional**, permanent, and assigned lazily by the link
   picker. Optional because ADR 0002 forbids inventing fields when a project is
   merely opened; assigned at the first moment it means something.
@@ -265,6 +267,9 @@ Implements [issue #100](issue-100-rich-text-contract.md) and the Tiptap half of
   `content.unsupported` (error, blocking in public content),
   `image.bytes.missing` (error, blocking in public content),
   `image.alt.missing` (warning), `link.missing` / `link.draft` (warnings).
+  The two blocking rules honour the Draft carve-out: the same content inside a
+  Draft Article produces an ordinary error, and inside an Unlisted one a
+  blocking error, because Unlisted pages are emitted.
 - `validate(data, options?)` gained `assetPathExists`. Byte presence cannot be
   derived from Site data, so the host injects it; without it the check simply
   does not run rather than guessing. The editor backs it with the display-URL
@@ -362,33 +367,39 @@ that has no node for it — is precisely how the automatic simplification ADR
 0048 forbids would happen by accident. This is coarser than "only the affected
 part is read-only", and it is the version that cannot lose data.
 
-## Conflicts the Articles rebase will hit
+## How rich text and Articles met
 
-`feat/rich-text` was written on `main` before PR #117 landed, so both branches
-independently add some of the same things. None of it is a real disagreement.
+`feat/rich-text` was written on `main` before PR #117 landed and was rebased
+onto it. Both branches independently added some of the same things; none of it
+was a real disagreement. Recorded because the resolutions are design decisions,
+not mechanical merges.
 
-1. **`ValidationIssue.blocking` + `hasBlockingIssues`.** Both branches add
-   them, deliberately identical in shape and semantics. Keep one copy; keep the
-   union of the doc comments.
-2. **`runSiteRules`' per-page Block loop.** #117 extracts it into
-   `runBlocksDeep`; this branch adds a `blockContext` argument to the
-   `runBlockRules` call inside it. Resolution: keep #117's extraction and
-   thread the context through it, passing `publicContent: false` for Blocks
-   inside a Draft Article. That is the last piece of the Draft carve-out —
-   everything else already honours it.
-3. **`packages/renderer/src/rich-text-links.ts`** duplicates `articlePath`'s
-   rule because it could not import a symbol that did not exist yet. After the
-   rebase, delete the local `ARTICLE_ROUTE_PREFIX` and `articleHref` and call
-   the shared `articlePath(site, article)` from `routing.ts`. Marked with a
-   `REBASE NOTE` in the file.
-4. **`page-shell.tsx`.** #117 extracts `DocumentShell`; this branch adds a
-   `richTextContext` built once per page and threaded into `renderBlock`. Build
-   it once in the shared shell so Articles get it too.
-5. **Export-gate surfacing.** #117 wires `hasBlockingIssues` into
-   `export-confirm.tsx`. This branch's blockers flow through that same gate
-   with no further work — they are the same field.
-6. **`docs/plans/issue-103-implementation-handoff.md`** — this file. Keep both
-   sections.
+1. **`ValidationIssue.blocking` + `hasBlockingIssues`.** Both branches added
+   them, deliberately identical. Kept one copy, with a doc comment that now
+   enumerates all three non-overridable cases: a broken explicit Article-list
+   selection (#97), unsupported rich-text content, and missing rich-text image
+   bytes (#100).
+2. **The Draft carve-out.** #117 extracted the per-container Block loop into
+   `runBlocksDeep`; it now takes a `BlockRuleContext` and Articles pass
+   `publicContent: article.state !== "draft"`. That single expression is the
+   whole carve-out: a Draft is never emitted, so nothing inside it can make
+   public output wrong, while an Unlisted Article _is_ emitted and therefore
+   counts as public.
+3. **One link resolver, one article-path rule.** `rich-text-links.ts` had
+   duplicated `articlePath`'s rule while it could not import a symbol that did
+   not exist yet. It now calls the shared `articlePath` and indexes Articles
+   with `articlesById`.
+4. **`BlockRenderContext`.** #117 introduced a context record for
+   `articleList`, which turned out to be the right home for the rich-text
+   asset/link context too — so both the Page shell and the Article shell build
+   it once per document, and Articles got prose links for free.
+5. **The dialog z-index fix, twice.** Both branches independently hit the
+   backdrop-swallows-clicks bug and fixed it. #117's version keys on the
+   popup's existing `aria-modal` contract rather than a new attribute, which is
+   the better hook; this branch's `data-editor-dialog` was dropped.
+6. **Fixtures.** The Articles fixtures' bodies were migrated by running the
+   real `migrateSite` over them — which is also the proof that the migration
+   walks `articles[].blocks[]` and not just `pages[].blocks[]`.
 
 ## Still open
 

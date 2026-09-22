@@ -45,6 +45,24 @@ function imageNode(alt: string, path = "assets/abc.png"): unknown {
   };
 }
 
+/**
+ * A minimal but *valid* Article. `articlesById` parses through the Article
+ * schema, so a structural stand-in with only `id` and `state` is silently
+ * skipped — which would make every assertion below pass for the wrong reason.
+ */
+function article(overrides: Record<string, unknown>): unknown {
+  return {
+    id: "art_1",
+    lang: "ro",
+    slug: "o-stire",
+    title: "O știre",
+    publishedAt: "2026-01-01",
+    state: "published",
+    blocks: [],
+    ...overrides,
+  };
+}
+
 function linkPara(target: unknown): unknown {
   return {
     type: "paragraph",
@@ -157,9 +175,7 @@ describe("rich-text validation — link targets", () => {
 
   test("a Draft Article target gets its own, more helpful finding", () => {
     const site = siteWith(doc(linkPara({ kind: "article", articleId: "art_1" })));
-    (site as unknown as { articles: unknown[] }).articles = [
-      { id: "art_1", lang: "ro", slug: "x", state: "draft" },
-    ];
+    (site as unknown as { articles: unknown[] }).articles = [article({ state: "draft" })];
     const codes = validate(site).warnings.map((w) => w.code);
     expect(codes).toContain("block.richText.link.draft");
     expect(codes).not.toContain("block.richText.link.missing");
@@ -167,9 +183,7 @@ describe("rich-text validation — link targets", () => {
 
   test("an Unlisted Article is a legitimate target", () => {
     const site = siteWith(doc(linkPara({ kind: "article", articleId: "art_1" })));
-    (site as unknown as { articles: unknown[] }).articles = [
-      { id: "art_1", lang: "ro", slug: "x", state: "unlisted" },
-    ];
+    (site as unknown as { articles: unknown[] }).articles = [article({ state: "unlisted" })];
     const codes = validate(site).warnings.map((w) => w.code);
     expect(codes).not.toContain("block.richText.link.draft");
     expect(codes).not.toContain("block.richText.link.missing");
@@ -180,5 +194,58 @@ describe("rich-text validation — link targets", () => {
       siteWith(doc(linkPara({ kind: "external", href: "https://anosr.ro" }))),
     );
     expect(result.warnings.map((w) => w.code)).not.toContain("block.richText.link.missing");
+  });
+});
+
+describe("rich-text validation — the Draft carve-out", () => {
+  function siteWithArticle(state: string, doc: unknown): Site {
+    const site = structuredClone(historipol) as unknown as Site;
+    site.pages[0]!.blocks = [] as unknown as Site["pages"][number]["blocks"];
+    (site as unknown as { articles: unknown[] }).articles = [
+      article({
+        state,
+        blocks: [{ id: "blk_rt", type: "richText", version: 2, data: { doc } }],
+      }),
+    ];
+    return site;
+  }
+
+  const unreadable = doc({ type: "futureCallout" });
+
+  test("unsupported content inside a Draft is reported but does not block export", () => {
+    // Issue #100: "Problems confined to Draft articles do not block public
+    // export." A Draft is never emitted, so nothing inside it can make
+    // public output wrong.
+    const result = validate(siteWithArticle("draft", unreadable));
+    const issue = result.errors.find((e) => e.code === "block.richText.content.unsupported");
+    expect(issue).toBeDefined();
+    expect(issue?.blocking).toBeUndefined();
+    expect(hasBlockingIssues(result)).toBe(false);
+  });
+
+  test("the same content in a Published Article does block", () => {
+    const result = validate(siteWithArticle("published", unreadable));
+    expect(hasBlockingIssues(result)).toBe(true);
+  });
+
+  test("an Unlisted Article counts as public content", () => {
+    // Unlisted is "hidden from discovery", not "not published" — the page is
+    // emitted and reachable, so broken content there is broken in public.
+    const result = validate(siteWithArticle("unlisted", unreadable));
+    expect(hasBlockingIssues(result)).toBe(true);
+  });
+
+  test("missing image bytes follow the same rule", () => {
+    const withImage = doc(imageNode("Descriere"));
+    const draft = validate(siteWithArticle("draft", withImage), {
+      assetPathExists: () => false,
+    });
+    expect(draft.errors.some((e) => e.code === "block.richText.image.bytes.missing")).toBe(true);
+    expect(hasBlockingIssues(draft)).toBe(false);
+
+    const published = validate(siteWithArticle("published", withImage), {
+      assetPathExists: () => false,
+    });
+    expect(hasBlockingIssues(published)).toBe(true);
   });
 });

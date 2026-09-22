@@ -2,10 +2,15 @@ import { z } from "zod";
 import { BlockEnvelopeSchema, KnownBlockSchemas, isKnownBlockType } from "./blocks/index.js";
 import { ARTICLE_ROUTE_PREFIX, normalizeTagLabel } from "./article.js";
 import type { Article } from "./article.js";
-import { articlesOf, inspectArticleSelection, resolveArticleSelection } from "./article-select.js";
+import {
+  articlesById,
+  articlesOf,
+  inspectArticleSelection,
+  resolveArticleSelection,
+} from "./article-select.js";
 import type { ArticleSelection } from "./blocks/article-list.js";
 import { DEFAULT_ARTICLE_LIST_MODE } from "./blocks/article-list.js";
-import { SiteSchema } from "./site.js";
+import { SiteSchema, type Site } from "./site.js";
 import { checkSlug } from "./slug.js";
 import {
   collectRichTextImages,
@@ -952,37 +957,27 @@ function formatBytes(bytes: number): string {
  * target is repairable by publishing it, a missing one by repointing the
  * link. Both render as unlinked text.
  *
- * Articles are read structurally rather than through the Article schema so
- * this rule works whether or not the project carries any.
+ * Both indexes are built once per Site, not once per link: a document can
+ * hold many links, and both lookups walk the whole Site.
  */
 function makeLinkTargetResolver(
   site: z.infer<typeof SiteSchema>,
 ): (target: RichTextLinkTarget) => LinkTargetState {
   const pageIds = new Set<string>();
   for (const page of site.pages) {
-    const id = (page as { id?: unknown }).id;
-    if (typeof id === "string" && id.length > 0) pageIds.add(id);
+    if (typeof page.id === "string" && page.id.length > 0) pageIds.add(page.id);
   }
 
-  const articleStates = new Map<string, string>();
-  const articles = (site as { articles?: unknown }).articles;
-  if (Array.isArray(articles)) {
-    for (const article of articles) {
-      if (typeof article !== "object" || article === null) continue;
-      const entry = article as { id?: unknown; state?: unknown };
-      if (typeof entry.id !== "string" || entry.id.length === 0) continue;
-      articleStates.set(entry.id, typeof entry.state === "string" ? entry.state : "published");
-    }
-  }
+  const articles = articlesById(site as unknown as Site);
 
   return (target: RichTextLinkTarget): LinkTargetState => {
     if (target.kind === "page") return pageIds.has(target.pageId) ? "ok" : "missing";
     if (target.kind === "article") {
-      const state = articleStates.get(target.articleId);
-      if (state === undefined) return "missing";
+      const article = articles.get(target.articleId);
+      if (article === undefined) return "missing";
       // Unlisted Articles are legitimate link targets (issue #100); only
       // Drafts are unreachable for visitors.
-      return state === "draft" ? "draft" : "ok";
+      return article.state === "draft" ? "draft" : "ok";
     }
     return "ok";
   };
