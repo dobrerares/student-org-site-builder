@@ -2374,9 +2374,17 @@ button[data-issue] [data-issue-path]::before {
    * translate: none cancels the shared popup's Tailwind centring, which
    * uses the translate longhand. Leaving it in place would drag the sheet
    * half its own height off the bottom of the screen.
+   *
+   * Keyed on the same aria-modal contract the desktop rule above uses, for
+   * two reasons. Every EditorDialog docks on a phone, including the Articles
+   * ones, without anyone remembering to join a list. And — the reason this
+   * had to change — a media query contributes nothing to specificity, so the
+   * old data-testid selector (0,1,0) lost to the desktop
+   * [data-dialog-host] [aria-modal="true"] (0,2,0) and the sheet stopped
+   * being full-bleed: it rendered at calc(100vw - 2 * var(--sp-4)) instead
+   * of reaching both gutters.
    */
-  [data-testid="add-block-dialog"],
-  [data-testid="export-confirm-dialog"] {
+  [data-dialog-host] [aria-modal="true"] {
     top: auto;
     bottom: var(--sp-2);
     left: var(--sp-2);
