@@ -117,11 +117,24 @@ const FontSchema = z.looseObject({
  * `offline` is required only when `network` is non-empty, because with no
  * hosts there is nothing to be unavailable.
  */
+/**
+ * A host the public-site script may contact: a bare hostname, optionally with
+ * a port or a leading `*.` wildcard. Not a URL — a scheme or a path here is a
+ * sign the author pasted an endpoint, and an endpoint is not a dependency
+ * declaration a reader can scan.
+ */
+export const THEME_NETWORK_HOST_RE = /^(?:\*\.)?[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*(?::\d{1,5})?$/i;
+
 const PublicScriptSchema = z
   .looseObject({
     file: ThemePathSchema,
     /** Hosts the script may contact on the published Site. `[]` for none. */
-    network: z.array(z.string().min(1)),
+    network: z.array(
+      z
+        .string()
+        .min(1)
+        .regex(THEME_NETWORK_HOST_RE, "must be a hostname such as 'api.example.org', not a URL"),
+    ),
     /** What stops working without a network. */
     offline: z.string().min(1).optional(),
   })

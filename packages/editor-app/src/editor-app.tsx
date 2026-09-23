@@ -694,6 +694,24 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   // srcdoc preview depends on.
   const [installedThemes, setInstalledThemes] = useState<readonly ThemeBundle[]>([]);
 
+  // A Theme package with a `render.js` holds a sandbox realm (ADR 0053).
+  // Release the realms of bundles that have left the installed list — after
+  // commit, so nothing still rendering through the old bundle sees a disposed
+  // module — and every remaining one on unmount.
+  const previousThemesRef = useRef<readonly ThemeBundle[]>([]);
+  useEffect(() => {
+    const previous = previousThemesRef.current;
+    previousThemesRef.current = installedThemes;
+    for (const outgoing of previous) {
+      if (!installedThemes.includes(outgoing)) outgoing.render?.dispose();
+    }
+  }, [installedThemes]);
+  useEffect(() => {
+    return () => {
+      for (const bundle of previousThemesRef.current) bundle.render?.dispose();
+    };
+  }, []);
+
   async function reloadInstalledThemes(): Promise<void> {
     const vfs = assetVfsRef.current!;
     const bundles: ThemeBundle[] = [];
@@ -723,6 +741,9 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     // package must leave the Site exactly as it found it.
     const loaded = await loadThemePackageFromZip(bytes);
     await installThemePackageIntoVfs(assetVfsRef.current!, loaded);
+    // The reload below compiles the installed copy afresh; this validation
+    // load's sandbox realm has done its job.
+    loaded.bundle.render?.dispose();
     // Re-importing the same id and version with different bytes is the normal
     // rhythm of authoring a Theme, so the blob cache (keyed on id + version)
     // has to be dropped on every import rather than trusted to notice.
@@ -1820,6 +1841,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     </div>
   );
 }
+
 
 interface TopBarProps {
   readonly onImport: (() => void) | undefined;

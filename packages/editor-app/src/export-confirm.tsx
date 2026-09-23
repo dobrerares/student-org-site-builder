@@ -27,6 +27,7 @@ import type * as React from "react";
 import { useState } from "react";
 import type { ValidationIssue, ValidationResult } from "@sosb/schema";
 import { hasBlockingIssues } from "@sosb/schema";
+import type { OmittedBlock } from "@sosb/renderer";
 import { issuePathLabel } from "./field-labels.js";
 import { pathToDotted } from "./issue-navigate.js";
 import { EditorDialog } from "./editor-dialog.js";
@@ -36,16 +37,26 @@ const CONFIRM_PHRASE = "DOWNLOAD";
 
 export interface ExportConfirmDialogProps {
   readonly result: ValidationResult;
+  /**
+   * Blocks the active Theme has no design for, which the published Site will
+   * leave out (ADR 0045). Non-empty means the author must tick an
+   * acknowledgement before the download proceeds — on top of, not instead of,
+   * whatever the validation result requires.
+   */
+  readonly omittedBlocks?: readonly OmittedBlock[] | undefined;
   readonly onConfirm: () => void;
   readonly onCancel: () => void;
 }
 
 export function ExportConfirmDialog({
   result,
+  omittedBlocks = [],
   onConfirm,
   onCancel,
 }: ExportConfirmDialogProps): JSX.Element {
   const hasErrors = result.errors.length > 0;
+  const hasIssues = hasErrors || result.warnings.length > 0;
+  const hasOmissions = omittedBlocks.length > 0;
   // ADR 0016's rule is "blocking-on-confirmation, never hard-block", and it
   // still governs every ordinary error. ADR 0048 carves out one narrow
   // exception: public content that cannot be produced correctly at all — today,
@@ -54,7 +65,9 @@ export function ExportConfirmDialog({
   // editable project archive is deliberately unaffected.
   const blocked = hasBlockingIssues(result);
   const [phrase, setPhrase] = useState<string>("");
-  const confirmEnabled = blocked ? false : hasErrors ? phrase === CONFIRM_PHRASE : true;
+  const [omissionsAcknowledged, setOmissionsAcknowledged] = useState<boolean>(false);
+  const issueGate = blocked ? false : hasErrors ? phrase === CONFIRM_PHRASE : true;
+  const confirmEnabled = issueGate && (!hasOmissions || omissionsAcknowledged);
 
   const headingId = "export-confirm-heading";
   const descId = "export-confirm-description";
@@ -74,19 +87,30 @@ export function ExportConfirmDialog({
             ? "Fix these before downloading the website"
             : hasErrors
               ? "Some things need fixing first"
-              : "Download with warnings?"}
+              : hasIssues
+                ? "Download with warnings?"
+                : "Some blocks will be left out"}
         </h2>
         <p id={descId}>
           {blocked
             ? `${count(result.errors.length, "problem")} must be fixed before the website can be built. Your project is still saved — only the website download is affected.`
             : hasErrors
               ? `${count(result.errors.length, "problem")} and ${count(result.warnings.length, "warning")} were found. Fixing them first is best, but you can still download a copy.`
-              : `${count(result.warnings.length, "warning")} found. These won't break your site, but fixing them will make it better.`}
+              : hasIssues
+                ? `${count(result.warnings.length, "warning")} found. These won't break your site, but fixing them will make it better.`
+                : `${count(omittedBlocks.length, "block")} will not appear on the website because this Theme has no design for ${omittedBlocks.length === 1 ? "it" : "them"}. Your content is kept — switch Theme to show ${omittedBlocks.length === 1 ? "it" : "them"} again.`}
         </p>
 
         {hasErrors ? <IssueList severity="error" issues={result.errors} /> : null}
         {result.warnings.length > 0 ? (
           <IssueList severity="warning" issues={result.warnings} />
+        ) : null}
+        {hasOmissions ? (
+          <OmittedBlockList
+            omitted={omittedBlocks}
+            acknowledged={omissionsAcknowledged}
+            onAcknowledge={setOmissionsAcknowledged}
+          />
         ) : null}
 
         {hasErrors && !blocked ? (
@@ -130,6 +154,57 @@ export function ExportConfirmDialog({
 
 function count(n: number, noun: string): string {
   return `${n} ${noun}${n === 1 ? "" : "s"}`;
+}
+
+interface OmittedBlockListProps {
+  readonly omitted: readonly OmittedBlock[];
+  readonly acknowledged: boolean;
+  readonly onAcknowledge: (value: boolean) => void;
+}
+
+/**
+ * The ADR 0045 acknowledgement.
+ *
+ * Omission is not an error: the Site is publishable and nothing is lost, so
+ * there is no typed phrase. But it is not a warning either — a warning can be
+ * clicked past without reading, and the whole point of the rule is that the
+ * author knows, before the download, which parts of their Site the visitors
+ * will not see. A checkbox is the smallest control that cannot be passed by
+ * accident.
+ */
+function OmittedBlockList({
+  omitted,
+  acknowledged,
+  onAcknowledge,
+}: OmittedBlockListProps): JSX.Element {
+  return (
+    <div data-issues-group="omitted" data-testid="export-omitted-blocks">
+      <h3>Left out of the website ({omitted.length})</h3>
+      <ul>
+        {omitted.map((entry) => (
+          <li key={`${entry.document.kind}-${entry.document.id}-${entry.blockId}`}>
+            <span data-omitted-block data-block-type={entry.blockType} data-block-id={entry.blockId}>
+              <span data-issue-message>
+                {entry.document.kind === "article" ? "Article" : "Page"} “{entry.document.title}”:
+                the {entry.blockType} block has no design in this Theme.
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+      <label data-testid="export-omitted-ack-label">
+        <input
+          type="checkbox"
+          data-testid="export-omitted-ack"
+          checked={acknowledged}
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+            onAcknowledge(event.currentTarget.checked)
+          }
+        />{" "}
+        I understand these blocks will not appear on the downloaded website.
+      </label>
+    </div>
+  );
 }
 
 interface IssueListProps {

@@ -108,6 +108,21 @@ describe("what a design can reach", () => {
     }
   });
 
+  test("helpers that can answer null do answer null, not the string \"null\"", () => {
+    const module = design(
+      `export default { blocks: { probe: (i) => ["p", { "data-m": String(i.mediaUrl(undefined)), "data-p": String(i.pageUrl("x")), "data-a": String(i.articleUrl("y")) }, String(i.mediaUrl("assets/a.jpg"))] } }`,
+    );
+    try {
+      expect(module.renderBlock("probe", {}, helpers)).toEqual([
+        "p",
+        { "data-m": "null", "data-p": "/x", "data-a": "/articles/y" },
+        "assets/a.jpg",
+      ]);
+    } finally {
+      module.dispose();
+    }
+  });
+
   test("a host helper is the only way out, and it is a plain string", () => {
     const module = design(
       `export default { blocks: { probe: (i) => ["img", { src: i.asset("a.svg") }] } }`,
@@ -158,6 +173,80 @@ describe("failure is loud and attributable", () => {
       module.dispose();
     }
   }, 30_000);
+
+  test("an allocation that never stops hits the heap ceiling, loudly", () => {
+    // Each iteration keeps ~1 KB alive, so the 48 MB ceiling arrives long
+    // before the instruction budget would — this is the memory failure, not
+    // the loop failure, and the author is told which. Small allocations on
+    // purpose: the ceiling is checked every ten thousand operations, and a
+    // test that overshoots by hundreds of megabytes is a test that gets the
+    // runner killed on a small machine.
+    const module = design(
+      `export default { blocks: { probe: () => { const keep = []; for (;;) keep.push(new Array(64).fill("x")); } } }`,
+    );
+    try {
+      try {
+        module.renderBlock("probe", {}, helpers);
+        throw new Error("expected the heap ceiling to be hit");
+      } catch (error) {
+        expect(error).toBeInstanceOf(ThemeRenderError);
+        expect((error as ThemeRenderError).code).toBe("memory");
+        expect((error as ThemeRenderError).message).toMatch(/memory limit/);
+      }
+    } finally {
+      module.dispose();
+    }
+  }, 60_000);
+
+  test("one oversized allocation is refused by the engine itself", () => {
+    const module = design(
+      `export default { blocks: { probe: () => { const big = new Uint8Array(256 * 1024 * 1024); return ["p", null, String(big.length)]; } } }`,
+    );
+    try {
+      try {
+        module.renderBlock("probe", {}, helpers);
+        throw new Error("expected the allocation to be refused");
+      } catch (error) {
+        expect(error).toBeInstanceOf(ThemeRenderError);
+        expect((error as ThemeRenderError).code).toBe("memory");
+      }
+    } finally {
+      module.dispose();
+    }
+  });
+
+  test("unbounded recursion is an error in the design's realm, not a crash", () => {
+    const module = design(
+      `export default { blocks: { probe: () => { const f = (n) => f(n + 1) + 1; return f(0); } } }`,
+    );
+    try {
+      try {
+        module.renderBlock("probe", {}, helpers);
+        throw new Error("expected a stack overflow");
+      } catch (error) {
+        expect(error).toBeInstanceOf(ThemeRenderError);
+        expect((error as ThemeRenderError).code).toBe("threw");
+        expect((error as ThemeRenderError).message).toMatch(/stack overflow/i);
+      }
+    } finally {
+      module.dispose();
+    }
+  });
+
+  test("the realm survives its own failures: the next call renders normally", () => {
+    const module = design(`export default {
+      blocks: {
+        hungry: () => { const keep = []; for (;;) keep.push(new Array(64).fill("x")); },
+        fine: () => ["p", null, "still here"],
+      },
+    }`);
+    try {
+      expect(() => module.renderBlock("hungry", {}, helpers)).toThrow(ThemeRenderError);
+      expect(module.renderBlock("fine", {}, helpers)).toEqual(["p", null, "still here"]);
+    } finally {
+      module.dispose();
+    }
+  }, 60_000);
 
   test("the budget is per call, so one runaway Block does not poison the next", () => {
     const module = design(`export default {

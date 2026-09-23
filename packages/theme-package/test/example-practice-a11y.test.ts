@@ -21,14 +21,16 @@ import axe from "axe-core";
 import { describe, expect, test } from "vitest";
 import { renderSite } from "@sosb/renderer";
 import type { Site } from "@sosb/schema";
-import { loadThemePackageFromDirectory } from "../src/node.js";
+import { loadThemePackageFromDirectoryAsync } from "../src/node.js";
 
 const EXAMPLE_DIR = fileURLToPath(new URL("../../../examples/themes/practice", import.meta.url));
 const HISTORIPOL_DATA = fileURLToPath(
   new URL("../../themes/src/templates/asociatia-studenteasca-demo/data.json", import.meta.url),
 );
 
-const { bundle } = loadThemePackageFromDirectory(EXAMPLE_DIR);
+// Top-level await: the example ships a `render.js`, so the sandbox engine has
+// to be up before the package can be loaded (ADR 0053).
+const { bundle } = await loadThemePackageFromDirectoryAsync(EXAMPLE_DIR);
 
 function practiceSite(): Site {
   const site = JSON.parse(readFileSync(HISTORIPOL_DATA, "utf8")) as Site;

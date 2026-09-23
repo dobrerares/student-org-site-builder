@@ -43,11 +43,23 @@ import type { ThemeRenderHelpers, ThemeRenderModule } from "@sosb/renderer";
 import { ThemeRenderError } from "@sosb/renderer";
 
 /**
- * Per-Theme heap ceiling.
+ * Per-call heap ceiling.
  *
  * Generous for a design that builds element trees, and small enough that a
  * Theme which tries to allocate its way through the editor's memory fails
  * loudly in its own realm instead of taking the tab down with it.
+ *
+ * Enforced twice over, because QuickJS alone cannot do it under Emscripten.
+ * `runtime.setMemoryLimit` refuses any *single* allocation larger than the
+ * ceiling, but its running total only counts allocations, not bytes — the
+ * platform's `malloc_usable_size` is stubbed to zero — so a loop of small
+ * allocations would sail past it until the WebAssembly heap itself gave out
+ * at 2 GB (measured). The interrupt handler therefore also watches the wasm
+ * heap: a call that grows it by more than this ceiling is stopped and
+ * reported as a `memory` failure. The check runs every ten thousand
+ * operations, so a runaway can overshoot by a few tens of megabytes before
+ * it is caught; that is the price of an engine whose accounting is coarse,
+ * and it is a long way from taking the tab down.
  */
 const MEMORY_LIMIT_BYTES = 48 * 1024 * 1024;
 
@@ -57,12 +69,15 @@ const STACK_SIZE_BYTES = 1024 * 1024;
 /**
  * Interrupt-handler invocations one design call may spend.
  *
- * QuickJS polls the handler every few thousand bytecode operations, so this is
- * an instruction budget with a fuzzy unit — deterministic for a given QuickJS
- * build, which is the property that matters, and orders of magnitude more than
- * building a page's worth of element trees needs.
+ * QuickJS polls the handler once every ten thousand loop iterations or
+ * function calls, so this is an instruction budget with a coarse unit — about
+ * twenty million steps per call. Deterministic for a given QuickJS build,
+ * which is the property that matters (a wall-clock limit would make "does
+ * this Theme render?" depend on how busy the machine is), and three orders of
+ * magnitude more than the example Theme's page shell uses. A `while (true)`
+ * trips it in well under a second on a small laptop.
  */
-const CALL_BUDGET = 250_000;
+const CALL_BUDGET = 2_000;
 
 /** Bytes of `render.js` we will accept. A design is code, not a payload. */
 export const RENDER_MODULE_MAX_BYTES = 512 * 1024;
@@ -92,12 +107,17 @@ const GUEST_BOOTSTRAP = `
 
   var design = null;
 
+  // Every host function takes one string and returns one string. Helpers
+  // that can answer null (a missing image, an unknown Page) send their answer
+  // back as JSON so that null survives the trip; the rest return plain text.
   function attach(input) {
     input.asset = function (p) { return __sosb_asset(String(p)); };
-    input.mediaUrl = function (r) { return __sosb_mediaUrl(JSON.stringify(r === undefined ? null : r)); };
+    input.mediaUrl = function (r) {
+      return JSON.parse(__sosb_mediaUrl(JSON.stringify(r === undefined ? null : r)));
+    };
     input.mediaAlt = function (r) { return __sosb_mediaAlt(JSON.stringify(r === undefined ? null : r)); };
-    input.pageUrl = function (id) { return __sosb_pageUrl(String(id)); };
-    input.articleUrl = function (id) { return __sosb_articleUrl(String(id)); };
+    input.pageUrl = function (id) { return JSON.parse(__sosb_pageUrl(String(id))); };
+    input.articleUrl = function (id) { return JSON.parse(__sosb_articleUrl(String(id))); };
     input.richText = function (doc) {
       return JSON.parse(__sosb_richText(JSON.stringify(doc === undefined ? null : doc)));
     };
@@ -197,6 +217,7 @@ function guestError(
   subject: string,
   blockType: string | undefined,
   exhausted: boolean,
+  heapExceeded = false,
 ): ThemeRenderError {
   let detail: string;
   try {
@@ -219,6 +240,21 @@ function guestError(
       subject,
       blockType,
       detail: `the design ran past its instruction budget (${CALL_BUDGET}). A loop is probably not terminating.`,
+    });
+  }
+  // A breached heap ceiling arrives two ways: the interrupt handler's growth
+  // check, or QuickJS's own `InternalError: out of memory` for one oversized
+  // allocation. (An unbounded recursion is `InternalError: stack overflow`
+  // and stays a plain throw — the message already says what happened.) Both
+  // are resource exhaustion rather than a bug in the design's *logic*, and
+  // the author needs to hear that distinction.
+  if (heapExceeded || /\bout of memory\b/i.test(detail)) {
+    return new ThemeRenderError({
+      code: "memory",
+      themeId,
+      subject,
+      blockType,
+      detail: `the design ran past its ${Math.round(MEMORY_LIMIT_BYTES / (1024 * 1024))} MB memory limit. Something is allocating without bound.`,
     });
   }
   return new ThemeRenderError({ code: "threw", themeId, subject, blockType, detail });
@@ -245,9 +281,17 @@ export function compileThemeRenderModule(themeId: string, source: string): Theme
     throw new Error("render.js may not import other modules; a Theme package ships one design file.");
   });
 
+  const heap = wasmModule.getWasmMemory();
+  const heapBytes = (): number => heap.buffer.byteLength;
   let budget = CALL_BUDGET;
   let exhausted = false;
+  let heapAtStart = heapBytes();
+  let heapExceeded = false;
   runtime.setInterruptHandler(() => {
+    if (heapBytes() - heapAtStart > MEMORY_LIMIT_BYTES) {
+      heapExceeded = true;
+      return true;
+    }
     if (--budget > 0) return false;
     exhausted = true;
     return true;
@@ -346,6 +390,8 @@ export function compileThemeRenderModule(themeId: string, source: string): Theme
     }
     budget = CALL_BUDGET;
     exhausted = false;
+    heapAtStart = heapBytes();
+    heapExceeded = false;
     active = helpers;
     const argHandles: QuickJSHandle[] = [];
     try {
@@ -355,7 +401,7 @@ export function compileThemeRenderModule(themeId: string, source: string): Theme
       const result = context.callFunction(fn, api!, ...argHandles);
       fn.dispose();
       if (result.error !== undefined) {
-        throw guestError(context, result.error, themeId, subject, blockType, exhausted);
+        throw guestError(context, result.error, themeId, subject, blockType, exhausted, heapExceeded);
       }
       const json = context.getString(result.value);
       result.value.dispose();

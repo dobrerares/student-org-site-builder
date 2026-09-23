@@ -20,6 +20,7 @@ export type { ThemePackageErrorCode } from "./errors.js";
 export {
   THEME_FORMAT_VERSION,
   THEME_ID_RE,
+  THEME_NETWORK_HOST_RE,
   THEME_PATH_RE,
   THEME_VERSION_RE,
   ThemeManifestSchema,

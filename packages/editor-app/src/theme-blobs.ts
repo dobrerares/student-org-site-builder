@@ -36,6 +36,9 @@ function mimeFor(path: string): string {
   if (path.endsWith(".jpg") || path.endsWith(".jpeg")) return "image/jpeg";
   if (path.endsWith(".webp")) return "image/webp";
   if (path.endsWith(".avif")) return "image/avif";
+  // The Theme's public-site script, for the interactive preview: a browser
+  // refuses to execute a `<script src>` served as an octet stream.
+  if (path.endsWith(".js") || path.endsWith(".mjs")) return "text/javascript";
   return "application/octet-stream";
 }
 

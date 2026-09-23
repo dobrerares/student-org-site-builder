@@ -92,10 +92,16 @@ export async function exportToZip(siteData: unknown, vfs: Vfs): Promise<Blob> {
   // Theme packages are resolved from the VFS we were handed, not from editor
   // state: the archive and the built site must agree about which Theme this
   // is, and the VFS is the thing being archived.
-  const dist = build(siteData as Site, {
-    skipValidation: true,
-    themes: await installedThemeBundles(vfs),
-  });
+  const themes = await installedThemeBundles(vfs);
+  let dist: ReturnType<typeof build>;
+  try {
+    dist = build(siteData as Site, { skipValidation: true, themes });
+  } finally {
+    // Each loaded package compiled its `render.js` into a sandbox realm of
+    // its own; the export is the only thing that will ever render through
+    // these bundles, so release them here (ADR 0053).
+    for (const bundle of themes) bundle.render?.dispose();
+  }
   for (const [path, value] of dist) {
     // The dist Map carries text artefacts (HTML/XML/JSON) as `string` and
     // binary artefacts (self-hosted woff2 fonts at `dist/assets/fonts/...`) as

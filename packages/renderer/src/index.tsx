@@ -440,8 +440,18 @@ export type {
   ThemeRenderModule,
   TreeContext,
 } from "./theme-render.js";
-export { themeDesignsBlockType } from "./theme-design.js";
-export type { OmittedBlock, RenderedDocumentRef, ThemeRenderIssue } from "./theme-design.js";
+export {
+  THEME_COPY_KEYS,
+  blockHasDesign,
+  omittedBlocksFor,
+  themeDesignsBlockType,
+} from "./theme-design.js";
+export type {
+  OmittedBlock,
+  RenderedDocumentRef,
+  ShellCopyKey,
+  ThemeRenderIssue,
+} from "./theme-design.js";
 export { activeBlockVariant, themeReferenceIssue } from "./theme-reference.js";
 export type { ThemeReferenceIssue } from "./theme-reference.js";
 

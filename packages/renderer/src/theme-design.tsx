@@ -30,8 +30,9 @@
  */
 
 import type { BlockEnvelope, Site } from "@sosb/schema";
+import { isKnownBlockType } from "@sosb/schema";
 import { markdownToHtml } from "@sosb/markdown";
-import { articleCopy, type ArticleCopyKey } from "./article-text.js";
+import { articleCopy, languageFamily, type ArticleCopyKey } from "./article-text.js";
 import { assetRefAlt, assetRefPath } from "./asset-ref-path.js";
 import type { AssetUrlForPath } from "./asset-url.js";
 import { resolveAssetUrl } from "./asset-url.js";
@@ -95,6 +96,61 @@ export function themeDesignsBlockType(bundle: ThemeBundle, blockType: string): b
 }
 
 /**
+ * Will this Block appear in the output at all?
+ *
+ * A built-in type always has a component; anything else needs a design from
+ * the active Theme. This is the one predicate behind ADR 0045's omission rule
+ * — the page shell consults it while rendering, and `omittedBlocksFor` consults
+ * it before an export — so the editor's pre-flight list and what `build()`
+ * actually drops cannot disagree.
+ *
+ * A built-in component that renders *nothing* for empty data (a site footer
+ * with no contact details) is not an omission: the Block has a design, the
+ * design chose to be silent.
+ */
+export function blockHasDesign(bundle: ThemeBundle | undefined, blockType: string): boolean {
+  if (isKnownBlockType(blockType)) return true;
+  return bundle !== undefined && themeDesignsBlockType(bundle, blockType);
+}
+
+/**
+ * Every Block the public Site would omit for want of a design, in output
+ * order: Pages first, then non-Draft Articles (Drafts are not published, so
+ * their Blocks cannot be omitted from anything).
+ *
+ * Computed statically rather than by rendering, so the editor can ask before
+ * it builds. `build()` reports the same Blocks through `onOmittedBlock` from
+ * the real render, which is the ground truth; a test holds the two together.
+ */
+export function omittedBlocksFor(site: Site, bundle: ThemeBundle | undefined): OmittedBlock[] {
+  const omitted: OmittedBlock[] = [];
+  const collect = (blocks: readonly BlockEnvelope[], document: RenderedDocumentRef): void => {
+    for (const block of blocks) {
+      if (blockHasDesign(bundle, block.type)) continue;
+      omitted.push({ document, blockId: block.id, blockType: block.type });
+    }
+  };
+  for (const page of site.pages) {
+    collect(page.blocks, {
+      kind: "page",
+      id: `${page.lang}:${page.slug}`,
+      title: page.seo?.title !== undefined && page.seo.title.length > 0 ? page.seo.title : page.navLabel,
+      lang: page.lang,
+    });
+  }
+  for (const article of site.articles ?? []) {
+    if (article.state === "draft") continue;
+    collect(article.blocks, {
+      kind: "article",
+      id: article.id,
+      title: article.title,
+      lang: article.lang,
+    });
+  }
+  return omitted;
+}
+
+/**
  * Per-call helper state.
  *
  * `trusted` collects every URL the builder itself produced during this call.
@@ -110,6 +166,11 @@ class HelperScope {
   private trust(url: string): string {
     this.trusted.add(url);
     return url;
+  }
+
+  /** Mark a builder-produced URL as acceptable in this call's tree. */
+  trustUrl(url: string): void {
+    this.trusted.add(url);
   }
 
   helpers(): ThemeRenderHelpers {
@@ -167,9 +228,54 @@ function renderRichText(doc: unknown): preact.JSX.Element {
   return <div class="rich-text" dangerouslySetInnerHTML={{ __html: markdownToHtml(source) }} />;
 }
 
+/**
+ * The page-shell copy a Theme design may ask `t()` for.
+ *
+ * A Theme's header needs a handful of visitor-facing words — "Menu" on a
+ * navigation toggle, "Since" beside a founding year — and the Theme must not
+ * hard-code them in one language, because the same Theme renders a Romanian
+ * Page and its English counterpart. These follow the page language by the same
+ * family rule as the Article copy. Deliberately small: a Theme that needs a
+ * sentence has content, and content belongs in a Block (ADR 0046).
+ */
+const SHELL_COPY = {
+  ro: {
+    navigation: "Navigația site-ului",
+    menu: "Meniu",
+    close: "Închide",
+    home: "Acasă",
+    since: "Din",
+    skipToContent: "Sari la conținut",
+  },
+  en: {
+    navigation: "Site navigation",
+    menu: "Menu",
+    close: "Close",
+    home: "Home",
+    since: "Since",
+    skipToContent: "Skip to content",
+  },
+} as const;
+
+export type ShellCopyKey = keyof (typeof SHELL_COPY)["en"];
+
+/** Every key `t()` answers, for the documentation and its test. */
+export const THEME_COPY_KEYS: readonly string[] = [
+  ...(Object.keys(SHELL_COPY.en) as ShellCopyKey[]),
+  "emptyList",
+  "relatedTitle",
+  "tagsLabel",
+  "languageLabel",
+  "publishedOn",
+  "movedHeading",
+  "movedLink",
+];
+
 /** Renderer-owned visitor copy. Unknown keys return the key, never `undefined`. */
 function renderCopy(lang: string, key: string): string {
-  const known: readonly ArticleCopyKey[] = [
+  const shell = SHELL_COPY[languageFamily(lang)];
+  if (Object.hasOwn(shell, key)) return shell[key as ShellCopyKey];
+  const article: readonly ArticleCopyKey[] = [
     "emptyList",
     "relatedTitle",
     "tagsLabel",
@@ -178,7 +284,7 @@ function renderCopy(lang: string, key: string): string {
     "movedHeading",
     "movedLink",
   ];
-  return known.includes(key as ArticleCopyKey) ? articleCopy(lang, key as ArticleCopyKey) : key;
+  return article.includes(key as ArticleCopyKey) ? articleCopy(lang, key as ArticleCopyKey) : key;
 }
 
 // ---------------------------------------------------------------------------
@@ -242,6 +348,8 @@ function blockInput(
 export interface ShellInputParts {
   readonly title: string;
   readonly description: string | undefined;
+  /** The builder-computed href of this language's home Page, for the brand link. */
+  readonly homeHref: string;
   readonly nav: readonly {
     readonly id: string;
     readonly label: string;
@@ -308,7 +416,7 @@ function asRenderError(
 function ThemeErrorBox(props: { message: string }): preact.JSX.Element {
   return (
     <div
-      data-sosb-theme-error
+      {...{ "data-sosb-theme-error": "" }}
       role="alert"
       style="margin:1rem;padding:1rem;border:2px solid #b3261e;border-radius:4px;background:#fff;color:#410e0b;font:14px/1.5 system-ui,sans-serif"
     >
@@ -371,11 +479,15 @@ export function renderDesignedShell(
       title: parts.title,
       description: parts.description ?? null,
       document: { ...ctx.docRef },
+      homeHref: parts.homeHref,
       nav: parts.nav.map((entry) => ({ ...entry })),
       languages: parts.languages.map((entry) => ({ ...entry })),
       org: orgInput(ctx.site),
       theme: themeInput(ctx, parts.shellVariant),
     };
+    // The home href is builder-computed, exactly like a `pageUrl()` result, so
+    // it passes the tree's URL check by identity rather than by pattern.
+    scope.trustUrl(parts.homeHref);
     const tree = module.renderShell(input, scope.helpers());
     return {
       body: shellTreeToVNode(tree, { ...scope.treeContext("shell"), slotContent }),

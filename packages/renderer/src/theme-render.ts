@@ -52,6 +52,8 @@ export type ThemeRenderErrorCode =
   | "threw"
   /** The module exceeded its instruction budget — a runaway loop. */
   | "timeout"
+  /** The module exceeded its heap ceiling — an allocation that never stops. */
+  | "memory"
   /** The module returned something that is not a valid `ElementTree`. */
   | "invalid-tree"
   /** A shell tree with zero or several content slots. */

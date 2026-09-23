@@ -48,6 +48,7 @@ import {
   articleHreflangEntriesFor,
   articleLanguageSwitcherEntriesFor,
   articlePath,
+  homePagePathForLanguage,
   hreflangEntriesFor,
   languageHomeIndex,
   languageSwitcherEntriesFor,
@@ -64,6 +65,7 @@ import { themeAssetPrefix } from "./theme-bundle.js";
 import { activeBlockVariant } from "./theme-reference.js";
 import type { DesignContext, ShellInputParts, ThemeRenderIssue } from "./theme-design.js";
 import {
+  blockHasDesign,
   renderDesignedBlock,
   renderDesignedShell,
   themeDesignsBlockType,
@@ -196,7 +198,10 @@ function renderBlock(block: BlockEnvelope, ctx: BlockRenderContext): preact.JSX.
   // the same mechanism as supplying a design for `org.example/partners`, not a
   // second one that could behave differently.
   if (ctx.design !== undefined && ctx.theme !== undefined && themeDesignsBlockType(ctx.theme, block.type)) {
-    return renderDesignedBlock(block, ctx.design, variant, ctx.shellVariant);
+    // A design that returns null has rendered nothing on purpose. An empty
+    // fragment keeps that distinct from "no component at all", which is the
+    // only case the unknown-block marker below is for.
+    return renderDesignedBlock(block, ctx.design, variant, ctx.shellVariant) ?? <></>;
   }
   if (!isKnownBlockType(block.type)) return null;
   if (block.type === "articleList") {
@@ -362,9 +367,13 @@ function renderBlocks(
         // No built-in component and no Theme design: the Block is *omitted*
         // (ADR 0045) and reported, so the editor can require the author to
         // acknowledge the omission before export rather than let them discover
-        // it on the published Site. The comment below is the pre-existing
-        // marker and stays, so the built-in golden files are untouched.
-        if (ctx.design !== undefined) {
+        // it on the published Site. Only an unknown type reaches this branch —
+        // a built-in component is a vnode even when it renders nothing — and
+        // `blockHasDesign` is the same predicate `omittedBlocksFor` uses, so
+        // the pre-flight list and the render report cannot disagree. The
+        // comment below is the pre-existing marker and stays, so the built-in
+        // golden files are untouched.
+        if (ctx.design !== undefined && !blockHasDesign(ctx.theme, block.type)) {
           ctx.design.onIssue?.({
             kind: "omitted-block",
             omitted: {
@@ -870,6 +879,7 @@ function DocumentShell(props: {
   const shellParts: ShellInputParts = {
     title,
     description,
+    homeHref: homePagePathForLanguage(site, target.lang),
     nav: navPages.map((entry) => {
       const href = pagePath(site, entry);
       return {
@@ -981,7 +991,9 @@ function DocumentShell(props: {
          * JavaScript runs, and a deferred external file cannot block the
          * parse. It is emitted after the builder's own enhancements so a
          * Theme script observes the finished markup. */}
-        {publicScriptSrc !== undefined && <script defer src={publicScriptSrc} data-sosb-theme-script />}
+        {publicScriptSrc !== undefined && (
+          <script defer src={publicScriptSrc} {...{ "data-sosb-theme-script": "" }} />
+        )}
         {isPreviewMode && (
           <script
             {...{ [PREVIEW_NAV_SCRIPT_MARKER]: "" }}

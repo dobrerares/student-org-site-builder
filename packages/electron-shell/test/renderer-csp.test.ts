@@ -37,7 +37,20 @@ describe("renderer CSP", () => {
   test("keeps scripts same-origin and never allows eval", () => {
     const csp = cspContent();
     expect(csp).toContain("script-src 'self'");
-    expect(csp).not.toContain("unsafe-eval");
+    // `'wasm-unsafe-eval'` (below) is a different, narrower permission: it
+    // allows WebAssembly compilation and nothing about JavaScript `eval`.
+    expect(csp).not.toMatch(/(?<!wasm-)unsafe-eval/);
+  });
+
+  test("allows WebAssembly compilation — the Theme sandbox is QuickJS in wasm", () => {
+    // A Theme package's `render.js` runs inside QuickJS compiled to
+    // WebAssembly (ADR 0053), instantiated from bytes embedded in the bundle.
+    // Chromium refuses `WebAssembly.instantiate` under a bare `script-src
+    // 'self'`; `'wasm-unsafe-eval'` is the keyword that permits exactly that
+    // and leaves JavaScript `eval` forbidden. Without it every Theme with a
+    // `render.js` failed to import in the packaged app while working in the
+    // browser build — the kind of environment split ADR 0046 rules out.
+    expect(cspContent()).toMatch(/script-src [^;]*'wasm-unsafe-eval'/);
   });
 
   test("allows the data:/blob: image sources the builder uses offline", () => {

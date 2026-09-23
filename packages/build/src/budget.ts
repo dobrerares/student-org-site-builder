@@ -175,6 +175,11 @@ function measurePage(
     dist,
     html,
     /<script[^>]+src=["']([^"']+\.js)["'][^>]*>/gi,
+    // A Theme package's public-site script is exempt. ADR 0046 lets a custom
+    // extension bundle a framework and exceed the 10 KB budget, provided it
+    // documents its size and dependencies — which the manifest enforces. The
+    // budget keeps policing the *builder's* own scripts on every page.
+    isThemePackageAsset,
   );
   const jsBytes = utf8ByteLength(inlineJs + linkedJs);
 
@@ -326,6 +331,7 @@ function extractLinkedAssets(
   dist: ReadonlyMap<string, string | Uint8Array>,
   html: string,
   pattern: RegExp,
+  exempt?: (distPath: string) => boolean,
 ): string {
   const parts: string[] = [];
   let m: RegExpExecArray | null;
@@ -334,13 +340,22 @@ function extractLinkedAssets(
     const ref = m[1];
     if (ref === undefined) continue;
     if (/^https?:\/\//i.test(ref) || ref.startsWith("//")) continue;
-    const lookup = ref.startsWith("/") ? ref.slice(1) : ref;
+    // Nested pages reach shared assets through `../` hops (see
+    // `assetPrefixForDistPath`); strip them so the lookup is the dist key.
+    const rooted = ref.replace(/^(?:\.\.\/)+/, "");
+    const lookup = rooted.startsWith("/") ? rooted.slice(1) : rooted;
+    if (exempt?.(lookup) === true) continue;
     const body = dist.get(lookup);
     // `.css`/`.js` artefacts are text; a non-string here would be a misnamed
     // binary entry, which the CSS/JS budgets deliberately ignore.
     if (typeof body === "string") parts.push(body);
   }
   return parts.join("\n");
+}
+
+/** Is this dist path one a Theme package contributed (`assets/theme/<id>/…`)? */
+function isThemePackageAsset(distPath: string): boolean {
+  return distPath.startsWith("assets/theme/");
 }
 
 /**

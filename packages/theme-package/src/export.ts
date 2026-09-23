@@ -70,8 +70,14 @@ export async function exportInstalledThemePackage(
     files.set(path.slice(prefix.length), await vfs.read(path));
   }
   const loaded = loadThemePackage(files);
-  return {
-    bytes: exportThemePackage(loaded),
-    filename: themePackageFilename(loaded.bundle.id, loaded.bundle.version),
-  };
+  try {
+    return {
+      bytes: exportThemePackage(loaded),
+      filename: themePackageFilename(loaded.bundle.id, loaded.bundle.version),
+    };
+  } finally {
+    // Re-loading compiled the package's `render.js` into its own sandbox
+    // realm, which nothing will render through: release it (ADR 0053).
+    loaded.bundle.render?.dispose();
+  }
 }
