@@ -36,6 +36,7 @@ import { missingTranslationLanguages } from "./pages-ops.js";
 import { IconArrowDown, IconArrowUp, IconCopy, IconPlus, IconTrash } from "./icons.js";
 import type * as React from "react";
 import { Button, Input } from "@sosb/ui";
+import { useTranslator } from "./i18n-context.js";
 
 export interface PagesListProps {
   readonly site: Site;
@@ -50,6 +51,18 @@ export interface PagesListProps {
    * language. Optional so monolingual editors don't have to wire it up.
    */
   readonly onAddLanguageVersion?: (index: number, targetLang: string) => void;
+  /**
+   * Free-text filter over menu label and slug (issue #102's Pages
+   * destination). Non-matching rows are omitted from the render, but every
+   * row keeps the index of its page in `site.pages` — the select, move,
+   * clone and delete callbacks all address pages by that index, so filtering
+   * the array instead would silently operate on the wrong page.
+   */
+  readonly query?: string;
+  /** Hide the inline "add a page" form — the destination has its own. */
+  readonly hideAddForm?: boolean;
+  /** Hide the section's own heading — the Pages destination supplies one. */
+  readonly hideHeader?: boolean;
 }
 
 /**
@@ -68,6 +81,7 @@ function slugify(raw: string): string {
 export function PagesList(props: PagesListProps): JSX.Element {
   const { site, activeIndex, onSelect, onAdd, onClone, onDelete, onMove, onAddLanguageVersion } =
     props;
+  const t = useTranslator();
   const [newSlug, setNewSlug] = useState("");
   const [addError, setAddError] = useState<string | null>(null);
   const [confirmIndex, setConfirmIndex] = useState<number | null>(null);
@@ -86,7 +100,7 @@ export function PagesList(props: PagesListProps): JSX.Element {
     const lang = site.defaultLanguage;
     const taken = site.pages.some((p) => p.lang === lang && p.slug === trimmed);
     if (taken) {
-      setAddError(`A page with the link "${trimmed}" already exists in ${lang}.`);
+      setAddError(t("pages.add.error.taken", { slug: trimmed, lang }));
       return;
     }
     setAddError(null);
@@ -119,6 +133,13 @@ export function PagesList(props: PagesListProps): JSX.Element {
 
   const isMultiLanguage = site.languages.length >= 2;
 
+  const needle = (props.query ?? "").trim().toLowerCase();
+  function matchesQuery(page: Page): boolean {
+    if (needle === "") return true;
+    return page.navLabel.toLowerCase().includes(needle) || page.slug.toLowerCase().includes(needle);
+  }
+  const anyMatch = site.pages.some(matchesQuery);
+
   function renderRow(page: Page, idx: number): JSX.Element {
     const isActive = idx === activeIndex;
     const canDelete = site.pages.length > 1;
@@ -136,56 +157,70 @@ export function PagesList(props: PagesListProps): JSX.Element {
       >
         <Button
           type="button"
+          variant="ghost"
+          className="h-auto min-h-9 flex-col items-start justify-center gap-0 px-2 py-1 text-left whitespace-normal"
           data-action="select"
           data-index={idx}
-          title={isActive ? "You are editing this page" : "Edit this page"}
+          title={isActive ? t("pages.row.open.current") : t("pages.row.open")}
           onClick={() => onSelect(idx)}
         >
           <span data-field="navLabel">{page.navLabel}</span>
           <span data-page-meta>
             <span data-field="slug">/{page.slug}</span>
             {isMultiLanguage ? <span data-field="lang">{page.lang}</span> : null}
-            {!page.showInNav ? <span data-page-hidden>hidden from menu</span> : null}
+            {!page.showInNav ? <span data-page-hidden>{t("pages.meta.hidden")}</span> : null}
           </span>
         </Button>
-        <span data-row-actions role="group" aria-label={`Actions for ${page.navLabel}`}>
+        <span
+          data-row-actions
+          role="group"
+          aria-label={t("pages.row.actions", { label: page.navLabel })}
+        >
           <Button
             type="button"
+            variant="ghost"
+            size="icon-sm"
             data-action="move-up"
             data-icon-button
             data-index={idx}
             disabled={!canMoveUp}
             onClick={() => onMove(idx, "up")}
-            aria-label={`Move ${page.navLabel} up`}
-            title="Move up in the menu"
+            aria-label={t("pages.row.moveUp", { label: page.navLabel })}
+            title={t("pages.row.moveUp.title")}
           >
             <IconArrowUp size={15} />
           </Button>
           <Button
             type="button"
+            variant="ghost"
+            size="icon-sm"
             data-action="move-down"
             data-icon-button
             data-index={idx}
             disabled={!canMoveDown}
             onClick={() => onMove(idx, "down")}
-            aria-label={`Move ${page.navLabel} down`}
-            title="Move down in the menu"
+            aria-label={t("pages.row.moveDown", { label: page.navLabel })}
+            title={t("pages.row.moveDown.title")}
           >
             <IconArrowDown size={15} />
           </Button>
           <Button
             type="button"
+            variant="ghost"
+            size="icon-sm"
             data-action="clone"
             data-icon-button
             data-index={idx}
             onClick={() => attemptClone(idx)}
-            aria-label={`Duplicate ${page.navLabel}`}
-            title="Duplicate this page"
+            aria-label={t("pages.row.duplicate", { label: page.navLabel })}
+            title={t("pages.row.duplicate.title")}
           >
             <IconCopy size={15} />
           </Button>
           <Button
             type="button"
+            variant="ghost"
+            size={confirming ? "sm" : "icon-sm"}
             data-action="delete"
             data-icon-button={confirming ? undefined : true}
             data-tone="danger"
@@ -196,37 +231,47 @@ export function PagesList(props: PagesListProps): JSX.Element {
             onBlur={() => {
               if (confirming) setConfirmIndex(null);
             }}
-            aria-label={confirming ? `Confirm delete ${page.navLabel}` : `Delete ${page.navLabel}`}
+            aria-label={
+              confirming
+                ? t("pages.row.delete.confirm", { label: page.navLabel })
+                : t("pages.row.delete", { label: page.navLabel })
+            }
             title={
               canDelete
                 ? confirming
-                  ? "Click again to delete this page"
-                  : "Delete this page"
-                : "A site needs at least one page"
+                  ? t("pages.row.delete.confirm.title")
+                  : t("pages.row.delete.title")
+                : t("pages.row.delete.last")
             }
           >
             <IconTrash size={15} />
-            {confirming ? <span>Confirm delete</span> : null}
+            {confirming ? <span>{t("pages.row.delete.confirm.label")}</span> : null}
           </Button>
         </span>
         {missing.length > 0 && (
           <span data-testid="missing-translation-indicator" role="status">
-            Missing: {missing.map((lng) => nativeLanguageName(lng)).join(", ")}
+            {t("pages.row.missing", {
+              languages: missing.map((lng) => nativeLanguageName(lng)).join(", "),
+            })}
           </span>
         )}
         {missing.map((lng) => (
           <Button
             key={lng}
             type="button"
+            size="sm"
             data-action="add-language-version"
             data-index={idx}
             data-target-lang={lng}
             disabled={onAddLanguageVersion === undefined}
             onClick={() => onAddLanguageVersion?.(idx, lng)}
-            aria-label={`Add ${nativeLanguageName(lng)} version of ${page.navLabel}`}
+            aria-label={t("pages.row.addVersion.label", {
+              language: nativeLanguageName(lng),
+              title: page.navLabel,
+            })}
           >
             <IconPlus size={14} />
-            <span>Add {nativeLanguageName(lng)} version</span>
+            <span>{t("pages.row.addVersion", { language: nativeLanguageName(lng) })}</span>
           </Button>
         ))}
       </li>
@@ -234,26 +279,32 @@ export function PagesList(props: PagesListProps): JSX.Element {
   }
 
   return (
-    <section data-testid="pages-list" aria-label="Pages">
-      <header>
-        <div data-section-heading>
-          <h3>Pages</h3>
-          <p data-section-hint>Each page becomes an entry in your site menu.</p>
-        </div>
-      </header>
-      {isMultiLanguage ? (
+    <section data-testid="pages-list" aria-label={t("pages.title")}>
+      {props.hideHeader === true ? null : (
+        <header>
+          <div data-section-heading>
+            <h3>{t("pages.title")}</h3>
+            <p data-section-hint>{t("pages.info")}</p>
+          </div>
+        </header>
+      )}
+      {!anyMatch ? (
+        <p data-testid="pages-list-no-matches" data-empty-state>
+          {t("pages.empty.filtered")}
+        </p>
+      ) : isMultiLanguage ? (
         <div data-testid="pages-list-grouped">
           {site.languages.map((lang) => {
             const indexed = site.pages
               .map((page, idx) => ({ page, idx }))
-              .filter(({ page }) => page.lang === lang);
+              .filter(({ page }) => page.lang === lang && matchesQuery(page));
             if (indexed.length === 0) return null;
             return (
               <section
                 key={lang}
                 data-testid="pages-list-language-group"
                 data-lang={lang}
-                aria-label={`Pages in ${nativeLanguageName(lang)}`}
+                aria-label={t("pages.group.label", { language: nativeLanguageName(lang) })}
               >
                 <h4>{nativeLanguageName(lang)}</h4>
                 <ol data-testid="pages-list-items" data-lang={lang}>
@@ -265,44 +316,46 @@ export function PagesList(props: PagesListProps): JSX.Element {
         </div>
       ) : (
         <ol data-testid="pages-list-items">
-          {site.pages.map((page: Page, idx) => renderRow(page, idx))}
+          {site.pages.map((page: Page, idx) => (matchesQuery(page) ? renderRow(page, idx) : null))}
         </ol>
       )}
-      <form
-        data-testid="pages-list-add"
-        onSubmit={(event) => {
-          event.preventDefault();
-          attemptAdd();
-        }}
-      >
-        <label>
-          <span>Add a page</span>
-          <Input
-            type="text"
-            data-testid="pages-list-add-slug"
-            value={newSlug}
-            onInput={(event: React.FormEvent<HTMLInputElement>) => {
-              setNewSlug(event.currentTarget.value);
-              if (addError !== null) setAddError(null);
-            }}
-            placeholder="e.g. Events, About us, Contact"
-            autoComplete="off"
-          />
-        </label>
-        <Button type="submit" data-action="add" data-variant="primary">
-          Create page
-        </Button>
-        <p data-form-help>
-          {newSlug.trim().length > 0 && checkSlug(newSlug.trim()) !== null
-            ? `Link will be /${slugify(newSlug) || "…"}`
-            : "You can rename it or change its link later in Page settings."}
-        </p>
-        {addError !== null && (
-          <p data-testid="pages-list-add-error" role="alert">
-            {addError}
+      {props.hideAddForm === true ? null : (
+        <form
+          data-testid="pages-list-add"
+          onSubmit={(event) => {
+            event.preventDefault();
+            attemptAdd();
+          }}
+        >
+          <label>
+            <span>{t("pages.add.legend")}</span>
+            <Input
+              type="text"
+              data-testid="pages-list-add-slug"
+              value={newSlug}
+              onInput={(event: React.FormEvent<HTMLInputElement>) => {
+                setNewSlug(event.currentTarget.value);
+                if (addError !== null) setAddError(null);
+              }}
+              placeholder={t("pages.add.placeholder")}
+              autoComplete="off"
+            />
+          </label>
+          <Button type="submit" variant="primary" data-action="add" data-variant="primary">
+            {t("pages.add.submit")}
+          </Button>
+          <p data-form-help>
+            {newSlug.trim().length > 0 && checkSlug(newSlug.trim()) !== null
+              ? t("pages.add.help.link", { slug: slugify(newSlug) || "…" })
+              : t("pages.add.help")}
           </p>
-        )}
-      </form>
+          {addError !== null && (
+            <p data-testid="pages-list-add-error" role="alert">
+              {addError}
+            </p>
+          )}
+        </form>
+      )}
     </section>
   );
 }

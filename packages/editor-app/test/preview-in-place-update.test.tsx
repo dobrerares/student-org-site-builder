@@ -24,6 +24,7 @@ import type { Site } from "@sosb/schema";
 
 import minimal from "./fixtures/minimal-site.json" with { type: "json" };
 import { announcePreviewReady, capturePreviewMessages } from "./helpers/preview.js";
+import { openSection } from "./helpers/nav.js";
 import { EditorApp } from "../src/editor-app.js";
 
 const baseSite = minimal as unknown as Site;
@@ -42,17 +43,17 @@ function mount(site: Site = structuredClone(baseSite)): {
 } {
   wide();
   const { container } = render(<EditorApp initial={site} />);
+  // The Overview has no preview; Site settings is the destination whose
+  // edits the tests below type, and it keeps one beside the form.
+  openSection(container, "settings");
   return {
     container,
     frame: () => container.querySelector<HTMLIFrameElement>('[data-testid="preview-pane"] iframe')!,
   };
 }
 
-/** Drill into Site settings and type a new organisation name. */
+/** Type a new organisation name into Site settings. */
 function editOrgName(container: HTMLElement, value: string): void {
-  fireEvent.click(
-    container.querySelector<HTMLButtonElement>('[data-testid="site-settings-link"]')!,
-  );
   fireEvent.input(container.querySelector<HTMLInputElement>('[data-field="org.name"]')!, {
     target: { value },
   });
@@ -133,9 +134,9 @@ describe("preview updates in place", () => {
 
   test("changing the theme reloads the preview document", () => {
     const { container, frame } = mount();
+    openSection(container, "theme");
     const before = frame();
 
-    fireEvent.click(container.querySelector<HTMLButtonElement>('[data-testid="drill-in-theme"]')!);
     const picker = container.querySelector('[data-testid="theme-picker"]')!;
     const option = picker.querySelector<HTMLInputElement>(
       '[data-theme-id="civic"] input[type="radio"]',

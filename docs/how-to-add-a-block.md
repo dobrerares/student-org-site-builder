@@ -269,10 +269,11 @@ Two rules come with it:
 `articleList` stores tag ids and Article ids. The form-generator would render
 those as arrays of raw text inputs, which ADR 0044 puts off-limits — they are
 identifiers, not things a human types. Such a block needs a **hand-coded
-Inspector**, registered in the by-type ternary chain that picks the Inspector
-body in `packages/editor-app/src/editor-app.tsx` (and, for a block an Article
-can hold, the matching chain in `article-workspace.tsx`), the same way
-`customHTML` is. Export it from `packages/editor-app/src/index.tsx` so the
+Inspector**, registered in the by-type chain that picks the Inspector body in
+`packages/editor-app/src/block-inspector.tsx`, the same way `customHTML` is.
+There is one chain: the `Workspace` mounts `BlockInspector` for a Block
+whether a Page or an Article holds it, so registering the form once covers
+both (ADR 0053). Export it from `packages/editor-app/src/index.tsx` so the
 shells can reach it. Landing the schema without that Inspector is a regression
 against ADR 0044, not a follow-up.
 

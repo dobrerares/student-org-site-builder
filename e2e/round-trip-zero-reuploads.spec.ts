@@ -3,6 +3,8 @@ import { build as esbuild } from "esbuild";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
+import { openFirstPage } from "./builder-helpers.js";
+
 /**
  * Round-trip zero re-uploads — load-bearing assertion for ADR 0044 Corollary 1.
  *
@@ -130,6 +132,7 @@ test("a populated imageGallery block renders the picker as a thumbnail, never an
     if (root === null) throw new Error("missing root");
     window.__sosbEditor.mount(siteData as never, root);
   }, FIXTURE);
+  await openFirstPage(page);
 
   // The fixture page surfaces a single block row: the imageGallery. Drill in
   // by clicking the row's select affordance — the BlockListEditor exposes

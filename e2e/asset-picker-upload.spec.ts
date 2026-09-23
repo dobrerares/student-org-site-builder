@@ -4,6 +4,8 @@ import { createServer, type Server } from "node:http";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
+import { openFirstPage } from "./builder-helpers.js";
+
 /**
  * Asset-picker upload — end-to-end happy path through the REAL pipeline.
  *
@@ -199,8 +201,10 @@ test("uploading an image into the picker renders an <img> whose bytes actually l
   const server = await startServer();
   try {
     await page.goto(`${server.url}/`);
-    // Confirm the editor mounted before driving any interactions.
-    await expect(page.getByTestId("editor-pane")).toBeVisible({ timeout: 10_000 });
+    // Confirm the editor mounted before driving any interactions, then open
+    // the home page: Blocks live in a page's workspace (issue #102).
+    await expect(page.getByTestId("editor-app")).toBeVisible({ timeout: 10_000 });
+    await openFirstPage(page);
 
     // Drill into the gallery so the BlockForm mounts.
     const galleryRow = page.locator('[data-testid="block-row"][data-block-id="blk_home_gallery"]');

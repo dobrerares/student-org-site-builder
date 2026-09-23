@@ -16,6 +16,7 @@ import { cleanup, fireEvent, render } from "@testing-library/react";
 import type { Site } from "@sosb/schema";
 
 import minimal from "./fixtures/minimal-site.json" with { type: "json" };
+import { openPage } from "./helpers/nav.js";
 import { EditorApp, fitPreviewScale, previewViewportSizeLabel } from "../src/editor-app.js";
 
 const baseSite = minimal as unknown as Site;
@@ -61,7 +62,9 @@ describe("preview frame markup", () => {
       writable: true,
       value: 1200,
     });
-    return render(<EditorApp initial={structuredClone(baseSite)} />).container;
+    const { container } = render(<EditorApp initial={structuredClone(baseSite)} />);
+    openPage(container, 0);
+    return container;
   }
 
   function pick(container: HTMLElement, viewport: string): void {
@@ -100,9 +103,13 @@ describe("preview frame markup", () => {
 
   test("every preset advertises its simulated size in the toolbar", () => {
     const container = mount();
-    const sizes = Array.from(
-      container.querySelectorAll('[data-testid="viewport-preview-size"]'),
-    ).map((n) => n.textContent);
-    expect(sizes).toEqual(["Auto", "1440 x 900", "768 x 1024", "390 x 844"]);
+    const options = Array.from(
+      container.querySelectorAll('[data-testid="viewport-preview-option"]'),
+    ).map((n) => n.textContent ?? "");
+    expect(options.length).toBe(4);
+    expect(options[0]).toContain("Auto");
+    expect(options[1]).toContain("1440 x 900");
+    expect(options[2]).toContain("768 x 1024");
+    expect(options[3]).toContain("390 x 844");
   });
 });

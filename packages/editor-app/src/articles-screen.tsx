@@ -1,58 +1,62 @@
 /** @jsxImportSource react */
 /**
- * ArticlesPanel — the Articles destination: a searchable, filterable list.
+ * ArticlesScreen — the Articles destination: a searchable, filterable list.
  *
  * Issue #102's second round pins the shape: title, language, publication state
  * and date per row, with language, state and tag filters, Create Article, and
  * Manage tags reachable from here.
  *
- * Built as a self-contained component because the navigation redesign will
- * re-home it. It owns only its own transient UI state (search text, filters,
- * which dialog is open); everything durable goes through `onApply` into the
- * editor's undoable snapshot.
+ * Create Article is one click. It does not ask for a title first: the accepted
+ * design opens the new Draft immediately with a title field and an initial
+ * Rich-text Block, so the title is typed where the writing happens. The shell
+ * owns that flow (it knows the content language and today's date); this screen
+ * only asks for it.
+ *
+ * Everything durable goes through `onApply` into the editor's undoable
+ * snapshot; the screen keeps only its own transient state (search, filters,
+ * which dialog is open).
  */
 import type { JSX } from "react";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import type { Site } from "@sosb/schema";
 import { ARTICLE_STATES } from "@sosb/schema";
-import { Button, Input, Label, NativeSelect } from "@sosb/ui";
+import { Badge, Button, Input, Label, NativeSelect } from "@sosb/ui";
+
 import { EditorDialog } from "./editor-dialog.js";
-import { IconPlus, IconTrash } from "./icons.js";
+import { IconChevronRight, IconTrash } from "./icons.js";
+import { InfoHint } from "./info-hint.js";
 import { TagManager } from "./tag-manager.js";
 import type { ApplySiteChange } from "./article-settings-form.js";
 import {
   EMPTY_ARTICLE_FILTERS,
-  createArticle,
   deleteArticle,
   filterArticles,
   type ArticleFilters,
 } from "./articles-ops.js";
 import { useTranslator } from "./i18n-context.js";
 
-export interface ArticlesPanelProps {
+const STATE_TONE = {
+  published: "published",
+  draft: "draft",
+  unlisted: "unlisted",
+} as const;
+
+export interface ArticlesScreenProps {
   readonly site: Site;
   readonly onApply: ApplySiteChange;
   /** Open an Article for editing. */
-  readonly onSelect: (articleId: string) => void;
-  /** Content language a new Article is created in. */
-  readonly contentLanguage: string;
-  /**
-   * Today's date as `YYYY-MM-DD`. Injected rather than read from the clock so
-   * tests and the golden e2e run are not date-dependent.
-   */
-  readonly today: string;
-  /** Id of the Article currently open, for the selected-row marker. */
+  readonly onOpen: (articleId: string) => void;
+  /** Create a Draft in the current content language and open it. */
+  readonly onCreate: () => void;
+  /** Id of the Article last open, for the selected-row marker. */
   readonly activeArticleId?: string | undefined;
 }
 
-export function ArticlesPanel(props: ArticlesPanelProps): JSX.Element {
+export function ArticlesScreen(props: ArticlesScreenProps): JSX.Element {
   const t = useTranslator();
   const [filters, setFilters] = useState<ArticleFilters>(EMPTY_ARTICLE_FILTERS);
-  const [createOpen, setCreateOpen] = useState(false);
   const [tagsOpen, setTagsOpen] = useState(false);
-  const [newTitle, setNewTitle] = useState("");
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
-  const titleRef = useRef<HTMLInputElement | null>(null);
 
   const rows = useMemo(() => filterArticles(props.site, filters), [props.site, filters]);
   const total = (props.site.articles ?? []).length;
@@ -64,47 +68,44 @@ export function ArticlesPanel(props: ArticlesPanelProps): JSX.Element {
     setFilters((current) => ({ ...current, ...patch }));
   }
 
-  function handleCreate(): void {
-    const title = newTitle.trim();
-    if (title.length === 0) return;
-    let createdId = "";
-    props.onApply((site) => {
-      const result = createArticle(site, {
-        title,
-        lang: props.contentLanguage,
-        today: props.today,
-      });
-      createdId = result.articleId;
-      return result.site;
-    });
-    setNewTitle("");
-    setCreateOpen(false);
-    if (createdId !== "") props.onSelect(createdId);
+  function titleOf(title: string): string {
+    return title.trim() === "" ? t("articles.untitled") : title;
   }
 
   return (
-    <section
-      className="articles-panel"
-      data-testid="articles-panel"
-      aria-label={t("articles.panel.title")}
-    >
-      <div className="articles-panel__actions">
-        <Button type="button" onClick={() => setCreateOpen(true)} data-testid="articles-create">
-          <IconPlus size={14} />
-          {t("articles.action.create")}
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => setTagsOpen(true)}
-          data-testid="articles-manage-tags"
-        >
-          {t("articles.action.manageTags")}
-        </Button>
-      </div>
+    <div data-testid="articles-screen" data-screen aria-label={t("articles.panel.title")}>
+      <header data-screen-head>
+        <div data-row-between>
+          <h1>
+            {t("articles.panel.title")}
+            <InfoHint
+              label={t("articles.panel.title")}
+              text={t("articles.info")}
+              testId="articles-screen-info"
+            />
+          </h1>
+          <div data-row>
+            <Button
+              type="button"
+              onClick={() => setTagsOpen(true)}
+              data-testid="articles-manage-tags"
+            >
+              {t("articles.action.manageTags")}
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={props.onCreate}
+              data-testid="articles-create"
+            >
+              {t("builder.action.createArticle")}
+            </Button>
+          </div>
+        </div>
+      </header>
 
-      <div className="articles-panel__filters">
-        <div className="articles-panel__filter">
+      <div data-screen-filters>
+        <div data-screen-search>
           <Label htmlFor="articles-search">{t("articles.search.label")}</Label>
           <Input
             id="articles-search"
@@ -115,7 +116,7 @@ export function ArticlesPanel(props: ArticlesPanelProps): JSX.Element {
             data-testid="articles-search"
           />
         </div>
-        <div className="articles-panel__filter">
+        <div>
           <Label htmlFor="articles-filter-lang">{t("articles.filter.language")}</Label>
           <NativeSelect
             id="articles-filter-lang"
@@ -131,7 +132,7 @@ export function ArticlesPanel(props: ArticlesPanelProps): JSX.Element {
             ))}
           </NativeSelect>
         </div>
-        <div className="articles-panel__filter">
+        <div>
           <Label htmlFor="articles-filter-state">{t("articles.filter.state")}</Label>
           <NativeSelect
             id="articles-filter-state"
@@ -148,7 +149,7 @@ export function ArticlesPanel(props: ArticlesPanelProps): JSX.Element {
           </NativeSelect>
         </div>
         {tags.length > 0 && (
-          <div className="articles-panel__filter">
+          <div>
             <Label htmlFor="articles-filter-tag">{t("articles.filter.tag")}</Label>
             <NativeSelect
               id="articles-filter-tag"
@@ -168,11 +169,11 @@ export function ArticlesPanel(props: ArticlesPanelProps): JSX.Element {
       </div>
 
       {rows.length === 0 ? (
-        <p className="articles-panel__empty" data-testid="articles-empty">
+        <p data-empty-state data-testid="articles-empty">
           {total === 0 ? t("articles.empty") : t("articles.empty.filtered")}
         </p>
       ) : (
-        <ul className="articles-panel__list" data-testid="articles-list">
+        <ul data-summary-list data-testid="articles-list">
           {rows.map(({ article, index }) => (
             <li
               key={article.id}
@@ -181,71 +182,41 @@ export function ArticlesPanel(props: ArticlesPanelProps): JSX.Element {
             >
               <button
                 type="button"
-                className="articles-panel__row"
-                onClick={() => props.onSelect(article.id)}
+                data-summary-row
+                onClick={() => props.onOpen(article.id)}
                 data-testid={`article-open-${article.id}`}
               >
-                <span className="articles-panel__row-title">{article.title}</span>
-                <span className="articles-panel__badge" data-article-lang={article.lang}>
+                <span data-summary-main>
+                  <span data-summary-title>{titleOf(article.title)}</span>
+                  <span data-summary-meta>{article.publishedAt}</span>
+                </span>
+                <Badge tone="outline" data-article-lang={article.lang}>
                   {article.lang}
-                </span>
-                <span className="articles-panel__badge" data-article-state={article.state}>
+                </Badge>
+                <Badge
+                  tone={STATE_TONE[article.state as keyof typeof STATE_TONE] ?? "neutral"}
+                  data-article-state={article.state}
+                >
                   {t(`articles.state.${article.state}` as "articles.state.draft")}
-                </span>
-                <span className="articles-panel__date">{article.publishedAt}</span>
+                </Badge>
+                <IconChevronRight size={16} />
               </button>
-              <button
+              <Button
                 type="button"
-                data-icon-button
+                size="icon-sm"
+                variant="ghost"
                 data-tone="danger"
-                aria-label={`${t("articles.action.delete")} — ${article.title}`}
+                aria-label={`${t("articles.action.delete")} — ${titleOf(article.title)}`}
+                title={t("articles.action.delete")}
                 onClick={() => setPendingDelete(index)}
                 data-testid={`article-delete-${article.id}`}
               >
                 <IconTrash size={14} />
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
       )}
-
-      <EditorDialog
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        testId="article-create-dialog"
-        labelledBy="article-create-title"
-        initialFocus={titleRef}
-      >
-        <h2 id="article-create-title">{t("articles.create.title")}</h2>
-        <Label htmlFor="article-create-input">{t("articles.create.label")}</Label>
-        <Input
-          id="article-create-input"
-          ref={titleRef}
-          value={newTitle}
-          placeholder={t("articles.create.placeholder")}
-          onChange={(event) => setNewTitle(event.currentTarget.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              handleCreate();
-            }
-          }}
-          data-testid="article-create-input"
-        />
-        <div className="articles-panel__dialog-actions">
-          <Button type="button" variant="ghost" onClick={() => setCreateOpen(false)}>
-            {t("articles.create.cancel")}
-          </Button>
-          <Button
-            type="button"
-            disabled={newTitle.trim().length === 0}
-            onClick={handleCreate}
-            data-testid="article-create-submit"
-          >
-            {t("articles.create.submit")}
-          </Button>
-        </div>
-      </EditorDialog>
 
       <EditorDialog
         open={tagsOpen}
@@ -254,7 +225,7 @@ export function ArticlesPanel(props: ArticlesPanelProps): JSX.Element {
         label={t("articles.tags.title")}
       >
         <TagManager site={props.site} onApply={props.onApply} />
-        <div className="articles-panel__dialog-actions">
+        <div data-dialog-actions>
           <Button type="button" onClick={() => setTagsOpen(false)}>
             {t("articles.tags.cancel")}
           </Button>
@@ -269,15 +240,15 @@ export function ArticlesPanel(props: ArticlesPanelProps): JSX.Element {
         labelledBy="article-delete-title"
       >
         <h2 id="article-delete-title">
-          {t("articles.delete.confirm", { title: deletingArticle?.title ?? "" })}
+          {t("articles.delete.confirm", { title: titleOf(deletingArticle?.title ?? "") })}
         </h2>
-        <div className="articles-panel__dialog-actions">
+        <div data-dialog-actions>
           <Button type="button" variant="ghost" onClick={() => setPendingDelete(null)}>
             {t("articles.create.cancel")}
           </Button>
           <Button
             type="button"
-            data-tone="danger"
+            variant="destructive"
             onClick={() => {
               const index = pendingDelete;
               setPendingDelete(null);
@@ -289,6 +260,6 @@ export function ArticlesPanel(props: ArticlesPanelProps): JSX.Element {
           </Button>
         </div>
       </EditorDialog>
-    </section>
+    </div>
   );
 }

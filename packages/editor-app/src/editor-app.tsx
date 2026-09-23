@@ -2,34 +2,30 @@
 /**
  * EditorApp — the top-level React shell.
  *
- * Layout responsibilities:
+ * Shape (issue #102, ADR 0053):
  *
- * - At ≥768px: side-by-side editor pane (forms) and preview pane (iframe).
- * - At <768px: a tab strip with `Editor` and `Preview` tabs swapping the
- *   single visible pane.
- * - A top bar with `Import`, `Export`, `Reset` buttons (wired to the
- *   `onImport`, `onExport`, `onReset` callbacks).
- * - A health footer (always visible) showing aggregate validation counts.
- *   Clicking the footer toggles the Site Health panel.
- * - A pre-export confirmation dialog shown when the user clicks Export
- *   and the current snapshot has any errors or warnings.
+ * - A top bar: menu button (phone), brand, local save status with its
+ *   "downloaded copy" line, undo/redo, Open, Start over, **Save project** and
+ *   **Export website**.
+ * - Persistent main navigation (`MainNav`) over five destinations — Overview,
+ *   Pages, Articles, Theme, Site settings — plus Create Page / Create Article
+ *   and the content-language picker. A rail on wide windows, a drawer on
+ *   phones.
+ * - A main area showing the current `Destination` (`builder-navigation.ts`):
+ *   the Overview, the Pages or Articles list, or a focused `Workspace` for one
+ *   Page or Article. Theme and Site settings are site-wide forms that keep an
+ *   adjacent preview. Every preview-bearing destination is a `SplitView`:
+ *   editing beside preview on wide windows, one at a time on phones.
+ * - Inside a workspace, ADR 0042's drill-in is preserved as `WorkspaceDrill`:
+ *   the outline, or a focused Inspector for one Block, the content's settings,
+ *   or Related Articles. Escape drills out one level; it never leaves the
+ *   workspace.
+ * - Export website opens the readiness panel (`ExportReadinessPanel`); Save
+ *   project writes the editable archive and is never gated by validation.
  *
- * Editor pane shape (ADR 0042 — drill-in inspector):
- *
- * The editor pane is no longer a flat stack of forms. It has three view
- * branches gated on a discriminated `DrillMode`:
- *
- * - `{ kind: "blocks" }` (default): PagesList, BlockListEditor (rows expose
- *   a click target that drills in), Site settings affordance, LocaleToggle.
- * - `{ kind: "block", blockId }`:    PagesList, back-to-blocks, BlockForm
- *   for the active block, LocaleToggle.
- * - `{ kind: "settings" }`:          PagesList, back-to-blocks, SpineForm,
- *   LocaleToggle.
- *
- * Drill-in is triggered by clicking a block row's primary affordance or
- * the Site settings link; drill-out by clicking the back affordance or
- * pressing Escape. Switching pages while drilled into a block drills you
- * back out (the previously-active block isn't on the new page).
+ * What the preview shows (`previewTarget`) is separate from what is being
+ * edited: clicks inside the preview behave like the public website, and
+ * "Edit this Page / Article" makes the previewed thing the edited thing.
  *
  * Editor responsibilities:
  *
@@ -44,8 +40,8 @@
  *   the preview-bridge. The iframe also receives a `srcdoc` rewrite for
  *   the structural baseline (so the preview is correct from frame 0, even
  *   before the iframe's hypothetical message listener boots).
- * - Re-run `validate()` on every snapshot change so the panel + footer
- *   stay current.
+ * - Re-run `validate()` on every snapshot change so the Overview's Site
+ *   Health card and the export readiness panel stay current.
  *
  * i18n:
  *
@@ -63,14 +59,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   AssetRefLike,
   BlockEnvelope,
-  CustomHtmlBlock,
   DocumentAssetRef,
   Site,
   ValidationIssue,
   ValidationResult,
 } from "@sosb/schema";
-import { KnownBlockSchemas, SiteSchema, validate } from "@sosb/schema";
-import type { ZodType } from "zod";
+import { SiteSchema, validate } from "@sosb/schema";
 // Import browser-safe subpaths directly. `@sosb/assets`'s package
 // `index.ts` re-exports `createSharpImageProcessor` (a Node-only,
 // sharp-backed processor) which transitively reaches `node:fs`,
@@ -92,7 +86,7 @@ import {
   type Translator,
 } from "@sosb/i18n";
 
-import { BLOCK_FIELD_METADATA, SPINE_FIELD_METADATA } from "./field-metadata.js";
+import { SPINE_FIELD_METADATA } from "./field-metadata.js";
 import { applyAltSyncPatches, expandAltSyncPatches } from "./alt-sync.js";
 import { fieldsFromSchema } from "./form-generator.js";
 import { getAtPath, setAtPath } from "./get-set-path.js";
@@ -105,31 +99,14 @@ import type { PreviewTarget } from "./preview-navigation.js";
 // Side-effect import: registers the editor-app stylesheet on `document.head`
 // once, before any component renders. Guarded for SSR / non-DOM tooling.
 import "./editor-app-css.js";
-import { PagesList } from "./pages-list.js";
 import { rebaseElement } from "./rebase-element.js";
-import {
-  IconArrowLeft,
-  IconChevronRight,
-  IconClose,
-  IconGlobe,
-  IconLayout,
-  IconPalette,
-  IconRedo,
-  IconSettings,
-  IconUndo,
-} from "./icons.js";
+import { IconClose, IconLayout, IconMenu, IconRedo, IconUndo } from "./icons.js";
+import { InfoHint } from "./info-hint.js";
 import { addLanguageVersion, addPage, clonePage, deletePage, movePage } from "./pages-ops.js";
 import { AddBlockDialog } from "./add-block-dialog.js";
-import { ArticlesPanel } from "./articles-panel.js";
-import { ArticleWorkspace } from "./article-workspace.js";
-import { ArticleListInspector } from "./article-list-inspector.js";
-import { BlockListEditor } from "./block-list-editor.js";
-import { BlockForm } from "./block-form.js";
-import { buildBlockCatalog } from "./block-catalog.js";
-import { defaultArrayItemForBlock } from "./block-array-defaults.js";
-import { CustomHtmlBlockForm } from "./custom-html-form.js";
+import { ArticlesScreen } from "./articles-screen.js";
+import { SplitView, type SplitPane } from "./split-view.js";
 import { defaultBlockFor } from "./block-defaults.js";
-import { createPreviewHost } from "@sosb/preview-bridge";
 import {
   addBlockToPage,
   createEditorState,
@@ -139,12 +116,27 @@ import {
   type EditorState,
   type HistoryStore,
 } from "@sosb/editor-state";
-import { SiteHealthPanel } from "./site-health.js";
-import { HealthFooter } from "./health-footer.js";
-import { ExportConfirmDialog } from "./export-confirm.js";
 import { navigateToIssue } from "./issue-navigate.js";
 import { I18nProvider, useTranslator } from "./i18n-context.js";
 import { LocaleToggle } from "./locale-toggle.js";
+import { MainNav } from "./main-nav.js";
+import { OverviewScreen } from "./overview-screen.js";
+import { PagesScreen } from "./pages-screen.js";
+import { PreviewPane } from "./preview-pane.js";
+import { ExportReadinessPanel } from "./export-readiness.js";
+import { Workspace, type WorkspaceTarget } from "./workspace.js";
+import {
+  INITIAL_DESTINATION,
+  OUTLINE_DRILL,
+  backDestination,
+  destinationForSection,
+  reconcileDestination,
+  reconcileDrill,
+  sectionOf,
+  type Destination,
+  type WorkspaceDrill,
+} from "./builder-navigation.js";
+import { createArticle, slugifyTitle, uniqueArticleSlug, updateArticle } from "./articles-ops.js";
 import { exportToZip, importFromZip, ZipImportError } from "@sosb/zip";
 import {
   SITE_VFS_PREFIXES,
@@ -156,7 +148,6 @@ import {
 } from "./site-io.js";
 import { fontBlobUrlForPath, revokeFontBlobUrls } from "./font-blobs.js";
 import { revokeThemeBlobUrls, themeBlobUrlForPath } from "./theme-blobs.js";
-import { BlockVariantControl } from "./block-variant-control.js";
 import { setBlockVariant } from "./theme-switch.js";
 import {
   exportInstalledThemePackage,
@@ -167,7 +158,7 @@ import {
   uninstallThemePackageFromVfs,
 } from "@sosb/theme-package";
 import { resolveThemeBundle, type ThemeBundle } from "@sosb/renderer";
-import { Button, Tabs } from "@sosb/ui";
+import { Button } from "@sosb/ui";
 
 const MOBILE_BREAKPOINT_PX = 768;
 
@@ -196,82 +187,18 @@ export interface EditorAppProps {
   readonly translator?: Translator;
 }
 
-type TabName = "editor" | "preview";
-type PreviewViewport = "fit" | "desktop" | "tablet" | "phone";
-
 /**
- * The device presets the preview toolbar offers.
- *
- * `width`/`height` are CSS pixels of the *simulated* viewport — the layout
- * size the previewed page is told it has. They are not the size the frame
- * occupies on screen: the frame is scaled down to fit the preview pane (see
- * `previewScale`). Before that scaling existed the 1440px desktop frame simply
- * overflowed the pane on any normal laptop, so the "Desktop" preset showed a
- * horizontally-clipped page rather than a desktop viewport.
- *
- * `fit` has no fixed size — the frame fills the pane and the page lays out at
- * whatever width that is.
+ * The preview's device presets and scaling now live with the pane that owns
+ * them. Re-exported here because they were part of this module's public
+ * surface before the split, and callers should not have to care that the
+ * preview grew its own file.
  */
-const PREVIEW_VIEWPORT_OPTIONS: readonly {
-  readonly id: PreviewViewport;
-  readonly label: string;
-  readonly width: number | null;
-  readonly height: number | null;
-}[] = [
-  { id: "fit", label: "Fit", width: null, height: null },
-  { id: "desktop", label: "Desktop", width: 1440, height: 900 },
-  { id: "tablet", label: "Tablet", width: 768, height: 1024 },
-  { id: "phone", label: "Phone", width: 390, height: 844 },
-];
-
-/** Human-readable size for a preset, e.g. `1440 x 900` or `Auto`. */
-export function previewViewportSizeLabel(option: {
-  readonly width: number | null;
-  readonly height: number | null;
-}): string {
-  if (option.width === null || option.height === null) return "Auto";
-  return `${option.width} x ${option.height}`;
-}
-
-/**
- * Scale that fits a `width x height` simulated viewport inside the available
- * pane, never enlarging past 1:1. Returns 1 when the pane has not been
- * measured yet (jsdom, first paint) so the frame renders at its true size
- * rather than collapsing to zero.
- */
-export function fitPreviewScale(
-  available: { readonly width: number; readonly height: number },
-  viewport: { readonly width: number; readonly height: number },
-): number {
-  if (available.width <= 0 || available.height <= 0) return 1;
-  if (viewport.width <= 0 || viewport.height <= 0) return 1;
-  return Math.min(1, available.width / viewport.width, available.height / viewport.height);
-}
-
-/**
- * Discriminated drill state for the editor pane.
- *
- * - `{ kind: "blocks" }`         the un-drilled default — pages list, block
- *                                list, site-settings affordance, locale.
- * - `{ kind: "block", blockId }` per-block inspector for the active page's
- *                                block whose id matches.
- * - `{ kind: "settings" }`       the site-spine inspector (SpineForm).
- * - `{ kind: "theme" }`          the theme inspector (ThemeForm) —
- *                                ADR 0042 / ADR 0043: theme id picker
- *                                (Phase 1) and tokens (Phase 3).
- *
- * The state is intentionally local to the editor pane; the preview pane
- * and tab strip are unaffected. Switching pages drills you back out (the
- * previously-active block isn't on the new page) — see the page-switch
- * effect below. Site-level inspectors (`settings`, `theme`) stay drilled
- * on page switch.
- */
-type DrillMode =
-  | { readonly kind: "blocks" }
-  | { readonly kind: "block"; readonly blockId: string }
-  | { readonly kind: "settings" }
-  | { readonly kind: "theme" }
-  | { readonly kind: "page" };
+export {
+  PREVIEW_VIEWPORT_OPTIONS,
+  fitPreviewScale,
+  previewViewportSizeLabel,
+  type PreviewViewport,
+} from "./preview-pane.js";
 
 /**
  * Today's date as `YYYY-MM-DD`, for seeding a new Article's publication date.
@@ -322,6 +249,16 @@ function writeTipDismissed(): void {
 }
 
 type SaveStatus = "localOnly" | "saving" | "saved" | "error";
+
+/**
+ * Wall-clock label for the save status line ("14:32").
+ *
+ * Deliberately time-only: the project is saved in *this* browser session, so a
+ * date would imply a permanence the local draft does not have.
+ */
+function nowLabel(): string {
+  return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
 
 export function EditorApp(props: EditorAppProps): JSX.Element {
   const translatorRef = useRef<Translator | undefined>(undefined);
@@ -374,6 +311,16 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     props.autosaveVfs === undefined ? "localOnly" : "saved",
   );
   const saveStatusSeqRef = useRef(0);
+  /**
+   * Local save status, shown in the top bar.
+   *
+   * Two separate facts, because conflating them is what makes people lose
+   * work: `savedAt` is the editable project kept in this browser, and
+   * `downloadedAt` is the last time a copy left the machine. An author who
+   * sees only "Saved" can reasonably believe they have a file somewhere.
+   */
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [downloadedAt, setDownloadedAt] = useState<string | null>(null);
   useEffect(() => state.subscribe(setSnapshot), [state]);
 
   useEffect(() => {
@@ -388,7 +335,9 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       void state
         .flush()
         .then(() => {
-          if (seq === saveStatusSeqRef.current) setSaveStatus("saved");
+          if (seq !== saveStatusSeqRef.current) return;
+          setSaveStatus("saved");
+          setSavedAt(nowLabel());
         })
         .catch(() => {
           if (seq === saveStatusSeqRef.current) setSaveStatus("error");
@@ -411,12 +360,6 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       }),
     [],
   );
-  // Block catalog memo — used both by the un-drilled block list (indirectly,
-  // through its own `buildBlockCatalog()` call) and by the inspector
-  // header. Lifted to the top of the component so it lives outside the
-  // conditional render branches.
-  const blockCatalog = useMemo(() => buildBlockCatalog(), []);
-
   // Validation result is recomputed on every snapshot change. `validate()`
   // is pure / cheap — running it inline keeps the panel and footer
   // perfectly in sync without a separate event channel.
@@ -501,62 +444,87 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   }, []);
 
   const isNarrow = viewportWidth < MOBILE_BREAKPOINT_PX;
-  const [activeTab, setActiveTab] = useState<TabName>("editor");
-  const [previewViewport, setPreviewViewport] = useState<PreviewViewport>("fit");
+  // Phone layout: editing and preview are shown one at a time inside a
+  // workspace, and the main navigation collapses into a drawer.
+  const [workspacePane, setWorkspacePane] = useState<SplitPane>("edit");
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  /**
+   * The last page and Article the user had open.
+   *
+   * Theme and Site settings are site-wide destinations that still show a
+   * preview, and the preview has to be *of* something. Remembering the last
+   * content the author looked at means changing a theme previews the page they
+   * were just working on rather than always snapping back to the home page.
+   */
+  const lastPageIndexRef = useRef<number>(0);
+  const lastArticleIdRef = useRef<string | null>(null);
   // Bumped whenever the asset display-URL cache gains entries. The cache is a
   // ref (it is filled asynchronously), so the memoised preview render has no
   // other way to learn that a just-uploaded image now has a blob URL.
   const [assetEpoch, setAssetEpoch] = useState<number>(0);
 
-  // The page index currently surfaced in the spine form + preview. Defaults
-  // to the home (page 0); reorder/clone/delete update this so the editor
-  // never lands on a deleted page, and a brand-new add jumps to it.
-  const [activePageIndex, setActivePageIndex] = useState<number>(0);
-  // Clamp the active index whenever pages mutate.
+  /**
+   * Where the builder is. Opening a Site lands on the content Overview
+   * (issue #102, round four); the two content destinations each open a
+   * focused workspace.
+   */
+  const [destination, setDestination] = useState<Destination>(INITIAL_DESTINATION);
+  /** Drill state *within* a workspace — ADR 0042's Inspector, preserved. */
+  const [drill, setDrill] = useState<WorkspaceDrill>(OUTLINE_DRILL);
+  // Which workspace the preview was last pointed at (see the preview-target
+  // sync below). Reset by `go` so entering a workspace always re-points it.
+  const previewSyncKeyRef = useRef<string>("");
+  // When a Site Health issue is clicked we may need to drill into the
+  // right inspector before the target field exists in the DOM. The pending
+  // issue is stashed here and consumed by an effect that runs after the
+  // drill state's re-render flushes.
+  const pendingIssueRef = useRef<ValidationIssue | null>(null);
+
+  // Drop a destination whose target has gone (the page was deleted, a
+  // different project was imported). Done during render rather than in an
+  // effect so we never paint a workspace bound to nothing; `reconcile*`
+  // returns the same object when nothing changed, so this is a cheap no-op
+  // in the overwhelmingly common case.
+  const reconciled = reconcileDestination(destination, snapshot);
+  if (reconciled !== destination) setDestination(reconciled);
+
+  const activePageIndex =
+    reconciled.kind === "pageWorkspace" ? reconciled.pageIndex : lastPageIndexRef.current;
   const safeActivePageIndex = Math.min(activePageIndex, Math.max(snapshot.pages.length - 1, 0));
-  // Slug of the currently-active page. Block-editing helpers receive this
-  // explicitly so they stay un-coupled from index assumptions.
-  const activePageSlug = snapshot.pages[safeActivePageIndex]?.slug ?? "";
+  lastPageIndexRef.current = safeActivePageIndex;
+  const activePage = snapshot.pages[safeActivePageIndex];
+  const activePageSlug = activePage?.slug ?? "";
 
-  // Drill state. Defaults to `blocks` on first mount and resets to it
-  // whenever the user switches pages — the previously-active block isn't
-  // on the new page, so the inspector would dangle. See the
-  // `prevPageRef`-driven effect below.
-  const [drillMode, setDrillMode] = useState<DrillMode>({ kind: "blocks" });
-
-  // Which half of the left pane is showing. Articles get their own destination
-  // rather than sharing the Pages list: issue #102 keeps them separate because
-  // they are a different kind of thing with a different lifecycle, and mixing
-  // them in one list makes both harder to scan. The navigation redesign will
-  // re-home this switch; the components it toggles are built to survive that.
-  const [contentKind, setContentKind] = useState<"pages" | "articles">("pages");
-  const [activeArticleId, setActiveArticleId] = useState<string | null>(null);
+  const activeArticleId =
+    reconciled.kind === "articleWorkspace" ? reconciled.articleId : lastArticleIdRef.current;
   const articleIndex = (snapshot.articles ?? []).findIndex((a) => a.id === activeArticleId);
   const activeArticle = articleIndex >= 0 ? snapshot.articles?.[articleIndex] : undefined;
-  // Drop a stale selection when the article is deleted underneath us.
-  useEffect(() => {
-    if (activeArticleId !== null && articleIndex < 0) setActiveArticleId(null);
-  }, [activeArticleId, articleIndex]);
-  const prevPageIndexRef = useRef<number>(safeActivePageIndex);
-  useEffect(() => {
-    if (prevPageIndexRef.current === safeActivePageIndex) return;
-    prevPageIndexRef.current = safeActivePageIndex;
-    // Page switched while drilled into a block — drill back out so the
-    // user lands on the new page's block list instead of staring at a
-    // mounted form whose block is no longer in scope.
-    setDrillMode((current) => (current.kind === "block" ? { kind: "blocks" } : current));
-  }, [safeActivePageIndex]);
+  if (reconciled.kind === "articleWorkspace") lastArticleIdRef.current = reconciled.articleId;
 
-  // Escape from a drilled view returns to the un-drilled list. Only the
-  // `block` and `settings` modes consume Escape; the `blocks` (default)
-  // mode lets it bubble normally.
+  // Blocks of whatever the workspace is editing, for the drill reconcile.
+  const workspaceBlocks: readonly BlockEnvelope[] =
+    reconciled.kind === "articleWorkspace"
+      ? ((activeArticle?.blocks ?? []) as readonly BlockEnvelope[])
+      : ((activePage?.blocks ?? []) as readonly BlockEnvelope[]);
+  const reconciledDrill = reconcileDrill(
+    drill,
+    workspaceBlocks.map((b) => b.id),
+  );
+  if (reconciledDrill !== drill) setDrill(reconciledDrill);
+
+  // Escape backs out one level: from an Inspector to the outline. It does not
+  // leave the workspace — that is what the back button is for, and an Escape
+  // that threw away the whole editing context would be a nasty surprise.
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent): void {
       if (event.key !== "Escape") return;
-      setDrillMode((current) => {
-        if (current.kind === "blocks") return current;
-        return { kind: "blocks" };
-      });
+      // An open dialog or (i) popover owns this Escape: it closes, and the
+      // Inspector underneath must not vanish with it. Base UI normally stops
+      // the event before it reaches the window, but a popup that lets it
+      // bubble — or a host that mounts its own — must not lose the drill.
+      if (event.defaultPrevented || document.querySelector('[role="dialog"]') !== null) return;
+      setDrill((current) => (current.kind === "outline" ? current : OUTLINE_DRILL));
     }
     window.addEventListener("keydown", onKeyDown);
     return () => {
@@ -564,86 +532,36 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     };
   }, []);
 
-  // The block currently mounted in the inspector, or null if not in
-  // `block` drill mode (or the id has gone stale after a structural edit).
-  // The lookup is intentionally cheap — block lists are short.
-  const activePage = snapshot.pages[safeActivePageIndex];
-  const activeBlockIndex =
-    drillMode.kind === "block"
-      ? (activePage?.blocks ?? []).findIndex((b) => b.id === drillMode.blockId)
-      : -1;
-  const activeBlock: BlockEnvelope | undefined =
-    drillMode.kind === "block" && activeBlockIndex >= 0
-      ? activePage?.blocks?.[activeBlockIndex]
-      : undefined;
-  // If the user removed the block they were drilled into (via the row's
-  // Remove control on a previous render), fall back to the un-drilled
-  // view rather than rendering an empty inspector.
-  useEffect(() => {
-    if (drillMode.kind === "block" && activeBlock === undefined) {
-      setDrillMode({ kind: "blocks" });
-    }
-  }, [drillMode, activeBlock]);
+  /** Navigate, closing the phone drawer and resetting the drill. */
+  function go(next: Destination): void {
+    setDestination(next);
+    setDrill(OUTLINE_DRILL);
+    setDrawerOpen(false);
+    setWorkspacePane("edit");
+    // Entering a workspace re-points the preview at it (ADR 0053 §2) — also
+    // when it is the same content again after a detour through Theme that
+    // left the preview on some page the author had clicked through to.
+    previewSyncKeyRef.current = "";
+    // A repair the author walked away from must not fire later, when an
+    // unrelated form happens to mount a field at the same path.
+    pendingIssueRef.current = null;
+  }
 
-  // Site Health panel disclosure + export-confirm dialog state.
-  const [panelOpen, setPanelOpen] = useState<boolean>(false);
-  const [exportDialog, setExportDialog] = useState<ValidationResult | null>(null);
+  // Export readiness panel disclosure.
+  const [exportOpen, setExportOpen] = useState<boolean>(false);
 
   /**
-   * Device-simulation scaling.
-   *
-   * A preset frame is laid out at its true viewport size (1440x900 and
-   * friends) and then transform-scaled to fit the preview pane. Scaling the
-   * frame rather than shrinking it is what makes the preset honest: the page
-   * inside still believes it has 1440 CSS pixels, so media queries, clamp()
-   * type scales and grid breakpoints all resolve the way they will for a real
-   * desktop visitor.
+   * The language new content is created in. Defaults to the Site's own
+   * default and is switched from the navigation, so Create Article in
+   * Romanian produces a Romanian Draft.
    */
-  const previewCanvasRef = useRef<HTMLDivElement | null>(null);
-  const [previewScale, setPreviewScale] = useState<number>(1);
-  const previewViewportOption = PREVIEW_VIEWPORT_OPTIONS.find((o) => o.id === previewViewport);
-  const previewViewportWidth = previewViewportOption?.width ?? null;
-  const previewViewportHeight = previewViewportOption?.height ?? null;
-
-  useEffect(() => {
-    if (previewViewportWidth === null || previewViewportHeight === null) {
-      setPreviewScale(1);
-      return;
-    }
-    const canvas = previewCanvasRef.current;
-    if (canvas === null) return;
-
-    function measure(): void {
-      const node = previewCanvasRef.current;
-      if (node === null) return;
-      const style = typeof getComputedStyle === "function" ? getComputedStyle(node) : undefined;
-      const padX =
-        (Number.parseFloat(style?.paddingLeft ?? "0") || 0) +
-        (Number.parseFloat(style?.paddingRight ?? "0") || 0);
-      const padY =
-        (Number.parseFloat(style?.paddingTop ?? "0") || 0) +
-        (Number.parseFloat(style?.paddingBottom ?? "0") || 0);
-      setPreviewScale(
-        fitPreviewScale(
-          { width: node.clientWidth - padX, height: node.clientHeight - padY },
-          { width: previewViewportWidth!, height: previewViewportHeight! },
-        ),
-      );
-    }
-
-    measure();
-    if (typeof ResizeObserver !== "function") {
-      window.addEventListener("resize", measure);
-      return () => {
-        window.removeEventListener("resize", measure);
-      };
-    }
-    const observer = new ResizeObserver(measure);
-    observer.observe(canvas);
-    return () => {
-      observer.disconnect();
-    };
-  }, [previewViewportWidth, previewViewportHeight]);
+  const [contentLanguage, setContentLanguage] = useState<string>(snapshot.defaultLanguage);
+  // Importing a different project, or removing a language in Site settings,
+  // can leave the chosen language undeclared. Fall back to the Site's default
+  // rather than creating content in a language the Site does not have.
+  const effectiveContentLanguage = snapshot.languages.includes(contentLanguage)
+    ? contentLanguage
+    : snapshot.defaultLanguage;
 
   // Root ref so issue-navigation queries land in the editor's own DOM
   // tree (and not whatever the host page might have rendered).
@@ -867,40 +785,79 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     return displayUrlCacheRef.current!.get(hash);
   }
 
-  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  /**
+   * What the preview is showing.
+   *
+   * Not the same thing as what is being edited. Clicks inside the preview
+   * behave like the public website (issue #102), so the author can follow a
+   * link from the page they are editing into an Article and keep reading. The
+   * preview target therefore has its own state, and the pane offers a way back
+   * to the content being edited plus the explicit "Edit this Page / Article"
+   * action that makes the previewed thing the edited thing.
+   */
+  const [previewTarget, setPreviewTarget] = useState<PreviewTarget>({ kind: "page", index: 0 });
+
+  // Entering a workspace points the preview at the content being edited. A
+  // site-wide destination (Theme, Site settings) leaves it where it was, so
+  // changing a theme previews the page the author was last working on.
+  const previewSyncKey =
+    reconciled.kind === "pageWorkspace"
+      ? `page:${reconciled.pageIndex}`
+      : reconciled.kind === "articleWorkspace"
+        ? `article:${reconciled.articleId}`
+        : previewSyncKeyRef.current;
+  if (previewSyncKeyRef.current !== previewSyncKey) {
+    previewSyncKeyRef.current = previewSyncKey;
+    if (reconciled.kind === "pageWorkspace") {
+      setPreviewTarget({ kind: "page", index: reconciled.pageIndex });
+    } else if (reconciled.kind === "articleWorkspace" && articleIndex >= 0) {
+      setPreviewTarget({ kind: "article", index: articleIndex });
+    }
+  }
+
+  // Keep the target addressable after a structural edit: `PreviewTarget`
+  // holds an index, and deleting content shifts every later one.
+  const previewTargetExists =
+    previewTarget.kind === "article"
+      ? (snapshot.articles ?? [])[previewTarget.index] !== undefined
+      : snapshot.pages[previewTarget.index] !== undefined;
+  const safePreviewTarget: PreviewTarget = previewTargetExists
+    ? previewTarget
+    : { kind: "page", index: safeActivePageIndex };
 
   /**
    * Live preview wiring.
    *
    * The preview keeps ONE iframe document alive for as long as it is showing
-   * the same page, in the same language, under the same theme. Each edit is
+   * the same target, in the same language, under the same theme. Each edit is
    * rendered host-side with the real renderer (there is still exactly one
    * renderer code path — ADR 0005) and posted over the preview bridge; the
    * renderer's preview-morph script diffs the new markup onto the live
    * document.
    *
-   * The previous implementation recomputed the HTML on every React render and
-   * fed it back in as `srcdoc`. Reassigning `srcdoc` rebuilds the document
-   * from scratch, so every keystroke scrolled the preview back to the top,
-   * collapsed any FAQ the user had opened and closed the lightbox — on a long
-   * page the section being edited jumped out of view on every character.
+   * Recomputing the HTML and feeding it back as `srcdoc` would rebuild the
+   * document from scratch, so every keystroke would scroll the preview back to
+   * the top, collapse any FAQ the user had opened and close the lightbox — on
+   * a long page the section being edited jumped out of view on every
+   * character. `PreviewPane` owns that morph-vs-reload decision; this memo
+   * only produces the markup.
    */
   const previewHtml = useMemo(
     () =>
       // An Article preview goes through the same renderer call the export
       // makes, so what the author sees is what ships.
-      contentKind === "articles" && articleIndex >= 0
+      safePreviewTarget.kind === "article"
         ? iframeSrcdocForArticle(
             snapshot,
             snapshot.theme.id,
-            articleIndex,
+            safePreviewTarget.index,
             displayUrlForAssetPath,
             activeThemeBundle,
           )
         : iframeSrcdoc(
             snapshot,
             snapshot.theme.id,
-            safeActivePageIndex,
+            safePreviewTarget.index,
             displayUrlForAssetPath,
             activeThemeBundle,
           ),
@@ -911,7 +868,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     // `activeThemeBundle` *is* a dependency: importing or removing a Theme
     // package changes the bundle without touching the Site snapshot, and
     // without this the preview would keep rendering the previous design.
-    [snapshot, safeActivePageIndex, assetEpoch, activeThemeBundle, contentKind, articleIndex],
+    [snapshot, safePreviewTarget, assetEpoch, activeThemeBundle],
   );
 
   /**
@@ -923,7 +880,10 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
    */
   // Moving between a Page and an Article, or between two Articles, is a
   // different document for exactly the same reasons — so both join the key.
-  const previewingArticle = contentKind === "articles" && articleIndex >= 0;
+  const previewedArticle =
+    safePreviewTarget.kind === "article"
+      ? (snapshot.articles ?? [])[safePreviewTarget.index]
+      : undefined;
   const previewReloadKey = [
     snapshot.theme.id,
     // An imported Theme's version, so re-importing an edited package boots a
@@ -931,97 +891,62 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     // old document's already-resolved `blob:` font URLs, which the import
     // revoked — the page would render the new CSS with no fonts.
     activeThemeBundle?.origin === "package" ? activeThemeBundle.version : "",
-    previewingArticle ? "article" : "page",
-    previewingArticle ? articleIndex : safeActivePageIndex,
-    previewingArticle
-      ? ((snapshot.articles ?? [])[articleIndex]?.lang ?? "")
-      : (snapshot.pages[safeActivePageIndex]?.lang ?? ""),
+    safePreviewTarget.kind,
+    safePreviewTarget.index,
+    safePreviewTarget.kind === "article"
+      ? (previewedArticle?.lang ?? "")
+      : (snapshot.pages[safePreviewTarget.index]?.lang ?? ""),
   ].join("\u0000");
 
-  // The document the iframe boots with. Only replaced on a reload, so the
-  // `srcDoc` prop stays referentially stable across edits and React never
-  // reassigns it. Derived during render (rather than in an effect) so the
-  // freshly-keyed iframe boots with matching HTML on its very first paint.
-  const previewBootHtmlRef = useRef<string>(previewHtml);
-  const previewReloadKeyRef = useRef<string>(previewReloadKey);
-  const previewReadyRef = useRef<boolean>(false);
-  const previewPendingHtmlRef = useRef<string | null>(null);
-  if (previewReloadKeyRef.current !== previewReloadKey) {
-    previewReloadKeyRef.current = previewReloadKey;
-    previewBootHtmlRef.current = previewHtml;
-    previewReadyRef.current = false;
-    previewPendingHtmlRef.current = null;
+  const previewedTitle =
+    safePreviewTarget.kind === "article"
+      ? previewedArticle === undefined || previewedArticle.title.trim() === ""
+        ? t("articles.untitled")
+        : previewedArticle.title
+      : (snapshot.pages[safePreviewTarget.index]?.navLabel ?? "");
+
+  /**
+   * A link was followed inside the preview. Resolve it the way the public
+   * website would — including links into Articles and links a retired slug
+   * would redirect — and move the preview there, leaving the editing pane on
+   * whatever the author was working on. That split is the whole point of
+   * "preview clicks behave like the public site": browsing is not editing.
+   */
+  function handlePreviewNavigate(path: string): void {
+    const target = resolvePreviewTarget(snapshot, path, safePreviewTarget);
+    if (target === null) return;
+    setPreviewTarget(target);
   }
 
-  useEffect(() => {
-    const iframe = iframeRef.current;
-    if (iframe === null) return;
-    const host = createPreviewHost({ iframe });
-    // The documented ADR 0005 extension point. Nothing renders from it today
-    // (rendering stays host-side, so there is one renderer code path), but it
-    // is the surface iframe-side consumers are told to listen on.
-    host.postSiteData(snapshot, snapshot.theme.id, safeActivePageIndex);
-    // The boot document already *is* this HTML — posting it would be a no-op
-    // diff, and on first mount the morph script has not booted yet anyway.
-    if (previewHtml === previewBootHtmlRef.current) return;
-    if (!previewReadyRef.current) {
-      // The morph script has not announced itself yet. Hold the newest render
-      // — posting now would land before any listener exists and the edit
-      // would be silently lost.
-      previewPendingHtmlRef.current = previewHtml;
+  /** "Edit this Page / Article" — make the previewed thing the edited thing. */
+  function handleEditPreviewed(): void {
+    if (safePreviewTarget.kind === "article") {
+      const article = (snapshot.articles ?? [])[safePreviewTarget.index];
+      if (article === undefined) return;
+      go({ kind: "articleWorkspace", articleId: article.id });
       return;
     }
-    host.postPreviewHtml(previewHtml);
-  }, [previewHtml, snapshot, safeActivePageIndex]);
+    go({ kind: "pageWorkspace", pageIndex: safePreviewTarget.index });
+  }
 
-  // Inbound preview events. The renderer's preview-only nav script prevents
-  // normal iframe navigation and posts `{ type: "navigate", path }`; the
-  // editor maps that path back onto `site.pages` and updates the active page.
-  // The morph script posts `{ type: "ready" }` once its listener is wired.
-  useEffect(() => {
-    const iframe = iframeRef.current;
-    if (iframe === null) return;
-    const host = createPreviewHost({
-      iframe,
-      onPreviewEvent(message) {
-        if (message.type === "ready") {
-          previewReadyRef.current = true;
-          const pending = previewPendingHtmlRef.current;
-          previewPendingHtmlRef.current = null;
-          if (pending !== null) host.postPreviewHtml(pending);
-          return;
-        }
-        if (message.type !== "navigate") return;
-        // Clicking a link in the preview behaves like the public website
-        // (issue #102), including links into Articles and links a retired
-        // slug would redirect. Relative hrefs resolve against whatever is
-        // currently previewed, which may itself be an Article.
-        const from: PreviewTarget =
-          contentKind === "articles" && articleIndex >= 0
-            ? { kind: "article", index: articleIndex }
-            : { kind: "page", index: safeActivePageIndex };
-        const target = resolvePreviewTarget(snapshot, message.path, from);
-        if (target === null) return;
-        if (target.kind === "article") {
-          const article = (snapshot.articles ?? [])[target.index];
-          if (article === undefined) return;
-          setContentKind("articles");
-          setActiveArticleId(article.id);
-          return;
-        }
-        setContentKind("pages");
-        if (target.index === safeActivePageIndex && contentKind === "pages") return;
-        setActivePageIndex(target.index);
-      },
-    });
-    function onMessage(event: MessageEvent): void {
-      host.handleIncomingMessage(event.data);
+  /** True when the preview still shows the content being edited. */
+  const previewMatchesTarget =
+    reconciled.kind === "articleWorkspace"
+      ? safePreviewTarget.kind === "article" && safePreviewTarget.index === articleIndex
+      : reconciled.kind === "pageWorkspace"
+        ? safePreviewTarget.kind === "page" && safePreviewTarget.index === reconciled.pageIndex
+        : true;
+
+  /** Point the preview back at whatever the workspace is editing. */
+  function handleReturnPreviewToTarget(): void {
+    if (reconciled.kind === "articleWorkspace" && articleIndex >= 0) {
+      setPreviewTarget({ kind: "article", index: articleIndex });
+      return;
     }
-    window.addEventListener("message", onMessage);
-    return () => {
-      window.removeEventListener("message", onMessage);
-    };
-  }, [snapshot, safeActivePageIndex]);
+    if (reconciled.kind === "pageWorkspace") {
+      setPreviewTarget({ kind: "page", index: reconciled.pageIndex });
+    }
+  }
 
   /**
    * Production uploader fed into every mounted `<AssetPicker>` via
@@ -1097,9 +1022,18 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
 
   const [pickerOpen, setPickerOpen] = useState<boolean>(false);
 
+  /**
+   * Whether the workspace is editing an Article rather than a Page.
+   *
+   * Every Block operation below branches on this one predicate rather than on
+   * a separate "which kind of content" flag, so the two can never disagree
+   * about what is open — which is exactly what went wrong with the temporary
+   * `contentKind` switch this replaces.
+   */
+  const editingArticle = reconciled.kind === "articleWorkspace" && articleIndex >= 0;
+
   function onPickBlockType(type: string): void {
-    if (contentKind === "articles") {
-      if (articleIndex < 0) return;
+    if (editingArticle) {
       const block = defaultBlockFor(type);
       applyArticleChange((site) => {
         const articles = (site.articles ?? []).slice();
@@ -1119,6 +1053,10 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   }
 
   function onMoveBlock(from: number, to: number): void {
+    if (editingArticle) {
+      onMoveArticleBlock(from, to);
+      return;
+    }
     if (activePageSlug === "") return;
     if (from === to) return;
     const next = moveBlockInPage(snapshot, activePageSlug, from, to);
@@ -1126,9 +1064,73 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   }
 
   function onRemoveBlock(blockId: string): void {
+    if (editingArticle) {
+      onRemoveArticleBlock(blockId);
+      return;
+    }
     if (activePageSlug === "") return;
     const next = removeBlockFromPage(snapshot, activePageSlug, blockId);
     applySite(next);
+  }
+
+  /** Route a Block-data patch to whichever container holds the Block. */
+  function onPatchWorkspaceBlockData(
+    blockIndex: number,
+    subpath: readonly (string | number)[],
+    value: unknown,
+  ): void {
+    if (editingArticle) patchArticleBlockData(blockIndex, subpath, value);
+    else patchBlockData(safeActivePageIndex, blockIndex, subpath, value);
+  }
+
+  function onArrayChangeWorkspaceBlockData(
+    blockIndex: number,
+    subpath: readonly (string | number)[],
+    next: readonly unknown[],
+  ): void {
+    if (editingArticle) arrayChangeArticleBlockData(blockIndex, subpath, next);
+    else arrayChangeBlockData(safeActivePageIndex, blockIndex, subpath, [...next]);
+  }
+
+  /** Replace a Block's whole `data` object — the customHTML form edits it wholesale. */
+  function onReplaceWorkspaceBlockData(blockIndex: number, data: unknown): void {
+    if (editingArticle) {
+      patchArticleBlockData(blockIndex, [], data);
+      return;
+    }
+    patch(["pages", safeActivePageIndex, "blocks", blockIndex, "data"], data);
+  }
+
+  /**
+   * Rename the content being edited: a Page's menu label, an Article's title.
+   *
+   * A new Article opens with an empty title (issue #102), so its address
+   * cannot be derived at creation the way the old title-first dialog did.
+   * While the Article is still a Draft with no slug history and an address
+   * that is still the one derived from its title, the address keeps following
+   * the title. The moment the author edits the address, publishes, or a rename
+   * has minted history, it stops — a live URL must never change under them.
+   */
+  function onWorkspaceTitleChange(value: string): void {
+    if (editingArticle) {
+      applyArticleChange((site) => {
+        const article = (site.articles ?? [])[articleIndex];
+        if (article === undefined) return site;
+        const derived = slugifyTitle(article.title);
+        const follows =
+          article.state === "draft" &&
+          (article.slugHistory ?? []).length === 0 &&
+          (article.slug === derived || /^-\d+$/.test(article.slug.slice(derived.length))) &&
+          article.slug.startsWith(derived);
+        const renamed = updateArticle(site, articleIndex, { title: value });
+        if (!follows) return renamed;
+        return updateArticle(renamed, articleIndex, {
+          slug: uniqueArticleSlug(renamed, article.lang, slugifyTitle(value), article.id),
+        });
+      });
+      return;
+    }
+    patch(["pages", safeActivePageIndex, "navLabel"], value);
   }
 
   /**
@@ -1222,94 +1224,167 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     });
   }
 
-  function handleAddPage(slug: string): void {
+  /**
+   * Create a page and open its workspace.
+   *
+   * The redesign's Create Page is a one-click action from the navigation and
+   * the Overview rather than a slug form, so the slug is derived and the
+   * author renames it in Page settings if they care. `addPage` appends, so
+   * the new page is always last. Like Create Article, it creates in the
+   * navigation's content language — that picker would be a lie otherwise.
+   */
+  function handleCreatePage(): void {
+    const lang = effectiveContentLanguage;
+    const existing = new Set(snapshot.pages.filter((p) => p.lang === lang).map((p) => p.slug));
+    let slug = "new-page";
+    let counter = 2;
+    while (existing.has(slug)) {
+      slug = `new-page-${counter}`;
+      counter += 1;
+    }
+    const nextIndex = snapshot.pages.length;
     state.update((draft) => {
-      Object.assign(draft, addPage(draft, slug));
+      Object.assign(draft, addPage(draft, slug, lang));
     });
-    // Jump to the newly-added page (last in pages[]).
-    setActivePageIndex(snapshot.pages.length); // index of new last page
+    pushHistory(state.getSnapshot());
+    go({ kind: "pageWorkspace", pageIndex: nextIndex });
   }
 
   function handleClonePage(index: number, slug: string): void {
     state.update((draft) => {
       Object.assign(draft, clonePage(draft, index, slug));
     });
-    setActivePageIndex(index + 1);
+    pushHistory(state.getSnapshot());
   }
 
   function handleDeletePage(index: number): void {
     state.update((draft) => {
       Object.assign(draft, deletePage(draft, index));
     });
-    if (index <= activePageIndex && activePageIndex > 0) {
-      setActivePageIndex(activePageIndex - 1);
-    }
+    pushHistory(state.getSnapshot());
+    // `reconcileDestination` handles the case where the deleted page was the
+    // one being edited, so there is nothing to clamp here.
   }
 
   function handleMovePage(index: number, direction: "up" | "down"): void {
+    const target = direction === "up" ? index - 1 : index + 1;
+    if (target < 0 || target >= snapshot.pages.length) return;
     state.update((draft) => {
       Object.assign(draft, movePage(draft, index, direction));
     });
-    const target = direction === "up" ? index - 1 : index + 1;
-    if (activePageIndex === index) setActivePageIndex(target);
-    else if (activePageIndex === target) setActivePageIndex(index);
+    pushHistory(state.getSnapshot());
+    // Pages are addressed by index, so a swap must be followed by everything
+    // that remembers one: the list's "last open" marker and the preview that
+    // Theme and Site settings keep. Otherwise both silently point at whatever
+    // page now occupies the old index. (The Pages list is only shown when no
+    // workspace is open, so the destination itself never needs following.)
+    const follow = (i: number): number => (i === index ? target : i === target ? index : i);
+    lastPageIndexRef.current = follow(lastPageIndexRef.current);
+    setPreviewTarget((current) =>
+      current.kind === "page" ? { kind: "page", index: follow(current.index) } : current,
+    );
   }
 
   function handleAddLanguageVersion(index: number, targetLang: string): void {
+    const nextIndex = snapshot.pages.length;
     state.update((draft) => {
       Object.assign(draft, addLanguageVersion(draft, index, targetLang));
     });
+    pushHistory(state.getSnapshot());
     // Jump to the newly-added counterpart (always last in pages[]).
-    setActivePageIndex(snapshot.pages.length);
+    go({ kind: "pageWorkspace", pageIndex: nextIndex });
   }
 
-  // When a Site Health issue is clicked we may need to drill into the
-  // right inspector before the target field exists in the DOM. The pending
-  // issue is stashed here and consumed by an effect that runs after the
-  // drill state's re-render flushes.
-  const pendingIssueRef = useRef<ValidationIssue | null>(null);
+  /**
+   * Create a Draft Article in the current content language and open it.
+   *
+   * Issue #102's second round: creating an Article opens it immediately as a
+   * Draft with a title field and an initial Block, rather than asking for a
+   * title in a dialog first. Nothing is published by creating it.
+   */
+  function handleCreateArticle(): void {
+    let createdId = "";
+    applyArticleChange((site) => {
+      const result = createArticle(site, {
+        title: "",
+        lang: effectiveContentLanguage,
+        today: todayIso(),
+      });
+      createdId = result.articleId;
+      return result.site;
+    });
+    if (createdId !== "") go({ kind: "articleWorkspace", articleId: createdId });
+  }
 
+  /**
+   * Open the destination that owns a validation issue, ready to repair it.
+   *
+   * Path-shape routing, now over destinations as well as drill state:
+   *
+   *   ["pages", N, "blocks", M, "data", ...]     page workspace, Block Inspector
+   *   ["pages", N, ...]                          page workspace, settings Inspector
+   *   ["articles", N, "blocks", M, "data", ...]  article workspace, Block Inspector
+   *   ["articles", N, ...]                       article workspace, settings Inspector
+   *   ["theme", ...]                             Theme destination
+   *   anything else                              Site settings destination
+   *
+   * The focused issue's path is re-rooted onto the form that will mount, so
+   * `navigateToIssue` can find the field by its `data-field` attribute.
+   */
   function handleJump(issue: ValidationIssue): void {
-    // Path-shape routing:
-    //   ["pages", N, "blocks", M, "data", ...] → drill into that block.
-    //   anything else (org.*, theme.*, defaultLanguage, pages summary) →
-    //                                            drill into Site settings.
     const path = issue.path;
-    let nextDrill: DrillMode | null = null;
     let focusIssue: ValidationIssue = issue;
-    if (
-      path.length >= 5 &&
-      path[0] === "pages" &&
-      typeof path[1] === "number" &&
-      path[2] === "blocks" &&
-      typeof path[3] === "number" &&
-      path[4] === "data"
-    ) {
-      const pageIndex = path[1];
-      const blockIndex = path[3];
-      const targetPage = snapshot.pages[pageIndex];
-      const targetBlock = targetPage?.blocks?.[blockIndex];
-      if (targetBlock !== undefined) {
-        if (pageIndex !== safeActivePageIndex) setActivePageIndex(pageIndex);
-        nextDrill = { kind: "block", blockId: targetBlock.id };
-        focusIssue = { ...issue, path: path.slice(5) };
+    setExportOpen(false);
+
+    if (path[0] === "articles" && typeof path[1] === "number") {
+      const article = (snapshot.articles ?? [])[path[1]];
+      if (article !== undefined) {
+        const isBlock =
+          path.length >= 5 &&
+          path[2] === "blocks" &&
+          typeof path[3] === "number" &&
+          path[4] === "data";
+        const targetBlock = isBlock ? article.blocks?.[path[3] as number] : undefined;
+        go({ kind: "articleWorkspace", articleId: article.id });
+        if (targetBlock !== undefined) {
+          setDrill({ kind: "block", blockId: targetBlock.id });
+          focusIssue = { ...issue, path: path.slice(5) };
+        } else if (path[2] === "title") {
+          // The title is edited on the outline, not in Article settings.
+          setDrill(OUTLINE_DRILL);
+        } else {
+          // The settings form tags its inputs with full `articles.N.…` paths.
+          setDrill({ kind: "settings" });
+        }
+        pendingIssueRef.current = focusIssue;
+        return;
       }
     }
-    if (
-      nextDrill === null &&
-      path.length >= 2 &&
-      path[0] === "pages" &&
-      typeof path[1] === "number" &&
-      snapshot.pages[path[1]] !== undefined
-    ) {
-      // A page-level issue (menu label, link name, SEO) → per-page settings.
-      if (path[1] !== safeActivePageIndex) setActivePageIndex(path[1]);
-      nextDrill = { kind: "page" };
+
+    if (path[0] === "pages" && typeof path[1] === "number") {
+      const pageIndex = path[1];
+      const targetPage = snapshot.pages[pageIndex];
+      if (targetPage !== undefined) {
+        const isBlock =
+          path.length >= 5 &&
+          path[2] === "blocks" &&
+          typeof path[3] === "number" &&
+          path[4] === "data";
+        const targetBlock = isBlock ? targetPage.blocks?.[path[3] as number] : undefined;
+        go({ kind: "pageWorkspace", pageIndex });
+        if (targetBlock !== undefined) {
+          setDrill({ kind: "block", blockId: targetBlock.id });
+          focusIssue = { ...issue, path: path.slice(5) };
+        } else {
+          // A page-level issue (menu label, link name, SEO) → page settings.
+          setDrill({ kind: "settings" });
+        }
+        pendingIssueRef.current = focusIssue;
+        return;
+      }
     }
-    if (nextDrill === null) {
-      nextDrill = path[0] === "theme" ? { kind: "theme" } : { kind: "settings" };
-    }
-    setDrillMode(nextDrill);
+
+    go(path[0] === "theme" ? { kind: "theme" } : { kind: "settings" });
     pendingIssueRef.current = focusIssue;
   }
 
@@ -1341,25 +1416,59 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       // Download button did nothing at all, with no clue why, which is the
       // worst possible reading of "the export is blocked".
       window.alert(
-        err instanceof Error
-          ? `Your site could not be downloaded. ${err.message}`
-          : "Your site could not be downloaded.",
+        t("builder.export.failed", { reason: err instanceof Error ? err.message : "" }).trim(),
       );
     }
   }
 
+  /**
+   * Export website always opens the readiness panel.
+   *
+   * The old flow exported straight away on a clean Site and only showed a
+   * dialog when something was wrong, which made the dialog read as a telling-
+   * off. The accepted design makes the panel the export surface itself: it is
+   * where the author learns that exporting does not update the live site, so
+   * it has to appear even when there is nothing to fix.
+   */
   function handleExportClick(): void {
-    const result = validationResult;
-    if (result.errors.length === 0 && result.warnings.length === 0) {
-      void performExport();
-      return;
-    }
-    setExportDialog(result);
+    setExportOpen(true);
   }
 
   function handleExportConfirm(): void {
-    setExportDialog(null);
+    setExportOpen(false);
+    setDownloadedAt(nowLabel());
     void performExport();
+  }
+
+  /**
+   * Save project — write the editable archive, Drafts included.
+   *
+   * Deliberately distinct from Export website, and never gated by validation:
+   * an author must always be able to keep their work, whatever state it is in
+   * (ADR 0016, and issue #102's third round).
+   */
+  function handleSaveProject(): void {
+    if (props.autosaveVfs === undefined) {
+      // No host persistence (the archival single-file build, an embedded
+      // editor): the only way to keep the work is the downloaded archive, and
+      // that must never be gated by validation, so it skips the readiness
+      // panel entirely.
+      setDownloadedAt(nowLabel());
+      void performExport();
+      return;
+    }
+    const seq = ++saveStatusSeqRef.current;
+    setSaveStatus("saving");
+    void state
+      .flush()
+      .then(() => {
+        if (seq !== saveStatusSeqRef.current) return;
+        setSaveStatus("saved");
+        setSavedAt(nowLabel());
+      })
+      .catch(() => {
+        if (seq === saveStatusSeqRef.current) setSaveStatus("error");
+      });
   }
 
   async function handleBuiltinImport(): Promise<void> {
@@ -1389,15 +1498,17 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       });
       setHistoryVersion((v) => v + 1);
       applySite(imported.siteData);
-      setActivePageIndex(0);
-      setDrillMode({ kind: "blocks" });
+      // A different project entirely — land on its Overview rather than on a
+      // workspace addressing content that no longer exists.
+      go(INITIAL_DESTINATION);
+      setPreviewTarget({ kind: "page", index: 0 });
     } catch (err) {
       const message =
         err instanceof ZipImportError
           ? err.message
           : err instanceof Error
             ? err.message
-            : "Import failed.";
+            : t("builder.import.failed");
       window.alert(message);
     }
   }
@@ -1410,10 +1521,6 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     void handleBuiltinImport();
   }
 
-  function handleExportCancel(): void {
-    setExportDialog(null);
-  }
-
   function handleResetClick(): void {
     if (props.onReset !== undefined) {
       props.onReset();
@@ -1422,12 +1529,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     // No host-provided reset: the browser shell keeps the draft in this
     // browser, so going back to the start screen is safe and reversible
     // ("Continue draft" brings it back).
-    if (
-      typeof window !== "undefined" &&
-      window.confirm(
-        "Go back to the start screen? Your work stays saved in this browser and you can continue it later.",
-      )
-    ) {
+    if (typeof window !== "undefined" && window.confirm(t("builder.reset.confirm"))) {
       window.location.reload();
     }
   }
@@ -1438,76 +1540,8 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     writeTipDismissed();
   }
 
-  // Minimal, usable wiring: a two-button switch above the list. Issue #102's
-  // accepted design gives Pages and Articles separate destinations in a
-  // persistent navigation; that redesign lands separately, and this switch is
-  // the smallest thing that makes the Articles components reachable today.
-  const contentSwitcher = (
-    <div data-testid="content-kind-switch" role="group" aria-label={t("articles.panel.title")}>
-      <Button
-        type="button"
-        variant={contentKind === "pages" ? "primary" : "ghost"}
-        aria-pressed={contentKind === "pages"}
-        onClick={() => setContentKind("pages")}
-        data-testid="content-kind-pages"
-      >
-        {t("articles.nav.pages")}
-      </Button>
-      <Button
-        type="button"
-        variant={contentKind === "articles" ? "primary" : "ghost"}
-        aria-pressed={contentKind === "articles"}
-        onClick={() => setContentKind("articles")}
-        data-testid="content-kind-articles"
-      >
-        {t("articles.nav.articles")}
-      </Button>
-    </div>
-  );
-
-  const pagesListNode = (
-    <>
-      {contentSwitcher}
-      {contentKind === "pages" ? (
-        <PagesList
-          site={snapshot}
-          activeIndex={safeActivePageIndex}
-          onSelect={setActivePageIndex}
-          onAdd={handleAddPage}
-          onClone={handleClonePage}
-          onDelete={handleDeletePage}
-          onMove={handleMovePage}
-          onAddLanguageVersion={handleAddLanguageVersion}
-        />
-      ) : (
-        <ArticlesPanel
-          site={snapshot}
-          onApply={applyArticleChange}
-          onSelect={setActiveArticleId}
-          contentLanguage={activePage?.lang ?? snapshot.defaultLanguage}
-          today={todayIso()}
-          activeArticleId={activeArticleId ?? undefined}
-        />
-      )}
-    </>
-  );
-
-  // Back-affordance shared by the two drilled views. Drills out to the
-  // un-drilled `blocks` view, mirroring the Escape keyboard handler.
-  const backToBlocksButton = (
-    <Button
-      type="button"
-      data-testid="drill-back"
-      data-action="drill-back"
-      onClick={() => setDrillMode({ kind: "blocks" })}
-    >
-      <IconArrowLeft size={16} />
-      <span>Back to page sections</span>
-    </Button>
-  );
-
-  // Per-page settings form: the `pages.[]` element node from the spine
-  // walk, rebased onto the active page index so `data-field` paths read
+  // Per-page settings form: the `pages.[]` element node from the spine walk,
+  // rebased onto the active page index so `data-field` paths read
   // `pages.<n>.navLabel` etc. (issue navigation relies on that).
   const pagesArrayNode = fields.find((node) => node.name === "pages");
   const pageSettingsNode =
@@ -1519,446 +1553,269 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       ? pageSettingsNode.fields
       : [];
 
-  // The inspector's eyebrow + title use the same catalog as the
-  // BlockListEditor row that drilled in, keeping visual register aligned.
-  let editorPaneBody: JSX.Element;
-  if (contentKind === "articles") {
-    editorPaneBody =
-      activeArticle !== undefined && articleIndex >= 0 ? (
-        <ArticleWorkspace
-          site={snapshot}
-          articleIndex={articleIndex}
-          onApply={applyArticleChange}
-          onBack={() => setActiveArticleId(null)}
-          onOpenArticle={setActiveArticleId}
-          today={todayIso()}
-          theme={activeThemeBundle}
-          onSetBlockVariant={(blockId, variant) =>
-            applySite(setBlockVariant(snapshot, blockId, variant))
-          }
-          onPatchBlockData={patchArticleBlockData}
-          onArrayChangeBlockData={arrayChangeArticleBlockData}
-          onMoveBlock={onMoveArticleBlock}
-          onRemoveBlock={onRemoveArticleBlock}
-          onAddBlock={() => setPickerOpen(true)}
-          uploader={uploadAssetForPicker}
-          documentUploader={uploadDocumentForPicker}
-          displayUrlFor={displayUrlForAsset}
-        />
-      ) : (
-        <p data-testid="articles-no-selection">{t("articles.empty")}</p>
-      );
-  } else if (drillMode.kind === "page" && activePage !== undefined) {
-    editorPaneBody = (
-      <div data-testid="inspector" data-inspector-mode="page" data-page-index={safeActivePageIndex}>
-        {backToBlocksButton}
-        <header data-testid="inspector-header">
-          <span data-testid="inspector-eyebrow">Page settings</span>
-          <h2>{activePage.navLabel}</h2>
-          <p data-inspector-lead>
-            How this page appears in the menu and in search results. The sections themselves are
-            edited from the page sections list.
-          </p>
-        </header>
-        <SpineForm
-          fields={pageSettingsFields}
-          site={snapshot}
-          onPatch={patch}
-          uploader={uploadAssetForPicker}
-          documentUploader={uploadDocumentForPicker}
-          displayUrlFor={displayUrlForAsset}
-        />
-      </div>
+  // historyVersion participates in the closure so the disabled state
+  // re-renders alongside the undo/redo capabilities. Without referencing it
+  // the linter sees an "unused" state setter.
+  void historyVersion;
+  const canUndo = history.canUndo();
+  const canRedo = history.canRedo();
+
+  const blockingCount = validationResult.errors.filter((i) => i.blocking === true).length;
+
+  const previewPane = (
+    <PreviewPane
+      html={previewHtml}
+      reloadKey={previewReloadKey}
+      siteData={snapshot}
+      activePageIndex={safeActivePageIndex}
+      onNavigate={handlePreviewNavigate}
+      previewedTitle={previewedTitle}
+      previewedKind={safePreviewTarget.kind}
+      canReturnToTarget={!previewMatchesTarget}
+      onReturnToTarget={handleReturnPreviewToTarget}
+      onEditPreviewed={handleEditPreviewed}
+    />
+  );
+
+  /** The workspace target, when a workspace destination is open. */
+  const workspaceTarget: WorkspaceTarget | null =
+    reconciled.kind === "pageWorkspace"
+      ? { kind: "page", pageIndex: safeActivePageIndex }
+      : reconciled.kind === "articleWorkspace"
+        ? { kind: "article", articleId: reconciled.articleId }
+        : null;
+
+  let main: JSX.Element;
+  if (workspaceTarget !== null) {
+    main = (
+      <Workspace
+        site={snapshot}
+        target={workspaceTarget}
+        drill={reconciledDrill}
+        onDrillChange={setDrill}
+        isNarrow={isNarrow}
+        theme={activeThemeBundle}
+        onBack={() => go(backDestination(reconciled))}
+        onTitleChange={onWorkspaceTitleChange}
+        onAddBlock={() => setPickerOpen(true)}
+        onMoveBlock={onMoveBlock}
+        onRemoveBlock={onRemoveBlock}
+        onSetBlockVariant={(blockId, variant) =>
+          applySite(setBlockVariant(snapshot, blockId, variant))
+        }
+        onPatchBlockData={onPatchWorkspaceBlockData}
+        onArrayChangeBlockData={onArrayChangeWorkspaceBlockData}
+        onReplaceBlockData={onReplaceWorkspaceBlockData}
+        pageSettingsFields={pageSettingsFields}
+        onPatchSite={patch}
+        onApplySite={applyArticleChange}
+        today={todayIso()}
+        onOpenArticle={(articleId) => go({ kind: "articleWorkspace", articleId })}
+        uploader={uploadAssetForPicker}
+        documentUploader={uploadDocumentForPicker}
+        displayUrlFor={displayUrlForAsset}
+        preview={previewPane}
+        pane={workspacePane}
+        onPaneChange={setWorkspacePane}
+      />
     );
-  } else if (drillMode.kind === "settings") {
-    editorPaneBody = (
-      <div data-testid="inspector" data-inspector-mode="settings">
-        {backToBlocksButton}
-        <header data-testid="inspector-header">
-          <span data-testid="inspector-eyebrow">Site</span>
-          <h2>Site settings</h2>
-          <p data-inspector-lead>
-            Your organisation’s details, shown across every page, plus the languages the site
-            offers.
-          </p>
-        </header>
-        <SpineForm
-          fields={fields}
-          site={snapshot}
-          onPatch={patch}
-          uploader={uploadAssetForPicker}
-          documentUploader={uploadDocumentForPicker}
-          displayUrlFor={displayUrlForAsset}
-        />
-      </div>
+  } else if (reconciled.kind === "overview") {
+    main = (
+      <OverviewScreen
+        site={snapshot}
+        validation={validationResult}
+        onOpenPage={(pageIndex) => go({ kind: "pageWorkspace", pageIndex })}
+        onOpenArticle={(articleId) => go({ kind: "articleWorkspace", articleId })}
+        onNavigate={(section) => go(destinationForSection(section))}
+        onCreatePage={handleCreatePage}
+        onCreateArticle={handleCreateArticle}
+        onFix={handleJump}
+      />
     );
-  } else if (drillMode.kind === "theme") {
-    editorPaneBody = (
-      <div data-testid="inspector" data-inspector-mode="theme">
-        {backToBlocksButton}
-        <header data-testid="inspector-header">
-          <span data-testid="inspector-eyebrow">Site</span>
-          <h2>Theme</h2>
-          <p data-inspector-lead>
-            The look of the whole site. Changes show in the preview right away.
-          </p>
-        </header>
-        <ThemeForm
-          site={snapshot}
-          onChange={applySite}
-          activeTheme={activeThemeBundle}
-          installedThemes={installedThemes}
-          onImportTheme={importThemePackage}
-          onExportTheme={exportThemePackageFile}
-          onRemoveTheme={removeThemePackage}
-        />
-      </div>
+  } else if (reconciled.kind === "pages") {
+    main = (
+      <PagesScreen
+        site={snapshot}
+        activeIndex={safeActivePageIndex}
+        onOpen={(pageIndex) => go({ kind: "pageWorkspace", pageIndex })}
+        onCreatePage={handleCreatePage}
+        onClone={handleClonePage}
+        onDelete={handleDeletePage}
+        onMove={handleMovePage}
+        onAddLanguageVersion={handleAddLanguageVersion}
+      />
     );
-  } else if (drillMode.kind === "block" && activeBlock !== undefined && activeBlockIndex >= 0) {
-    const envelope = KnownBlockSchemas[activeBlock.type as keyof typeof KnownBlockSchemas];
-    // The envelope is `{ id, type, version, data: <DataSchema> }`. The
-    // generic form generator wants the data schema directly so it walks
-    // only the user-editable payload.
-    const dataSchema =
-      envelope !== undefined
-        ? ((envelope as unknown as { shape: { data: ZodType } }).shape.data ?? envelope)
-        : undefined;
-    const entry = blockCatalog.entryFor(activeBlock.type);
-    const blockTitle =
-      typeof (activeBlock.data as { title?: unknown })?.title === "string"
-        ? (activeBlock.data as { title: string }).title
-        : entry.label;
-    editorPaneBody = (
-      <div
-        data-testid="inspector"
-        data-inspector-mode="block"
-        data-block-id={activeBlock.id}
-        data-block-type={activeBlock.type}
-      >
-        {backToBlocksButton}
-        <header data-testid="inspector-header">
-          <span data-testid="inspector-eyebrow">{entry.label}</span>
-          <h2>{blockTitle}</h2>
-        </header>
-        <BlockVariantControl
-          block={activeBlock}
-          theme={activeThemeBundle}
-          onChange={(variant) => applySite(setBlockVariant(snapshot, activeBlock.id, variant))}
-        />
-        {activeBlock.type === "articleList" ? (
-          // Hand-coded rather than schema-generated: a generated form would
-          // render `articleIds` and `tags` as arrays of raw ids, which ADR 0044
-          // puts off-limits outright.
-          <ArticleListInspector
-            site={snapshot}
-            value={activeBlock.data}
-            containerLang={activePage?.lang ?? snapshot.defaultLanguage}
-            showTextFields
-            onApply={applyArticleChange}
-            onPatch={(articleListPatch) => {
-              for (const [key, value] of Object.entries(articleListPatch)) {
-                patchBlockData(safeActivePageIndex, activeBlockIndex, [key], value);
-              }
-            }}
-          />
-        ) : activeBlock.type === "customHTML" ? (
-          <CustomHtmlBlockForm
-            block={activeBlock as CustomHtmlBlock}
-            onChange={(nextBlock) => {
-              patch(
-                ["pages", safeActivePageIndex, "blocks", activeBlockIndex, "data"],
-                nextBlock.data,
-              );
-            }}
-          />
-        ) : dataSchema !== undefined ? (
-          <BlockForm
-            schema={dataSchema}
-            data={activeBlock.data}
-            onPatch={(subpath, value) =>
-              patchBlockData(safeActivePageIndex, activeBlockIndex, subpath, value)
-            }
-            onArrayChange={(subpath, next) =>
-              arrayChangeBlockData(safeActivePageIndex, activeBlockIndex, subpath, next)
-            }
-            uploader={uploadAssetForPicker}
-            documentUploader={uploadDocumentForPicker}
-            displayUrlFor={displayUrlForAsset}
-            newItem={(subpath) => defaultArrayItemForBlock(activeBlock.type, subpath)}
-            overrides={
-              BLOCK_FIELD_METADATA[activeBlock.type as keyof typeof BLOCK_FIELD_METADATA] ?? []
-            }
-          />
-        ) : (
-          // Unknown block type — surface a soft hint rather than crashing.
-          // Future blocks land in `KnownBlockSchemas` and this branch
-          // disappears for them.
-          <p data-testid="inspector-unknown-type">
-            No editor available for block type "{activeBlock.type}".
-          </p>
-        )}
-      </div>
+  } else if (reconciled.kind === "articles") {
+    main = (
+      <ArticlesScreen
+        site={snapshot}
+        onApply={applyArticleChange}
+        onOpen={(articleId) => go({ kind: "articleWorkspace", articleId })}
+        onCreate={handleCreateArticle}
+        {...(activeArticle === undefined ? {} : { activeArticleId: activeArticle.id })}
+      />
+    );
+  } else if (reconciled.kind === "theme") {
+    // Theme and Site settings keep an adjacent preview even though they are
+    // not content destinations: both change every page at once, and judging
+    // a theme without seeing it is exactly the problem the live preview
+    // exists to solve.
+    main = (
+      <SplitView
+        testId="theme-screen"
+        isNarrow={isNarrow}
+        pane={workspacePane}
+        onPaneChange={setWorkspacePane}
+        editor={
+          <div data-pane-body>
+            <div data-screen>
+              <header data-screen-head>
+                <h1>
+                  {t("builder.nav.theme")}
+                  <InfoHint
+                    label={t("builder.nav.theme")}
+                    text={t("theme.info")}
+                    testId="theme-screen-info"
+                  />
+                </h1>
+              </header>
+              <ThemeForm
+                site={snapshot}
+                onChange={applySite}
+                activeTheme={activeThemeBundle}
+                installedThemes={installedThemes}
+                onImportTheme={importThemePackage}
+                onExportTheme={exportThemePackageFile}
+                onRemoveTheme={removeThemePackage}
+              />
+            </div>
+          </div>
+        }
+        preview={previewPane}
+      />
     );
   } else {
-    editorPaneBody = (
-      <>
-        {activePageSlug !== "" ? (
-          <BlockListEditor
-            site={snapshot}
-            pageSlug={activePageSlug}
-            onMove={onMoveBlock}
-            onRemove={onRemoveBlock}
-            onAddBlock={() => setPickerOpen(true)}
-            onSelect={(blockId) => setDrillMode({ kind: "block", blockId })}
-          />
-        ) : null}
-        <nav data-testid="drill-links" aria-label="More settings">
-          {activePage !== undefined ? (
-            <Button
-              type="button"
-              data-testid="page-settings-link"
-              data-action="drill-page"
-              onClick={() => setDrillMode({ kind: "page" })}
-            >
-              <span data-drill-icon>
-                <IconLayout size={18} />
-              </span>
-              <span data-drill-text>
-                <span data-testid="page-settings-link-label">Page settings</span>
-                <span data-testid="page-settings-link-hint">
-                  “{activePage.navLabel}” — menu label, link, search preview
-                </span>
-              </span>
-              <IconChevronRight size={16} />
-            </Button>
-          ) : null}
-          <Button
-            type="button"
-            data-testid="site-settings-link"
-            data-action="drill-settings"
-            onClick={() => setDrillMode({ kind: "settings" })}
-          >
-            <span data-drill-icon>
-              <IconSettings size={18} />
-            </span>
-            <span data-drill-text>
-              <span data-testid="site-settings-link-label">Site settings</span>
-              <span data-testid="site-settings-link-hint">
-                Organisation name, logo, contact details, languages
-              </span>
-            </span>
-            <IconChevronRight size={16} />
-          </Button>
-          <Button
-            type="button"
-            data-testid="drill-in-theme"
-            data-action="drill-theme"
-            onClick={() => setDrillMode({ kind: "theme" })}
-          >
-            <span data-drill-icon>
-              <IconPalette size={18} />
-            </span>
-            <span data-drill-text>
-              <span data-testid="drill-in-theme-label">Theme</span>
-              <span data-testid="drill-in-theme-hint">Look, colours, fonts and spacing</span>
-            </span>
-            <IconChevronRight size={16} />
-          </Button>
-        </nav>
-      </>
+    main = (
+      <SplitView
+        testId="settings-screen"
+        isNarrow={isNarrow}
+        pane={workspacePane}
+        onPaneChange={setWorkspacePane}
+        editor={
+          <div data-pane-body>
+            <div data-screen>
+              <header data-screen-head>
+                <h1>
+                  {t("builder.nav.settings")}
+                  <InfoHint
+                    label={t("builder.nav.settings")}
+                    text={t("settings.info")}
+                    testId="settings-screen-info"
+                  />
+                </h1>
+              </header>
+              <SpineForm
+                fields={fields}
+                site={snapshot}
+                onPatch={patch}
+                uploader={uploadAssetForPicker}
+                documentUploader={uploadDocumentForPicker}
+                displayUrlFor={displayUrlForAsset}
+              />
+              <LocaleToggle />
+            </div>
+          </div>
+        }
+        preview={previewPane}
+      />
     );
   }
 
-  const editorPane = (
-    <section data-testid="editor-pane" aria-label={t("pane.editor.label")}>
-      {!tipDismissed ? (
+  return (
+    <div data-testid="editor-app" ref={rootRef} data-narrow={isNarrow ? "true" : "false"}>
+      <TopBar
+        onImport={handleImportClick}
+        onExport={handleExportClick}
+        onReset={handleResetClick}
+        onSave={handleSaveProject}
+        onUndo={doUndo}
+        onRedo={doRedo}
+        onOpenDrawer={() => setDrawerOpen(true)}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        saveStatus={saveStatus}
+        savedAt={savedAt}
+        downloadedAt={downloadedAt}
+        blockingCount={blockingCount}
+      />
+
+      <div data-builder-body>
+        <MainNav
+          active={sectionOf(reconciled)}
+          onNavigate={(section) => go(destinationForSection(section))}
+          onCreatePage={handleCreatePage}
+          onCreateArticle={handleCreateArticle}
+          pageCount={snapshot.pages.length}
+          articleCount={(snapshot.articles ?? []).length}
+          languages={snapshot.languages}
+          contentLanguage={effectiveContentLanguage}
+          onContentLanguageChange={setContentLanguage}
+          drawerOpen={drawerOpen}
+          onCloseDrawer={() => setDrawerOpen(false)}
+          projectActions={
+            isNarrow
+              ? {
+                  onImport: () => {
+                    setDrawerOpen(false);
+                    handleImportClick();
+                  },
+                  onReset: () => {
+                    setDrawerOpen(false);
+                    handleResetClick();
+                  },
+                }
+              : undefined
+          }
+        />
+        <main data-builder-main>{main}</main>
+      </div>
+
+      {!tipDismissed && reconciled.kind === "overview" ? (
         <aside data-testid="getting-started-tip" data-tip>
           <span data-tip-icon>
-            <IconGlobe size={18} />
+            <IconLayout size={18} />
           </span>
           <div data-tip-body>
-            <strong>How this works</strong>
-            <p>
-              Pick a page, then click a section to change its text and images. The preview on the
-              right updates as you type. When you are happy, use <b>Download copy</b> to get your
-              site as a folder ready to publish.
-            </p>
+            <strong>{t("builder.tip.title")}</strong>
+            <p>{t("builder.tip.body", { action: t("builder.action.export") })}</p>
           </div>
           <Button
             type="button"
-            data-icon-button
+            size="icon-sm"
+            variant="ghost"
             data-testid="getting-started-dismiss"
-            aria-label="Hide this tip"
-            title="Hide this tip"
+            aria-label={t("builder.tip.dismiss")}
+            title={t("builder.tip.dismiss")}
             onClick={dismissTip}
           >
             <IconClose size={16} />
           </Button>
         </aside>
       ) : null}
-      {pagesListNode}
-      {editorPaneBody}
-      <LocaleToggle />
-    </section>
-  );
 
-  const previewPane = (
-    <section
-      data-testid="preview-pane"
-      data-preview-viewport={previewViewport}
-      aria-label={t("pane.preview.label")}
-    >
-      <div data-testid="preview-toolbar">
-        <div
-          data-testid="viewport-preview-controls"
-          role="group"
-          aria-label="Preview viewport size"
-        >
-          {PREVIEW_VIEWPORT_OPTIONS.map((option) => (
-            <Button
-              key={option.id}
-              type="button"
-              data-testid="viewport-preview-option"
-              data-viewport={option.id}
-              data-active={previewViewport === option.id}
-              aria-pressed={previewViewport === option.id}
-              title={`${option.label} preview (${previewViewportSizeLabel(option)})`}
-              onClick={() => setPreviewViewport(option.id)}
-            >
-              <span data-testid="viewport-preview-label">{option.label}</span>
-              <span data-testid="viewport-preview-size">{previewViewportSizeLabel(option)}</span>
-            </Button>
-          ))}
-        </div>
-      </div>
-      <div data-testid="preview-canvas" ref={previewCanvasRef}>
-        {/* The sizer occupies the frame's *scaled* footprint, so the canvas
-         * scrolls and centres around what is actually visible rather than
-         * around the frame's full unscaled size. */}
-        <div
-          data-testid="preview-frame-sizer"
-          data-preview-viewport={previewViewport}
-          style={
-            previewViewportWidth === null || previewViewportHeight === null
-              ? undefined
-              : {
-                  width: `${previewViewportWidth * previewScale}px`,
-                  height: `${previewViewportHeight * previewScale}px`,
-                }
-          }
-        >
-          <div
-            data-testid="preview-frame-shell"
-            data-preview-viewport={previewViewport}
-            data-preview-scaled={previewScale < 1 ? "true" : "false"}
-            style={
-              previewViewportWidth === null || previewViewportHeight === null
-                ? undefined
-                : {
-                    width: `${previewViewportWidth}px`,
-                    height: `${previewViewportHeight}px`,
-                    transform: `scale(${previewScale})`,
-                  }
-            }
-          >
-            {/* Scripts power renderer-owned preview interactions; same-origin keeps blob uploads visible. */}
-            <iframe
-              // Remounting on the reload key gives the new page/theme/language a
-              // fresh document; every other edit is applied in place over the
-              // bridge, so this element is deliberately stable across keystrokes.
-              key={previewReloadKey}
-              ref={iframeRef}
-              title={t("pane.preview.label")}
-              srcDoc={previewBootHtmlRef.current}
-              // `allow-popups` lets the preview-nav interceptor open external
-              // links (a partner site, a social profile) in a new tab instead of
-              // replacing the preview document.
-              sandbox="allow-scripts allow-same-origin allow-popups"
-            />
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-
-  // historyVersion participates in the closure so the disabled state
-  // re-renders alongside the undo/redo capabilities. Without referencing
-  // it the linter sees an "unused" state setter.
-  void historyVersion;
-  const canUndo = history.canUndo();
-  const canRedo = history.canRedo();
-
-  return (
-    <div data-testid="editor-app" ref={rootRef}>
-      <TopBar
-        onImport={handleImportClick}
-        onExport={handleExportClick}
-        onReset={handleResetClick}
-        onUndo={doUndo}
-        onRedo={doRedo}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        saveStatus={saveStatus}
-      />
-      {isNarrow ? (
-        // Narrow layout: real tabs from `@sosb/ui` (Base UI). The previous
-        // markup was a `role="tablist"` wrapper around two plain buttons —
-        // no `role="tab"`, no `aria-selected`, no panel association and no
-        // arrow-key travel. The shared primitive supplies all four; the
-        // `data-testid` / `data-active` hooks the stylesheet and tests use
-        // are preserved.
-        <Tabs.Root
-          data-testid="layout-tabs"
-          value={activeTab}
-          onValueChange={(value) => setActiveTab(value as TabName)}
-        >
-          <Tabs.List>
-            <Tabs.Tab value="editor" data-testid="layout-tab" data-active={activeTab === "editor"}>
-              {t("tabs.editor")}
-            </Tabs.Tab>
-            <Tabs.Tab
-              value="preview"
-              data-testid="layout-tab"
-              data-active={activeTab === "preview"}
-            >
-              {t("tabs.preview")}
-            </Tabs.Tab>
-          </Tabs.List>
-          {/* Only the active pane is mounted: the preview iframe is
-              expensive, and mounting both would double the renderer work
-              on every edit. */}
-          <Tabs.Panel value={activeTab}>
-            {activeTab === "editor" ? editorPane : previewPane}
-          </Tabs.Panel>
-        </Tabs.Root>
-      ) : (
-        <div data-testid="layout-two-pane">
-          {editorPane}
-          {previewPane}
-        </div>
-      )}
-
-      {panelOpen ? <SiteHealthPanel result={validationResult} onJump={handleJump} /> : null}
-
-      <HealthFooter
+      <ExportReadinessPanel
+        open={exportOpen}
         result={validationResult}
-        onToggle={() => setPanelOpen((open) => !open)}
-        expanded={panelOpen}
+        onClose={() => setExportOpen(false)}
+        onExport={handleExportConfirm}
+        onFix={handleJump}
       />
-
-      {exportDialog !== null ? (
-        <ExportConfirmDialog
-          result={exportDialog}
-          onConfirm={handleExportConfirm}
-          onCancel={handleExportCancel}
-        />
-      ) : null}
 
       <AddBlockDialog
         open={pickerOpen}
         onPick={onPickBlockType}
         onClose={() => setPickerOpen(false)}
-        excludeTypes={contentKind === "articles" ? ARTICLE_BODY_EXCLUDED_BLOCKS : undefined}
+        excludeTypes={editingArticle ? ARTICLE_BODY_EXCLUDED_BLOCKS : undefined}
       />
     </div>
   );
@@ -1968,41 +1825,91 @@ interface TopBarProps {
   readonly onImport: (() => void) | undefined;
   readonly onExport: (() => void) | undefined;
   readonly onReset: (() => void) | undefined;
+  readonly onSave: () => void;
   readonly onUndo: () => void;
   readonly onRedo: () => void;
+  readonly onOpenDrawer: () => void;
   readonly canUndo: boolean;
   readonly canRedo: boolean;
   readonly saveStatus: SaveStatus;
+  readonly savedAt: string | null;
+  readonly downloadedAt: string | null;
+  /** Problems that hard-block the export, surfaced on the button itself. */
+  readonly blockingCount: number;
 }
 
 function TopBar(props: TopBarProps): JSX.Element {
   const t = useTranslator();
+
+  // Two facts, deliberately not merged: where the editable project lives, and
+  // whether a copy has ever left this machine. An author who reads only
+  // "Saved" can reasonably conclude they have a file somewhere they do not.
+  const savedLine =
+    props.saveStatus === "saving"
+      ? t("saveStatus.saving")
+      : props.saveStatus === "error"
+        ? t("saveStatus.error")
+        : props.saveStatus === "localOnly"
+          ? t("saveStatus.localOnly")
+          : props.savedAt !== null
+            ? `${t("saveStatus.saved")} · ${props.savedAt}`
+            : t("builder.save.never");
+
   return (
     <header data-testid="top-bar">
+      <Button
+        type="button"
+        size="icon"
+        // Utility classes rather than the editor sheet: the shared Button's
+        // own display utility outranks a `display: none` there.
+        className="max-md:h-8 max-md:w-8 md:hidden"
+        data-testid="nav-drawer-open"
+        data-drawer-button
+        aria-label={t("builder.nav.open")}
+        title={t("builder.nav.open")}
+        onClick={props.onOpenDrawer}
+      >
+        <IconMenu size={18} />
+      </Button>
       <div data-brand>
         <span data-brand-mark aria-hidden="true">
           <IconLayout size={18} />
         </span>
-        <span data-brand-name>Site Builder</span>
+        <span data-brand-name>{t("builder.brand")}</span>
       </div>
+
+      <span data-topbar-spacer />
+
       <p
         data-testid="save-status"
         data-status={props.saveStatus}
         aria-live="polite"
         role={props.saveStatus === "error" ? "alert" : "status"}
-        title={t(saveStatusMessageKey(props.saveStatus))}
       >
-        <span data-save-status-text>{t(saveStatusMessageKey(props.saveStatus))}</span>
+        <span data-save-status-text>{savedLine}</span>
+        <span data-save-status-secondary>
+          {t("builder.save.downloaded", {
+            when: props.downloadedAt ?? t("builder.save.downloaded.never"),
+          })}
+          <InfoHint
+            label={t("builder.save.info.label")}
+            text={t("builder.save.info")}
+            testId="save-status-info"
+          />
+        </span>
       </p>
+
       <div data-topbar-actions>
-        <span data-button-group role="group" aria-label="History">
+        <span data-button-group role="group" aria-label={t("builder.history")}>
           <Button
             type="button"
+            size="icon"
+            className="max-md:h-8 max-md:w-8"
             data-testid="undo-button"
             data-action="undo"
             data-icon-button
-            aria-label="Undo (Ctrl+Z)"
-            title="Undo (Ctrl+Z)"
+            aria-label={t("builder.undo")}
+            title={t("builder.undo")}
             disabled={!props.canUndo}
             onClick={props.onUndo}
           >
@@ -2010,48 +1917,71 @@ function TopBar(props: TopBarProps): JSX.Element {
           </Button>
           <Button
             type="button"
+            size="icon"
+            className="max-md:h-8 max-md:w-8"
             data-testid="redo-button"
             data-action="redo"
             data-icon-button
-            aria-label="Redo (Ctrl+Shift+Z)"
-            title="Redo (Ctrl+Shift+Z)"
+            aria-label={t("builder.redo")}
+            title={t("builder.redo")}
             disabled={!props.canRedo}
             onClick={props.onRedo}
           >
             <IconRedo size={16} />
           </Button>
         </span>
+        {/* On phones these two move into the navigation drawer. */}
         <Button
           type="button"
+          className="max-md:hidden"
           data-action="import"
-          title="Open a .zip you downloaded earlier"
+          title={t("builder.import.title")}
           onClick={props.onImport}
         >
           {t("topbar.import")}
         </Button>
         <Button
           type="button"
+          className="max-md:hidden"
           data-action="reset"
-          title="Go back to the start screen"
+          title={t("builder.reset.title")}
           onClick={props.onReset}
         >
           {t("topbar.reset")}
         </Button>
         <Button
           type="button"
+          className="max-md:h-8 max-md:px-2.5 max-md:text-(length:--sosb-text-sm)"
+          data-testid="save-project"
+          data-action="save"
+          onClick={props.onSave}
+        >
+          {t("builder.action.save")}
+        </Button>
+        <Button
+          type="button"
+          variant="primary"
+          className="max-md:h-8 max-md:px-2.5 max-md:text-(length:--sosb-text-sm)"
           data-action="export"
           data-variant="primary"
-          title="Download your site as a .zip"
           onClick={props.onExport}
         >
-          {t("topbar.export")}
+          {props.blockingCount > 0
+            ? t("builder.action.export.count", { count: props.blockingCount })
+            : t("builder.action.export")}
         </Button>
       </div>
     </header>
   );
 }
 
-function saveStatusMessageKey(status: SaveStatus): string {
+/**
+ * Message key for a save state.
+ *
+ * Kept as a total switch over the union so adding a state is a compile error
+ * here rather than a silently untranslated status line.
+ */
+export function saveStatusMessageKey(status: SaveStatus): string {
   switch (status) {
     case "localOnly":
       return "saveStatus.localOnly";

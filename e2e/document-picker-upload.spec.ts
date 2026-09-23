@@ -4,6 +4,8 @@ import { createServer, type Server } from "node:http";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
+import { openFirstPage } from "./builder-helpers.js";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..");
@@ -128,7 +130,8 @@ test("uploading the first document shows the original filename and updates the p
   const server = await startServer();
   try {
     await page.goto(`${server.url}/`);
-    await expect(page.getByTestId("editor-pane")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId("editor-app")).toBeVisible({ timeout: 10_000 });
+    await openFirstPage(page);
 
     const documentRow = page.locator(
       '[data-testid="block-row"][data-block-id="blk_home_documents"]',

@@ -28,7 +28,9 @@
  */
 export { cn } from "./lib/cn.js";
 
+export { Badge, badgeVariants, type BadgeProps } from "./components/badge.js";
 export { Button, buttonVariants, type ButtonProps } from "./components/button.js";
+export { Segmented, type SegmentedOption, type SegmentedProps } from "./components/segmented.js";
 export {
   Input,
   NativeSelect,

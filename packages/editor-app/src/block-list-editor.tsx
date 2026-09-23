@@ -28,7 +28,7 @@
  * handle can drop anywhere on the destination row. The drag payload
  * carries the source index so the drop handler knows what moved.
  */
-import type { JSX } from "react";
+import type { JSX, ReactNode } from "react";
 import { useState } from "react";
 import type { BlockEnvelope, Site } from "@sosb/schema";
 
@@ -36,6 +36,7 @@ import { buildBlockCatalog, type BlockCatalogEntry } from "./block-catalog.js";
 import { IconArrowDown, IconArrowUp, IconGrip, IconPlus, IconTrash } from "./icons.js";
 import type * as React from "react";
 import { Button } from "@sosb/ui";
+import { useTranslator } from "./i18n-context.js";
 
 const DRAG_MIME = "application/x-sosb-block-index";
 
@@ -63,9 +64,18 @@ export interface BlockListEditorProps {
    * drag behaviour, keyboard handling, and catalog labels.
    */
   readonly blocks?: readonly BlockEnvelope[] | undefined;
+  /**
+   * Replace the default "Page sections" heading. The redesigned workspace
+   * labels the outline itself (with its own (i) explanation), and a second
+   * heading underneath it would read as a second list.
+   */
+  readonly heading?: ReactNode;
+  /** Optional hint under a custom heading. Omitted when `heading` is set and this is not. */
+  readonly hint?: ReactNode;
 }
 
 export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
+  const t = useTranslator();
   const page = props.site.pages.find((p) => p.slug === props.pageSlug);
   const blocks = props.blocks ?? page?.blocks ?? [];
   const catalog = buildBlockCatalog();
@@ -80,33 +90,37 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
     <section data-testid="block-list" data-page-slug={props.pageSlug}>
       <header>
         <div data-section-heading>
-          <h2>Page sections</h2>
-          <p data-section-hint>
-            {page !== undefined
-              ? `Sections on “${page.navLabel}”, top to bottom. Click one to edit it.`
-              : "Click a section to edit it."}
-          </p>
+          <h2>{props.heading ?? t("workspace.blocks")}</h2>
+          {props.heading === undefined ? (
+            <p data-section-hint>
+              {page !== undefined
+                ? t("blocks.hint.page", { title: page.navLabel })
+                : t("blocks.hint")}
+            </p>
+          ) : props.hint !== undefined ? (
+            <p data-section-hint>{props.hint}</p>
+          ) : null}
         </div>
         <Button
           type="button"
+          variant="primary"
           data-testid="block-add"
           data-variant="primary"
           onClick={props.onAddBlock}
         >
           <IconPlus size={16} />
-          <span>Add section</span>
+          <span>{t("blocks.add")}</span>
         </Button>
       </header>
 
       {blocks.length === 0 ? (
         <div data-testid="block-list-empty" data-empty-state>
           <p>
-            <strong>This page is empty.</strong> Add a section to start building it — a page header
-            is a good first pick.
+            <strong>{t("blocks.empty.title")}</strong> {t("blocks.empty.body")}
           </p>
-          <Button type="button" data-variant="primary" onClick={props.onAddBlock}>
+          <Button type="button" variant="primary" data-variant="primary" onClick={props.onAddBlock}>
             <IconPlus size={16} />
-            <span>Add your first section</span>
+            <span>{t("blocks.empty.add")}</span>
           </Button>
         </div>
       ) : null}
@@ -173,8 +187,8 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
             >
               <span
                 data-testid="block-drag-handle"
-                aria-label={`Drag to reorder ${entry.label}`}
-                title="Drag to reorder"
+                aria-label={t("blocks.row.drag", { label: entry.label })}
+                title={t("blocks.row.drag.title")}
                 draggable={true}
                 role="button"
                 tabIndex={0}
@@ -195,10 +209,12 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
               {props.onSelect !== undefined ? (
                 <Button
                   type="button"
+                  variant="ghost"
+                  className="h-auto min-h-9 flex-col items-start justify-center gap-0 px-1.5 py-1 text-left whitespace-normal"
                   data-testid="block-row-select"
                   data-action="select"
-                  aria-label={`Edit ${entry.label}`}
-                  title="Edit this section"
+                  aria-label={t("blocks.row.edit", { label: entry.label })}
+                  title={t("blocks.row.edit.title")}
                   onClick={(): void => props.onSelect?.(block.id)}
                 >
                   <span data-testid="block-row-label" data-eyebrow={showLabelAsEyebrow}>
@@ -215,13 +231,19 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
                 </span>
               )}
 
-              <span data-row-actions role="group" aria-label={`Actions for ${entry.label}`}>
+              <span
+                data-row-actions
+                role="group"
+                aria-label={t("blocks.row.actions", { label: entry.label })}
+              >
                 <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-sm"
                   data-testid="block-move-up"
                   data-icon-button
-                  aria-label={`Move ${entry.label} up`}
-                  title="Move up"
+                  aria-label={t("blocks.row.moveUp", { label: entry.label })}
+                  title={t("blocks.row.moveUp.title")}
                   disabled={index === 0}
                   onClick={(): void => props.onMove(index, Math.max(0, index - 1))}
                 >
@@ -229,10 +251,12 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
                 </Button>
                 <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-sm"
                   data-testid="block-move-down"
                   data-icon-button
-                  aria-label={`Move ${entry.label} down`}
-                  title="Move down"
+                  aria-label={t("blocks.row.moveDown", { label: entry.label })}
+                  title={t("blocks.row.moveDown.title")}
                   disabled={index === blocks.length - 1}
                   onClick={(): void => props.onMove(index, Math.min(blocks.length - 1, index + 1))}
                 >
@@ -240,11 +264,13 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
                 </Button>
                 <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-sm"
                   data-testid="block-remove"
                   data-icon-button
                   data-tone="danger"
-                  aria-label={`Remove ${entry.label}`}
-                  title="Remove section (you can undo)"
+                  aria-label={t("blocks.row.remove", { label: entry.label })}
+                  title={t("blocks.row.remove.title")}
                   onClick={(): void => props.onRemove(block.id)}
                 >
                   <IconTrash size={16} />

@@ -8,6 +8,7 @@ import { MemoryDriver } from "@sosb/vfs/memory";
 import type { Site } from "@sosb/schema";
 
 import minimal from "./fixtures/minimal-site.json" with { type: "json" };
+import { openPage } from "./helpers/nav.js";
 import { EditorApp } from "../src/editor-app.js";
 
 const baseSite = minimal as unknown as Site;
@@ -43,6 +44,7 @@ describe("EditorApp save status", () => {
     const { container } = render(
       <EditorApp initial={structuredClone(baseSite)} autosaveVfs={vfs} />,
     );
+    openPage(container, 0);
 
     fireEvent.click(container.querySelector('[data-testid="block-add"]') as HTMLElement);
     fireEvent.click(
@@ -62,5 +64,31 @@ describe("EditorApp save status", () => {
     const status = container.querySelector('[data-testid="save-status"]');
     expect(status?.getAttribute("data-status")).toBe("saved");
     expect(status?.textContent).toContain("Saved in this browser");
+    // Two facts, not one: the local save and the downloaded copy.
+    expect(status?.textContent).toContain("Downloaded copy: never");
+  });
+
+  test("Save project stamps the time and keeps the downloaded-copy line separate", async () => {
+    vi.useFakeTimers();
+    setViewportWidth(1200);
+    const vfs = new MemoryDriver();
+    const { container } = render(
+      <EditorApp initial={structuredClone(baseSite)} autosaveVfs={vfs} />,
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(400);
+    });
+
+    fireEvent.click(container.querySelector('[data-testid="save-project"]') as HTMLElement);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10);
+    });
+
+    const status = container.querySelector('[data-testid="save-status"]');
+    expect(status?.getAttribute("data-status")).toBe("saved");
+    expect(status?.querySelector("[data-save-status-text]")?.textContent).toMatch(
+      /Saved in this browser · \d{1,2}:\d{2}/,
+    );
+    expect(status?.textContent).toContain("Downloaded copy: never");
   });
 });

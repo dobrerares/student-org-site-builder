@@ -17,13 +17,12 @@ function cloneBlocks(blocks: readonly BlockEnvelope[], idSuffix: string): BlockE
 }
 
 /**
- * Add a brand-new page in the site's default language. The new page lands
- * at the end of `pages[]` with `navOrder` one greater than the current
- * maximum for that language. A starter hero block is included so the user
- * has something to render.
+ * Add a brand-new page, in `lang` or — when omitted — the site's default
+ * language. The new page lands at the end of `pages[]` with `navOrder` one
+ * greater than the current maximum for that language. A starter hero block
+ * is included so the user has something to render.
  */
-export function addPage(site: Site, slug: string): Site {
-  const lang = site.defaultLanguage;
+export function addPage(site: Site, slug: string, lang: string = site.defaultLanguage): Site {
   const langPages = site.pages.filter((p) => p.lang === lang);
   const maxOrder = langPages.reduce((max, p) => (p.navOrder > max ? p.navOrder : max), -1);
   const heroBlock: BlockEnvelope = {

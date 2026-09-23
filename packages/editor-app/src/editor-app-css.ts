@@ -25,6 +25,31 @@
  *
  * Override any of these at the consuming-document level to retheme without
  * forking this file.
+ *
+ * Cascade position (issue #102)
+ * -----------------------------
+ * Everything below is wrapped in `@layer sosb-editor`, whose position is
+ * fixed by `@sosb/ui`'s `builder.css`:
+ *
+ *     @layer theme, base, sosb-editor, components, utilities;
+ *
+ * This sheet used to be entirely unlayered, which meant it beat every rule
+ * `@sosb/ui` shipped no matter how specific — a shared `<Button>` could ask
+ * for the design system's chrome and silently keep the editor's instead. The
+ * shared components are built from Tailwind utilities, so putting this sheet
+ * below `utilities` is what finally lets them look like themselves.
+ *
+ * What still works: this sheet outranks the shared `base` reset, so it keeps
+ * owning the shell's layout, the generated forms and the panels — the things
+ * `@sosb/ui` has no opinion about. What changed: it no longer re-skins the
+ * shared controls. Where a control needs a tone the design system does not
+ * have by default, express it on the component (see `data-tone="danger"` in
+ * `packages/ui/src/components/button.tsx`) rather than by re-styling it here.
+ *
+ * The layer statement lives in `builder.css` rather than here because layer
+ * order is set by first declaration, and `builder.css` is *prepended* to the
+ * head while this sheet is appended — so `builder.css` is always parsed
+ * first, whichever order the two modules happen to load in.
  */
 
 // Side-effect import: registers Inter @font-face rules before the stylesheet
@@ -34,6 +59,7 @@ import "./editor-fonts.js";
 const STYLE_ELEMENT_ID = "sosb-editor-app-style";
 
 export const EDITOR_APP_CSS = String.raw`
+@layer sosb-editor {
 /* ============================================================
  * 1. Design tokens
  * ============================================================ */
@@ -44,49 +70,57 @@ export const EDITOR_APP_CSS = String.raw`
     "Liberation Mono", monospace;
 
   /* Ground */
-  --paper:         #f4f6f8;
+  --paper:         #f6f7f9;
   --paper-raised:  #ffffff;
-  --paper-sunken:  #eceff3;
-  --paper-deep:    #dfe4ea;
+  --paper-sunken:  #eef0f3;
+  --paper-deep:    #e3e7ec;
 
   /* Ink */
-  --ink:    #111827;
-  --ink-2:  #374151;
-  --ink-3:  #6b7280;
-  --ink-4:  #9ca3af;
+  --ink:    #10161f;
+  --ink-2:  #3c4655;
+  --ink-3:  #6a7381;
+  --ink-4:  #98a0ac;
 
   /* Rules */
-  --rule:       #e2e6eb;
-  --rule-soft:  #eef1f4;
-  --rule-strong: #cbd2db;
+  --rule:       #e4e7eb;
+  --rule-soft:  #eff1f4;
+  --rule-strong: #ccd2da;
 
   /* Accent (teal) */
   --accent:        #0f766e;
   --accent-strong: #0b5f59;
-  --accent-soft:   #e3f3f0;
-  --accent-ring:   rgba(15, 118, 110, 0.28);
+  --accent-soft:   #e6f2f0;
+  --accent-ring:   rgba(15, 118, 110, 0.22);
 
   /* Severity */
   --error:      #b42318;
   --error-soft: #fee4e2;
-  --warn:       #b54708;
+  --warn:       #92400e;
   --warn-soft:  #fef0c7;
   --info:       #175cd3;
   --info-soft:  #dbe9ff;
   --ok:         #067647;
-  --ok-soft:    #d1fadf;
+  --ok-soft:    #d6f5e3;
 
-  /* Type scale */
+  /* Type scale — 11 · 12 · 13 · 14 · 16 · 20 · 26 · 32 (issue #102).
+   * Eight steps, no in-between sizes: a heading that is not on the scale
+   * reads as a mistake rather than as emphasis. */
+  --step--3: 0.6875rem;  /* 11px */
   --step--2: 0.75rem;    /* 12px */
   --step--1: 0.8125rem;  /* 13px */
   --step-0:  0.875rem;   /* 14px */
   --step-1:  1rem;       /* 16px */
-  --step-2:  1.125rem;   /* 18px */
-  --step-3:  1.375rem;   /* 22px */
-  --step-4:  1.75rem;    /* 28px */
-  --step-5:  2.25rem;    /* 36px */
+  --step-2:  1.25rem;    /* 20px */
+  --step-3:  1.625rem;   /* 26px */
+  --step-4:  2rem;       /* 32px */
+  --step-5:  2rem;       /* 32px — the scale tops out here */
 
-  /* Spacing */
+  /* Line heights */
+  --lh-tight: 1.2;
+  --lh-snug:  1.35;
+  --lh-body:  1.55;
+
+  /* Spacing — 4 · 8 · 12 · 16 · 24 · 32 · 48 */
   --sp-0: 0.25rem;
   --sp-1: 0.5rem;
   --sp-2: 0.75rem;
@@ -97,15 +131,21 @@ export const EDITOR_APP_CSS = String.raw`
 
   /* Shape + motion */
   --r-sm: 6px;
-  --r-md: 10px;
-  --r-lg: 14px;
-  --shadow-sm: 0 1px 2px rgba(17, 24, 39, 0.06);
-  --shadow-md: 0 4px 12px -2px rgba(17, 24, 39, 0.10), 0 1px 3px rgba(17, 24, 39, 0.06);
-  --shadow-lg: 0 24px 60px -20px rgba(17, 24, 39, 0.35), 0 8px 24px -12px rgba(17, 24, 39, 0.18);
+  --r-md: 8px;   /* control radius */
+  --r-lg: 12px;  /* card radius */
+  --r-pill: 999px;
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --shadow-md: 0 2px 8px rgba(16, 24, 40, 0.07);
+  --shadow-lg: 0 24px 56px rgba(16, 24, 40, 0.24);
+  --shadow-pop: 0 8px 24px rgba(16, 24, 40, 0.12);
   --topbar-h: 56px;
+  --panebar-h: 44px;
   --footer-h: 44px;
+  --nav-w: 216px;
+  --edit-w: 420px;
   --transition: 140ms ease;
-  --control-h: 38px;
+  --control-h: 36px;
+  --control-h-sm: 28px;
 }
 
 /* ============================================================
@@ -156,7 +196,7 @@ body {
  * ============================================================ */
 [data-testid="editor-app"] {
   display: grid;
-  grid-template-rows: var(--topbar-h) minmax(0, 1fr) var(--footer-h);
+  grid-template-rows: var(--topbar-h) minmax(0, 1fr);
   height: 100vh;
   height: 100dvh;
   background: var(--paper);
@@ -166,8 +206,13 @@ body {
 
 /* ============================================================
  * 4. Buttons — base + variants
+ *
+ * The base chrome applies to plain <button>s only. Anything rendered by
+ * @sosb/ui carries data-sosb-ui and is styled by its own variant classes
+ * (issue #102: the shared controls win), so it is excluded here rather than
+ * re-skinned and then fought over.
  * ============================================================ */
-[data-testid="editor-app"] button {
+[data-testid="editor-app"] button:not([data-sosb-ui]) {
   appearance: none;
   display: inline-flex;
   align-items: center;
@@ -192,20 +237,20 @@ body {
     color var(--transition),
     box-shadow var(--transition);
 }
-[data-testid="editor-app"] button:hover:not(:disabled):not([disabled]) {
+[data-testid="editor-app"] button:not([data-sosb-ui]):hover:not(:disabled):not([disabled]) {
   background: var(--paper);
   border-color: var(--ink-4);
   color: var(--ink);
 }
-[data-testid="editor-app"] button:active:not(:disabled):not([disabled]) {
+[data-testid="editor-app"] button:not([data-sosb-ui]):active:not(:disabled):not([disabled]) {
   background: var(--paper-sunken);
 }
-[data-testid="editor-app"] button:focus-visible {
+[data-testid="editor-app"] button:not([data-sosb-ui]):focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
-[data-testid="editor-app"] button:disabled,
-[data-testid="editor-app"] button[disabled] {
+[data-testid="editor-app"] button:not([data-sosb-ui]):disabled,
+[data-testid="editor-app"] button:not([data-sosb-ui])[disabled] {
   opacity: 0.45;
   cursor: not-allowed;
   box-shadow: none;
@@ -322,103 +367,43 @@ body {
   white-space: nowrap;
 }
 [data-testid="save-status"] {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
   margin: 0;
-  padding: 5px 10px 5px 8px;
-  border-radius: 999px;
-  background: var(--paper-sunken);
+  min-width: 0;
   color: var(--ink-3);
-  font-size: var(--step--1);
-  font-weight: 500;
-  line-height: 1.2;
+  font-size: var(--step--2);
+  line-height: var(--lh-snug);
+  text-align: right;
   white-space: nowrap;
-  max-width: 34ch;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
-[data-testid="save-status"]::before {
-  content: "";
-  flex: 0 0 auto;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--ink-4);
+[data-save-status-text] {
+  font-weight: 600;
+  color: var(--ink-2);
 }
-[data-testid="save-status"][data-status="saved"] {
-  background: var(--ok-soft);
-  color: var(--ok);
+[data-testid="save-status"][data-status="saving"] [data-save-status-text] {
+  color: var(--info);
 }
-[data-testid="save-status"][data-status="saved"]::before {
-  background: var(--ok);
-}
-[data-testid="save-status"][data-status="saving"]::before {
-  background: var(--info);
-}
-[data-testid="save-status"][data-status="localOnly"] {
-  background: var(--warn-soft);
+[data-testid="save-status"][data-status="localOnly"] [data-save-status-text] {
   color: var(--warn);
 }
-[data-testid="save-status"][data-status="localOnly"]::before {
-  background: var(--warn);
-}
-[data-testid="save-status"][data-status="error"] {
-  background: var(--error-soft);
+[data-testid="save-status"][data-status="error"] [data-save-status-text] {
   color: var(--error);
 }
-[data-testid="save-status"][data-status="error"]::before {
-  background: var(--error);
+[data-save-status-secondary] {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-0);
+  font-size: var(--step--3);
+  color: var(--ink-3);
 }
 [data-testid="top-bar"] [data-topbar-actions] {
   display: inline-flex;
   align-items: center;
   gap: var(--sp-1);
   flex: 0 0 auto;
-}
-
-/* ============================================================
- * 6. Two-pane layout + narrow tab layout
- * ============================================================ */
-[data-testid="layout-two-pane"] {
-  display: grid;
-  grid-template-columns: minmax(360px, 440px) minmax(0, 1fr);
-  min-height: 0;
-  overflow: hidden;
-}
-[data-testid="layout-tabs"] {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
-}
-[data-testid="layout-tabs"] > [role="tablist"] {
-  display: flex;
-  flex: 0 0 auto;
-  background: var(--paper-raised);
-  border-bottom: 1px solid var(--rule);
-  padding: 6px;
-  gap: 6px;
-}
-[data-testid="layout-tabs"] > [data-testid="editor-pane"],
-[data-testid="layout-tabs"] > [data-testid="preview-pane"] {
-  flex: 1 1 auto;
-  min-height: 0;
-}
-[data-testid="editor-app"] [data-testid="layout-tab"] {
-  flex: 1;
-  min-height: 36px;
-  background: transparent;
-  border: 0;
-  box-shadow: none;
-  color: var(--ink-3);
-  font-weight: 600;
-}
-[data-testid="editor-app"] button[data-testid="layout-tab"][data-active="true"],
-[data-testid="editor-app"] button[data-testid="layout-tab"][data-active="true"]:hover:not(:disabled):not([disabled]) {
-  background: var(--paper-sunken);
-  border-color: transparent;
-  color: var(--ink);
 }
 
 /* ============================================================
@@ -437,77 +422,14 @@ body {
 }
 [data-testid="preview-pane"] {
   min-height: 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--sp-2);
-  padding: var(--sp-3) var(--sp-4) var(--sp-4);
+  gap: 0;
+  padding: 0;
   background:
     radial-gradient(circle at 1px 1px, var(--paper-deep) 1px, transparent 1.5px) 0 0 / 18px 18px,
     var(--paper-sunken);
-}
-[data-testid="preview-toolbar"] {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-2);
-  min-width: 0;
-}
-[data-testid="preview-toolbar"]::before {
-  content: "Live preview";
-  font-size: var(--step--1);
-  font-weight: 600;
-  color: var(--ink-3);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-[data-testid="viewport-preview-controls"] {
-  display: inline-flex;
-  max-width: 100%;
-  overflow-x: auto;
-  padding: 3px;
-  gap: 2px;
-  border: 1px solid var(--rule);
-  border-radius: var(--r-md);
-  background: var(--paper-raised);
-  box-shadow: var(--shadow-sm);
-}
-[data-testid="editor-app"] [data-testid="viewport-preview-option"] {
-  display: inline-grid;
-  grid-template-rows: auto auto;
-  gap: 1px;
-  min-width: 80px;
-  min-height: 0;
-  padding: 4px 10px;
-  border: 0;
-  border-radius: 7px;
-  background: transparent;
-  box-shadow: none;
-  text-align: left;
-  color: var(--ink-2);
-}
-[data-testid="editor-app"] [data-testid="viewport-preview-option"]:hover:not([data-active="true"]) {
-  background: var(--paper-sunken);
-}
-[data-testid="editor-app"] button[data-testid="viewport-preview-option"][data-active="true"],
-[data-testid="editor-app"] button[data-testid="viewport-preview-option"][data-active="true"]:hover:not(:disabled):not([disabled]) {
-  background: var(--ink);
-  border-color: transparent;
-  color: #ffffff;
-}
-[data-testid="viewport-preview-label"] {
-  font-weight: 600;
-  line-height: 1.15;
-}
-[data-testid="viewport-preview-size"] {
-  color: var(--ink-3);
-  font-size: var(--step--2);
-  line-height: 1.15;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-[data-testid="viewport-preview-option"][data-active="true"] [data-testid="viewport-preview-size"] {
-  color: rgba(255, 255, 255, 0.7);
 }
 [data-testid="preview-canvas"] {
   flex: 1 1 auto;
@@ -515,7 +437,7 @@ body {
   display: grid;
   place-items: start center;
   overflow: auto;
-  padding: var(--sp-1);
+  padding: var(--sp-2);
 }
 /* The sizer holds the frame's on-screen (scaled) footprint so the canvas
  * centres and scrolls around what is visible. In "fit" it is a plain
@@ -951,63 +873,8 @@ body {
 }
 
 /* ============================================================
- * 11. Drill links (page / site / theme) + inspector chrome
+ * 11. Inspector chrome
  * ============================================================ */
-[data-testid="drill-links"] {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-[data-testid="editor-app"] [data-testid="drill-links"] > button {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--sp-2);
-  padding: 10px 10px 10px 10px;
-  min-height: 56px;
-  border-radius: var(--r-md);
-  text-align: left;
-  color: var(--ink-3);
-  white-space: normal;
-}
-[data-testid="editor-app"] [data-testid="drill-links"] > button:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-[data-testid="drill-links"] [data-drill-icon] {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 9px;
-  background: var(--paper-sunken);
-  color: var(--ink-2);
-}
-[data-testid="editor-app"] [data-testid="drill-links"] > button:hover [data-drill-icon] {
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-[data-testid="drill-links"] [data-drill-text] {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-}
-[data-testid="drill-links"] [data-drill-text] > span:first-child {
-  font-size: var(--step-0);
-  font-weight: 600;
-  color: var(--ink);
-}
-[data-testid="drill-links"] [data-drill-text] > span:last-child {
-  font-size: var(--step--1);
-  font-weight: 400;
-  color: var(--ink-3);
-  line-height: 1.35;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 [data-testid="editor-pane"] [data-testid="inspector"] {
   display: flex;
@@ -1803,10 +1670,6 @@ body {
 [data-testid="article-delete-dialog"] {
   width: min(600px, 100%);
 }
-[data-testid="article-create-dialog"] {
-  width: min(460px, 100%);
-}
-[data-testid="article-create-dialog"] h2,
 [data-testid="tag-manager-dialog"] h2,
 [data-testid="article-delete-dialog"] h2,
 [data-testid="tag-delete-dialog"] h2 {
@@ -2320,10 +2183,6 @@ button[data-issue] [data-issue-path]::before {
   [data-testid="top-bar"] [data-brand-name] {
     display: none;
   }
-  [data-testid="save-status"] {
-    max-width: 44vw;
-    font-size: var(--step--2);
-  }
   [data-testid="top-bar"] [data-topbar-actions] {
     gap: 4px;
     overflow-x: auto;
@@ -2339,25 +2198,8 @@ button[data-issue] [data-issue-path]::before {
     gap: var(--sp-3);
     border-right: 0;
   }
-  [data-testid="preview-pane"] {
-    padding: var(--sp-2);
-  }
-  [data-testid="preview-toolbar"]::before {
-    display: none;
-  }
-  [data-testid="preview-toolbar"] {
-    justify-content: stretch;
-  }
-  [data-testid="viewport-preview-controls"] {
-    width: 100%;
-  }
-  [data-testid="editor-app"] [data-testid="viewport-preview-option"] {
-    flex: 1 1 0;
-    min-width: 0;
-    padding: 4px 6px;
-  }
   [data-testid="preview-canvas"] {
-    padding: 0;
+    padding: var(--sp-1);
   }
   [data-testid="site-health-panel"] {
     padding: var(--sp-3);
@@ -2400,135 +2242,9 @@ button[data-issue] [data-issue-path]::before {
  * Articles (issue #97 / #98)
  *
  * Scoped to the editor root like every other rule in this sheet. The visual
- * register deliberately matches the Pages list: the two are siblings behind
- * one switch, and looking different would imply they behave differently.
+ * register deliberately matches the Pages list: the two are sibling
+ * destinations, and looking different would imply they behave differently.
  * ------------------------------------------------------------------------- */
-
-[data-testid="editor-app"] [data-testid="content-kind-switch"] {
-  display: flex;
-  gap: var(--sp-1);
-  padding: var(--sp-2);
-  border-bottom: 1px solid var(--rule-soft);
-}
-
-[data-testid="editor-app"] .articles-panel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
-  padding: var(--sp-3);
-  min-height: 0;
-  overflow-y: auto;
-}
-
-[data-testid="editor-app"] .articles-panel__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-2);
-}
-
-[data-testid="editor-app"] .articles-panel__filters {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-  gap: var(--sp-2);
-}
-
-[data-testid="editor-app"] .articles-panel__filter {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-1);
-}
-
-[data-testid="editor-app"] .articles-panel__list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-1);
-}
-
-[data-testid="editor-app"] .articles-panel__list > li {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-1);
-  border: 1px solid var(--rule-soft);
-  border-radius: var(--r-md);
-  background: var(--paper-raised);
-  padding-right: var(--sp-1);
-  transition: var(--transition);
-}
-
-[data-testid="editor-app"] .articles-panel__list > li[data-active="true"] {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent-ring);
-}
-
-[data-testid="editor-app"] .articles-panel__row {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--sp-2);
-  padding: var(--sp-2);
-  background: none;
-  border: 0;
-  text-align: left;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-  border-radius: var(--r-md);
-}
-
-[data-testid="editor-app"] .articles-panel__row-title {
-  flex: 1;
-  min-width: 8rem;
-  font-weight: 600;
-}
-
-[data-testid="editor-app"] .articles-panel__badge {
-  font-size: var(--step--2);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 0.1rem 0.4rem;
-  border-radius: var(--r-sm);
-  background: var(--paper-sunken);
-  color: var(--ink-muted, inherit);
-}
-
-[data-testid="editor-app"] .articles-panel__badge[data-article-state="published"] {
-  background: var(--ok-soft);
-  color: var(--ok);
-}
-
-[data-testid="editor-app"] .articles-panel__badge[data-article-state="draft"] {
-  background: var(--warn-soft);
-  color: var(--warn);
-}
-
-[data-testid="editor-app"] .articles-panel__badge[data-article-state="unlisted"] {
-  background: var(--info-soft);
-  color: var(--info);
-}
-
-[data-testid="editor-app"] .articles-panel__date {
-  font-size: var(--step--2);
-  font-variant-numeric: tabular-nums;
-}
-
-[data-testid="editor-app"] .articles-panel__empty,
-[data-testid="editor-app"] .tag-manager__empty,
-[data-testid="editor-app"] .article-list-inspector__note {
-  font-size: var(--step--1);
-  margin: 0;
-}
-
-[data-testid="editor-app"] .articles-panel__dialog-actions,
-[data-testid="editor-app"] .tag-manager__dialog-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--sp-2);
-  margin-top: var(--sp-3);
-}
 
 /* Article settings ------------------------------------------------------- */
 
@@ -2548,7 +2264,6 @@ button[data-issue] [data-issue-path]::before {
 
 [data-testid="editor-app"] .article-settings__label-row,
 [data-testid="editor-app"] .article-list-inspector__label-row,
-[data-testid="editor-app"] .article-workspace__label-row,
 [data-testid="editor-app"] .tag-picker__heading {
   display: flex;
   align-items: center;
@@ -2744,23 +2459,645 @@ button[data-issue] [data-issue-path]::before {
   margin: 0 0 var(--sp-1) 0;
 }
 
-/* Article workspace ------------------------------------------------------ */
 
-[data-testid="editor-app"] .article-workspace__blocks,
-[data-testid="editor-app"] .article-workspace__related {
-  margin-top: var(--sp-4);
-  padding-top: var(--sp-3);
-  border-top: 1px solid var(--rule-soft);
+/* ============================================================
+ * 23. Builder shell (issue #102): navigation, screens, split view
+ * ============================================================ */
+
+/* Root: the top bar over a nav + main grid. The health footer is gone —
+ * Site Health lives on the Overview and in the export readiness panel. */
+[data-builder-body] {
+  display: grid;
+  grid-template-columns: var(--nav-w) minmax(0, 1fr);
+  min-height: 0;
+  min-width: 0;
+}
+[data-builder-main] {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* --- Main navigation ------------------------------------------------ */
+[data-testid="main-nav"] {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  padding: var(--sp-2) var(--sp-1);
+  background: var(--paper-raised);
+  border-right: 1px solid var(--rule);
+  overflow-y: auto;
+}
+[data-nav-drawer-head],
+[data-nav-drawer-scrim] {
+  display: none;
+}
+[data-nav-group-label] {
+  padding: var(--sp-3) var(--sp-1) var(--sp-0);
+  font-size: var(--step--2);
+  font-weight: 600;
+  color: var(--ink-4);
+}
+[data-nav-drawer-head] + [data-nav-group-label] {
+  padding-top: var(--sp-0);
+}
+[data-testid="editor-app"] button[data-nav-item] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-1);
+  width: 100%;
+  min-height: 34px;
+  padding: 0 var(--sp-1);
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  box-shadow: none;
+  font-size: var(--step-0);
+  font-weight: 500;
+  color: var(--ink-2);
+  text-align: left;
+  white-space: nowrap;
+}
+[data-testid="editor-app"] button[data-nav-item]:hover:not(:disabled) {
+  background: var(--paper-sunken);
+  border-color: transparent;
+  color: var(--ink);
+}
+[data-testid="editor-app"] button[data-nav-item][data-active="true"],
+[data-testid="editor-app"] button[data-nav-item][data-active="true"]:hover:not(:disabled) {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-weight: 600;
+}
+[data-nav-language] {
+  padding: 0 var(--sp-1);
+}
+
+/* --- Screens: Overview, Pages, Articles ----------------------------- */
+[data-screen] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  width: 100%;
+  max-width: 1080px;
+  padding: var(--sp-4);
+}
+[data-screen-head] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-0);
+}
+[data-screen-head] h1 {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-0);
+  font-size: var(--step-3);
+  letter-spacing: -0.018em;
+}
+[data-screen-head] h1[data-display] {
+  font-size: var(--step-4);
+  letter-spacing: -0.024em;
+}
+[data-screen-search] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-0);
+  max-width: 420px;
+}
+[data-screen-filters] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--sp-2);
+}
+[data-screen-filters] > * {
+  display: flex;
+  flex: 1 1 150px;
+  flex-direction: column;
+  gap: var(--sp-0);
+  min-width: 150px;
+}
+[data-screen-filters] > [data-screen-search] {
+  flex: 2 1 220px;
+  max-width: none;
+}
+[data-overview-grid] {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--sp-3);
+  align-items: stretch;
+}
+[data-card] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+}
+[data-card] h2,
+[data-card] h3 {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-0);
+}
+[data-card] h2 {
+  font-size: var(--step-2);
+  letter-spacing: -0.014em;
+}
+[data-card] h3 {
+  font-size: var(--step-1);
+}
+[data-overview-grid] > [data-card] > [data-row]:last-child {
+  margin-top: auto;
+}
+[data-row] {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
+[data-row-between] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+[data-testid="editor-app"] [data-muted] {
+  color: var(--ink-3);
+}
+[data-slug-hint] {
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  color: var(--ink-3);
+}
+[data-truncate] {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-testid="editor-app"] p[data-empty-state] {
+  margin: 0;
+  padding: var(--sp-4);
+  border: 1px dashed var(--rule-strong);
+  border-radius: var(--r-lg);
+  background: var(--paper-raised);
+  color: var(--ink-3);
+  font-size: var(--step--1);
+  text-align: center;
+}
+
+/* --- Summary lists: Overview cards, the Articles list --------------- */
+[data-summary-list] {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  background: var(--paper-raised);
+  overflow: hidden;
+}
+[data-summary-list] > li {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--rule-soft);
+}
+[data-summary-list] > li:last-child {
+  border-bottom: 0;
+}
+[data-summary-list] > li[data-active="true"] {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+[data-summary-list] > li > button[data-sosb-ui] {
+  flex: 0 0 auto;
+  margin-right: var(--sp-1);
+}
+[data-testid="editor-app"] button[data-summary-row] {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 52px;
+  padding: var(--sp-2);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  font-weight: 500;
+  text-align: left;
+  white-space: normal;
+  transition: background var(--transition);
+}
+[data-testid="editor-app"] button[data-summary-row]:hover:not(:disabled) {
+  background: var(--paper-sunken);
+  border-color: transparent;
+  color: inherit;
+}
+[data-testid="editor-app"] button[data-summary-row]:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+[data-testid="editor-app"] button[data-summary-row] > .icon:last-child {
+  color: var(--ink-4);
+}
+/* A summary row standing alone (the workspace's settings link) is a card. */
+[data-workspace-outline] > button[data-summary-row] {
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  background: var(--paper-raised);
+  box-shadow: var(--shadow-sm);
+}
+[data-testid="editor-app"] [data-workspace-outline] > button[data-summary-row]:hover:not(:disabled) {
+  border-color: var(--rule-strong);
+}
+[data-summary-main] {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+[data-summary-title] {
+  font-size: var(--step-0);
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-summary-meta] {
+  font-size: var(--step--2);
+  color: var(--ink-3);
+  line-height: var(--lh-snug);
+}
+
+/* --- Findings ------------------------------------------------------- */
+[data-finding-list] {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+[data-finding] {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  padding: var(--sp-2);
+  border: 1px solid var(--rule);
+  border-left-width: 3px;
+  border-radius: var(--r-md);
+  background: var(--paper-raised);
+}
+[data-finding][data-severity="error"]   { border-left-color: var(--error); }
+[data-finding][data-severity="warning"] { border-left-color: var(--warn); }
+[data-finding][data-severity="info"]    { border-left-color: var(--info); }
+[data-finding][data-severity="ok"]      { border-left-color: var(--ok); }
+[data-finding-icon] {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  border-radius: var(--r-pill);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+[data-finding][data-severity="error"] [data-finding-icon]   { background: var(--error-soft); color: var(--error); }
+[data-finding][data-severity="warning"] [data-finding-icon] { background: var(--warn-soft);  color: var(--warn); }
+[data-finding][data-severity="info"] [data-finding-icon]    { background: var(--info-soft);  color: var(--info); }
+[data-finding][data-severity="ok"] [data-finding-icon]      { background: var(--ok-soft);    color: var(--ok); }
+[data-finding][data-severity="error"] [data-finding-icon]::before,
+[data-finding][data-severity="warning"] [data-finding-icon]::before { content: "!"; }
+[data-finding][data-severity="info"] [data-finding-icon]::before    { content: "i"; }
+[data-finding][data-severity="ok"] [data-finding-icon]::before      { content: "✓"; }
+[data-finding-body] {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: var(--step--1);
+  line-height: var(--lh-snug);
+}
+[data-finding-message] {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-0);
+}
+[data-finding-message] strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+[data-finding-meta] {
+  font-size: var(--step--2);
+  color: var(--ink-3);
+}
+[data-finding-empty] {
+  margin: 0;
+  padding: var(--sp-1) 0;
+  font-size: var(--step--1);
+  color: var(--ink-3);
+}
+
+/* --- Split view: the workspace, Theme, Site settings ---------------- */
+[data-split] {
+  display: grid;
+  grid-template-columns: minmax(360px, var(--edit-w)) minmax(0, 1fr);
+  flex: 1 1 auto;
+  min-height: 0;
+}
+[data-split] > [data-testid="editor-pane"] {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-height: 0;
+  padding: 0;
+  overflow-y: auto;
+}
+[data-split-preview] {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+[data-split-preview] > [data-testid="preview-pane"] {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+[data-split-tabs] {
+  display: none;
+}
+[data-split] > [data-hidden="true"] {
+  display: none;
+}
+[data-pane-bar] {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--sp-1);
+  min-height: var(--panebar-h);
+  padding: var(--sp-1) var(--sp-2);
+  background: var(--paper-raised);
+  border-bottom: 1px solid var(--rule);
+}
+[data-testid="preview-pane"] [data-pane-bar] {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(6px);
+}
+[data-pane-spacer] {
+  flex: 1 1 auto;
+}
+[data-pane-kicker] {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-0);
+  font-size: var(--step--2);
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+}
+[data-preview-title] {
+  font-size: var(--step--1);
+  font-weight: 500;
+  color: var(--ink-2);
+}
+[data-pane-body] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+}
+[data-pane-body] > [data-screen] {
+  max-width: none;
+  padding: 0;
+}
+[data-preview-devices] {
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: center;
+  padding: var(--sp-2) var(--sp-2) 0;
+}
+
+/* --- Workspace outline and Inspector chrome ------------------------- */
+[data-workspace-outline] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+[data-title-field] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-0);
+}
+[data-workspace-blocks] {
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
 }
-
-[data-testid="editor-app"] .article-workspace__toggle {
+[data-testid="editor-pane"] [data-section-heading] > h2 {
   display: flex;
   align-items: center;
-  gap: var(--sp-2);
+  gap: var(--sp-0);
+}
+[data-toggle] {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  font-size: var(--step--1);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+[data-toggle] input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+/* --- The (i) trigger ------------------------------------------------ */
+/* A 24px circle (WCAG 2.2 target size) sitting quietly beside its label,
+ * rather than the 32px icon-button square the generic chrome would give it. */
+[data-testid="editor-app"] button.info-hint__trigger,
+[data-dialog-host] button.info-hint__trigger {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
   min-height: 24px;
+  padding: 0;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-pill);
+  background: var(--paper-raised);
+  box-shadow: none;
+  color: var(--ink-3);
+  vertical-align: middle;
+}
+[data-testid="editor-app"] button.info-hint__trigger:hover:not(:disabled),
+[data-testid="editor-app"] button.info-hint__trigger[aria-expanded="true"],
+[data-testid="editor-app"] button.info-hint__trigger[data-popup-open] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+[data-testid="editor-app"] button.info-hint__trigger .icon {
+  width: 13px;
+  height: 13px;
+}
+
+/* --- Top bar additions ---------------------------------------------- */
+[data-testid="top-bar"] [data-drawer-button] {
+  display: none;
+}
+
+/* --- Export readiness panel ----------------------------------------- */
+[data-testid="export-readiness"] h2 {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-0);
+  margin-bottom: var(--sp-3);
+  font-size: var(--step-2);
+}
+[data-export-group] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  margin-top: var(--sp-3);
+}
+[data-export-group] h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-0);
+  font-size: var(--step-1);
+}
+[data-testid="export-blocked-note"] {
+  font-size: var(--step--1);
+  color: var(--ink-2);
+}
+[data-testid="export-override-label"] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-0);
+  margin-top: var(--sp-3);
+  font-size: var(--step--1);
+}
+[data-export-override-hint] {
+  font-size: var(--step--2);
+  color: var(--ink-3);
+}
+[data-dialog-actions] {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-1);
+  margin-top: var(--sp-4);
+}
+
+/* --- Phone ---------------------------------------------------------- */
+@media (max-width: 767px) {
+  [data-testid="editor-app"] {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  [data-testid="top-bar"] {
+    flex-wrap: wrap;
+    padding: var(--sp-1) var(--sp-2);
+  }
+  [data-testid="top-bar"] [data-drawer-button] {
+    display: inline-flex;
+  }
+  [data-testid="save-status"] {
+    order: 3;
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    width: 100%;
+    text-align: left;
+  }
+  [data-builder-body] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  [data-testid="main-nav"] {
+    display: none;
+  }
+  [data-testid="main-nav"][data-drawer-open="true"] {
+    display: flex;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 70;
+    width: min(320px, 84vw);
+    padding-top: 0;
+    box-shadow: var(--shadow-lg);
+  }
+  [data-testid="main-nav"][data-drawer-open="true"] [data-nav-drawer-head] {
+    position: sticky;
+    top: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: var(--sp-2) var(--sp-1);
+    margin-bottom: var(--sp-0);
+    background: var(--paper-raised);
+    border-bottom: 1px solid var(--rule);
+  }
+  [data-nav-drawer-scrim] {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 69;
+    background: rgba(16, 22, 31, 0.42);
+  }
+  [data-screen] {
+    gap: var(--sp-3);
+    padding: var(--sp-3);
+  }
+  [data-split] {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  [data-split-tabs] {
+    display: flex;
+    justify-content: center;
+    padding: var(--sp-1);
+    background: var(--paper-raised);
+    border-bottom: 1px solid var(--rule);
+  }
+  [data-split-tabs] [role="group"] {
+    width: 100%;
+  }
+  [data-split-tabs] [role="group"] > button {
+    flex: 1 1 0;
+  }
+  [data-split] > [data-testid="editor-pane"] {
+    padding: 0;
+    border-right: 0;
+  }
+  [data-pane-body] {
+    padding: var(--sp-2);
+  }
+}
 }
 `;
 

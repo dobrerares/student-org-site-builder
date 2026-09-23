@@ -31,6 +31,17 @@ function base(size: number | undefined): React.SVGProps<SVGSVGElement> {
   };
 }
 
+/** Opens the main navigation as a drawer at phone width (issue #102). */
+export function IconMenu(props: IconProps): JSX.Element {
+  return (
+    <svg {...base(props.size)}>
+      <path d="M4 6h16" />
+      <path d="M4 12h16" />
+      <path d="M4 18h16" />
+    </svg>
+  );
+}
+
 export function IconArrowUp(props: IconProps): JSX.Element {
   return (
     <svg {...base(props.size)}>

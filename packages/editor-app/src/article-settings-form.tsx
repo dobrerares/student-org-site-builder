@@ -13,6 +13,11 @@
  *
  * Every longer explanation sits behind an (i) `InfoHint` per issue #102's
  * global presentation rule.
+ *
+ * The title is deliberately *not* here: issue #102's Article settings are
+ * summary, cover, date, tags, state and address, and the title is edited in
+ * the workspace outline where the writing happens. A second title field would
+ * be the same field twice, one of which the author would find "did not work".
  */
 import type { JSX } from "react";
 import { useEffect, useState } from "react";
@@ -76,16 +81,6 @@ export function ArticleSettingsForm(props: ArticleSettingsFormProps): JSX.Elemen
 
   return (
     <div className="article-settings" data-testid="article-settings-form">
-      <div className="article-settings__field">
-        <Label htmlFor="article-title">{t("articles.settings.titleField")}</Label>
-        <Input
-          id="article-title"
-          data-field={`articles.${index}.title`}
-          value={article.title}
-          onChange={(event) => patch({ title: event.currentTarget.value })}
-        />
-      </div>
-
       <div className="article-settings__field">
         <div className="article-settings__label-row">
           <Label htmlFor="article-slug">{t("articles.settings.slug")}</Label>

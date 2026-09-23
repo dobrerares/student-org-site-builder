@@ -19,7 +19,24 @@
  *     narrow reset scoped to elements that opt in via `data-sosb-ui`.
  */
 
-@layer theme, base, components, utilities;
+/*
+ * Layer order (issue #102).
+ *
+ * `sosb-editor` is where `@sosb/editor-app`'s hand-written stylesheet now
+ * declares itself. Naming it here — in the sheet that is *prepended* to the
+ * head, and therefore parsed first — is what fixes the order for the whole
+ * document: layers rank by first declaration, not by where their rules land.
+ *
+ * It sits between `base` and `components` on purpose. The editor sheet still
+ * outranks the shared reset (it owns the shell's layout, the forms and the
+ * panels), but it no longer outranks the shared controls: `@sosb/ui`'s
+ * components are built from `utilities`, which now wins. Before this, the
+ * editor sheet was entirely unlayered and beat every layered rule regardless
+ * of specificity, so a `<Button>` kept the editor's old chrome no matter what
+ * the component asked for — the shared primitives could never actually look
+ * like themselves.
+ */
+@layer theme, base, sosb-editor, components, utilities;
 
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
@@ -52,31 +69,78 @@
     "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 
-  /* Mirrors the editor-app design tokens so shared controls sit naturally
-   * next to the surfaces that have not been rebuilt yet. */
-  --color-background: #f4f6f8;
-  --color-foreground: #111827;
+  /*
+   * The issue #102 palette, shared verbatim with `editor-app-css.ts`'s
+   * `:root` tokens. Neutral paper surfaces, one accent, and severity colours
+   * used only by badges and findings. Keeping the two in step is what makes
+   * a shared control sit correctly on an editor surface without either side
+   * knowing about the other.
+   */
+  --color-background: #f6f7f9;
+  --color-foreground: #10161f;
   --color-card: #ffffff;
-  --color-card-foreground: #111827;
+  --color-card-foreground: #10161f;
   --color-popover: #ffffff;
-  --color-popover-foreground: #111827;
+  --color-popover-foreground: #10161f;
   --color-primary: #0f766e;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #eceff3;
-  --color-secondary-foreground: #111827;
-  --color-muted: #eceff3;
-  --color-muted-foreground: #6b7280;
-  --color-accent: #eceff3;
-  --color-accent-foreground: #111827;
+  --color-primary-soft: #e6f2f0;
+  --color-secondary: #eef0f3;
+  --color-secondary-foreground: #10161f;
+  --color-muted: #eef0f3;
+  --color-muted-foreground: #6a7381;
+  --color-accent: #eef0f3;
+  --color-accent-foreground: #10161f;
   --color-destructive: #b42318;
   --color-destructive-foreground: #ffffff;
-  --color-border: #e2e6eb;
-  --color-input: #cbd2db;
+  --color-border: #e4e7eb;
+  --color-input: #ccd2da;
   --color-ring: #0f766e;
 
+  /* Severity fills, for state badges and the findings list. */
+  --color-severity-error: #b42318;
+  --color-severity-error-soft: #fee4e2;
+  --color-severity-warning: #92400e;
+  --color-severity-warning-soft: #fef0c7;
+  --color-severity-info: #175cd3;
+  --color-severity-info-soft: #dbe9ff;
+  --color-severity-ok: #067647;
+  --color-severity-ok-soft: #d6f5e3;
+
+  /*
+   * One control system: 36px controls, 28px compact, 8px control radius and
+   * 12px card radius. `--radius-sosb-md` is the control radius because it is
+   * what `Button`, `Input` and friends already reference.
+   */
   --radius-sosb-sm: 6px;
-  --radius-sosb-md: 10px;
-  --radius-sosb-lg: 14px;
+  --radius-sosb-md: 8px;
+  --radius-sosb-lg: 12px;
+
+  /*
+   * The type and spacing scales, exposed as plain custom properties rather
+   * than through Tailwind's `--text-*` namespace. Overriding `--text-sm`
+   * would silently resize every `text-sm` utility in the three builder
+   * packages; these names carry the scale without that blast radius.
+   */
+  --sosb-text-micro: 0.6875rem;
+  --sosb-text-meta: 0.75rem;
+  --sosb-text-sm: 0.8125rem;
+  --sosb-text-body: 0.875rem;
+  --sosb-text-lg: 1rem;
+  --sosb-text-xl: 1.25rem;
+  --sosb-text-2xl: 1.625rem;
+  --sosb-text-3xl: 2rem;
+
+  --sosb-space-1: 0.25rem;
+  --sosb-space-2: 0.5rem;
+  --sosb-space-3: 0.75rem;
+  --sosb-space-4: 1rem;
+  --sosb-space-5: 1.5rem;
+  --sosb-space-6: 2rem;
+  --sosb-space-7: 3rem;
+
+  --sosb-control-h: 36px;
+  --sosb-control-h-sm: 28px;
 }
 
 @layer base {

@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import type { Frame, Page } from "@playwright/test";
 
+import { openSection } from "./builder-helpers.js";
+
 /**
  * The preview updates in place while you type.
  *
@@ -99,6 +101,9 @@ async function mountEditor(page: Page): Promise<Frame> {
     window.__sosbEditor.mount(siteData as never, root);
   }, tallSite());
 
+  // Site settings is where the tests below type, and it keeps a preview
+  // beside the form (issue #102).
+  await openSection(page, "settings");
   await expect(page.getByTestId("preview-pane")).toBeVisible();
 
   // The preview document is a srcdoc child frame.
@@ -109,9 +114,8 @@ async function mountEditor(page: Page): Promise<Frame> {
   return frame;
 }
 
-/** Drill into Site settings and replace the organisation name. */
+/** Replace the organisation name in Site settings. */
 async function typeOrgName(page: Page, value: string): Promise<void> {
-  await page.getByTestId("site-settings-link").click();
   const input = page.locator('[data-field="org.name"]');
   await expect(input).toBeVisible();
   await input.fill(value);
@@ -174,7 +178,7 @@ test("switching theme reloads the preview document", async ({ page }) => {
 
   // A theme swaps the whole stylesheet: morphing into it would carry over
   // state that no longer means anything, so the preview reloads instead.
-  await page.getByTestId("drill-in-theme").click();
+  await openSection(page, "theme");
   await page.locator('[data-theme-id="civic"] input[type="radio"]').check();
 
   await expect

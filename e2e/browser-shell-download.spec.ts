@@ -5,6 +5,8 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
+import { exportWebsite } from "./builder-helpers.js";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..");
@@ -90,12 +92,15 @@ test("Download copy writes an importable site zip from the browser shell", async
 
     await page.getByTestId("welcome-action-blank").click();
     await expect(page.getByTestId("editor-app")).toBeVisible();
-    await expect(page.getByTestId("save-status")).toHaveText("Saved in this browser", {
+    // The status line carries two facts now: the local save and the
+    // downloaded copy (issue #102).
+    await expect(page.getByTestId("save-status")).toContainText("Saved in this browser", {
       timeout: 5_000,
     });
+    await expect(page.getByTestId("save-status")).toContainText("Downloaded copy: never");
 
     const downloadPromise = page.waitForEvent("download");
-    await page.locator('[data-action="export"]').click();
+    await exportWebsite(page);
     const download = await downloadPromise;
 
     expect(download.suggestedFilename()).toBe("your-organisation.zip");

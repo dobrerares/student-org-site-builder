@@ -5,10 +5,10 @@ import { render, cleanup, fireEvent } from "@testing-library/react";
 import { useState } from "react";
 import type { JSX } from "react";
 import type { Site } from "@sosb/schema";
-import { ArticlesPanel } from "../src/articles-panel.js";
+import { ArticlesScreen } from "../src/articles-screen.js";
 import { ArticleSettingsForm } from "../src/article-settings-form.js";
 import { ArticleListInspector } from "../src/article-list-inspector.js";
-import { ArticleWorkspace } from "../src/article-workspace.js";
+import { Workspace } from "../src/workspace.js";
 import { TagManager } from "../src/tag-manager.js";
 import { createArticle, createTag, updateArticle } from "../src/articles-ops.js";
 import { expectNoAxeViolations } from "./helpers/axe.js";
@@ -59,23 +59,25 @@ afterEach(() => {
   cleanup();
 });
 
-describe("ArticlesPanel", () => {
+describe("ArticlesScreen", () => {
   function renderPanel(initial: Site = populatedSite()) {
     const selected: string[] = [];
+    let created = 0;
     const utils = render(
       <Harness initial={initial}>
         {(site, apply) => (
-          <ArticlesPanel
+          <ArticlesScreen
             site={site}
             onApply={apply}
-            onSelect={(id) => selected.push(id)}
-            contentLanguage="ro"
-            today={TODAY}
+            onOpen={(id: string) => selected.push(id)}
+            onCreate={() => {
+              created += 1;
+            }}
           />
         )}
       </Harness>,
     );
-    return { ...utils, selected };
+    return { ...utils, selected, createdCount: () => created };
   }
 
   test("lists every article with language, state, and date", () => {
@@ -89,7 +91,7 @@ describe("ArticlesPanel", () => {
 
   test("orders newest first", () => {
     const { getByTestId } = renderPanel();
-    const titles = [...getByTestId("articles-list").querySelectorAll(".articles-panel__row-title")];
+    const titles = [...getByTestId("articles-list").querySelectorAll("[data-summary-title]")];
     expect(titles.map((n) => n.textContent)).toEqual(["English post", "Gala de final", "Atelier"]);
   });
 
@@ -135,13 +137,23 @@ describe("ArticlesPanel", () => {
     expect(getByTestId("articles-empty").textContent).toContain("match these filters");
   });
 
-  test("creating an article opens it as a draft", () => {
-    const { getByTestId, selected } = renderPanel(baseSite());
+  test("Create Article is one click, with no title dialog in between", () => {
+    const { getByTestId, queryByTestId, createdCount } = renderPanel(baseSite());
     fireEvent.click(getByTestId("articles-create"));
-    fireEvent.change(getByTestId("article-create-input"), { target: { value: "Articol nou" } });
-    fireEvent.click(getByTestId("article-create-submit"));
-    expect(selected).toEqual(["art_1"]);
-    expect(getByTestId("article-row-art_1").textContent).toContain("Draft");
+    expect(createdCount()).toBe(1);
+    expect(queryByTestId("article-create-dialog")).toBeNull();
+  });
+
+  test("an article with no title yet is still listed, as untitled", () => {
+    const site = createArticle(baseSite(), { title: "", lang: "ro", today: TODAY }).site;
+    const { getByTestId } = renderPanel(site);
+    expect(getByTestId("article-row-art_1").textContent).toContain("Untitled article");
+  });
+
+  test("the explanation of what articles are sits behind an (i) icon", () => {
+    const { getByTestId, container } = renderPanel();
+    expect(getByTestId("articles-screen-info")).toBeTruthy();
+    expect(container.textContent).not.toContain("dated pieces of writing");
   });
 
   test("clicking a row opens that article", () => {
@@ -202,11 +214,9 @@ describe("ArticleSettingsForm", () => {
     );
   });
 
-  test("edits the title", () => {
+  test("does not repeat the title: that is edited on the workspace outline", () => {
     const { getByTestId } = renderForm();
-    const input = getByTestId("article-settings-form").querySelector("#article-title")!;
-    fireEvent.change(input, { target: { value: "Titlu nou" } });
-    expect((input as HTMLInputElement).value).toBe("Titlu nou");
+    expect(getByTestId("article-settings-form").querySelector("#article-title")).toBeNull();
   });
 
   test("committing a slug change retires the old slug", () => {
@@ -447,36 +457,63 @@ describe("TagManager", () => {
   });
 });
 
-describe("ArticleWorkspace translations", () => {
+describe("Workspace (Article)", () => {
   function renderWorkspace(initial: Site = populatedSite()) {
     const opened: string[] = [];
+    const titles: string[] = [];
     const utils = render(
       <Harness initial={initial}>
         {(site, apply) => (
-          <ArticleWorkspace
+          <Workspace
             site={site}
-            articleIndex={0}
-            onApply={apply}
+            target={{ kind: "article", articleId: "art_1" }}
+            drill={{ kind: "outline" }}
+            onDrillChange={() => undefined}
+            isNarrow={false}
             onBack={() => undefined}
-            onOpenArticle={(id) => opened.push(id)}
-            today={TODAY}
-            onPatchBlockData={() => undefined}
-            onArrayChangeBlockData={() => undefined}
+            onTitleChange={(value: string) => titles.push(value)}
+            onAddBlock={() => undefined}
             onMoveBlock={() => undefined}
             onRemoveBlock={() => undefined}
-            onAddBlock={() => undefined}
+            onSetBlockVariant={() => undefined}
+            onPatchBlockData={() => undefined}
+            onArrayChangeBlockData={() => undefined}
+            onReplaceBlockData={() => undefined}
+            pageSettingsFields={[]}
+            onPatchSite={() => undefined}
+            onApplySite={apply}
+            today={TODAY}
+            onOpenArticle={(id: string) => opened.push(id)}
             uploader={async () => {
               throw new Error("not used");
             }}
             documentUploader={async () => {
               throw new Error("not used");
             }}
+            preview={<div data-testid="preview-stub" />}
+            pane="edit"
+            onPaneChange={() => undefined}
           />
         )}
       </Harness>,
     );
-    return { ...utils, opened };
+    return { ...utils, opened, titles };
   }
+
+  test("edits the title on the outline", () => {
+    const { getByTestId, titles } = renderWorkspace();
+    fireEvent.change(getByTestId("workspace-title"), { target: { value: "Titlu nou" } });
+    expect(titles).toEqual(["Titlu nou"]);
+  });
+
+  test("the publication state is a visible selector with its explanation behind an (i)", () => {
+    const { getByTestId, container } = renderWorkspace();
+    expect(getByTestId("workspace-state-published").getAttribute("aria-pressed")).toBe("true");
+    expect(getByTestId("workspace-state-draft")).toBeTruthy();
+    expect(getByTestId("workspace-state-unlisted")).toBeTruthy();
+    expect(getByTestId("workspace-state-hint")).toBeTruthy();
+    expect(container.textContent).not.toContain("export the website and upload it again");
+  });
 
   test("offers the missing language and opens the new Draft counterpart", () => {
     const { getByTestId, queryByTestId, opened } = renderWorkspace();
@@ -484,7 +521,7 @@ describe("ArticleWorkspace translations", () => {
     expect(queryByTestId("article-add-translation-ro")).toBeNull();
     fireEvent.click(getByTestId("article-add-translation-en"));
     expect(opened).toEqual(["art_4"]);
-    // Both ends now sit in one group, and the counterpart starts as a Draft.
+    // Both ends now sit in one group, so nothing is left to offer.
     expect(queryByTestId("article-translations")).toBeNull();
   });
 
@@ -492,5 +529,10 @@ describe("ArticleWorkspace translations", () => {
     const single = { ...populatedSite(), languages: ["ro"] } as Site;
     const { queryByTestId } = renderWorkspace(single);
     expect(queryByTestId("article-translations")).toBeNull();
+  });
+
+  test("has no axe violations", async () => {
+    const { getByTestId } = renderWorkspace();
+    await expectNoAxeViolations(getByTestId("editor-app"));
   });
 });

@@ -5,34 +5,18 @@ import { render, cleanup, fireEvent } from "@testing-library/react";
 import type { Site } from "@sosb/schema";
 
 import minimal from "./fixtures/minimal-site.json" with { type: "json" };
+import { openPage, setViewportWidth } from "./helpers/nav.js";
 import { EditorApp } from "../src/editor-app.js";
 
 const baseSite = minimal as unknown as Site;
 
 /**
- * AC: mobile / narrow layouts (<768px) swap two-pane to tabs (Editor | Preview).
+ * Issue #102: editing and preview sit side by side on larger screens and one
+ * at a time on phones, switched with an Edit / Preview control. The builder
+ * opens into the Overview, which has no preview, so both checks open a page.
  *
- * The editor inspects `window.innerWidth` (and listens to `resize`) to pick
- * its layout. The two assertions:
- *
- * - At ≥768px the rendered DOM contains both an editor pane and a preview
- *   pane simultaneously (the two-pane layout).
- * - At <768px the rendered DOM contains a tab-style header with at least an
- *   "Editor" and a "Preview" tab.
- *
- * We do NOT assert visual styling (CSS). The contract is structural
- * markup, which is what tab-vs-pane fundamentally is.
+ * We do NOT assert visual styling (CSS). The contract is structural markup.
  */
-
-function setViewportWidth(width: number): void {
-  Object.defineProperty(window, "innerWidth", {
-    configurable: true,
-    writable: true,
-    value: width,
-  });
-  window.dispatchEvent(new Event("resize"));
-}
-
 describe("EditorApp layout responsiveness", () => {
   beforeEach(() => {
     setViewportWidth(1200);
@@ -42,29 +26,74 @@ describe("EditorApp layout responsiveness", () => {
     cleanup();
   });
 
-  test("at 1200px viewport, renders the two-pane layout with both editor and preview visible", () => {
-    setViewportWidth(1200);
+  test("opens into the Overview with the main navigation", () => {
     const { container } = render(<EditorApp initial={structuredClone(baseSite)} />);
+    expect(container.querySelector('[data-testid="overview"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="main-nav"]')).not.toBeNull();
+    expect(
+      container.querySelector('[data-testid="nav-overview"]')?.getAttribute("aria-current"),
+    ).toBe("page");
+    expect(container.querySelector('[data-testid="top-bar"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="save-status"]')).not.toBeNull();
+  });
+
+  test("at 1200px, a workspace shows editing and preview side by side", () => {
+    const { container } = render(<EditorApp initial={structuredClone(baseSite)} />);
+    openPage(container, 0);
 
     expect(container.querySelector('[data-testid="editor-pane"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="preview-pane"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="layout-tabs"]')).toBeNull();
+    expect(
+      container.querySelector('[data-testid="editor-pane"]')?.getAttribute("data-hidden"),
+    ).toBe("false");
   });
 
-  test("at 600px viewport, renders the tab layout (Editor | Preview tabs)", () => {
+  test("at 600px, a workspace shows editing and preview one at a time", () => {
     setViewportWidth(600);
     const { container } = render(<EditorApp initial={structuredClone(baseSite)} />);
+    openPage(container, 0);
 
     expect(container.querySelector('[data-testid="layout-tabs"]')).not.toBeNull();
-    const tabs = container.querySelectorAll('[data-testid="layout-tab"]');
-    const labels = Array.from(tabs).map((t) => t.textContent?.trim());
-    expect(labels).toContain("Editor");
-    expect(labels).toContain("Preview");
+    const edit = container.querySelector('[data-testid="workspace-tab-edit"]');
+    const preview = container.querySelector('[data-testid="workspace-tab-preview"]');
+    expect(edit?.textContent).toBe("Edit");
+    expect(preview?.textContent).toBe("Preview");
+    expect(edit?.getAttribute("aria-pressed")).toBe("true");
+
+    expect(
+      container.querySelector('[data-testid="editor-pane"]')?.getAttribute("data-hidden"),
+    ).toBe("false");
+    expect(container.querySelector("[data-split-preview]")?.getAttribute("data-hidden")).toBe(
+      "true",
+    );
+
+    fireEvent.click(preview!);
+    expect(
+      container.querySelector('[data-testid="editor-pane"]')?.getAttribute("data-hidden"),
+    ).toBe("true");
+    expect(container.querySelector("[data-split-preview]")?.getAttribute("data-hidden")).toBe(
+      "false",
+    );
+  });
+
+  test("the phone navigation drawer opens from the top bar and closes with Escape", () => {
+    setViewportWidth(600);
+    const { container } = render(<EditorApp initial={structuredClone(baseSite)} />);
+    const nav = container.querySelector('[data-testid="main-nav"]')!;
+    expect(nav.getAttribute("data-drawer-open")).toBe("false");
+
+    fireEvent.click(container.querySelector<HTMLButtonElement>('[data-testid="nav-drawer-open"]')!);
+    expect(nav.getAttribute("data-drawer-open")).toBe("true");
+    expect(container.querySelector('[data-testid="nav-drawer-scrim"]')).not.toBeNull();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(nav.getAttribute("data-drawer-open")).toBe("false");
   });
 
   test("preview pane exposes selectable viewport sizes", () => {
-    setViewportWidth(1200);
     const { container } = render(<EditorApp initial={structuredClone(baseSite)} />);
+    openPage(container, 0);
 
     const controls = container.querySelector('[data-testid="viewport-preview-controls"]');
     expect(controls).not.toBeNull();

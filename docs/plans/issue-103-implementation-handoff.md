@@ -102,6 +102,87 @@ pane. Preview renders Articles through the real renderer; preview clicks
 resolve Article URLs, including retired slugs. All strings via `@sosb/i18n`
 (84 keys, ro + en).
 
+## Builder redesign (issue #102): delivered
+
+Implements the navigation and workflow half of
+[issue #102](../plans/issue-102-builder-workflows.md) under
+[ADR 0053](../adr/0053-builder-navigation-state-model.md), keeping ADR 0042's
+Inspector and PR #116's preview fidelity.
+
+### Shell (`@sosb/editor-app`)
+
+- `builder-navigation.ts` — the pure `Destination` / `WorkspaceDrill` model
+  with `reconcileDestination` and `reconcileDrill`, unit-tested for the
+  awkward cases (deleted page under an open workspace, vanished Block under
+  an open Inspector, imported-away project).
+- `MainNav` — five destinations, Create Page / Create Article, the
+  content-language picker; a rail at ≥768px, a drawer below with scrim,
+  Escape and focus return.
+- `OverviewScreen` — Pages and Articles summaries, per-state counts, create
+  actions, Site Health with `FindingList` (problem and repair action visible,
+  explanation behind an (i), "blocks exporting" keyed on
+  `ValidationIssue.blocking`).
+- `PagesScreen` — heading with (i), one-click Create Page, search, the
+  existing `PagesList` (slug validation, reorder, clone, delete, language
+  versions) with its own header hidden.
+- `ArticlesScreen` — search, language / state / tag filters, Manage tags,
+  one-click Create Article, rows with state and language badges, delete with
+  confirmation.
+- `Workspace` + `SplitView` — one workspace for Pages and Articles: back to
+  the list, title (an Article's address follows it while it is a Draft with
+  no history), the settings row, the Block outline with Move up / Move down
+  and drag, and for Articles the publication-state selector with its (i),
+  "Add {lang} version", and Related Articles after the Blocks. Inspectors
+  for a Block (`BlockInspector`, the one chain for `articleList`,
+  `customHTML` and the generated form), the content's settings, and Related
+  Articles, each with a back button naming the content. Editing beside the
+  preview at ≥768px, Edit / Preview switch below, hidden pane kept mounted.
+- `PreviewPane` — PR #116's morphing receiver, device presets and scaling
+  intact; a pane bar naming what is previewed, "Back to this page/article"
+  when the preview has wandered, and "Edit this Page / Article".
+- Theme and Site settings — site-wide forms on the same split view with an
+  adjacent preview of the last content looked at.
+- Top bar — brand, local save status with the "Downloaded copy" line and its
+  (i), undo/redo, Open, Start over, **Save project**, **Export website**
+  (with the blocking count on the button).
+- `ExportReadinessPanel` — replaces the pre-export confirmation: blockers
+  with Fix, warnings with Fix, the (i), the typed-phrase override for
+  ordinary errors, disabled outright for blocking issues.
+- Help behind (i) icons everywhere the design asked: Overview cards, Pages,
+  Articles, Theme, Site settings, publication state, language versions,
+  Related Articles, the Blocks outline, the preview, save status, export.
+- Strings: every shell string through `@sosb/i18n` in ro and en (`builder.*`,
+  `overview.*`, `pages.*`, `workspace.*`, `preview.*`, `export.*`,
+  `articles.info`, `theme.info`, `settings.info`).
+- Styles: `editor-app-css.ts` gains the shell section (nav rail and drawer,
+  screens, cards, summary rows, findings, split view with sticky pane bars,
+  workspace outline, readiness groups, phone media query). The generic
+  button chrome applies to plain buttons only, so `@sosb/ui` controls style
+  themselves; `Button` gains `data-tone="accent"` for the back buttons.
+
+### Tests
+
+- Unit: `builder-navigation.test.ts`; the drill-in, history, validation,
+  preview, i18n, layout, multi-page and save-status suites rewritten against
+  the Overview, the readiness panel and the split view via
+  `test/helpers/nav.ts`; `ArticlesScreen` and `Workspace` suites.
+- E2E: `e2e/builder-helpers.ts` (`openSection`, `openFirstPage`,
+  `exportWebsite`); every spec that assumed a Block list at boot now opens
+  the home page; `editor-app.spec.ts` checks the split view, the phone
+  switch, preview-follows-link and Edit this Page; `articles.spec.ts` checks
+  one-click create and the address following the title.
+
+### Not in this delivery
+
+- **Tiptap `RichTextField`** (feat/rich-text) had not merged when this
+  landed; the Rich-text Block still edits Markdown in a textarea. Wiring is a
+  swap inside `BlockInspector` once it does.
+- The Add-block dialog's chrome and the block catalog's labels and
+  descriptions (`block-catalog.ts`) predate the i18n pass and are still
+  English-only. The `PagesList` and `BlockListEditor` row copy was translated
+  in the #118 review.
+- The Overview's article date is shown raw (`YYYY-MM-DD`).
+
 ## Decisions worth knowing
 
 - **Tags render as plain text on the public site, never as links.** The brief
@@ -115,6 +196,9 @@ resolve Article URLs, including retired slugs. All strings via `@sosb/i18n`
 - **Article ids are never reused while referenced.** `nextArticleId` counts
   referenced ids as well as existing ones, so replacement content cannot
   inherit a deleted Article's placements.
+- **Create Page and Create Article use the content language.** The
+  navigation's picker applies to both; it falls back to the Site's default
+  when the chosen language is no longer declared.
 - **Language is fixed at creation.** Translations are separate linked Articles,
   so there is no language selector on an existing Article; use "add
   translation" instead.
@@ -128,9 +212,8 @@ resolve Article URLs, including retired slugs. All strings via `@sosb/i18n`
   list whose initial Block is the existing `richtext` Block, so the migration
   is transparent: Articles inherit structured content when the Block gains it,
   with no change to the Article schema or the Article renderer.
-- **Navigation redesign (issue #102).** The accepted content-overview
-  navigation, phone drawer, and full-width Inspector are not built. The
-  Pages/Articles switch here is deliberately minimal.
+- **Navigation redesign (issue #102).** Delivered — see "Builder redesign
+  (issue #102): delivered" above and ADR 0053.
 - **Arrow-group card navigation.** Issue #97 specifies responsive arrow
   navigation between groups of cards. The list currently renders all matches in
   a responsive grid; `limit` caps the count. No public content is unreachable,
@@ -141,5 +224,6 @@ resolve Article URLs, including retired slugs. All strings via `@sosb/i18n`
 - **"More options" SEO overrides on Articles.** `seo.title` / `seo.description`
   are in the schema and honoured by the renderer, but not yet surfaced in the
   Article settings form.
-- **Prototype validation.** Issue #102's interactive prototype has not been
-  built or accepted; these surfaces implement the written contract only.
+- **Prototype validation.** Issue #102's interactive prototype was built and
+  accepted (#113). The production surfaces follow its visual system; a
+  round of use by an actual student member is still the real validation.

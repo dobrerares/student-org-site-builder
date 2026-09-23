@@ -4,6 +4,7 @@ import { afterEach, describe, expect, test } from "vitest";
 import { render, cleanup, fireEvent } from "@testing-library/react";
 import type { Site } from "@sosb/schema";
 
+import { openSection, setViewportWidth } from "./helpers/nav.js";
 import { EditorApp } from "../src/editor-app.js";
 
 function makeMultiPageSite(): Site {
@@ -41,58 +42,123 @@ describe("EditorApp — multi-page wiring", () => {
     cleanup();
   });
 
-  test("renders a Pages list panel with one entry per page", () => {
-    Object.defineProperty(window, "innerWidth", {
-      configurable: true,
-      writable: true,
-      value: 1200,
-    });
+  test("the Pages destination lists one entry per page", () => {
+    setViewportWidth(1200);
     const { container } = render(<EditorApp initial={makeMultiPageSite()} />);
-    const list = container.querySelector('[data-testid="pages-list"]');
-    expect(list).not.toBeNull();
-    const items = container.querySelectorAll('[data-testid="pages-list-item"]');
-    expect(items).toHaveLength(2);
+    openSection(container, "pages");
+    expect(container.querySelector('[data-testid="pages-list"]')).not.toBeNull();
+    expect(container.querySelectorAll('[data-testid="pages-list-item"]')).toHaveLength(2);
   });
 
-  test("the preview iframe srcdoc reflects the active page after a select", () => {
-    Object.defineProperty(window, "innerWidth", {
-      configurable: true,
-      writable: true,
-      value: 1200,
-    });
+  test("opening a page previews that page; opening another boots a fresh document", () => {
+    setViewportWidth(1200);
     const { container } = render(<EditorApp initial={makeMultiPageSite()} />);
     const frame = (): HTMLIFrameElement =>
       container.querySelector<HTMLIFrameElement>('[data-testid="preview-pane"] iframe')!;
+
+    openSection(container, "pages");
+    fireEvent.click(
+      container.querySelector<HTMLButtonElement>('[data-action="select"][data-index="1"]')!,
+    );
     const first = frame();
     expect(first).not.toBeNull();
-    // Initial: home page is active.
-    expect(first.getAttribute("srcdoc")).toContain("Stub — Acasă");
+    expect(first.getAttribute("srcdoc")).toContain("Stub — Despre");
 
-    // Click 'Despre' in the list and expect the preview to switch.
-    const selectAbout = container.querySelector<HTMLButtonElement>(
-      '[data-action="select"][data-index="1"]',
+    // Back to the list and open the home page: a different page is a
+    // different document, so the iframe is remounted with a fresh boot
+    // `srcdoc` rather than morphed in place.
+    fireEvent.click(container.querySelector<HTMLButtonElement>('[data-testid="workspace-back"]')!);
+    fireEvent.click(
+      container.querySelector<HTMLButtonElement>('[data-action="select"][data-index="0"]')!,
     );
-    fireEvent.click(selectAbout!);
-
-    // A different page is a different document: the iframe is remounted with
-    // a fresh boot `srcdoc` rather than being morphed in place, so the element
-    // has to be re-queried.
     expect(frame()).not.toBe(first);
-    expect(frame().getAttribute("srcdoc")).toContain("Stub — Despre");
+    expect(frame().getAttribute("srcdoc")).toContain("Stub — Acasă");
   });
 
-  test("adding a page lengthens the list", () => {
-    Object.defineProperty(window, "innerWidth", {
-      configurable: true,
-      writable: true,
-      value: 1200,
-    });
+  test("Create Page adds a page, opens it, and lengthens the list", () => {
+    setViewportWidth(1200);
     const { container } = render(<EditorApp initial={makeMultiPageSite()} />);
-    const input = container.querySelector<HTMLInputElement>('[data-testid="pages-list-add-slug"]');
-    fireEvent.input(input!, { target: { value: "proiecte" } });
-    const submit = container.querySelector<HTMLButtonElement>('[data-action="add"]');
-    fireEvent.click(submit!);
+    openSection(container, "pages");
+    fireEvent.click(container.querySelector<HTMLButtonElement>('[data-testid="pages-create"]')!);
+
+    // The new page opens straight into its workspace…
+    expect(container.querySelector('[data-testid="workspace"]')).not.toBeNull();
+    expect(
+      container.querySelector('[data-testid="block-list"]')?.getAttribute("data-page-slug"),
+    ).toBe("new-page");
+
+    // …and is listed back in Pages.
+    openSection(container, "pages");
+    expect(container.querySelectorAll('[data-testid="pages-list-item"]')).toHaveLength(3);
+    expect(container.querySelector('[data-testid="nav-count-pages"]')?.textContent).toBe("3");
+  });
+});
+
+function makeBilingualSite(): Site {
+  const site = makeMultiPageSite();
+  return {
+    ...site,
+    languages: ["ro", "en"],
+    pages: [
+      ...site.pages,
+      {
+        slug: "home",
+        lang: "en",
+        navLabel: "Home",
+        navOrder: 0,
+        showInNav: true,
+        blocks: [{ id: "blk_home_en", type: "hero", version: 1, data: { title: "Home" } }],
+      },
+    ],
+  } as unknown as Site;
+}
+
+describe("EditorApp — content language and page order", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  test("Create Page creates the page in the navigation's content language", () => {
+    setViewportWidth(1200);
+    const { container } = render(<EditorApp initial={makeBilingualSite()} />);
+    fireEvent.change(
+      container.querySelector<HTMLSelectElement>('[data-testid="nav-content-language"]')!,
+      { target: { value: "en" } },
+    );
+    fireEvent.click(container.querySelector<HTMLButtonElement>('[data-testid="nav-create-page"]')!);
+    expect(
+      container.querySelector('[data-testid="block-list"]')?.getAttribute("data-page-slug"),
+    ).toBe("new-page");
+
+    openSection(container, "pages");
+    const english = container.querySelector(
+      '[data-testid="pages-list-language-group"][data-lang="en"]',
+    );
+    const romanian = container.querySelector(
+      '[data-testid="pages-list-language-group"][data-lang="ro"]',
+    );
+    expect(english?.textContent).toContain("/new-page");
+    expect(romanian?.textContent).not.toContain("/new-page");
+  });
+
+  test("moving a page keeps the last-open marker on that page", () => {
+    setViewportWidth(1200);
+    const { container } = render(<EditorApp initial={makeMultiPageSite()} />);
+    openSection(container, "pages");
+    fireEvent.click(
+      container.querySelector<HTMLButtonElement>('[data-action="select"][data-index="1"]')!,
+    );
+    fireEvent.click(container.querySelector<HTMLButtonElement>('[data-testid="workspace-back"]')!);
+    expect(
+      container.querySelector('[data-testid="pages-list-item"][data-active="true"]')?.textContent,
+    ).toContain("Despre");
+
+    fireEvent.click(
+      container.querySelector<HTMLButtonElement>('[data-action="move-up"][data-index="1"]')!,
+    );
+
     const items = container.querySelectorAll('[data-testid="pages-list-item"]');
-    expect(items).toHaveLength(3);
+    expect(items[0]?.textContent).toContain("Despre");
+    expect(items[0]?.getAttribute("data-active")).toBe("true");
   });
 });

@@ -210,8 +210,9 @@ can never disagree with what exports.
 _Avoid_: list config, filter.
 
 **Blocking issue**:
-A validation `error` carrying `blocking: true`, which the pre-export
-dialog will not let the author override. ADR 0016's "never hard-block"
+A validation `error` carrying `blocking: true`, which the export
+readiness panel will not let the author override — its export button is
+disabled outright (ADR 0053). ADR 0016's "never hard-block"
 rule still governs every other error; this is the narrow ADR 0048 carve-out
 for public content that cannot be produced correctly at all — today, an
 active explicit Article-list selection pointing at a Draft or deleted
@@ -280,18 +281,60 @@ Patch paths reflect the distinction: `["pages", 0, "blocks", 2]` is an
 envelope path, `["pages", 0, "blocks", 2, "data", "title"]` is a data
 path.
 
-**Inspector** (the editor's drill-in panel):
-The drilled-in view shown when the user clicks a block row in the
-**BlockListEditor**. Replaces the un-drilled editor pane body with the
-**BlockForm** for the active block. The user "drills in" to a block,
-edits, then "drills out" via a back affordance. Pattern recorded in
-ADR 0042.
+**Destination**:
+Where the builder is: one of the five main-navigation entries — Overview,
+Pages, Articles, Theme, Site settings — or a **Workspace** opened from the
+Pages or Articles list. A closed union in `builder-navigation.ts`, held as
+shell state (no URL router) and reconciled on every render so a deleted or
+imported-away target falls back to its list (ADR 0053).
+_Avoid_: route, screen (a screen is what a destination renders), mode.
+
+**Overview**:
+The destination a Site opens into: a Pages summary, an Articles summary
+with per-state counts, Create Page / Create Article, and **Site Health**
+with actionable findings. Theme and Site settings stay in the navigation.
+_Avoid_: dashboard, home (that is a Page).
+
+**Workspace**:
+The focused editing surface for one Page or one Article, reached from its
+list: a back button to that list, the title, the settings row, the Block
+outline and — for an Article — the publication state, language versions and
+Related Articles. Editing beside the preview on larger screens, one at a
+time behind an Edit / Preview switch on phones (**split view**). Pages and
+Articles share one component.
+_Avoid_: editor pane (that is the left half of a workspace), article editor.
+
+**Inspector** (the workspace's drill-in panel):
+The focused view opened from a workspace outline: a Block's **BlockForm**,
+the content's own settings, or an Article's Related Articles. Replaces the
+outline in the editing pane and carries a back button naming the content
+("Back to “Acasă”"); Escape drills out one level and never leaves the
+workspace. Pattern recorded in ADR 0042, carried into workspaces by
+ADR 0053.
 _Avoid_: detail pane, block editor pane.
 
 **Active block**:
 The single block currently selected in the **Inspector**. Distinct from
-the **active page** (selected in **PagesList**) and the **active page
-index** (the snapshot field that drives the preview).
+the content open in the **Workspace** and from the **preview target**.
+
+**Preview target**:
+What the preview pane is showing — a Page or an Article by index — held
+separately from what is being edited. Opening a workspace points it at the
+content being edited; clicks inside the preview move it the way the public
+website would; **Edit this Page / Edit this Article** makes the previewed
+thing the edited thing (ADR 0053).
+_Avoid_: active page index (the old name for one half of this).
+
+**Save project / Export website**:
+Two distinct top-bar actions. Save project writes the editable archive,
+Drafts included, and is never gated by validation. Export website opens the
+**export readiness panel** — the problems that stop an export with a repair
+action each, the warnings that do not, an (i) explaining that exporting does
+not update the live website, and the export button. The gate is the
+schema's: **blocking** issues disable export, ordinary errors keep the
+typed-phrase override (ADR 0016), warnings gate nothing.
+_Avoid_: download (ambiguous between the two), publish (nothing here
+publishes).
 
 **Block catalog**:
 Editor-side side table (`@sosb/editor-app/src/block-catalog.ts`) mapping
@@ -431,9 +474,10 @@ host-side, so there is exactly one Renderer code path).
 A full `srcdoc` reload is used, deliberately, when the previewed page,
 theme or language changes: those are different documents, and carrying
 state across them would be wrong.
-An interactive preview mode (ADR 0046) is still future work — the
-preview remains a picture the user edits through the forms, not a
-surface they click into.
+An interactive preview mode (ADR 0046) is still future work. Links
+inside the preview navigate it the way the public website would (ADR
+0053), but Blocks are not selected or edited by clicking them — editing
+goes through the forms.
 
 **Spine patch** vs **block patch**:
 A field edit in the SpineForm produces a "spine patch" with a path
@@ -452,8 +496,10 @@ the state model.
 **Validation**:
 Schema-level checks plus quality nudges (missing alt text, low contrast,
 broken internal links). Returns a tiered list of `errors`, `warnings`,
-`info`. Surfaced through the **Site Health** footer + panel and the
-pre-export confirm dialog.
+`info`. Surfaced through the Overview's **Site Health** card and the
+**export readiness panel** (ADR 0053). The earlier health footer, side
+panel and pre-export dialog remain exported components for hosts that
+compose their own chrome; the shell no longer mounts them.
 
 ## Relationships
 
