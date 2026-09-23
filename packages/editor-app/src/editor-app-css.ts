@@ -873,63 +873,8 @@ body {
 }
 
 /* ============================================================
- * 11. Drill links (page / site / theme) + inspector chrome
+ * 11. Inspector chrome
  * ============================================================ */
-[data-testid="drill-links"] {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-[data-testid="editor-app"] [data-testid="drill-links"] > button {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--sp-2);
-  padding: 10px 10px 10px 10px;
-  min-height: 56px;
-  border-radius: var(--r-md);
-  text-align: left;
-  color: var(--ink-3);
-  white-space: normal;
-}
-[data-testid="editor-app"] [data-testid="drill-links"] > button:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-[data-testid="drill-links"] [data-drill-icon] {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 9px;
-  background: var(--paper-sunken);
-  color: var(--ink-2);
-}
-[data-testid="editor-app"] [data-testid="drill-links"] > button:hover [data-drill-icon] {
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-[data-testid="drill-links"] [data-drill-text] {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-}
-[data-testid="drill-links"] [data-drill-text] > span:first-child {
-  font-size: var(--step-0);
-  font-weight: 600;
-  color: var(--ink);
-}
-[data-testid="drill-links"] [data-drill-text] > span:last-child {
-  font-size: var(--step--1);
-  font-weight: 400;
-  color: var(--ink-3);
-  line-height: 1.35;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 [data-testid="editor-pane"] [data-testid="inspector"] {
   display: flex;
@@ -1725,10 +1670,6 @@ body {
 [data-testid="article-delete-dialog"] {
   width: min(600px, 100%);
 }
-[data-testid="article-create-dialog"] {
-  width: min(460px, 100%);
-}
-[data-testid="article-create-dialog"] h2,
 [data-testid="tag-manager-dialog"] h2,
 [data-testid="article-delete-dialog"] h2,
 [data-testid="tag-delete-dialog"] h2 {
@@ -2301,25 +2242,9 @@ button[data-issue] [data-issue-path]::before {
  * Articles (issue #97 / #98)
  *
  * Scoped to the editor root like every other rule in this sheet. The visual
- * register deliberately matches the Pages list: the two are siblings behind
- * one switch, and looking different would imply they behave differently.
+ * register deliberately matches the Pages list: the two are sibling
+ * destinations, and looking different would imply they behave differently.
  * ------------------------------------------------------------------------- */
-
-[data-testid="editor-app"] [data-testid="content-kind-switch"] {
-  display: flex;
-  gap: var(--sp-1);
-  padding: var(--sp-2);
-  border-bottom: 1px solid var(--rule-soft);
-}
-
-[data-testid="editor-app"] .articles-panel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
-  padding: var(--sp-3);
-  min-height: 0;
-  overflow-y: auto;
-}
 
 /* Article settings ------------------------------------------------------- */
 
@@ -2339,7 +2264,6 @@ button[data-issue] [data-issue-path]::before {
 
 [data-testid="editor-app"] .article-settings__label-row,
 [data-testid="editor-app"] .article-list-inspector__label-row,
-[data-testid="editor-app"] .article-workspace__label-row,
 [data-testid="editor-app"] .tag-picker__heading {
   display: flex;
   align-items: center;
