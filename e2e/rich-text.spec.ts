@@ -3,7 +3,7 @@ import { build as esbuild } from "esbuild";
 import { createServer, type Server } from "node:http";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { openFirstPage } from "./builder-helpers.js";
+import { openFirstPage, openSection } from "./builder-helpers.js";
 
 /**
  * Rich-text editing — end-to-end through the real editor (issue #100).
@@ -249,11 +249,13 @@ test("type, format, link, insert an image, undo — and the preview keeps up", a
 
     // And Site Health reports nothing blocking: the content is all supported
     // and the image bytes are present, so neither ADR 0048 blocker fires.
-    await page.getByTestId("health-footer-toggle").click();
-    const panel = page.getByTestId("site-health-panel");
-    await expect(panel).toBeVisible();
-    await expect(panel).not.toContainText("block.richText.content.unsupported");
-    await expect(panel).not.toContainText("block.richText.image.bytes.missing");
+    // The redesigned builder lists findings on the Overview (issue #102).
+    await openSection(page, "overview");
+    const health = page.getByTestId("overview-health");
+    await expect(health).toBeVisible();
+    await expect(health.locator('[data-blocking="true"]')).toHaveCount(0);
+    await expect(health.locator('[data-code="block.richText.content.unsupported"]')).toHaveCount(0);
+    await expect(health.locator('[data-code="block.richText.image.bytes.missing"]')).toHaveCount(0);
   } finally {
     await server.close();
   }
