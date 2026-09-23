@@ -19,6 +19,7 @@
 
 import { escapeAttr, escapeText, sanitizeUrl } from "@sosb/markdown";
 import {
+  RICH_TEXT_ALIGNMENTS,
   isKnownRichTextMarkType,
   isKnownRichTextNodeType,
   type RichTextDocument,
@@ -136,12 +137,20 @@ function serializeBlock(node: RichTextNode, ctx: RichTextRenderContext): string 
       return serializeInline([node], ctx);
 
     default:
-      return serializeUnsupported(anyNode.type);
+      return serializeUnsupported(anyNode.type, "div");
   }
 }
 
+/**
+ * Only the four alignments the document vocabulary defines are emitted. The
+ * schema already limits the value, but a hand-edited file bypasses it, and
+ * the theme CSS has rules for exactly these four — anything else would be an
+ * attribute nothing reads.
+ */
 function alignAttr(align: unknown): string {
-  return typeof align === "string" && align.length > 0 ? ` data-align="${escapeAttr(align)}"` : "";
+  return typeof align === "string" && (RICH_TEXT_ALIGNMENTS as readonly string[]).includes(align)
+    ? ` data-align="${escapeAttr(align)}"`
+    : "";
 }
 
 function serializeImage(asset: unknown, caption: unknown, ctx: RichTextRenderContext): string {
@@ -181,8 +190,8 @@ function serializeImage(asset: unknown, caption: unknown, ctx: RichTextRenderCon
  * inventing a rendering for content it does not understand. An empty,
  * labelled placeholder is the honest answer.
  */
-function serializeUnsupported(type: string): string {
-  return `<div class="rich-text-unsupported" data-unsupported-type="${escapeAttr(type)}"></div>`;
+function serializeUnsupported(type: string, tag: "div" | "span"): string {
+  return `<${tag} class="rich-text-unsupported" data-unsupported-type="${escapeAttr(type)}"></${tag}>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -212,10 +221,15 @@ function serializeInline(
     const anyNode = node as { type: string; text?: unknown; marks?: readonly RichTextMark[] };
     if (anyNode.type !== "text" && anyNode.type !== "hardBreak") {
       // An unknown inline node. Close everything so the placeholder is not
-      // nested inside a half-open `<strong>`.
+      // nested inside a half-open `<strong>`. The placeholder is a `<span>`
+      // here: a `<div>` inside a `<p>` is not valid HTML, and the browser
+      // would close the paragraph early, so the preview's DOM would no
+      // longer match the string the Renderer produced.
       out += closeAll(open);
       open = [];
-      out += isKnownRichTextNodeType(anyNode.type) ? "" : serializeUnsupported(anyNode.type);
+      out += isKnownRichTextNodeType(anyNode.type)
+        ? ""
+        : serializeUnsupported(anyNode.type, "span");
       continue;
     }
 

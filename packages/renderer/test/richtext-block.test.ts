@@ -159,6 +159,17 @@ describe("renderSite — richText block (structural)", () => {
     expect(html).toContain('[data-align="center"]');
   });
 
+  test("ignores an alignment outside the document vocabulary", () => {
+    // The schema refuses it, but a hand-edited file arrives through the loose
+    // parse. No attribute is better than one no theme rule reads.
+    const html = renderSite(
+      withDoc(clone(), doc({ type: "paragraph", align: "sideways", content: [text("x")] })),
+      "stub",
+    );
+    expect(html).toContain("<p>x</p>");
+    expect(html).not.toContain("sideways");
+  });
+
   test("suppresses a richText with an empty document (empty-state foolproofing)", () => {
     // A richText with no meaningful content renders nothing rather than an
     // empty styled container, so a non-designer who leaves a Block blank gets
@@ -311,6 +322,18 @@ describe("renderSite — unsupported rich-text content", () => {
     // Nothing is guessed at: no text from inside the unknown node leaks out
     // in a shape this version made up.
     expect(html).not.toContain(">hi<");
+  });
+
+  test("an unknown inline node gets an inline placeholder, so the paragraph stays intact", () => {
+    // A block-level placeholder inside a `<p>` would make the browser close
+    // the paragraph early; the preview DOM would then differ from the string.
+    const html = renderSite(
+      withDoc(clone(), doc(para(text("before "), { type: "futureMention" }, text(" after")))),
+      "stub",
+    );
+    expect(html).toContain(
+      '<p>before <span class="rich-text-unsupported" data-unsupported-type="futureMention"></span> after</p>',
+    );
   });
 
   test("an unknown mark degrades to plain text without losing the words", () => {
