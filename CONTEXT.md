@@ -123,7 +123,8 @@ _Avoid_: href, URL, link (when you mean specifically the target).
 Nodes or marks in a Rich-text document that this version of the editor does not
 recognise, usually because a newer version wrote them. Preserved exactly,
 shown read-only, and never simplified. It blocks public export without an
-override — one of only two such blockers.
+override — one of only three such blockers, with a missing Rich-text image
+file and a broken explicit Article-list selection.
 _Avoid_: invalid content, corrupt content, unknown block.
 
 **Block envelope**:

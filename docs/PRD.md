@@ -274,7 +274,7 @@ The implementation is organized into deep modules (encapsulated behavior, narrow
 
 - **Schema** â€” block + site schemas, validation with severity tiers, migration framework, preserve-unknown-keys
 - **Renderer** â€” pure function from `(siteData, themeId)` to HTML. Same code in browser preview and Node build
-- **Markdown** â€” strict-whitelist sanitized markdown. Used by richText, faq, quote
+- **Markdown** â€” strict-whitelist sanitized markdown. Used by faq and quote; also holds the legacy Rich-text Markdown converter (ADR 0048)
 - **VFS** â€” virtual filesystem abstraction with multiple drivers (Memory, IndexedDB, OPFS, Electron filesystem, Zip)
 - **Assets** â€” image processing pipeline with environment-specific implementations behind a unified interface
 - **Zip** â€” bidirectional import/export with round-trip preservation
