@@ -85,7 +85,7 @@ export interface RenderOptions {
   readonly theme?: ThemeBundle | undefined;
   /**
    * Sink for everything the active Theme's executable design reported while
-   * rendering this document (ADR 0053): Blocks omitted for want of a design,
+   * rendering this document (ADR 0054): Blocks omitted for want of a design,
    * and rendering failures.
    *
    * A callback rather than a second return value because `renderSite` returns
@@ -421,7 +421,7 @@ export {
 } from "./theme-bundle.js";
 export { rewriteThemeCssUrls, themeAssetsFor } from "./theme-assets.js";
 
-// The executable Theme rendering contract (ADR 0053). `@sosb/theme-package`
+// The executable Theme rendering contract (ADR 0054). `@sosb/theme-package`
 // builds a `ThemeRenderModule` from a package's `render.js` and hangs it on
 // the bundle; everything here is what a Theme's output has to survive.
 export {

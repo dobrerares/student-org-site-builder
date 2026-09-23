@@ -179,7 +179,7 @@ interface BlockRenderContext {
   /** Set only when the blocks belong to an Article. */
   readonly containerArticleId?: string | undefined;
   /**
-   * Everything an executable Theme design needs (ADR 0053). Absent for
+   * Everything an executable Theme design needs (ADR 0054). Absent for
    * built-in Themes and for declarative packages, and every path below reads
    * absence as "render the built-in component" — which is why adding this
    * changed no existing output.
@@ -420,7 +420,7 @@ export function PageShell(props: {
   theme?: ThemeBundle | undefined;
   /** Page-shell variant, already gated against the active theme. */
   shellVariant?: string | undefined;
-  /** Sink for omitted Blocks and Theme rendering failures (ADR 0053). */
+  /** Sink for omitted Blocks and Theme rendering failures (ADR 0054). */
   onIssue?: ((issue: ThemeRenderIssue) => void) | undefined;
   /** Emit the Theme's `public.js` tag. Off in preview (ADR 0046). */
   includePublicScript?: boolean | undefined;
@@ -638,7 +638,7 @@ export function ArticleShell(props: {
   theme?: ThemeBundle | undefined;
   /** Page-shell variant, already gated against the active theme. */
   shellVariant?: string | undefined;
-  /** Sink for omitted Blocks and Theme rendering failures (ADR 0053). */
+  /** Sink for omitted Blocks and Theme rendering failures (ADR 0054). */
   onIssue?: ((issue: ThemeRenderIssue) => void) | undefined;
   /** Emit the Theme's `public.js` tag. Off in preview (ADR 0046). */
   includePublicScript?: boolean | undefined;

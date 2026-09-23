@@ -134,7 +134,7 @@ version, separate from any Site. Imported packages are stored **per Site**
 under `themes/<id>/`, so they travel inside the editable archive and a
 recipient can open it offline. A package never contains Site content. See
 [ADR 0050](docs/adr/0050-theme-package-format.md) and
-[ADR 0053](docs/adr/0053-executable-theme-rendering-and-sandbox.md).
+[ADR 0054](docs/adr/0054-executable-theme-rendering-and-sandbox.md).
 _Avoid_: plugin, extension pack, theme file.
 
 **Theme design**:

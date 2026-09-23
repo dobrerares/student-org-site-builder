@@ -104,7 +104,7 @@ const FontSchema = z.looseObject({
 });
 
 /**
- * The public-site script and what it depends on (ADR 0046, ADR 0053).
+ * The public-site script and what it depends on (ADR 0046, ADR 0054).
  *
  * `network` is **required** when the block is present, even when the honest
  * answer is `[]`. ADR 0046 says each extension "must document those
@@ -188,7 +188,7 @@ export const ThemeManifestSchema = z.looseObject({
   /** Entry stylesheet, bundle-relative. */
   css: ThemePathSchema.default("theme.css"),
   /**
-   * The executable rendering module (ADR 0053), bundle-relative. Absent for a
+   * The executable rendering module (ADR 0054), bundle-relative. Absent for a
    * declarative package, which is still a complete Theme — phase two adds a
    * capability, it does not raise the floor.
    */

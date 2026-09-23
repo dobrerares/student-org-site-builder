@@ -7,7 +7,7 @@ import path from "node:path";
 /**
  * Node-vs-browser parity for a Theme package with an executable design
  * (ADR 0046: "identical page HTML across browser preview and Electron/export";
- * ADR 0053 for the mechanism).
+ * ADR 0054 for the mechanism).
  *
  * The declarative half of this guarantee is covered by `renderer-parity.spec.ts`
  * with an inline bundle. A `render.js` adds a JavaScript engine to the path,

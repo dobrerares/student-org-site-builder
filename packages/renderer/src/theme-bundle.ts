@@ -16,7 +16,7 @@
  * Phase two adds two optional fields — `render` and `publicScript` — exactly
  * as ADR 0050 promised: the bundle is an interface, so executable rendering is
  * an *additive* change and a declarative Theme is still a complete bundle.
- * See ADR 0053.
+ * See ADR 0054.
  */
 
 import type { ThemePublicScript, ThemeRenderModule } from "./theme-render.js";
@@ -142,7 +142,7 @@ export interface ThemeBundle {
   readonly assets: ReadonlyMap<string, Uint8Array>;
   /**
    * The Theme's executable design (`render.js`), already loaded into its
-   * sandbox (ADR 0053). Absent for built-in Themes and for declarative
+   * sandbox (ADR 0054). Absent for built-in Themes and for declarative
    * packages, and the renderer treats absence as "use the built-in designs" —
    * which is why phase-one packages keep rendering exactly as they did.
    */

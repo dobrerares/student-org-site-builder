@@ -36,7 +36,7 @@ const HISTORIPOL_DATA = fileURLToPath(
 );
 
 // Top-level await: the example ships a `render.js`, so the sandbox engine has
-// to be up before the package can be loaded (ADR 0053).
+// to be up before the package can be loaded (ADR 0054).
 const loaded = await loadThemePackageFromDirectoryAsync(EXAMPLE_DIR);
 const { bundle } = loaded;
 

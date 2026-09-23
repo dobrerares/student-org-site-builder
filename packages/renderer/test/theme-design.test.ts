@@ -1,7 +1,7 @@
 /**
  * The executable Theme rendering contract, exercised without an engine.
  *
- * `ThemeRenderModule` is an interface with synchronous methods (ADR 0053), so
+ * `ThemeRenderModule` is an interface with synchronous methods (ADR 0054), so
  * a hand-written object is a perfectly good design for testing what the
  * *renderer* does with one: which attributes it stamps, which trees it
  * refuses, how a failure surfaces in each mode, and what a shell may and may

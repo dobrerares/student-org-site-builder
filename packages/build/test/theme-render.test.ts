@@ -1,5 +1,5 @@
 /**
- * `build()` and a Theme's executable design (ADR 0045, ADR 0053).
+ * `build()` and a Theme's executable design (ADR 0045, ADR 0054).
  *
  * Three promises the pipeline makes to the editor:
  *

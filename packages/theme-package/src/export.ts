@@ -77,7 +77,7 @@ export async function exportInstalledThemePackage(
     };
   } finally {
     // Re-loading compiled the package's `render.js` into its own sandbox
-    // realm, which nothing will render through: release it (ADR 0053).
+    // realm, which nothing will render through: release it (ADR 0054).
     loaded.bundle.render?.dispose();
   }
 }

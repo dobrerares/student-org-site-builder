@@ -9,7 +9,7 @@ Decisions behind the format live in
 [ADR 0050](adr/0050-theme-package-format.md) (package format),
 [ADR 0051](adr/0051-theme-package-lifecycle.md) (import, update, removal) and
 [ADR 0052](adr/0052-renderer-theme-seam.md) (how a Theme reaches the
-renderer) and [ADR 0053](adr/0053-executable-theme-rendering-and-sandbox.md)
+renderer) and [ADR 0054](adr/0054-executable-theme-rendering-and-sandbox.md)
 (executable designs, the sandbox and public-site scripts).
 [ADR 0046](adr/0046-trusted-executable-theme-and-block-extensions.md)
 sets the boundary of what a Theme may do at all.
@@ -548,7 +548,7 @@ sentence has content, and content belongs in a Block.
 ### What the sandbox allows
 
 Your module runs in QuickJS compiled to WebAssembly, in a realm of its own,
-identically in the browser, in Electron and in Node (ADR 0053). Inside it:
+identically in the browser, in Electron and in Node (ADR 0054). Inside it:
 
 - **Absent:** `fetch`, `XMLHttpRequest`, `setTimeout`/`setInterval`,
   `queueMicrotask`, `require`, `process`, `WebAssembly`, `console`, `Intl`,

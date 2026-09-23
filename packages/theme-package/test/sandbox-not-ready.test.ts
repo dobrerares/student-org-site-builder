@@ -1,6 +1,6 @@
 /**
  * A package with `render.js` cannot be loaded synchronously before the sandbox
- * engine is up, and the failure must be loud (ADR 0053).
+ * engine is up, and the failure must be loud (ADR 0054).
  *
  * Its own file on purpose: vitest isolates module state per file, so this is
  * the one place `initThemeSandbox()` has provably not run.

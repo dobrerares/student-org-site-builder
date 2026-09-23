@@ -223,7 +223,7 @@ export function build(site: Site, options: BuildOptions = {}): DistFolder {
   const dist: DistFolder = new Map();
 
   // What every page render is told about the Theme's executable design
-  // (ADR 0053): emit the Theme's public-site script — a build is the one
+  // (ADR 0054): emit the Theme's public-site script — a build is the one
   // place it belongs, the editor preview stays static (ADR 0046) — and route
   // omitted Blocks to the caller. Rendering failures are thrown by the
   // renderer itself in deploy mode, so the sink only ever sees omissions.

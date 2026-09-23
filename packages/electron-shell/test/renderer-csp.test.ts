@@ -44,7 +44,7 @@ describe("renderer CSP", () => {
 
   test("allows WebAssembly compilation — the Theme sandbox is QuickJS in wasm", () => {
     // A Theme package's `render.js` runs inside QuickJS compiled to
-    // WebAssembly (ADR 0053), instantiated from bytes embedded in the bundle.
+    // WebAssembly (ADR 0054), instantiated from bytes embedded in the bundle.
     // Chromium refuses `WebAssembly.instantiate` under a bare `script-src
     // 'self'`; `'wasm-unsafe-eval'` is the keyword that permits exactly that
     // and leaves JavaScript `eval` forbidden. Without it every Theme with a

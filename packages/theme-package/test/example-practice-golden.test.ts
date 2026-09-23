@@ -1,5 +1,5 @@
 /**
- * Golden files for the example Theme's executable design (ADR 0053).
+ * Golden files for the example Theme's executable design (ADR 0054).
  *
  * The renderer's own golden matrix (ADR 0032) covers the built-in Themes and
  * must not move when a Theme package renders differently. A package that

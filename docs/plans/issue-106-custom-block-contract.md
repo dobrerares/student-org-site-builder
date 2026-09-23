@@ -199,11 +199,11 @@ the archive, but cannot edit the affected Block or export publicly until
 the builder is updated. A missing required extension has the same
 preservation and export restrictions until it is restored.
 
-## Where Custom Block rendering plugs in (ADR 0053)
+## Where Custom Block rendering plugs in (ADR 0054)
 
 Rendering is already decided and built, ahead of the field contract above.
 A Theme package's `render.js` exports `blocks: { [type]: (input) => tree }`
-(ADR 0053). A Custom Block type such as `campus-tools/partners` is rendered by
+(ADR 0054). A Custom Block type such as `campus-tools/partners` is rendered by
 the active Theme's design for that key, through exactly the mechanism a Theme
 uses to override a built-in Block — there is no second path. The design
 receives the Block envelope with its `data` as saved (the declared fields, in

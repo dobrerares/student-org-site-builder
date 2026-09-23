@@ -1,5 +1,5 @@
 /**
- * The interactive-preview seam (ADR 0046, ADR 0053).
+ * The interactive-preview seam (ADR 0046, ADR 0054).
  *
  * The editor preview is static: a Theme package's `public.js` is never
  * emitted unless the caller asks. `PreviewOptions.includePublicScript` is the

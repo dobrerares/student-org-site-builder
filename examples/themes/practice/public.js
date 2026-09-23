@@ -1,5 +1,5 @@
 /*
- * Practice — public-site script (`public.js`, ADR 0046 / ADR 0053).
+ * Practice — public-site script (`public.js`, ADR 0046 / ADR 0054).
  *
  * Runs on the published Site only, never during preview or export. Declared in
  * `theme.json` with `network: []`: it contacts nothing, so nothing about it is

@@ -99,7 +99,7 @@ export async function exportToZip(siteData: unknown, vfs: Vfs): Promise<Blob> {
   } finally {
     // Each loaded package compiled its `render.js` into a sandbox realm of
     // its own; the export is the only thing that will ever render through
-    // these bundles, so release them here (ADR 0053).
+    // these bundles, so release them here (ADR 0054).
     for (const bundle of themes) bundle.render?.dispose();
   }
   for (const [path, value] of dist) {

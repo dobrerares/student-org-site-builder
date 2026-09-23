@@ -8,7 +8,7 @@
  *
  * The bundle is *inline*, which is the point: the QuickJS wasm has to
  * instantiate from bytes embedded in the script, with no second file to
- * fetch, exactly as it must in the single-file archival editor (ADR 0053).
+ * fetch, exactly as it must in the single-file archival editor (ADR 0054).
  */
 import { initThemeSandbox, loadThemePackage } from "../packages/theme-package/src/index.js";
 import { renderSite } from "../packages/renderer/src/index.js";

@@ -1,7 +1,7 @@
 /**
  * The enforced sandbox (ADR 0046: "the builder must enforce these rendering
  * access limits rather than rely on extension authors to follow
- * documentation"; ADR 0053 for the mechanism).
+ * documentation"; ADR 0054 for the mechanism).
  *
  * Every limit this file asserts is one a Theme author could otherwise reach
  * for in a moment of ordinary carelessness — `Date.now()` for a copyright

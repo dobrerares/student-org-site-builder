@@ -694,7 +694,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   // srcdoc preview depends on.
   const [installedThemes, setInstalledThemes] = useState<readonly ThemeBundle[]>([]);
 
-  // A Theme package with a `render.js` holds a sandbox realm (ADR 0053).
+  // A Theme package with a `render.js` holds a sandbox realm (ADR 0054).
   // Release the realms of bundles that have left the installed list — after
   // commit, so nothing still rendering through the old bundle sees a disposed
   // module — and every remaining one on unmount.

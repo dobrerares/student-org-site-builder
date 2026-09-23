@@ -1,7 +1,7 @@
 /**
  * Phase two of the package format: `render` and `public` in the manifest,
  * and a real `render.js` running end to end through the sandbox, the
- * renderer and the build (ADR 0053).
+ * renderer and the build (ADR 0054).
  *
  * `sandbox.test.ts` proves what a design cannot reach; this file proves what
  * a *package* has to declare, and that a declared design actually produces a

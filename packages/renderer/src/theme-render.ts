@@ -1,5 +1,5 @@
 /**
- * The executable Theme rendering contract (ADR 0053).
+ * The executable Theme rendering contract (ADR 0054).
  *
  * A Theme package may ship a `render.js` module that designs Block markup and
  * the visible page shell. That module does not produce HTML. It produces
@@ -23,7 +23,7 @@
  * This module is deliberately ignorant of *how* the Theme's code ran. It takes
  * a `ThemeRenderModule` — an interface with synchronous methods — so the
  * renderer never imports a JavaScript engine. `@sosb/theme-package` supplies
- * the QuickJS-backed implementation at load time (ADR 0053 § Sandbox).
+ * the QuickJS-backed implementation at load time (ADR 0054 § Sandbox).
  */
 
 import { Fragment, h } from "preact";

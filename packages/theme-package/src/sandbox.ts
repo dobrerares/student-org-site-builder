@@ -1,5 +1,5 @@
 /**
- * The enforced sandbox for a Theme's `render.js` (ADR 0053).
+ * The enforced sandbox for a Theme's `render.js` (ADR 0054).
  *
  * ADR 0046 does not merely ask Theme authors to stay offline during a render —
  * it says "the builder must enforce these rendering access limits rather than

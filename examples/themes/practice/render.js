@@ -1,5 +1,5 @@
 /**
- * Practice — the executable design (`render.js`, ADR 0053).
+ * Practice — the executable design (`render.js`, ADR 0054).
  *
  * This module runs inside the builder's sandbox at preview and export time.
  * It never touches HTML: every function returns an *element tree* — arrays of

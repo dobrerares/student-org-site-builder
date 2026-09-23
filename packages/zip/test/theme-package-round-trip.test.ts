@@ -34,7 +34,7 @@ const HISTORIPOL_DATA = fileURLToPath(
 );
 
 // The example ships a `render.js`, so the sandbox engine has to be up before
-// the package can be loaded (ADR 0053) — hence the asynchronous loader.
+// the package can be loaded (ADR 0054) — hence the asynchronous loader.
 const loadedExample = await loadThemePackageFromDirectoryAsync(EXAMPLE_DIR);
 
 /** A bundle minus its live sandbox module, for structural equality checks. */
@@ -113,7 +113,7 @@ describe("Theme packages in the editable archive", () => {
     expect(text).toContain("assets/theme/org.example.practice");
     // The editable archive carries the whole package, render.js included;
     // the built Site inside it carries the public script and never the design
-    // (ADR 0053).
+    // (ADR 0054).
     expect(text).toContain("themes/org.example.practice/render.js");
     expect(text).toContain("dist/assets/theme/org.example.practice/public.js");
     expect(text).not.toContain("dist/assets/theme/org.example.practice/render.js");

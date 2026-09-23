@@ -5,7 +5,7 @@ A complete, CI-covered Theme package. It is the reference implementation for
 the working proof that the format in
 [ADR 0050](../../../docs/adr/0050-theme-package-format.md) and the executable
 design contract in
-[ADR 0053](../../../docs/adr/0053-executable-theme-rendering-and-sandbox.md)
+[ADR 0054](../../../docs/adr/0054-executable-theme-rendering-and-sandbox.md)
 compose end to end.
 
 Copy this directory as the starting point for a real Theme. Since 1.1.0 it

@@ -278,7 +278,7 @@ export function loadThemePackage(files: ReadonlyMap<string, Uint8Array>): Loaded
 }
 
 /**
- * Compile the package's `render.js`, if it has one (ADR 0053).
+ * Compile the package's `render.js`, if it has one (ADR 0054).
  *
  * Compiling at *import* time rather than at first render is deliberate. A
  * design with a syntax error or no default export is a broken package, and the
@@ -355,7 +355,7 @@ function loadPublicScript(
  * importer already applies to untrusted archives.
  */
 export async function loadThemePackageFromZip(zipBytes: Uint8Array): Promise<LoadedThemePackage> {
-  // The one asynchronous step in the whole Theme path (ADR 0053). Doing it
+  // The one asynchronous step in the whole Theme path (ADR 0054). Doing it
   // here, rather than asking every caller to remember, is why `renderSite`
   // can stay synchronous without anybody having to think about it.
   await initThemeSandbox();

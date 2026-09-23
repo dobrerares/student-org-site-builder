@@ -63,7 +63,7 @@ describe("a well-formed package", () => {
   test("preserves unknown manifest keys so a future package still parses", () => {
     // ADR 0050's forward-compatibility rule: a package carrying keys this
     // builder has never heard of must load, not be rejected as malformed.
-    // (`render` and `public` stopped being unknown in phase two — ADR 0053 —
+    // (`render` and `public` stopped being unknown in phase two — ADR 0054 —
     // and are now validated; see render-modules.test.ts.)
     const { manifest } = loadThemePackage(
       pkg({ ...VALID_MANIFEST, blocks: [{ type: "x/y" }], preview: { swatches: [] } }),
