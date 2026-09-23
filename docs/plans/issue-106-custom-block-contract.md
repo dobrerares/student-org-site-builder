@@ -199,6 +199,36 @@ the archive, but cannot edit the affected Block or export publicly until
 the builder is updated. A missing required extension has the same
 preservation and export restrictions until it is restored.
 
+## Where Custom Block rendering plugs in (ADR 0053)
+
+Rendering is already decided and built, ahead of the field contract above.
+A Theme package's `render.js` exports `blocks: { [type]: (input) => tree }`
+(ADR 0053). A Custom Block type such as `campus-tools/partners` is rendered by
+the active Theme's design for that key, through exactly the mechanism a Theme
+uses to override a built-in Block — there is no second path. The design
+receives the Block envelope with its `data` as saved (the declared fields, in
+the shapes this contract fixes), the active variant, the document, the
+organisation and the Theme settings, plus the documented helpers; it returns an
+element tree; the builder stamps `data-block="campus-tools/partners"`,
+`data-block-id` and `data-variant` on the root.
+
+A Custom Block whose type the active Theme does not design is an **omitted
+Block** (ADR 0045): the renderer leaves it out and reports it,
+`omittedBlocksFor` lists it before export, and the export dialog requires the
+acknowledgement. A design that throws or returns an invalid tree is a
+rendering failure that stops the export and cannot be acknowledged away — the
+distinction the agreed rules above rely on.
+
+What this contract still has to add on the rendering side is small: the
+field vocabulary determines the shape of `input.data` a design can rely on
+(links as `{ kind: "page", pageId } | { kind: "url", url }` so `pageUrl()`
+resolves them, images as asset references so `mediaUrl()` resolves them,
+documents likewise), and a "Page missing" link renders as unlinked text. If an
+extension ships a default design for its own Block, it registers through the
+same `ThemeRenderModule` seam (a module whose `blockTypes` include the type),
+in the same sandbox, and the active Theme's design wins over it — resolution
+order is the one open rendering decision.
+
 ## Still to resolve
 
 - Behavior when the extension cannot read the saved Block data version.

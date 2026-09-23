@@ -129,18 +129,20 @@ describe("preview/build parity with a Theme package", () => {
   });
 
   test("the public script is the only difference between a static and an interactive preview", () => {
+    // Same posture as the test above: the preview is the blob-resolved
+    // render, without the preview-mode bridge scripts, so that what is being
+    // compared against the build is the Theme's contribution and nothing
+    // editor-specific.
     const site = practiceSite();
     site.pages.forEach((_page, idx) => {
       const staticPreview = renderSite(site, bundle.id, {
         pageIndex: idx,
         theme: bundle,
-        mode: "preview",
         assetUrlForPath: previewResolver,
       });
       const interactive = renderSite(site, bundle.id, {
         pageIndex: idx,
         theme: bundle,
-        mode: "preview",
         assetUrlForPath: previewResolver,
         includePublicScript: true,
       });

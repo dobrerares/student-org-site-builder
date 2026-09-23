@@ -3,10 +3,15 @@
 A complete, CI-covered Theme package. It is the reference implementation for
 [`docs/how-to-author-a-theme.md`](../../../docs/how-to-author-a-theme.md) and
 the working proof that the format in
-[ADR 0050](../../../docs/adr/0050-theme-package-format.md) composes end to
-end.
+[ADR 0050](../../../docs/adr/0050-theme-package-format.md) and the executable
+design contract in
+[ADR 0053](../../../docs/adr/0053-executable-theme-rendering-and-sandbox.md)
+compose end to end.
 
-Copy this directory as the starting point for a real Theme.
+Copy this directory as the starting point for a real Theme. Since 1.1.0 it
+ships a `render.js` (an executable page shell and a hero override) and a
+`public.js` (a phone navigation toggle and a sticky-header shrink). Delete
+both and it is still a complete, declarative Theme.
 
 ## The design
 
@@ -28,15 +33,46 @@ Two deliberate departures:
   structural match for Montserrat Black. Keeping to fonts already present
   avoids adding a dependency just to make an example look right.
 - **Navigation.** The reference collapses its phone navigation behind a
-  toggle. A phase-one Theme has no JavaScript, so at phone width the nav wraps
-  to a stacked list instead. Every destination stays reachable, which a
-  toggle that cannot open would not manage. Phase two can add the toggle.
+  toggle. This Theme does too, but honestly: `render.js` ships the menu
+  button `hidden` and the list visible, and `public.js` reveals the button
+  and marks the header so the stylesheet collapses the list only once the
+  button exists. Without JavaScript the nav wraps to a stacked list and every
+  destination stays reachable.
+
+## The executable design
+
+`render.js` runs in the builder's sandbox (no network, files, clock or
+randomness; a budget on time and memory) and returns element trees, never
+HTML. It contributes:
+
+- **A page shell** — a sticky header with the organisation's logo and
+  wordmark, the navigation (with the phone-width menu button), the language
+  switcher in the same row, and a quiet colophon under the author's footer
+  Block with the name, tagline, the navigation once more and a "since" line
+  from the founding year. Exactly one `["slot"]` marks where the builder
+  places the page's Blocks. The **Standard** and **Compact** shell variants
+  still apply through `[data-shell-variant]`; Compact drops the wordmark
+  beside a logo.
+- **A hero override.** The "Spotlight" variant gains concentric rings (inline
+  SVG coloured by the accent token), a stepped title and a gold rule; the
+  default and "Split" variants reproduce the built-in markup, so the
+  phase-one stylesheet keeps working for them unchanged.
+
+Everything visible comes from Site content, the builder's computed navigation
+and URLs, or `input.t()` in the page's language. The colophon has no
+copyright year on purpose: a design cannot read the clock, and a year baked in
+at export would be wrong by the time anyone noticed.
+
+`public.js` is ~1.5 KB, declares `network: []`, and is exempt from the
+builder's script budget by rule rather than by size.
 
 ## Contents
 
 ```
-theme.json   manifest: tokens, fonts, variants, shell variants
-theme.css    the stylesheet (~14 KB)
+theme.json   manifest: tokens, fonts, variants, shell variants, render, public
+theme.css    the stylesheet (~18 KB)
+render.js    the executable design: page shell + hero override (~7 KB)
+public.js    the public-site script: nav toggle, sticky-header shrink (~1.5 KB)
 fonts/       Archivo 400/700/900 and Inter 400/600, latin + latin-ext
 assets/      grid.svg — the decorative background texture
 screenshots/ desktop and phone captures of the sample Site
@@ -60,6 +96,9 @@ organisation's own name in a fallback font.
   relatively; the builder rewrites it to
   `assets/theme/org.example.practice/assets/grid.svg` and resolves it to a
   real file on export and a `blob:` URL in preview.
+- **An executable page shell and a Block override** in `render.js`, and a
+  **public-site script** that degrades without JavaScript, declared with
+  `network: []`.
 
 ## Using it
 
@@ -69,25 +108,35 @@ this directory as a `.sosb-theme.zip`.
 In code:
 
 ```ts
-import { loadThemePackageFromDirectory } from "@sosb/theme-package/node";
+import { loadThemePackageFromDirectoryAsync } from "@sosb/theme-package/node";
 import { renderSite } from "@sosb/renderer";
 
-const { bundle } = loadThemePackageFromDirectory("examples/themes/practice");
+const { bundle } = await loadThemePackageFromDirectoryAsync("examples/themes/practice");
 const html = renderSite(site, bundle.id, { theme: bundle });
 ```
+
+The `Async` loader starts the render sandbox first; the package has a
+`render.js`, so it cannot be loaded synchronously before that.
 
 ## Tests
 
 Covered by `packages/theme-package/test/`:
 
 - `example-practice.test.ts` — loads and validates the package, renders every
-  page of the HISTORIPOL sample Site, checks `build()` emits its fonts and
-  assets, and round-trips it through a `.sosb-theme.zip`.
+  page of the HISTORIPOL sample Site through the executable shell, checks
+  `build()` emits its fonts, assets and `public.js` (and never `render.js`),
+  that the public script stays out of the static preview and out of the
+  script budget, that three separately loaded sandbox realms render the same
+  bytes, and round-trips it through a `.sosb-theme.zip`.
+- `example-practice-golden.test.ts` — pins the home page (Standard shell,
+  Spotlight hero, script on) and the about page (Compact shell, script off)
+  to golden files.
 - `example-practice-a11y.test.ts` — runs axe over every page and every shell
   variant, asserting this Theme introduces no violation a built-in Theme does
   not already produce on the same content.
 - `preview-build-parity.test.ts` — asserts the editor preview and the build
-  produce identical HTML modulo asset-URL rewriting.
+  produce identical HTML modulo asset-URL rewriting, with the public script
+  on and off.
 
 ## Licence
 

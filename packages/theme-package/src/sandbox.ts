@@ -63,8 +63,20 @@ import { ThemeRenderError } from "@sosb/renderer";
  */
 const MEMORY_LIMIT_BYTES = 48 * 1024 * 1024;
 
-/** Guest stack ceiling. A runaway recursion becomes an error, not a crash. */
-const STACK_SIZE_BYTES = 1024 * 1024;
+/**
+ * Guest stack ceiling. A runaway recursion becomes an error, not a crash.
+ *
+ * Deliberately smaller than the host's own stack. QuickJS checks this limit
+ * against its C stack pointer, but every guest call frame is also a
+ * WebAssembly call frame on the *host's* stack, and if the host overflows
+ * first the engine is unwound abruptly, leaks the frames' objects, and its
+ * runtime can no longer be freed (measured: at 1 MB the host threw
+ * `RangeError` and `JS_FreeRuntime` asserted; at 256 KB the guest received a
+ * clean `InternalError: stack overflow`). 256 KB still allows about 1,300
+ * nested calls (measured) — a tree is at most 64 levels deep — so no honest
+ * design notices.
+ */
+const STACK_SIZE_BYTES = 256 * 1024;
 
 /**
  * Interrupt-handler invocations one design call may spend.
@@ -278,7 +290,9 @@ export function compileThemeRenderModule(themeId: string, source: string): Theme
   // error, and a dynamic `import()` returns a promise that never settles.
   // Either way a design cannot pull in code the builder never validated.
   runtime.setModuleLoader(() => {
-    throw new Error("render.js may not import other modules; a Theme package ships one design file.");
+    throw new Error(
+      "render.js may not import other modules; a Theme package ships one design file.",
+    );
   });
 
   const heap = wasmModule.getWasmMemory();
@@ -300,6 +314,17 @@ export function compileThemeRenderModule(themeId: string, source: string): Theme
   const context = runtime.newContext();
   let api: QuickJSHandle | undefined;
   let disposed = false;
+  /**
+   * Set when the host — not the guest — threw out of a call: the engine was
+   * unwound without running its own cleanup and its heap can no longer be
+   * trusted, let alone freed (freeing it trips an assertion that aborts the
+   * *whole* wasm module, for every Theme). The realm is abandoned instead:
+   * a few megabytes leaked once, in exchange for every other Theme in the
+   * session continuing to work. The stack ceiling above makes this path
+   * unreachable in practice; it exists so that "in practice" is not the only
+   * thing standing between a Theme and the editor.
+   */
+  let poisoned = false;
 
   /** Helpers for the call currently in flight. Swapped before each call. */
   let active: ThemeRenderHelpers | undefined;
@@ -307,6 +332,7 @@ export function compileThemeRenderModule(themeId: string, source: string): Theme
   function disposeAll(): void {
     if (disposed) return;
     disposed = true;
+    if (poisoned) return;
     api?.dispose();
     context.dispose();
     runtime.dispose();
@@ -379,13 +405,15 @@ export function compileThemeRenderModule(themeId: string, source: string): Theme
     subject: string,
     blockType: string | undefined,
   ): unknown {
-    if (disposed) {
+    if (disposed || poisoned) {
       throw new ThemeRenderError({
         code: "threw",
         themeId,
         subject,
         blockType,
-        detail: "this Theme's design has already been released.",
+        detail: poisoned
+          ? "this Theme's design crashed its sandbox earlier in this session; re-import the Theme or reload the editor."
+          : "this Theme's design has already been released.",
       });
     }
     budget = CALL_BUDGET;
@@ -394,20 +422,45 @@ export function compileThemeRenderModule(themeId: string, source: string): Theme
     heapExceeded = false;
     active = helpers;
     const argHandles: QuickJSHandle[] = [];
+    let fn: QuickJSHandle | undefined;
     try {
       for (const arg of args) argHandles.push(context.newString(arg));
       argHandles.push(context.newString(JSON.stringify(input)));
-      const fn = context.getProp(api!, method);
-      const result = context.callFunction(fn, api!, ...argHandles);
-      fn.dispose();
+      fn = context.getProp(api!, method);
+      let result: ReturnType<typeof context.callFunction>;
+      try {
+        result = context.callFunction(fn, api!, ...argHandles);
+      } catch (cause) {
+        // See `poisoned`. A host exception out of the engine is the host's
+        // stack giving out under a recursion the guest limit did not catch.
+        poisoned = true;
+        throw new ThemeRenderError({
+          code: "threw",
+          themeId,
+          subject,
+          blockType,
+          detail: `the design recursed too deeply for the sandbox (${cause instanceof Error ? cause.message : String(cause)}).`,
+        });
+      }
       if (result.error !== undefined) {
-        throw guestError(context, result.error, themeId, subject, blockType, exhausted, heapExceeded);
+        throw guestError(
+          context,
+          result.error,
+          themeId,
+          subject,
+          blockType,
+          exhausted,
+          heapExceeded,
+        );
       }
       const json = context.getString(result.value);
       result.value.dispose();
       return JSON.parse(json);
     } finally {
-      for (const handle of argHandles) handle.dispose();
+      if (!poisoned) {
+        fn?.dispose();
+        for (const handle of argHandles) handle.dispose();
+      }
       active = undefined;
     }
   }
