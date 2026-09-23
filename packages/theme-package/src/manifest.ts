@@ -123,7 +123,8 @@ const FontSchema = z.looseObject({
  * sign the author pasted an endpoint, and an endpoint is not a dependency
  * declaration a reader can scan.
  */
-export const THEME_NETWORK_HOST_RE = /^(?:\*\.)?[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*(?::\d{1,5})?$/i;
+export const THEME_NETWORK_HOST_RE =
+  /^(?:\*\.)?[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*(?::\d{1,5})?$/i;
 
 const PublicScriptSchema = z
   .looseObject({

@@ -88,9 +88,7 @@ export class ThemeRenderError extends Error {
     detail: string;
   }) {
     const where =
-      args.blockType === undefined
-        ? args.subject
-        : `block ${args.subject} (${args.blockType})`;
+      args.blockType === undefined ? args.subject : `block ${args.subject} (${args.blockType})`;
     super(`Theme "${args.themeId}" failed to render ${where}: ${args.detail}`);
     this.code = args.code;
     this.themeId = args.themeId;
@@ -336,7 +334,17 @@ const TAG_ATTRS: Readonly<Record<string, readonly string[]>> = {
   th: ["abbr", "colspan", "headers", "rowspan", "scope"],
   time: ["datetime"],
   track: ["default", "kind", "label", "src", "srclang"],
-  video: ["controls", "height", "loop", "muted", "playsinline", "poster", "preload", "src", "width"],
+  video: [
+    "controls",
+    "height",
+    "loop",
+    "muted",
+    "playsinline",
+    "poster",
+    "preload",
+    "src",
+    "width",
+  ],
 };
 
 /**
@@ -415,7 +423,10 @@ function asNode(value: unknown): NormalisedNode | undefined {
     return {
       tag,
       attrs: isPlainRecord(attrs) ? attrs : {},
-      children: attrs === null || attrs === undefined || isPlainRecord(attrs) ? children : [attrs, ...children],
+      children:
+        attrs === null || attrs === undefined || isPlainRecord(attrs)
+          ? children
+          : [attrs, ...children],
     };
   }
   if (isPlainRecord(value) && typeof value["tag"] === "string") {
@@ -492,9 +503,26 @@ function isSafeTreeUrl(value: string, trusted: ReadonlySet<string>): boolean {
   // A scheme-less reference is a relative path. Reject control characters and
   // whitespace, which are the classic way to smuggle a scheme past a check.
   if (!/^[a-z][a-z0-9+.-]*:/i.test(value)) {
-    return !/[ - "'<>\\]/.test(value);
+    return !hasUnsafePathCharacter(value);
   }
   return isAcceptableLinkUrl(value);
+}
+
+/**
+ * Does a relative path carry a character that has no business in one: a
+ * control character (including whitespace), a quote, an angle bracket or a
+ * backslash? Written as a loop rather than a character class so the range
+ * starting at U+0000 is explicit instead of a literal control character in a
+ * regular expression.
+ */
+function hasUnsafePathCharacter(value: string): boolean {
+  for (let i = 0; i < value.length; i += 1) {
+    const code = value.charCodeAt(i);
+    if (code <= 0x20 || code === 0x7f) return true;
+    const ch = value[i]!;
+    if (ch === '"' || ch === "'" || ch === "<" || ch === ">" || ch === "\\") return true;
+  }
+  return false;
 }
 
 function attrIsAllowed(tag: string, name: string, svg: boolean): boolean {
@@ -520,7 +548,10 @@ function convertAttrs(
   const props: Record<string, unknown> = {};
   for (const name of Object.keys(node.attrs).sort()) {
     if (/^on/i.test(name)) {
-      reject(ctx, `<${node.tag}> carries the event handler attribute "${name}". Behaviour belongs in public.js.`);
+      reject(
+        ctx,
+        `<${node.tag}> carries the event handler attribute "${name}". Behaviour belongs in public.js.`,
+      );
     }
     if (name === "style") {
       reject(
@@ -542,7 +573,8 @@ function convertAttrs(
       continue;
     }
     if (typeof value === "number") {
-      if (!Number.isFinite(value)) reject(ctx, `<${node.tag}> attribute "${name}" is not a finite number.`);
+      if (!Number.isFinite(value))
+        reject(ctx, `<${node.tag}> attribute "${name}" is not a finite number.`);
       props[name] = value;
       continue;
     }
@@ -615,7 +647,8 @@ function convert(
   const rich = richTextIndexOf(value);
   if (rich !== undefined) {
     const rendered = ctx.richText[rich];
-    if (rendered === undefined) reject(ctx, "a richText() result was used in a different render pass.");
+    if (rendered === undefined)
+      reject(ctx, "a richText() result was used in a different render pass.");
     return rendered;
   }
 
@@ -623,7 +656,9 @@ function convert(
     const node = asNode(value);
     if (node === undefined) {
       // A bare array of children is a fragment.
-      return (value as readonly unknown[]).map((child) => convert(child, ctx, state, depth + 1, svg));
+      return (value as readonly unknown[]).map((child) =>
+        convert(child, ctx, state, depth + 1, svg),
+      );
     }
     return convertNode(node, ctx, state, depth, svg);
   }
@@ -734,7 +769,10 @@ function countSlots(value: unknown, depth: number): number {
   if (Array.isArray(value)) {
     const node = asNode(value);
     if (node === undefined) {
-      return (value as readonly unknown[]).reduce<number>((sum, child) => sum + countSlots(child, depth + 1), 0);
+      return (value as readonly unknown[]).reduce<number>(
+        (sum, child) => sum + countSlots(child, depth + 1),
+        0,
+      );
     }
     if (node.tag === CONTENT_SLOT_TAG) return 1;
     return node.children.reduce<number>((sum, child) => sum + countSlots(child, depth + 1), 0);

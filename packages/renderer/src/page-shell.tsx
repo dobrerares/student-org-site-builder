@@ -197,7 +197,11 @@ function renderBlock(block: BlockEnvelope, ctx: BlockRenderContext): preact.JSX.
   // Themes may control Block markup" means (ADR 0046): overriding `hero` uses
   // the same mechanism as supplying a design for `org.example/partners`, not a
   // second one that could behave differently.
-  if (ctx.design !== undefined && ctx.theme !== undefined && themeDesignsBlockType(ctx.theme, block.type)) {
+  if (
+    ctx.design !== undefined &&
+    ctx.theme !== undefined &&
+    themeDesignsBlockType(ctx.theme, block.type)
+  ) {
     // A design that returns null has rendered nothing on purpose. An empty
     // fragment keeps that distinct from "no component at all", which is the
     // only case the unknown-block marker below is for.
@@ -435,12 +439,19 @@ export function PageShell(props: {
   } = props;
   const contentBlocks = page.blocks.filter((block) => block.type !== "siteFooter");
   const footerBlocks = page.blocks.filter((block) => block.type === "siteFooter");
-  const design = designContextFor(site, theme, {
-    kind: "page",
-    id: `${page.lang}:${page.slug}`,
-    title: pageTitle(site, page),
-    lang: page.lang,
-  }, assetUrlForPath, mode, onIssue);
+  const design = designContextFor(
+    site,
+    theme,
+    {
+      kind: "page",
+      id: `${page.lang}:${page.slug}`,
+      title: pageTitle(site, page),
+      lang: page.lang,
+    },
+    assetUrlForPath,
+    mode,
+    onIssue,
+  );
   const ctx: BlockRenderContext = {
     site,
     lang: page.lang,
@@ -899,21 +910,23 @@ function DocumentShell(props: {
   };
 
   const designedShell =
-    props.design === undefined ? undefined : renderDesignedShell(props.design, shellParts, slotContent);
+    props.design === undefined
+      ? undefined
+      : renderDesignedShell(props.design, shellParts, slotContent);
   const body =
-    designedShell === undefined
-      ? builtInBody
-      : designedShell.body !== undefined
-        ? designedShell.body
-        : // Preview only — deploy rethrows. A page with no header is still an
-          // editable page; a blank one is not, so the content survives and the
-          // box says which Theme broke.
-          (
-            <>
-              {themeErrorBox(designedShell.error.message)}
-              {builtInBody}
-            </>
-          );
+    designedShell === undefined ? (
+      builtInBody
+    ) : designedShell.body !== undefined ? (
+      designedShell.body
+    ) : (
+      // Preview only — deploy rethrows. A page with no header is still an
+      // editable page; a blank one is not, so the content survives and the
+      // box says which Theme broke.
+      <>
+        {themeErrorBox(designedShell.error.message)}
+        {builtInBody}
+      </>
+    );
 
   // The Theme's public-site script. Off by default and on in a build: ADR 0046
   // keeps the editor preview static so ordinary content editing never fires a

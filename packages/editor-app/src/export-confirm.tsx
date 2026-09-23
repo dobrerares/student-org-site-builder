@@ -183,7 +183,11 @@ function OmittedBlockList({
       <ul>
         {omitted.map((entry) => (
           <li key={`${entry.document.kind}-${entry.document.id}-${entry.blockId}`}>
-            <span data-omitted-block data-block-type={entry.blockType} data-block-id={entry.blockId}>
+            <span
+              data-omitted-block
+              data-block-type={entry.blockType}
+              data-block-id={entry.blockId}
+            >
               <span data-issue-message>
                 {entry.document.kind === "article" ? "Article" : "Page"} “{entry.document.title}”:
                 the {entry.blockType} block has no design in this Theme.

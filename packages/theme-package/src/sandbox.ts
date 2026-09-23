@@ -312,7 +312,9 @@ export function compileThemeRenderModule(themeId: string, source: string): Theme
   });
 
   const context = runtime.newContext();
-  let api: QuickJSHandle | undefined;
+  // Assigned once the bootstrap has evaluated; `disposeAll` may run before
+  // that (a bootstrap failure) and must find it undefined rather than in TDZ.
+  let api: QuickJSHandle | undefined = undefined;
   let disposed = false;
   /**
    * Set when the host — not the guest — threw out of a call: the engine was

@@ -134,7 +134,8 @@ export function omittedBlocksFor(site: Site, bundle: ThemeBundle | undefined): O
     collect(page.blocks, {
       kind: "page",
       id: `${page.lang}:${page.slug}`,
-      title: page.seo?.title !== undefined && page.seo.title.length > 0 ? page.seo.title : page.navLabel,
+      title:
+        page.seo?.title !== undefined && page.seo.title.length > 0 ? page.seo.title : page.navLabel,
       lang: page.lang,
     });
   }
@@ -309,7 +310,10 @@ function orgInput(site: Site): Record<string, unknown> {
         ? null
         : {
             path: logoPath,
-            alt: typeof org.logoAlt === "string" && org.logoAlt.length > 0 ? org.logoAlt : assetRefAlt(org.logo),
+            alt:
+              typeof org.logoAlt === "string" && org.logoAlt.length > 0
+                ? org.logoAlt
+                : assetRefAlt(org.logo),
             width: org.logo?.width ?? 0,
             height: org.logo?.height ?? 0,
           },
@@ -422,7 +426,9 @@ function ThemeErrorBox(props: { message: string }): preact.JSX.Element {
       role="alert"
       style="margin:1rem;padding:1rem;border:2px solid #b3261e;border-radius:4px;background:#fff;color:#410e0b;font:14px/1.5 system-ui,sans-serif"
     >
-      <strong style="display:block;margin-bottom:.25rem">This Theme could not render this part of the page.</strong>
+      <strong style="display:block;margin-bottom:.25rem">
+        This Theme could not render this part of the page.
+      </strong>
       {props.message}
     </div>
   );
@@ -444,7 +450,11 @@ export function renderDesignedBlock(
   if (module === undefined) return null;
   const scope = new HelperScope(ctx);
   try {
-    const tree = module.renderBlock(block.type, blockInput(block, ctx, variant, shellVariant), scope.helpers());
+    const tree = module.renderBlock(
+      block.type,
+      blockInput(block, ctx, variant, shellVariant),
+      scope.helpers(),
+    );
     return blockTreeToVNode(tree, scope.treeContext(block.id, block.type), {
       blockType: block.type,
       blockId: block.id,
@@ -470,7 +480,10 @@ export function renderDesignedShell(
   ctx: DesignContext,
   parts: ShellInputParts,
   slotContent: preact.JSX.Element,
-): { body: preact.JSX.Element; error?: undefined } | { body?: undefined; error: ThemeRenderError } | undefined {
+):
+  | { body: preact.JSX.Element; error?: undefined }
+  | { body?: undefined; error: ThemeRenderError }
+  | undefined {
   const module = ctx.bundle.render;
   if (module === undefined || !module.hasShell) return undefined;
   const scope = new HelperScope(ctx);
