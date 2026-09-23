@@ -93,3 +93,72 @@ describe("EditorApp — multi-page wiring", () => {
     expect(container.querySelector('[data-testid="nav-count-pages"]')?.textContent).toBe("3");
   });
 });
+
+function makeBilingualSite(): Site {
+  const site = makeMultiPageSite();
+  return {
+    ...site,
+    languages: ["ro", "en"],
+    pages: [
+      ...site.pages,
+      {
+        slug: "home",
+        lang: "en",
+        navLabel: "Home",
+        navOrder: 0,
+        showInNav: true,
+        blocks: [{ id: "blk_home_en", type: "hero", version: 1, data: { title: "Home" } }],
+      },
+    ],
+  } as unknown as Site;
+}
+
+describe("EditorApp — content language and page order", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  test("Create Page creates the page in the navigation's content language", () => {
+    setViewportWidth(1200);
+    const { container } = render(<EditorApp initial={makeBilingualSite()} />);
+    fireEvent.change(
+      container.querySelector<HTMLSelectElement>('[data-testid="nav-content-language"]')!,
+      { target: { value: "en" } },
+    );
+    fireEvent.click(container.querySelector<HTMLButtonElement>('[data-testid="nav-create-page"]')!);
+    expect(
+      container.querySelector('[data-testid="block-list"]')?.getAttribute("data-page-slug"),
+    ).toBe("new-page");
+
+    openSection(container, "pages");
+    const english = container.querySelector(
+      '[data-testid="pages-list-language-group"][data-lang="en"]',
+    );
+    const romanian = container.querySelector(
+      '[data-testid="pages-list-language-group"][data-lang="ro"]',
+    );
+    expect(english?.textContent).toContain("/new-page");
+    expect(romanian?.textContent).not.toContain("/new-page");
+  });
+
+  test("moving a page keeps the last-open marker on that page", () => {
+    setViewportWidth(1200);
+    const { container } = render(<EditorApp initial={makeMultiPageSite()} />);
+    openSection(container, "pages");
+    fireEvent.click(
+      container.querySelector<HTMLButtonElement>('[data-action="select"][data-index="1"]')!,
+    );
+    fireEvent.click(container.querySelector<HTMLButtonElement>('[data-testid="workspace-back"]')!);
+    expect(
+      container.querySelector('[data-testid="pages-list-item"][data-active="true"]')?.textContent,
+    ).toContain("Despre");
+
+    fireEvent.click(
+      container.querySelector<HTMLButtonElement>('[data-action="move-up"][data-index="1"]')!,
+    );
+
+    const items = container.querySelectorAll('[data-testid="pages-list-item"]');
+    expect(items[0]?.textContent).toContain("Despre");
+    expect(items[0]?.getAttribute("data-active")).toBe("true");
+  });
+});

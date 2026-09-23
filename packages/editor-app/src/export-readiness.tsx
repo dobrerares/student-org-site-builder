@@ -25,7 +25,7 @@
  */
 import type { JSX } from "react";
 import type * as React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ValidationIssue, ValidationResult } from "@sosb/schema";
 import { hasBlockingIssues } from "@sosb/schema";
 import { Button, Input } from "@sosb/ui";
@@ -50,6 +50,12 @@ export interface ExportReadinessPanelProps {
 export function ExportReadinessPanel(props: ExportReadinessPanelProps): JSX.Element {
   const t = useTranslator();
   const [phrase, setPhrase] = useState("");
+  // The gate starts over every time the panel opens. The old confirmation
+  // dialog got this for free by being unmounted on cancel; this panel stays
+  // mounted, so a phrase typed and then abandoned must be cleared by hand.
+  useEffect(() => {
+    if (!props.open) setPhrase("");
+  }, [props.open]);
 
   const blocked = hasBlockingIssues(props.result);
   const errors = props.result.errors;

@@ -85,7 +85,9 @@ export function OverviewScreen(props: OverviewScreenProps): JSX.Element {
           ) : (
             <ul data-summary-list>
               {props.site.pages.slice(0, SUMMARY_LIMIT).map((page, index) => (
-                <li key={`${page.lang}:${page.slug}`}>
+                // Index first: two pages can share a slug while the author
+                // is mid-way through fixing exactly that validation error.
+                <li key={`${index}:${page.lang}:${page.slug}`}>
                   <button
                     type="button"
                     data-summary-row

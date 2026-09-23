@@ -100,8 +100,6 @@ export interface PreviewPaneProps {
   readonly onReturnToTarget: () => void;
   /** Open the previewed destination for editing. */
   readonly onEditPreviewed: () => void;
-  /** Hidden rather than unmounted on phones, so the iframe is not rebuilt. */
-  readonly hidden?: boolean;
 }
 
 export function PreviewPane(props: PreviewPaneProps): JSX.Element {
@@ -216,7 +214,14 @@ export function PreviewPane(props: PreviewPaneProps): JSX.Element {
           readyRef.current = true;
           const pending = pendingHtmlRef.current;
           pendingHtmlRef.current = null;
-          if (pending !== null) host.postPreviewHtml(pending);
+          // Post into the iframe mounted *now*. A reload key change remounts
+          // the element, and the one this effect captured at mount is by then
+          // detached — an edit typed while the new document was booting
+          // would be posted into nothing and silently lost.
+          const current = iframeRef.current;
+          if (pending !== null && current !== null) {
+            createPreviewHost({ iframe: current }).postPreviewHtml(pending);
+          }
           return;
         }
         if (message.type !== "navigate") return;
@@ -243,7 +248,6 @@ export function PreviewPane(props: PreviewPaneProps): JSX.Element {
     <section
       data-testid="preview-pane"
       data-preview-viewport={viewport}
-      data-hidden={props.hidden === true ? "true" : "false"}
       aria-label={t("pane.preview.label")}
     >
       <div data-testid="preview-toolbar" data-pane-bar>

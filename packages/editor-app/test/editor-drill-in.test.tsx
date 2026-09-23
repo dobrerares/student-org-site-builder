@@ -384,3 +384,79 @@ describe("Workspace drill-in Inspector", () => {
     expect(container.querySelector('[data-testid="block-form"]')).not.toBeNull();
   });
 });
+
+describe("Workspace drill-in — Escape, overlays and the preview target", () => {
+  beforeEach(() => setViewportWidth(1200));
+  afterEach(() => cleanup());
+
+  test("Escape with the export readiness panel open closes the panel, not the Inspector", () => {
+    const container = mountOnHomePage(siteWithMultiplePagesAndBlocks());
+    fireEvent.click(q(container, '[data-testid="block-row-select"]'));
+    expect(container.querySelector('[data-testid="block-form"]')).not.toBeNull();
+
+    fireEvent.click(q(container, 'button[data-action="export"]'));
+    const panel = q(container, '[data-testid="export-readiness"]');
+
+    // A real key press targets the focused element inside the popup and
+    // bubbles up from there; the shell's own Escape listener sits on window.
+    fireEvent.keyDown(panel, { key: "Escape" });
+
+    expect(container.querySelector('[data-testid="export-readiness"]')).toBeNull();
+    expect(container.querySelector('[data-testid="block-form"]')).not.toBeNull();
+  });
+
+  test("re-opening a workspace after a detour points the preview back at it", async () => {
+    const container = mountOnHomePage(siteWithMultiplePagesAndBlocks());
+    await act(async () => {
+      window.dispatchEvent(
+        new MessageEvent("message", {
+          data: encodePreviewMessage({ type: "navigate", path: "/despre/" }),
+        }),
+      );
+      await Promise.resolve();
+    });
+    expect(q(container, '[data-testid="preview-target-title"]').textContent).toBe("Despre");
+
+    // Theme keeps the preview where it was (ADR 0053 §2)…
+    openSection(container, "theme");
+    expect(q(container, '[data-testid="preview-target-title"]').textContent).toBe("Despre");
+
+    // …but opening the home page again is entering its workspace: the
+    // preview follows, and there is nothing to "return" to.
+    openPage(container, 0);
+    expect(q(container, '[data-testid="preview-target-title"]').textContent).toBe("Acasă");
+    expect(container.querySelector('[data-testid="preview-return"]')).toBeNull();
+  });
+
+  test("an edit made while a freshly navigated preview boots reaches the new document", async () => {
+    const container = mountOnHomePage(siteWithMultiplePagesAndBlocks());
+    const first = q<HTMLIFrameElement>(container, '[data-testid="preview-pane"] iframe');
+
+    await act(async () => {
+      window.dispatchEvent(
+        new MessageEvent("message", {
+          data: encodePreviewMessage({ type: "navigate", path: "/despre/" }),
+        }),
+      );
+      await Promise.resolve();
+    });
+    const second = q<HTMLIFrameElement>(container, '[data-testid="preview-pane"] iframe');
+    expect(second).not.toBe(first);
+    const capture = capturePreviewMessages(second);
+
+    // Type before the new document has announced its morph script: the edit
+    // is held back rather than posted into nothing.
+    fireEvent.input(q(container, '[data-testid="workspace-title"]'), {
+      target: { value: "Acasă nouă" },
+    });
+    expect(capture.latestHtml()).toBeUndefined();
+
+    // Once it is ready, the held edit must land in *this* document — the
+    // menu on the previewed About page names the renamed home page.
+    await act(async () => {
+      announcePreviewReady();
+      await Promise.resolve();
+    });
+    expect(capture.latestHtml()).toContain("Acasă nouă");
+  });
+});

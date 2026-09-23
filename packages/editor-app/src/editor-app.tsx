@@ -40,8 +40,8 @@
  *   the preview-bridge. The iframe also receives a `srcdoc` rewrite for
  *   the structural baseline (so the preview is correct from frame 0, even
  *   before the iframe's hypothetical message listener boots).
- * - Re-run `validate()` on every snapshot change so the panel + footer
- *   stay current.
+ * - Re-run `validate()` on every snapshot change so the Overview's Site
+ *   Health card and the export readiness panel stay current.
  *
  * i18n:
  *
@@ -472,6 +472,14 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   const [destination, setDestination] = useState<Destination>(INITIAL_DESTINATION);
   /** Drill state *within* a workspace — ADR 0042's Inspector, preserved. */
   const [drill, setDrill] = useState<WorkspaceDrill>(OUTLINE_DRILL);
+  // Which workspace the preview was last pointed at (see the preview-target
+  // sync below). Reset by `go` so entering a workspace always re-points it.
+  const previewSyncKeyRef = useRef<string>("");
+  // When a Site Health issue is clicked we may need to drill into the
+  // right inspector before the target field exists in the DOM. The pending
+  // issue is stashed here and consumed by an effect that runs after the
+  // drill state's re-render flushes.
+  const pendingIssueRef = useRef<ValidationIssue | null>(null);
 
   // Drop a destination whose target has gone (the page was deleted, a
   // different project was imported). Done during render rather than in an
@@ -511,6 +519,11 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent): void {
       if (event.key !== "Escape") return;
+      // An open dialog or (i) popover owns this Escape: it closes, and the
+      // Inspector underneath must not vanish with it. Base UI normally stops
+      // the event before it reaches the window, but a popup that lets it
+      // bubble — or a host that mounts its own — must not lose the drill.
+      if (event.defaultPrevented || document.querySelector('[role="dialog"]') !== null) return;
       setDrill((current) => (current.kind === "outline" ? current : OUTLINE_DRILL));
     }
     window.addEventListener("keydown", onKeyDown);
@@ -525,6 +538,13 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     setDrill(OUTLINE_DRILL);
     setDrawerOpen(false);
     setWorkspacePane("edit");
+    // Entering a workspace re-points the preview at it (ADR 0053 §2) — also
+    // when it is the same content again after a detour through Theme that
+    // left the preview on some page the author had clicked through to.
+    previewSyncKeyRef.current = "";
+    // A repair the author walked away from must not fire later, when an
+    // unrelated form happens to mount a field at the same path.
+    pendingIssueRef.current = null;
   }
 
   // Export readiness panel disclosure.
@@ -536,6 +556,12 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
    * Romanian produces a Romanian Draft.
    */
   const [contentLanguage, setContentLanguage] = useState<string>(snapshot.defaultLanguage);
+  // Importing a different project, or removing a language in Site settings,
+  // can leave the chosen language undeclared. Fall back to the Site's default
+  // rather than creating content in a language the Site does not have.
+  const effectiveContentLanguage = snapshot.languages.includes(contentLanguage)
+    ? contentLanguage
+    : snapshot.defaultLanguage;
 
   // Root ref so issue-navigation queries land in the editor's own DOM
   // tree (and not whatever the host page might have rendered).
@@ -774,7 +800,6 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   // Entering a workspace points the preview at the content being edited. A
   // site-wide destination (Theme, Site settings) leaves it where it was, so
   // changing a theme previews the page the author was last working on.
-  const previewSyncKeyRef = useRef<string>("");
   const previewSyncKey =
     reconciled.kind === "pageWorkspace"
       ? `page:${reconciled.pageIndex}`
@@ -1205,12 +1230,12 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
    * The redesign's Create Page is a one-click action from the navigation and
    * the Overview rather than a slug form, so the slug is derived and the
    * author renames it in Page settings if they care. `addPage` appends, so
-   * the new page is always last.
+   * the new page is always last. Like Create Article, it creates in the
+   * navigation's content language — that picker would be a lie otherwise.
    */
   function handleCreatePage(): void {
-    const existing = new Set(
-      snapshot.pages.filter((p) => p.lang === snapshot.defaultLanguage).map((p) => p.slug),
-    );
+    const lang = effectiveContentLanguage;
+    const existing = new Set(snapshot.pages.filter((p) => p.lang === lang).map((p) => p.slug));
     let slug = "new-page";
     let counter = 2;
     while (existing.has(slug)) {
@@ -1219,7 +1244,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     }
     const nextIndex = snapshot.pages.length;
     state.update((draft) => {
-      Object.assign(draft, addPage(draft, slug));
+      Object.assign(draft, addPage(draft, slug, lang));
     });
     pushHistory(state.getSnapshot());
     go({ kind: "pageWorkspace", pageIndex: nextIndex });
@@ -1242,19 +1267,22 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   }
 
   function handleMovePage(index: number, direction: "up" | "down"): void {
+    const target = direction === "up" ? index - 1 : index + 1;
+    if (target < 0 || target >= snapshot.pages.length) return;
     state.update((draft) => {
       Object.assign(draft, movePage(draft, index, direction));
     });
     pushHistory(state.getSnapshot());
-    // Follow the page if its workspace is open, so a reorder does not
-    // silently swap which page the author is editing.
-    const target = direction === "up" ? index - 1 : index + 1;
-    setDestination((current) => {
-      if (current.kind !== "pageWorkspace") return current;
-      if (current.pageIndex === index) return { kind: "pageWorkspace", pageIndex: target };
-      if (current.pageIndex === target) return { kind: "pageWorkspace", pageIndex: index };
-      return current;
-    });
+    // Pages are addressed by index, so a swap must be followed by everything
+    // that remembers one: the list's "last open" marker and the preview that
+    // Theme and Site settings keep. Otherwise both silently point at whatever
+    // page now occupies the old index. (The Pages list is only shown when no
+    // workspace is open, so the destination itself never needs following.)
+    const follow = (i: number): number => (i === index ? target : i === target ? index : i);
+    lastPageIndexRef.current = follow(lastPageIndexRef.current);
+    setPreviewTarget((current) =>
+      current.kind === "page" ? { kind: "page", index: follow(current.index) } : current,
+    );
   }
 
   function handleAddLanguageVersion(index: number, targetLang: string): void {
@@ -1279,7 +1307,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     applyArticleChange((site) => {
       const result = createArticle(site, {
         title: "",
-        lang: contentLanguage,
+        lang: effectiveContentLanguage,
         today: todayIso(),
       });
       createdId = result.articleId;
@@ -1287,12 +1315,6 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     });
     if (createdId !== "") go({ kind: "articleWorkspace", articleId: createdId });
   }
-
-  // When a Site Health issue is clicked we may need to drill into the
-  // right inspector before the target field exists in the DOM. The pending
-  // issue is stashed here and consumed by an effect that runs after the
-  // drill state's re-render flushes.
-  const pendingIssueRef = useRef<ValidationIssue | null>(null);
 
   /**
    * Open the destination that owns a validation issue, ready to repair it.
@@ -1736,7 +1758,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
           pageCount={snapshot.pages.length}
           articleCount={(snapshot.articles ?? []).length}
           languages={snapshot.languages}
-          contentLanguage={contentLanguage}
+          contentLanguage={effectiveContentLanguage}
           onContentLanguageChange={setContentLanguage}
           drawerOpen={drawerOpen}
           onCloseDrawer={() => setDrawerOpen(false)}

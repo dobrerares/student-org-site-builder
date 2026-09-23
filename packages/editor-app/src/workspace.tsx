@@ -120,8 +120,10 @@ export function Workspace(props: WorkspaceProps): JSX.Element {
     []) as readonly BlockEnvelope[];
   const rawTitle = page?.navLabel ?? article?.title ?? "";
   // What the back button and Inspector headers call this content. An Article
-  // whose title has not been typed yet is still addressable.
-  const contentTitle = rawTitle.trim() === "" && isArticle ? t("articles.untitled") : rawTitle;
+  // whose title has not been typed yet is still addressable, and so is a Page
+  // whose menu label was cleared: it still has an address.
+  const contentTitle =
+    rawTitle.trim() !== "" ? rawTitle : isArticle ? t("articles.untitled") : `/${page?.slug ?? ""}`;
   const lang = page?.lang ?? article?.lang ?? props.site.defaultLanguage;
 
   // The shell reconciles a vanished target before we render, so this is the

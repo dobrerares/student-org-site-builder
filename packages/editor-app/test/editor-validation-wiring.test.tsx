@@ -202,3 +202,36 @@ describe("Export readiness", () => {
     expect(exports.length).toBe(0);
   });
 });
+
+describe("Export readiness — the gate starts over", () => {
+  afterEach(() => cleanup());
+
+  test("a phrase typed and then cancelled does not survive reopening the panel", () => {
+    const exports: Site[] = [];
+    const { container } = render(
+      <EditorApp initial={structuredClone(tieredSite)} onExport={(s) => exports.push(s)} />,
+    );
+    const exportButton = (): HTMLButtonElement =>
+      container.querySelector<HTMLButtonElement>('button[data-action="export"]')!;
+
+    fireEvent.click(exportButton());
+    fireEvent.input(
+      container.querySelector<HTMLInputElement>('[data-testid="export-confirm-input"]')!,
+      {
+        target: { value: "DOWNLOAD" },
+      },
+    );
+    fireEvent.click(
+      container.querySelector<HTMLButtonElement>('[data-testid="export-cancel-button"]')!,
+    );
+
+    fireEvent.click(exportButton());
+    expect(
+      container.querySelector<HTMLInputElement>('[data-testid="export-confirm-input"]')!.value,
+    ).toBe("");
+    expect(
+      container.querySelector<HTMLButtonElement>('[data-testid="export-confirm-button"]')!.disabled,
+    ).toBe(true);
+    expect(exports.length).toBe(0);
+  });
+});
