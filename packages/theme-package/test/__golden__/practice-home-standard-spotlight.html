@@ -2654,13 +2654,20 @@ main a:not([class]) {
     display: inline-flex;
   }
 
-  [data-site-nav][data-nav-enhanced="true"] .site-nav__list {
+  /* The <nav> is the flex item of .site-nav__inner (the list sits inside
+     it), so it is the <nav> that leaves the row when closed and takes a full
+     row of its own when open. */
+  [data-site-nav][data-nav-enhanced="true"] .site-nav__inner > nav {
     display: none;
+  }
+
+  [data-site-nav][data-nav-enhanced="true"][data-nav-open="true"] .site-nav__inner > nav {
+    display: block;
+    flex-basis: 100%;
   }
 
   [data-site-nav][data-nav-enhanced="true"][data-nav-open="true"] .site-nav__list {
     display: flex;
-    flex-basis: 100%;
     flex-direction: column;
   }
 
