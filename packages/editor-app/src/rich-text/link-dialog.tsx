@@ -66,7 +66,13 @@ export function RichTextLinkDialog(props: RichTextLinkDialogProps): JSX.Element 
   );
   const selectedOption = options.find((option) => option.key === selected);
 
+  // With nothing selected and no link under the caret there is nothing to
+  // link: applying would only set a stored mark for the next keystroke, and
+  // an internal pick would stamp a Page id and push a Site-history entry for
+  // an action with no visible result. The buttons are disabled in that state;
+  // the guards keep a keyboard "Enter" or a stale click from getting through.
   function applyInternal(option: LinkTargetOption): void {
+    if (!props.hasSelection) return;
     const { site, target } = resolveTarget(props.site, option, makePageIdFactory(props.site));
     // The id stamped on a Page must be saved before — or with — the link
     // that references it. Committing the Site first means a link can never
@@ -76,6 +82,7 @@ export function RichTextLinkDialog(props: RichTextLinkDialogProps): JSX.Element 
   }
 
   function applyExternal(): void {
+    if (!props.hasSelection) return;
     const trimmed = href.trim();
     if (!isAcceptableLinkUrl(trimmed) || trimmed === "") {
       setShowInvalid(true);
@@ -167,7 +174,7 @@ export function RichTextLinkDialog(props: RichTextLinkDialogProps): JSX.Element 
 
           <Button
             data-testid="rich-text-link-apply-internal"
-            disabled={selectedOption === undefined}
+            disabled={!props.hasSelection || selectedOption === undefined}
             onClick={() => {
               if (selectedOption !== undefined) applyInternal(selectedOption);
             }}
@@ -197,7 +204,11 @@ export function RichTextLinkDialog(props: RichTextLinkDialogProps): JSX.Element 
               {t("richText.link.external.invalid")}
             </p>
           )}
-          <Button data-testid="rich-text-link-apply-external" onClick={applyExternal}>
+          <Button
+            data-testid="rich-text-link-apply-external"
+            disabled={!props.hasSelection}
+            onClick={applyExternal}
+          >
             {t("richText.link.action.apply")}
           </Button>
         </TabsPanel>

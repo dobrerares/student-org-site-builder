@@ -1088,21 +1088,21 @@ body {
   gap: 6px;
 }
 [data-testid="editor-pane"] .rich-text-toolbar {
-  border: 1px solid var(--line-2);
-  border-radius: var(--radius-2) var(--radius-2) 0 0;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-md) var(--r-md) 0 0;
   border-bottom: 0;
-  background: var(--surface-2);
+  background: var(--paper-sunken);
 }
 [data-testid="editor-pane"] .rich-text-editing {
   min-height: 12rem;
   padding: 10px 12px;
-  border: 1px solid var(--line-2);
-  border-radius: 0 0 var(--radius-2) var(--radius-2);
-  background: var(--surface-1);
+  border: 1px solid var(--rule-strong);
+  border-radius: 0 0 var(--r-md) var(--r-md);
+  background: var(--paper-raised);
   overflow-wrap: anywhere;
 }
 [data-testid="editor-pane"] .rich-text-editing:focus-visible {
-  outline: 2px solid var(--accent-1);
+  outline: 2px solid var(--accent);
   outline-offset: -1px;
 }
 [data-testid="editor-pane"] .rich-text-editing > * {
@@ -1129,18 +1129,18 @@ body {
 }
 [data-testid="editor-pane"] .rich-text-editing blockquote {
   padding-left: 0.8em;
-  border-left: 3px solid var(--line-2);
+  border-left: 3px solid var(--rule-strong);
   color: var(--ink-2);
 }
 [data-testid="editor-pane"] .rich-text-editing code {
   padding: 0 0.25em;
-  border-radius: var(--radius-1);
-  background: var(--surface-2);
+  border-radius: var(--r-sm);
+  background: var(--paper-sunken);
 }
 /* An internal link has no meaningful href while editing (the Renderer
  * resolves it), so the cue that it *is* a link has to come from styling. */
 [data-testid="editor-pane"] .rich-text-editing a {
-  color: var(--accent-1);
+  color: var(--accent);
   text-decoration: underline;
 }
 [data-testid="editor-pane"] .rich-text-editing a[data-link-kind="page"],
@@ -1154,7 +1154,7 @@ body {
   display: block;
   max-width: 100%;
   height: auto;
-  border-radius: var(--radius-1);
+  border-radius: var(--r-sm);
 }
 [data-testid="editor-pane"] .rich-text-editing figcaption {
   margin-top: 4px;
@@ -1168,21 +1168,21 @@ body {
   place-items: center;
   min-height: 6rem;
   padding: 12px;
-  border: 1px dashed var(--line-2);
-  border-radius: var(--radius-1);
-  background: var(--surface-2);
+  border: 1px dashed var(--rule-strong);
+  border-radius: var(--r-sm);
+  background: var(--paper-sunken);
   color: var(--ink-3);
   font-size: var(--step--1);
   text-align: center;
 }
 [data-testid="editor-pane"] .rich-text-editing .ProseMirror-selectednode {
-  outline: 2px solid var(--accent-1);
+  outline: 2px solid var(--accent);
 }
 [data-testid="editor-pane"] [data-testid="rich-text-unsupported"] {
   padding: 12px;
-  border: 1px solid var(--line-2);
-  border-radius: var(--radius-2);
-  background: var(--surface-2);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-md);
+  background: var(--paper-sunken);
 }
 [data-testid="editor-pane"] [data-testid="rich-text-unsupported-types"] {
   font-family: ui-monospace, monospace;

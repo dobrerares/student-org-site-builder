@@ -71,6 +71,11 @@ export function clonePage(site: Site, sourceIndex: number, newSlug: string): Sit
     navOrder: maxOrder + 1,
     blocks: clonedBlocks,
   };
+  // A Page's permanent id (ADR 0048) names *that* Page to every prose link
+  // that points at it. Carrying it onto the copy would make two Pages answer
+  // to the same id, and the first match would win. The copy gets its own id
+  // the first time someone links at it.
+  delete clone.id;
   const next = [...site.pages];
   next.splice(sourceIndex + 1, 0, clone);
   return { ...site, pages: next };
@@ -186,6 +191,9 @@ export function addLanguageVersion(site: Site, sourceIndex: number, targetLang: 
     blocks: counterpartBlocks,
     localizedAs: { [source.lang]: source.slug },
   };
+  // Same rule as `clonePage`: the counterpart is a different Page and must
+  // not answer to the source's permanent id.
+  delete counterpart.id;
 
   // Wire the source's localizedAs to point at the new counterpart.
   const updatedSource: Page = {
