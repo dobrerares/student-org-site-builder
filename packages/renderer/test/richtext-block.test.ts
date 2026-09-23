@@ -336,6 +336,28 @@ describe("renderSite — unsupported rich-text content", () => {
     );
   });
 
+  test("a block-level node inside a paragraph is not silently dropped", () => {
+    // The schema refuses it, so this only arrives from a hand-edited file
+    // that validation has already flagged. Even so the omission must be
+    // visible in the preview rather than an empty gap.
+    const html = renderSite(
+      withDoc(
+        clone(),
+        doc(
+          para(
+            text("a "),
+            { type: "image", asset: { hash: "h", path: "assets/h.png" } },
+            text(" b"),
+          ),
+        ),
+      ),
+      "stub",
+    );
+    expect(html).toContain(
+      '<p>a <span class="rich-text-unsupported" data-unsupported-type="image"></span> b</p>',
+    );
+  });
+
   test("an unknown mark degrades to plain text without losing the words", () => {
     const html = renderSite(
       withDoc(clone(), doc(para(text("marked", [{ type: "futureHighlight" }])))),

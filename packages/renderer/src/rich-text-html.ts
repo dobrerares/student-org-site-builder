@@ -21,7 +21,6 @@ import { escapeAttr, escapeText, sanitizeUrl } from "@sosb/markdown";
 import {
   RICH_TEXT_ALIGNMENTS,
   isKnownRichTextMarkType,
-  isKnownRichTextNodeType,
   type RichTextDocument,
   type RichTextLinkTarget,
   type RichTextMark,
@@ -220,16 +219,18 @@ function serializeInline(
   for (const node of nodes) {
     const anyNode = node as { type: string; text?: unknown; marks?: readonly RichTextMark[] };
     if (anyNode.type !== "text" && anyNode.type !== "hardBreak") {
-      // An unknown inline node. Close everything so the placeholder is not
-      // nested inside a half-open `<strong>`. The placeholder is a `<span>`
-      // here: a `<div>` inside a `<p>` is not valid HTML, and the browser
-      // would close the paragraph early, so the preview's DOM would no
-      // longer match the string the Renderer produced.
+      // Anything that cannot be rendered inline — an unknown inline node, or
+      // a block-level node the schema would refuse here (a hand-edited file
+      // can put an image inside a paragraph). Either way an empty labelled
+      // placeholder is emitted rather than nothing, so the omission is
+      // visible in the preview instead of silent. Close everything first so
+      // the placeholder is not nested inside a half-open `<strong>`, and use
+      // a `<span>`: a `<div>` inside a `<p>` is not valid HTML, and the
+      // browser would close the paragraph early, so the preview's DOM would
+      // no longer match the string the Renderer produced.
       out += closeAll(open);
       open = [];
-      out += isKnownRichTextNodeType(anyNode.type)
-        ? ""
-        : serializeUnsupported(anyNode.type, "span");
+      out += serializeUnsupported(anyNode.type, "span");
       continue;
     }
 
