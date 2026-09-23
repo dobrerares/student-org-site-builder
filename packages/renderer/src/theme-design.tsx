@@ -245,6 +245,7 @@ const SHELL_COPY = {
     close: "Închide",
     home: "Acasă",
     since: "Din",
+    siteInfo: "Informații despre site",
     skipToContent: "Sari la conținut",
   },
   en: {
@@ -253,6 +254,7 @@ const SHELL_COPY = {
     close: "Close",
     home: "Home",
     since: "Since",
+    siteInfo: "Site information",
     skipToContent: "Skip to content",
   },
 } as const;

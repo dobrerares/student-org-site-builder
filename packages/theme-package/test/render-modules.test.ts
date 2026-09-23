@@ -81,7 +81,11 @@ afterAll(() => {
 
 describe("manifest: render", () => {
   test("names a module that must exist", () => {
-    expectRejection(pkg({ ...MANIFEST, render: "render.js" }), "file-missing", /render\.js.*does not contain it/);
+    expectRejection(
+      pkg({ ...MANIFEST, render: "render.js" }),
+      "file-missing",
+      /render\.js.*does not contain it/,
+    );
   });
 
   test("follows the same path rules as fonts", () => {
@@ -113,7 +117,10 @@ describe("manifest: render", () => {
 
   test("a module that imports another module is rejected: a package ships one design file", () => {
     expectRejection(
-      pkg({ ...MANIFEST, render: "render.js" }, { "render.js": 'import "./x.js"; export default { blocks: {} }' }),
+      pkg(
+        { ...MANIFEST, render: "render.js" },
+        { "render.js": 'import "./x.js"; export default { blocks: {} }' },
+      ),
       "render-invalid",
       /may not import|could not load/i,
     );
@@ -137,7 +144,10 @@ describe("manifest: public", () => {
 
   test("requires `offline` once `network` names a host", () => {
     expectRejection(
-      pkg({ ...MANIFEST, public: { file: "public.js", network: ["api.example.org"] } }, { "public.js": "//" }),
+      pkg(
+        { ...MANIFEST, public: { file: "public.js", network: ["api.example.org"] } },
+        { "public.js": "//" },
+      ),
       "manifest-invalid",
       /offline/,
     );
@@ -146,7 +156,10 @@ describe("manifest: public", () => {
   test("network entries are hostnames, not URLs", () => {
     expectRejection(
       pkg(
-        { ...MANIFEST, public: { file: "public.js", network: ["https://api.example.org/v1"], offline: "x" } },
+        {
+          ...MANIFEST,
+          public: { file: "public.js", network: ["https://api.example.org/v1"], offline: "x" },
+        },
         { "public.js": "//" },
       ),
       "manifest-invalid",
@@ -217,8 +230,12 @@ describe("a package with render.js, end to end", () => {
     expect(bundle.render?.blockTypes).toEqual(["hero", "org.example/partners"]);
     expect(bundle.render?.hasShell).toBe(true);
     const html = renderSite(site(), THEME_ID, { theme: bundle });
-    expect(html).toContain('<body><header class="chrome"><a href="/">Stub Org</a> Meniu</header><main>');
-    expect(html).toContain('<section class="hero" data-block="hero" data-block-id="blk_home_hero"><h1>Stub Org</h1>');
+    expect(html).toContain(
+      '<body><header class="chrome"><a href="/">Stub Org</a> Meniu</header><main>',
+    );
+    expect(html).toContain(
+      '<section class="hero" data-block="hero" data-block-id="blk_home_hero"><h1>Stub Org</h1>',
+    );
     expect(html).toContain("<strong>ro</strong>");
   });
 
@@ -235,11 +252,15 @@ describe("a package with render.js, end to end", () => {
     });
     const { dist, omittedBlocks } = buildWithReport(s, { themes: [bundle], skipValidation: true });
     const home = dist.get("index.html") as string;
-    expect(home).toContain('<ul class="partners" data-block="org.example/partners" data-block-id="blk_p"><li>Alpha</li></ul>');
+    expect(home).toContain(
+      '<ul class="partners" data-block="org.example/partners" data-block-id="blk_p"><li>Alpha</li></ul>',
+    );
     expect(home).toContain("<!-- unknown block: org.example/unknown -->");
     expect(omittedBlocks.map((o) => o.blockId)).toEqual(["blk_q"]);
     expect(dist.get(`assets/theme/${THEME_ID}/public.js`)).toEqual(enc.encode("(function(){})();"));
-    expect(home).toContain(`<script defer src="assets/theme/${THEME_ID}/public.js" data-sosb-theme-script>`);
+    expect(home).toContain(
+      `<script defer src="assets/theme/${THEME_ID}/public.js" data-sosb-theme-script>`,
+    );
   });
 
   test("a design that throws stops build() and names the Theme and the Block", () => {
@@ -258,7 +279,9 @@ describe("a package with render.js, end to end", () => {
     expect(caught).toBeInstanceOf(ThemeRenderError);
     const error = caught as ThemeRenderError;
     expect(error.code).toBe("threw");
-    expect(error.message).toBe(`Theme "${THEME_ID}" failed to render block blk_home_hero (hero): Error: kaput`);
+    expect(error.message).toBe(
+      `Theme "${THEME_ID}" failed to render block blk_home_hero (hero): Error: kaput`,
+    );
 
     // The preview shows the box and reports, rather than going blank.
     const issues: ThemeRenderIssue[] = [];
@@ -292,7 +315,9 @@ describe("a package with render.js, end to end", () => {
     const bundle = load(
       pkg(
         { ...MANIFEST, render: "render.js" },
-        { "render.js": `export default { blocks: { hero() { return ["div", { onclick: "x()" }]; } } }` },
+        {
+          "render.js": `export default { blocks: { hero() { return ["div", { onclick: "x()" }]; } } }`,
+        },
       ),
     );
     try {

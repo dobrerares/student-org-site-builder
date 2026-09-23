@@ -79,7 +79,13 @@ function navToggle(input) {
       "aria-controls": NAV_LIST_ID,
       hidden: true,
     },
-    ["span", { class: "site-nav__toggle-bars", "aria-hidden": "true" }, ["span"], ["span"], ["span"]],
+    [
+      "span",
+      { class: "site-nav__toggle-bars", "aria-hidden": "true" },
+      ["span"],
+      ["span"],
+      ["span"],
+    ],
     ["span", { class: "site-nav__toggle-label" }, input.t("menu")],
   ];
 }
@@ -133,16 +139,19 @@ function languageSwitcher(input) {
  *
  * A labelled `<section>`, not a `<footer>`: the author's site-footer Block is
  * already the page's contentinfo landmark and two of those is an accessibility
- * defect, while content outside every landmark is another. No copyright year,
- * either — a design cannot read the clock (ADR 0046), and a year baked in at
- * export would be wrong by the time anyone noticed.
+ * defect, while content outside every landmark is another. The label comes
+ * from `t()` rather than the organisation's name, because a hero titled with
+ * that same name is a region with that same name, and two identically named
+ * landmarks is a third defect. No copyright year, either — a design cannot
+ * read the clock (ADR 0046), and a year baked in at export would be wrong by
+ * the time anyone noticed.
  */
 function colophon(input) {
   const { org, nav } = input;
   const founded = typeof org.foundedYear === "number" ? org.foundedYear : null;
   return [
     "section",
-    { class: "site-colophon", "aria-label": org.name },
+    { class: "site-colophon", "aria-label": input.t("siteInfo") },
     [
       "div",
       { class: "site-colophon__inner" },
@@ -251,7 +260,9 @@ function heroBody(input, extraClass, decoration) {
       { class: "hero__inner" },
       ["h1", { id: titleId, class: "hero__title" }, ...heroTitle(input)],
       subtitle !== null ? ["p", { class: "hero__subtitle" }, subtitle] : null,
-      extraClass === "hero--spotlight" ? ["span", { class: "hero__rule", "aria-hidden": "true" }] : null,
+      extraClass === "hero--spotlight"
+        ? ["span", { class: "hero__rule", "aria-hidden": "true" }]
+        : null,
     ],
   ];
 }

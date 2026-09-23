@@ -86,7 +86,13 @@ const CUSTOM_BLOCK = {
 function render(
   site: Site,
   bundle: ThemeBundle,
-  opts: { mode?: "deploy" | "preview"; pageIndex?: number; issues?: ThemeRenderIssue[]; publicScript?: boolean; resolver?: (p: string) => string } = {},
+  opts: {
+    mode?: "deploy" | "preview";
+    pageIndex?: number;
+    issues?: ThemeRenderIssue[];
+    publicScript?: boolean;
+    resolver?: (p: string) => string;
+  } = {},
 ): string {
   return renderSite(site, THEME_ID, {
     theme: bundle,
@@ -118,7 +124,9 @@ describe("a Block design", () => {
       { blockVariants: { hero: [{ id: "split", label: "Split" }] } },
     );
     const plain = render(siteFor(), bundle);
-    expect(plain).toContain('<section class="x" data-block="hero" data-block-id="blk_home_hero"><h1>Stub Org</h1></section>');
+    expect(plain).toContain(
+      '<section class="x" data-block="hero" data-block-id="blk_home_hero"><h1>Stub Org</h1></section>',
+    );
 
     const withVariant = render(
       siteFor((s) => {
@@ -126,7 +134,9 @@ describe("a Block design", () => {
       }),
       bundle,
     );
-    expect(withVariant).toContain('data-block="hero" data-block-id="blk_home_hero" data-variant="split"');
+    expect(withVariant).toContain(
+      'data-block="hero" data-block-id="blk_home_hero" data-variant="split"',
+    );
 
     // A variant the Theme does not offer is suspended, not emitted.
     const stale = render(
@@ -163,13 +173,35 @@ describe("a Block design", () => {
       blocks: {
         hero: (i) => {
           seen = Object.keys(i).sort();
-          return ["div", null, i.document.kind, ":", i.org.name, ":", i.theme.id, ":", String(i.variant)];
+          return [
+            "div",
+            null,
+            i.document.kind,
+            ":",
+            i.org.name,
+            ":",
+            i.theme.id,
+            ":",
+            String(i.variant),
+          ];
         },
       },
     });
     const html = render(siteFor(), bundle);
-    expect(seen).toEqual(["data", "document", "id", "lang", "org", "theme", "type", "variant", "version"]);
-    expect(html).toContain('data-block-id="blk_home_hero">page:Stub Org:org.example.fake:null</div>');
+    expect(seen).toEqual([
+      "data",
+      "document",
+      "id",
+      "lang",
+      "org",
+      "theme",
+      "type",
+      "variant",
+      "version",
+    ]);
+    expect(html).toContain(
+      'data-block-id="blk_home_hero">page:Stub Org:org.example.fake:null</div>',
+    );
   });
 
   test("may return null to render nothing, but never a fragment as its root", () => {
@@ -179,7 +211,14 @@ describe("a Block design", () => {
     // Rendering nothing on purpose is not the same as having no design.
     expect(html).not.toContain("unknown block");
 
-    const fragment = bundleWith({ blocks: { hero: () => [["p", null, "a"], ["p", null, "b"]] } });
+    const fragment = bundleWith({
+      blocks: {
+        hero: () => [
+          ["p", null, "a"],
+          ["p", null, "b"],
+        ],
+      },
+    });
     expectRenderError(() => render(siteFor(), fragment), "invalid-tree", /single element/);
   });
 });
@@ -192,9 +231,21 @@ describe("what a tree may not contain", () => {
     ["an event handler", ["div", { onclick: "x()" }], /event handler attribute "onclick"/],
     ["an inline style", ["div", { style: "color:red" }], /"style" attribute/],
     ["a javascript: URL", ["a", { href: "javascript:alert(1)" }, "x"], /not an acceptable URL/],
-    ["a protocol-relative URL", ["img", { src: "//cdn.test/x.png", alt: "" }], /not an acceptable URL/],
-    ["a data: URL in an image", ["img", { src: "data:image/png;base64,AAAA", alt: "" }], /not an acceptable URL/],
-    ["a builder-owned attribute", ["div", { "data-block-id": "spoof" }], /"data-block-id", which the builder places/],
+    [
+      "a protocol-relative URL",
+      ["img", { src: "//cdn.test/x.png", alt: "" }],
+      /not an acceptable URL/,
+    ],
+    [
+      "a data: URL in an image",
+      ["img", { src: "data:image/png;base64,AAAA", alt: "" }],
+      /not an acceptable URL/,
+    ],
+    [
+      "a builder-owned attribute",
+      ["div", { "data-block-id": "spoof" }],
+      /"data-block-id", which the builder places/,
+    ],
     ["an unsupported attribute", ["div", { srcdoc: "x" }], /unsupported attribute "srcdoc"/],
     ["an SVG <use>", ["svg", null, ["use", { href: "#x" }]], /<use> is not an element/],
     ["a content slot outside the shell", ["div", null, ["slot"]], /only appear in a shell/],
@@ -213,7 +264,10 @@ describe("what a tree may not contain", () => {
         hero: (i, h) => [
           "div",
           null,
-          ["img", { src: h.mediaUrl(i.data.backgroundImage), alt: h.mediaAlt(i.data.backgroundImage) }],
+          [
+            "img",
+            { src: h.mediaUrl(i.data.backgroundImage), alt: h.mediaAlt(i.data.backgroundImage) },
+          ],
           ["a", { href: h.pageUrl("ro:acasa") }, "home"],
           ["img", { src: h.asset("assets/x.svg"), alt: "" }],
         ],
@@ -224,7 +278,9 @@ describe("what a tree may not contain", () => {
     // cannot vary between preview and export.
     expect(html).toContain('<img alt="Studenți la o conferință" src="blob:sosb/assets/hero.jpg"/>');
     expect(html).toContain('<a href="/">home</a>');
-    expect(html).toContain('<img alt="" src="blob:sosb/assets/theme/org.example.fake/assets/x.svg"/>');
+    expect(html).toContain(
+      '<img alt="" src="blob:sosb/assets/theme/org.example.fake/assets/x.svg"/>',
+    );
 
     // The same blob URL typed out by hand is not trusted: only the helper's
     // own return value is.
@@ -240,14 +296,20 @@ describe("what a tree may not contain", () => {
 
   test("a new-tab link gets noopener noreferrer whether the design asked or not", () => {
     const bundle = bundleWith({
-      blocks: { hero: () => ["a", { href: "https://example.org", target: "_blank", rel: "external" }, "x"] },
+      blocks: {
+        hero: () => ["a", { href: "https://example.org", target: "_blank", rel: "external" }, "x"],
+      },
     });
-    expect(render(siteFor(), bundle)).toContain('rel="external noopener noreferrer" target="_blank"');
+    expect(render(siteFor(), bundle)).toContain(
+      'rel="external noopener noreferrer" target="_blank"',
+    );
   });
 
   test("richText() places builder-rendered prose, never the design's own markup", () => {
     const bundle = bundleWith({
-      blocks: { hero: (_i, h) => ["div", { class: "prose" }, h.richText("**bold** and <script>x</script>")] },
+      blocks: {
+        hero: (_i, h) => ["div", { class: "prose" }, h.richText("**bold** and <script>x</script>")],
+      },
     });
     const html = render(siteFor(), bundle);
     expect(html).toContain('<div class="rich-text">');
@@ -257,7 +319,9 @@ describe("what a tree may not contain", () => {
 
   test("t() answers in the page's language and echoes unknown keys", () => {
     const bundle = bundleWith({
-      blocks: { hero: (_i, h) => ["p", null, h.t("menu"), "|", h.t("publishedOn"), "|", h.t("nope")] },
+      blocks: {
+        hero: (_i, h) => ["p", null, h.t("menu"), "|", h.t("publishedOn"), "|", h.t("nope")],
+      },
     });
     expect(render(siteFor(), bundle)).toContain("<p");
     expect(render(siteFor(), bundle)).toContain(">Meniu|Publicat pe|nope</p>");
@@ -317,6 +381,7 @@ describe("a shell design", () => {
       '<body><header class="chrome"><a href="/">Stub Org</a>Stub site — home</header><main><section data-block="hero"',
     );
     expect(html).toContain('<section aria-label="Stub Org" class="colophon">page</section>');
+    expect(html).toContain('data-block="hero"');
   });
 
   test("sees the builder's navigation, language links and title — the same values it renders itself", () => {
@@ -331,7 +396,12 @@ describe("a shell design", () => {
     });
     render(
       siteFor((s) => {
-        s.pages.push({ ...structuredClone(s.pages[0]!), slug: "despre", navLabel: "Despre", navOrder: 1 });
+        s.pages.push({
+          ...structuredClone(s.pages[0]!),
+          slug: "despre",
+          navLabel: "Despre",
+          navOrder: 1,
+        });
       }),
       bundle,
     );
@@ -355,7 +425,11 @@ describe("a shell design", () => {
 
   test("with no slot, or with two, the render fails as slot-count", () => {
     const none = bundleWith({ shell: () => ["div", null, "no content"] });
-    const error = expectRenderError(() => render(siteFor(), none), "slot-count", /no \["slot"\] node/);
+    const error = expectRenderError(
+      () => render(siteFor(), none),
+      "slot-count",
+      /no \["slot"\] node/,
+    );
     expect(error.subject).toBe("shell");
     expect(error.blockType).toBeUndefined();
 
@@ -381,13 +455,18 @@ describe("a shell design", () => {
 });
 
 describe("omitted Blocks (ADR 0045)", () => {
-  const withCustom = (): Site => siteFor((s) => s.pages[0]!.blocks.push(structuredClone(CUSTOM_BLOCK)));
+  const withCustom = (): Site =>
+    siteFor((s) => s.pages[0]!.blocks.push(structuredClone(CUSTOM_BLOCK)));
 
   test("a Block with no design is left out, marked, and reported exactly once", () => {
     const issues: ThemeRenderIssue[] = [];
-    const html = render(withCustom(), bundleWith({ blocks: { hero: (i) => ["h1", null, i.data.title] } }), {
-      issues,
-    });
+    const html = render(
+      withCustom(),
+      bundleWith({ blocks: { hero: (i) => ["h1", null, i.data.title] } }),
+      {
+        issues,
+      },
+    );
     expect(html).toContain("<!-- unknown block: org.example/partners -->");
     expect(issues).toEqual([
       {
@@ -445,11 +524,21 @@ describe("omitted Blocks (ADR 0045)", () => {
 
 describe("the public-site script", () => {
   const withScript = bundleWith(undefined, {
-    publicScript: { file: "public.js", bytes: new Uint8Array([1, 2, 3]), network: [], offline: undefined },
+    publicScript: {
+      file: "public.js",
+      bytes: new Uint8Array([1, 2, 3]),
+      network: [],
+      offline: undefined,
+    },
   });
   const twoPages = (): Site =>
     siteFor((s) => {
-      s.pages.push({ ...structuredClone(s.pages[0]!), slug: "despre", navLabel: "Despre", navOrder: 1 });
+      s.pages.push({
+        ...structuredClone(s.pages[0]!),
+        slug: "despre",
+        navLabel: "Despre",
+        navOrder: 1,
+      });
     });
 
   test("is off by default and on only when asked, with a depth-aware URL", () => {
@@ -467,7 +556,9 @@ describe("the public-site script", () => {
   });
 
   test("rides the same asset path table as the Theme's fonts and images", () => {
-    expect([...themeAssetsFor(withScript).keys()]).toEqual(["assets/theme/org.example.fake/public.js"]);
+    expect([...themeAssetsFor(withScript).keys()]).toEqual([
+      "assets/theme/org.example.fake/public.js",
+    ]);
   });
 
   test("a Theme without one emits nothing even when asked", () => {

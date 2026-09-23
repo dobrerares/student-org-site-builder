@@ -540,8 +540,8 @@ Every helper lives on `input`:
 | `input.t(key)`         | A visitor-facing word in the page's language. Unknown keys come back unchanged.                                                                                                 |
 
 Keys `t()` answers: `menu`, `close`, `navigation`, `home`, `since`,
-`skipToContent`, `languageLabel`, `publishedOn`, `relatedTitle`, `tagsLabel`,
-`emptyList`, `movedHeading`, `movedLink`. A Theme has no editable text of its
+`siteInfo`, `skipToContent`, `languageLabel`, `publishedOn`, `relatedTitle`,
+`tagsLabel`, `emptyList`, `movedHeading`, `movedLink`. A Theme has no editable text of its
 own (ADR 0046), so this list is deliberately short: a design that needs a
 sentence has content, and content belongs in a Block.
 

@@ -96,9 +96,7 @@ describe("what a design can reach", () => {
     // The promise stays pending: there is no module loader and rendering is
     // synchronous, so the design gets a Promise it can never observe.
     expect(probe("typeof import('./other.js').then")).toEqual(["p", null, "function"]);
-    const module = design(
-      `export default { blocks: { probe: () => import("./x.js") } }`,
-    );
+    const module = design(`export default { blocks: { probe: () => import("./x.js") } }`);
     try {
       // JSON round-tripping a pending Promise yields an empty object, which
       // the tree validator rejects downstream. It is never module contents.
@@ -108,7 +106,7 @@ describe("what a design can reach", () => {
     }
   });
 
-  test("helpers that can answer null do answer null, not the string \"null\"", () => {
+  test('helpers that can answer null do answer null, not the string "null"', () => {
     const module = design(
       `export default { blocks: { probe: (i) => ["p", { "data-m": String(i.mediaUrl(undefined)), "data-p": String(i.pageUrl("x")), "data-a": String(i.articleUrl("y")) }, String(i.mediaUrl("assets/a.jpg"))] } }`,
     );
@@ -303,7 +301,9 @@ describe("determinism", () => {
     }`);
     try {
       const input = { data: { title: "Hello" } };
-      const runs = [0, 1, 2, 3, 4].map(() => JSON.stringify(module.renderBlock("probe", input, helpers)));
+      const runs = [0, 1, 2, 3, 4].map(() =>
+        JSON.stringify(module.renderBlock("probe", input, helpers)),
+      );
       expect(new Set(runs).size).toBe(1);
     } finally {
       module.dispose();

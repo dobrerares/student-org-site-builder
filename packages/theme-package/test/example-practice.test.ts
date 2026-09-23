@@ -60,7 +60,9 @@ function comparable(b: ThemeBundle): Omit<ThemeBundle, "render"> & {
   return {
     ...rest,
     design:
-      render === undefined ? undefined : { blockTypes: render.blockTypes, hasShell: render.hasShell },
+      render === undefined
+        ? undefined
+        : { blockTypes: render.blockTypes, hasShell: render.hasShell },
   };
 }
 
@@ -128,7 +130,9 @@ describe("examples/themes/practice", () => {
 
     (hero as { variant?: string }).variant = "spotlight";
     const spotlight = renderSite(site, bundle.id, { pageIndex: 0, theme: bundle });
-    expect(spotlight).toContain('data-block="hero" data-block-id="blk_home_hero" data-variant="spotlight"');
+    expect(spotlight).toContain(
+      'data-block="hero" data-block-id="blk_home_hero" data-variant="spotlight"',
+    );
     expect(spotlight).toContain('class="hero__rings"');
     expect(spotlight).toContain('class="hero__word"');
   });
@@ -147,7 +151,9 @@ describe("examples/themes/practice", () => {
     expect(dist.get("index.html")).toContain(
       '<script defer src="assets/theme/org.example.practice/public.js" data-sosb-theme-script>',
     );
-    const nested = [...dist.entries()].find(([p]) => p !== "index.html" && p.endsWith("index.html"));
+    const nested = [...dist.entries()].find(
+      ([p]) => p !== "index.html" && p.endsWith("index.html"),
+    );
     expect(nested).toBeDefined();
     expect(nested![1]).toContain(
       '<script defer src="../assets/theme/org.example.practice/public.js" data-sosb-theme-script>',
