@@ -240,6 +240,9 @@ export function loadThemePackage(files: ReadonlyMap<string, Uint8Array>): Loaded
         ref,
       );
     }
+    // The stylesheet may not smuggle the design module out as a decorative
+    // file: render.js runs at build time and is never published (ADR 0054).
+    if (ref === manifest.render) continue;
     assets.set(ref, bytes);
   }
   // An executable design may reference files the stylesheet never does
@@ -249,8 +252,15 @@ export function loadThemePackage(files: ReadonlyMap<string, Uint8Array>): Loaded
   // by the stylesheet. A declarative package is unchanged: it publishes only
   // what its CSS references, as phase one did.
   if (manifest.render !== undefined) {
+    const code = new Set([
+      THEME_MANIFEST_FILE,
+      manifest.css,
+      manifest.render,
+      manifest.public?.file,
+    ]);
     for (const [path, bytes] of files) {
       if (!path.startsWith("assets/") || assets.has(path) || fontBytes.has(path)) continue;
+      if (code.has(path)) continue;
       assets.set(path, bytes);
     }
   }

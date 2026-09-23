@@ -309,6 +309,28 @@ describe("a package with render.js, end to end", () => {
     expect(declarative.assets.size).toBe(0);
   });
 
+  test("never publishes render.js, wherever the manifest puts it", () => {
+    const files = pkg(
+      {
+        ...MANIFEST,
+        render: "assets/render.js",
+        public: { file: "assets/public.js", network: [] },
+      },
+      {
+        "assets/render.js": "export default { blocks: {} }",
+        "assets/public.js": "//",
+        "assets/brand.svg": "<svg/>",
+      },
+    );
+    // Even a stylesheet that names it as a url() does not get it published.
+    files.set("theme.css", enc.encode('body{background:url("assets/render.js")}'));
+    const bundle = load(files);
+    expect([...bundle.assets.keys()]).toEqual(["assets/brand.svg"]);
+    const dist = build(site(), { themes: [bundle], skipValidation: true });
+    expect(dist.has(`assets/theme/${THEME_ID}/assets/render.js`)).toBe(false);
+    expect(dist.has(`assets/theme/${THEME_ID}/assets/public.js`)).toBe(true);
+  });
+
   test("a design that throws stops build() and names the Theme and the Block", () => {
     const bundle = load(
       pkg(
