@@ -1,8 +1,11 @@
 # Rich-text editing contract
 
 Design interview for [issue #100](https://github.com/dobrerares/student-org-site-builder/issues/100).
-The complete design was confirmed by the user on 2026-09-17.
-This document describes planned behavior, not implemented functionality.
+The complete design was confirmed by the user on 2026-09-17 and implemented in
+[PR #119](https://github.com/dobrerares/student-org-site-builder/pull/119)
+(Tiptap, per ADR 0049). The delivered shape and the deviations still open are
+recorded in the [implementation handoff](issue-103-implementation-handoff.md);
+this document remains the contract it was built against.
 
 ## Confirmed decisions
 
@@ -91,5 +94,9 @@ This document describes planned behavior, not implemented functionality.
 
 All interview choices are resolved. The user confirmed the complete contract
 and requested publication of the resolution on 2026-09-17. The architectural
-decision is recorded in accepted ADR 0048; no implementation or UI-stack
-selection has been performed.
+decision is recorded in accepted ADR 0048; the UI stack was selected in ADR
+0049 and the implementation landed in PR #119 (2026-09-23). Still open from
+the contract after that PR: paste does not yet flatten tables, route clipboard
+image files through the asset pipeline, or notice remotely hosted images
+(pasted links and supported formatting do survive); input-method composition
+is untested in a real browser.

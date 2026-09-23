@@ -241,9 +241,12 @@ A validation `error` carrying `blocking: true`, which the export
 readiness panel will not let the author override — its export button is
 disabled outright (ADR 0053). ADR 0016's "never hard-block"
 rule still governs every other error; this is the narrow ADR 0048 carve-out
-for public content that cannot be produced correctly at all — today, an
-active explicit Article-list selection pointing at a Draft or deleted
-Article. Saving the editable archive is never gated by it.
+for public content that cannot be produced correctly at all. There are
+exactly three: an active explicit Article-list selection pointing at a Draft
+or deleted Article, **Unsupported content** in a Rich-text document, and a
+Rich-text image whose file is missing from the project. Problems confined to
+Draft Articles are never blocking. Saving the editable archive is never gated
+by it.
 _Avoid_: fatal error, hard error.
 
 **Site spine**:

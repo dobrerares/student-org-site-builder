@@ -258,15 +258,24 @@ Implements [issue #100](issue-100-rich-text-contract.md) and the Tiptap half of
   would turn a missing description into a parse error, and issue #100 requires
   it to be a warning that never makes a project unopenable.
 - Unknown nodes and marks parse as loose objects and round-trip verbatim.
+  So does a _known_ node that fails its own rules (a heading at level 7, a
+  link whose href the schema refuses): the inline/block unions end in the
+  loose unknown-node shape, so a hand-edited file stays openable and the
+  Renderer is defensive about every field it reads.
 - `richText` Block **v1 → v2**, registered in `BLOCK_MIGRATIONS` and run at
   load time — `migrateSite` now walks every Block container on the Site
   (`pages`, and `articles` when present), which it did not do before.
-  `SiteMigrationResult` gained `blockMigrations[]`.
+  `SiteMigrationResult` gained `blockMigrations[]`. A Block whose version is
+  _newer_ than this editor's is left untouched by that pass (validation
+  reports it as an ordinary schema error) rather than making the project
+  unopenable; `migrateBlock` itself still throws for it.
 - `ValidationIssue.blocking` and `hasBlockingIssues` (see the conflict note
   below), plus the rules: `doc.empty` (warning),
   `content.unsupported` (error, blocking in public content),
   `image.bytes.missing` (error, blocking in public content),
-  `image.alt.missing` (warning), `link.missing` / `link.draft` (warnings).
+  `image.alt.missing` (warning), `link.missing` / `link.draft` /
+  `link.invalid` (warnings — the last for an external href the Renderer's
+  sanitiser would refuse, which otherwise rendered unlinked with no finding).
   The two blocking rules honour the Draft carve-out: the same content inside a
   Draft Article produces an ordinary error, and inside an Unlisted one a
   blocking error, because Unlisted pages are emitted.
@@ -332,7 +341,14 @@ Implements [issue #100](issue-100-rich-text-contract.md) and the Tiptap half of
 - Image insertion reuses `<AssetPicker>` — one upload path in the codebase, so
   the archive round trip and "no re-uploads on reopen" come for free. The
   description is captured in the dialog because a document node has no sibling
-  field to put it in.
+  field to put it in. On the editing surface the image node's `src` comes from
+  the host's display-URL resolver (the same `blob:` URL the picker and preview
+  use), never the archive path; bytes the project no longer holds render as a
+  labelled placeholder.
+- Link editing works from a collapsed caret: `setSosbLink` / `unsetSosbLink`
+  widen to the whole link first (`extendMarkRange`), as Tiptap's own Link
+  does. Pasted `<a href>` elements keep their link as an external target when
+  the href passes `isAcceptableLinkUrl`; pasted images are still declined.
 - **Articles get the same editor.** `ArticleWorkspace` hands `BlockForm` the
   rich-text context and the quiet patch exactly as the Page Inspector does,
   with the link picker scoped to the Article's own language; `createArticle`
@@ -369,6 +385,11 @@ Issue #100 requires two histories that do not fight. The implementation:
 - **One Site-history entry per editing visit**, pushed on blur or on unmount —
   and switching Block, Page or Article _is_ an unmount from the field's point
   of view, which is exactly the boundary the contract names.
+- **A Site undo re-seeds the field.** `RichTextField` compares the stored
+  document against the one it last seeded or emitted; when Site data changes
+  underneath it (undo/redo with focus elsewhere) the surface remounts with the
+  restored words and a fresh local history. Without this the stale surface
+  wrote the pre-undo content back on the next keystroke.
 
 Rejected: debouncing snapshots on a timer. It would have made the number of
 undo entries depend on typing speed, which is not a contract anyone can reason
