@@ -230,11 +230,12 @@ loaded realms and compare bytes. Two environment facts had to be settled:
 
 - **Single-file archival editor.** The single-file variant embeds the wasm as
   base64 inside the ES module, so it inlines into `builder.html` like any
-  other code. Measured on the archival bundle: **2.89 MB of JavaScript, of
-  which QuickJS accounts for 871 KB** (the wasm plus its Emscripten glue;
-  the sandbox itself is 6 KB). Before this change the bundle was about
-  2.02 MB. The archival 3 MB acceptance budget still holds, with roughly
-  110 KB to spare.
+  other code. Measured on the archival bundle: **QuickJS accounts for
+  871 KB** of its JavaScript (the wasm plus its Emscripten glue; the sandbox
+  itself is 6 KB). Before this change the bundle was about 2.02 MB of
+  JavaScript. After rebasing onto the builder redesign (#118) the whole
+  `builder.html` is **2,955,539 bytes (2.82 MiB)**; the archival 3 MiB
+  acceptance budget still holds, with roughly 190 KB to spare.
 - **Electron.** WebAssembly compilation is refused under a bare `script-src
 'self'`. The packaged renderer's CSP gains `'wasm-unsafe-eval'`, which
   permits exactly that and nothing about JavaScript `eval`; the CSP test now
@@ -286,7 +287,7 @@ keeps the rest of the Theme rendering; re-import is one action away.
 - Themes can now produce their own page shell and Block markup, and Custom
   Blocks have a rendering mechanism waiting for them (issue-106 plan).
 - Every consumer of the editor bundle carries ~871 KB more JavaScript. The
-  single-file archival build is at ~2.9 MB against a 3 MB budget; the next
+  single-file archival build is at ~2.82 MiB against a 3 MiB budget; the next
   large dependency in any branch will have to revisit that number.
 - A Theme with a `render.js` holds a sandbox realm while installed; the
   editor, the zip export and the package export release them. The wasm heap
