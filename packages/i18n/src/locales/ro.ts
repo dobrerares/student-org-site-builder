@@ -320,6 +320,12 @@ export const ro: RomanianCatalog = {
   "export.override.hint": "Cel mai bine e să le rezolvi întâi, dar poți exporta oricum o copie.",
   "export.blocked.note":
     "Acestea trebuie rezolvate înainte ca site-ul să poată fi construit. Proiectul tău rămâne salvat — doar exportul site-ului este afectat.",
+  "export.omitted": "Lăsate în afara site-ului ({count})",
+  "export.omitted.info":
+    "Aceste blocuri nu vor apărea pe site-ul exportat, pentru că această temă nu are un design pentru ele. Conținutul rămâne salvat; la schimbarea temei apar din nou.",
+  "export.omitted.page": "Pagina „{title}”: blocul {type} nu are un design în această temă.",
+  "export.omitted.article": "Articolul „{title}”: blocul {type} nu are un design în această temă.",
+  "export.omitted.ack": "Înțeleg că aceste blocuri nu vor apărea pe site-ul exportat.",
 
   "wizard.step.basics.title": "Date de bază",
   "wizard.step.identity.title": "Identitate",

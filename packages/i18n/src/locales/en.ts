@@ -305,6 +305,12 @@ export const en: EnglishCatalog = {
   "export.override.hint": "Fixing these first is best, but you can still export a copy.",
   "export.blocked.note":
     "These must be fixed before the website can be built. Your project is still saved — only the website export is affected.",
+  "export.omitted": "Left out of the website ({count})",
+  "export.omitted.info":
+    "These blocks will not appear on the exported website, because this Theme has no design for them. Your content is kept; switching Theme shows them again.",
+  "export.omitted.page": "Page “{title}”: the {type} block has no design in this Theme.",
+  "export.omitted.article": "Article “{title}”: the {type} block has no design in this Theme.",
+  "export.omitted.ack": "I understand these blocks will not appear on the exported website.",
 
   "wizard.step.basics.title": "Basics",
   "wizard.step.identity.title": "Identity",

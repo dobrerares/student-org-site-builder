@@ -283,6 +283,11 @@ export type EditorMessageKey =
   | "export.override.label"
   | "export.override.hint"
   | "export.blocked.note"
+  | "export.omitted"
+  | "export.omitted.info"
+  | "export.omitted.page"
+  | "export.omitted.article"
+  | "export.omitted.ack"
   // Wizard step titles
   | "wizard.step.basics.title"
   | "wizard.step.identity.title"
