@@ -279,7 +279,8 @@ describe("what a tree may not contain", () => {
     expect(html).toContain('<img alt="Studenți la o conferință" src="blob:sosb/assets/hero.jpg"/>');
     expect(html).toContain('<a href="/">home</a>');
     expect(html).toContain(
-      '<img alt="" src="blob:sosb/assets/theme/org.example.fake/assets/x.svg"/>',
+      // An empty-string attribute renders bare, as documented.
+      '<img alt src="blob:sosb/assets/theme/org.example.fake/assets/x.svg"/>',
     );
 
     // The same blob URL typed out by hand is not trusted: only the helper's
