@@ -6,6 +6,7 @@ import { createTranslator, enCatalog, roCatalog, type Translator } from "@sosb/i
 import type { Site } from "@sosb/schema";
 
 import minimal from "./fixtures/minimal-site.json" with { type: "json" };
+import { openPage, openSection } from "./helpers/nav.js";
 import { EditorApp } from "../src/editor-app.js";
 
 const baseSite = minimal as unknown as Site;
@@ -41,7 +42,8 @@ describe("EditorApp — i18n integration", () => {
     expect(importButton?.textContent).toBe("Deschide site");
 
     const exportButton = container.querySelector('[data-action="export"]');
-    expect(exportButton?.textContent).toBe("Descarcă o copie");
+    expect(exportButton?.textContent).toBe("Exportă site-ul");
+    expect(container.querySelector('[data-testid="nav-pages"]')?.textContent).toContain("Pagini");
 
     const resetButton = container.querySelector('[data-action="reset"]');
     expect(resetButton?.textContent).toBe("Începe de la capăt");
@@ -56,21 +58,24 @@ describe("EditorApp — i18n integration", () => {
     expect(importButton?.textContent).toBe("Open site");
 
     const exportButton = container.querySelector('[data-action="export"]');
-    expect(exportButton?.textContent).toBe("Download copy");
+    expect(exportButton?.textContent).toBe("Export website");
 
     const resetButton = container.querySelector('[data-action="reset"]');
     expect(resetButton?.textContent).toBe("Start over");
   });
 
-  test("narrow-layout tab labels are translated", () => {
+  test("the phone Edit / Preview switch is translated", () => {
     setViewportWidth(600);
     const t = makeTranslator("ro");
     const { container } = render(<EditorApp initial={structuredClone(baseSite)} translator={t} />);
+    openPage(container, 0);
 
-    const tabs = container.querySelectorAll('[data-testid="layout-tab"]');
-    const labels = Array.from(tabs).map((node) => node.textContent?.trim());
-    expect(labels).toContain("Editor");
-    expect(labels).toContain("Previzualizare");
+    expect(container.querySelector('[data-testid="workspace-tab-edit"]')?.textContent).toBe(
+      "Editare",
+    );
+    expect(container.querySelector('[data-testid="workspace-tab-preview"]')?.textContent).toBe(
+      "Previzualizare",
+    );
   });
 
   test("locale toggle changes the rendered labels in-place", () => {
@@ -80,6 +85,8 @@ describe("EditorApp — i18n integration", () => {
 
     expect(container.querySelector('[data-action="import"]')?.textContent).toBe("Open site");
 
+    // The locale toggle lives in Site settings.
+    openSection(container, "settings");
     const select = container.querySelector<HTMLSelectElement>('[data-testid="locale-select"]');
     expect(select).not.toBeNull();
     fireEvent.change(select!, { target: { value: "ro" } });

@@ -38,6 +38,7 @@ import { CustomHtmlBlockForm } from "./custom-html-form.js";
 import { defaultArrayItemForBlock } from "./block-array-defaults.js";
 import { BLOCK_FIELD_METADATA } from "./field-metadata.js";
 import type { ApplySiteChange } from "./article-settings-form.js";
+import { useTranslator } from "./i18n-context.js";
 
 export interface BlockInspectorProps {
   readonly site: Site;
@@ -63,6 +64,7 @@ export interface BlockInspectorProps {
 }
 
 export function BlockInspector(props: BlockInspectorProps): JSX.Element {
+  const t = useTranslator();
   const { block } = props;
   const envelope = KnownBlockSchemas[block.type as keyof typeof KnownBlockSchemas];
   // The envelope is `{ id, type, version, data: <DataSchema> }`. The generic
@@ -115,8 +117,8 @@ export function BlockInspector(props: BlockInspectorProps): JSX.Element {
           overrides={BLOCK_FIELD_METADATA[block.type as keyof typeof BLOCK_FIELD_METADATA] ?? []}
         />
       ) : (
-        <p data-testid="inspector-unknown-type">
-          No editor available for block type &quot;{block.type}&quot;.
+        <p data-testid="inspector-unknown-type" data-empty-state>
+          {t("builder.inspector.unknownType", { type: block.type })}
         </p>
       )}
     </>

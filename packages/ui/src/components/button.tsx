@@ -32,6 +32,9 @@ export const buttonVariants = cva(
     "data-[tone=danger]:text-destructive",
     "data-[tone=danger]:hover:bg-destructive/10",
     "data-[tone=danger]:hover:text-destructive",
+    "data-[tone=accent]:text-primary",
+    "data-[tone=accent]:hover:bg-primary-soft",
+    "data-[tone=accent]:hover:text-primary",
   ].join(" "),
   {
     variants: {

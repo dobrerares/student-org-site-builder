@@ -82,6 +82,7 @@ export const ro: RomanianCatalog = {
   "articles.create.submit": "Creează",
   "articles.create.cancel": "Anulează",
   "articles.empty": "Niciun articol încă. Creează-l pe primul.",
+  "articles.untitled": "Articol fără titlu",
   "articles.empty.filtered": "Niciun articol nu corespunde filtrelor.",
   "articles.count": "{count, plural, one {# articol} other {# articole}}",
   "articles.delete.confirm": "Ștergi definitiv „{title}”? Linkurile către el nu vor mai funcționa.",
@@ -185,6 +186,30 @@ export const ro: RomanianCatalog = {
   "builder.save.info.label": "Despre salvare și export",
   "builder.save.info":
     "Salvează proiectul păstrează lucrul tău în acest browser, inclusiv ciornele, ca să poți continua mai târziu. Exportă site-ul descarcă site-ul public pe calculatorul tău; apoi îl încarci la găzduire ca vizitatorii să îl vadă.",
+
+  // Builder shell — chrome, tip, and screen explanations (#102 completion)
+  "builder.brand": "Site Builder",
+  "builder.tip.title": "Cum funcționează",
+  "builder.tip.body":
+    "Alege o pagină sau un articol, apoi un bloc, ca să îi schimbi textul și imaginile. Previzualizarea de alături se actualizează pe măsură ce scrii. Când ești mulțumit, folosește {action} ca să primești site-ul ca un folder gata de publicat.",
+  "builder.tip.dismiss": "Ascunde acest sfat",
+  "builder.history": "Istoric",
+  "builder.undo": "Anulează (Ctrl+Z)",
+  "builder.redo": "Refă (Ctrl+Shift+Z)",
+  "builder.import.title": "Deschide un proiect descărcat mai devreme",
+  "builder.reset.title": "Înapoi la ecranul de start",
+  "builder.reset.confirm":
+    "Te întorci la ecranul de start? Lucrul tău rămâne salvat în acest browser și îl poți continua mai târziu.",
+  "builder.export.failed": "Site-ul nu a putut fi exportat. {reason}",
+  "builder.import.failed": "Fișierul nu a putut fi deschis ca proiect.",
+  "builder.inspector.unknownType":
+    "Acest bloc ({type}) nu are editor aici. Este păstrat exact așa cum este și se exportă în continuare.",
+  "articles.info":
+    "Articolele sunt texte cu dată: știri, relatări de la evenimente, anunțuri. Un articol nou începe ca ciornă, pe care o vezi doar tu. Nimic nu ajunge la vizitatori până nu îl publici, exporți site-ul și îl încarci din nou.",
+  "theme.info":
+    "Aspectul întregului site: culori, fonturi și așezare în pagină. Schimbarea aspectului nu îți modifică niciodată textele sau imaginile, iar previzualizarea de alături arată pagina pe care ai editat-o ultima dată.",
+  "settings.info":
+    "Detalii valabile pentru tot site-ul: numele organizației și datele de contact, limbile și cum se numește fiecare pagină în meniu.",
 
   // Content overview
   "overview.title": "Prezentare generală",

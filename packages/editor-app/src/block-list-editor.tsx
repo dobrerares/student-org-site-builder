@@ -28,7 +28,7 @@
  * handle can drop anywhere on the destination row. The drag payload
  * carries the source index so the drop handler knows what moved.
  */
-import type { JSX } from "react";
+import type { JSX, ReactNode } from "react";
 import { useState } from "react";
 import type { BlockEnvelope, Site } from "@sosb/schema";
 
@@ -63,6 +63,14 @@ export interface BlockListEditorProps {
    * drag behaviour, keyboard handling, and catalog labels.
    */
   readonly blocks?: readonly BlockEnvelope[] | undefined;
+  /**
+   * Replace the default "Page sections" heading. The redesigned workspace
+   * labels the outline itself (with its own (i) explanation), and a second
+   * heading underneath it would read as a second list.
+   */
+  readonly heading?: ReactNode;
+  /** Optional hint under a custom heading. Omitted when `heading` is set and this is not. */
+  readonly hint?: ReactNode;
 }
 
 export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
@@ -80,15 +88,20 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
     <section data-testid="block-list" data-page-slug={props.pageSlug}>
       <header>
         <div data-section-heading>
-          <h2>Page sections</h2>
-          <p data-section-hint>
-            {page !== undefined
-              ? `Sections on “${page.navLabel}”, top to bottom. Click one to edit it.`
-              : "Click a section to edit it."}
-          </p>
+          <h2>{props.heading ?? "Page sections"}</h2>
+          {props.heading === undefined ? (
+            <p data-section-hint>
+              {page !== undefined
+                ? `Sections on “${page.navLabel}”, top to bottom. Click one to edit it.`
+                : "Click a section to edit it."}
+            </p>
+          ) : props.hint !== undefined ? (
+            <p data-section-hint>{props.hint}</p>
+          ) : null}
         </div>
         <Button
           type="button"
+          variant="primary"
           data-testid="block-add"
           data-variant="primary"
           onClick={props.onAddBlock}
@@ -104,7 +117,7 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
             <strong>This page is empty.</strong> Add a section to start building it — a page header
             is a good first pick.
           </p>
-          <Button type="button" data-variant="primary" onClick={props.onAddBlock}>
+          <Button type="button" variant="primary" data-variant="primary" onClick={props.onAddBlock}>
             <IconPlus size={16} />
             <span>Add your first section</span>
           </Button>
@@ -195,6 +208,7 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
               {props.onSelect !== undefined ? (
                 <Button
                   type="button"
+                  variant="ghost"
                   data-testid="block-row-select"
                   data-action="select"
                   aria-label={`Edit ${entry.label}`}
@@ -218,6 +232,8 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
               <span data-row-actions role="group" aria-label={`Actions for ${entry.label}`}>
                 <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-sm"
                   data-testid="block-move-up"
                   data-icon-button
                   aria-label={`Move ${entry.label} up`}
@@ -229,6 +245,8 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
                 </Button>
                 <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-sm"
                   data-testid="block-move-down"
                   data-icon-button
                   aria-label={`Move ${entry.label} down`}
@@ -240,6 +258,8 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
                 </Button>
                 <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-sm"
                   data-testid="block-remove"
                   data-icon-button
                   data-tone="danger"

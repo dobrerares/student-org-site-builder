@@ -69,6 +69,7 @@ export const en: EnglishCatalog = {
   "articles.create.submit": "Create",
   "articles.create.cancel": "Cancel",
   "articles.empty": "No articles yet. Create your first one.",
+  "articles.untitled": "Untitled article",
   "articles.empty.filtered": "No articles match these filters.",
   "articles.count": "{count, plural, one {# article} other {# articles}}",
   "articles.delete.confirm": "Delete “{title}” permanently? Links to it will stop working.",
@@ -171,6 +172,30 @@ export const en: EnglishCatalog = {
   "builder.save.info.label": "About saving and exporting",
   "builder.save.info":
     "Save project keeps your work in this browser, Drafts included, so you can carry on later. Export website downloads the public website to your computer; you then upload it to your hosting for visitors to see it.",
+
+  // Builder shell — chrome, tip, and screen explanations (#102 completion)
+  "builder.brand": "Site Builder",
+  "builder.tip.title": "How this works",
+  "builder.tip.body":
+    "Pick a page or article, then choose a block to change its text and images. The preview beside it updates as you type. When you are happy, use {action} to get your website as a folder ready to publish.",
+  "builder.tip.dismiss": "Hide this tip",
+  "builder.history": "History",
+  "builder.undo": "Undo (Ctrl+Z)",
+  "builder.redo": "Redo (Ctrl+Shift+Z)",
+  "builder.import.title": "Open a project you downloaded earlier",
+  "builder.reset.title": "Go back to the start screen",
+  "builder.reset.confirm":
+    "Go back to the start screen? Your work stays saved in this browser and you can continue it later.",
+  "builder.export.failed": "Your website could not be exported. {reason}",
+  "builder.import.failed": "That file could not be opened as a project.",
+  "builder.inspector.unknownType":
+    "This block ({type}) has no editor here. It is kept exactly as it is and still exports.",
+  "articles.info":
+    "Articles are dated pieces of writing: news, event reports, announcements. A new article starts as a Draft that only you can see. Nothing reaches your visitors until you publish it, export the website and upload it again.",
+  "theme.info":
+    "The look of the whole website: colours, fonts and layout. Switching the look never changes your text or images, and the preview beside it shows the page you were last editing.",
+  "settings.info":
+    "Details that apply to the whole website: organisation name and contact details, languages, and what each page is called in the menu.",
 
   // Content overview
   "overview.title": "Overview",

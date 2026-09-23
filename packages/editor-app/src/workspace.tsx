@@ -4,18 +4,19 @@
  *
  * Issue #102 gives both the same shape, so they are the same component: an
  * editing pane on the left and the preview beside it on wide windows, one at a
- * time behind an Edit / Preview switch on phones. Inside the editing pane,
- * ADR 0042's drill-in is preserved exactly — the outline is the un-drilled
- * view, and selecting a Block, the settings row or Related Articles opens a
- * focused Inspector with a back button naming the content.
+ * time behind an Edit / Preview switch on phones (`SplitView`). Inside the
+ * editing pane, ADR 0042's drill-in is preserved exactly — the outline is the
+ * un-drilled view, and selecting a Block, the settings row or Related Articles
+ * opens a focused Inspector with a back button naming the content.
  *
  * The differences between a Page and an Article are small and local: an
- * Article additionally shows a publication-state selector on the outline and a
- * Related Articles switch after it, and its settings Inspector is the Article
- * settings form rather than the Site spine's per-page fields. Everything
- * else — title, Block outline, reordering, the per-Block Inspector, the
- * preview — is shared, which is the point. Two workspaces would drift the
- * first time someone fixed a reordering bug in only one of them.
+ * Article additionally shows a publication-state selector on the outline, an
+ * "add a language version" affordance, and a Related Articles switch after
+ * the Blocks; its settings Inspector is the Article settings form rather than
+ * the Site spine's per-page fields. Everything else — title, Block outline,
+ * reordering, the per-Block Inspector, the preview — is shared, which is the
+ * point. Two workspaces would drift the first time someone fixed a reordering
+ * bug in only one of them.
  *
  * The preview arrives as a node rather than being built here. The preview can
  * wander away from the content being edited (clicking a link inside it behaves
@@ -35,10 +36,11 @@ import { BlockInspector } from "./block-inspector.js";
 import { BlockListEditor } from "./block-list-editor.js";
 import { buildBlockCatalog } from "./block-catalog.js";
 import { SpineForm } from "./spine-form.js";
+import { SplitView, type SplitPane } from "./split-view.js";
 import type { FieldNode } from "./form-generator.js";
 import { IconArrowLeft, IconChevronRight } from "./icons.js";
 import { InfoHint } from "./info-hint.js";
-import { updateArticle } from "./articles-ops.js";
+import { addArticleTranslation, updateArticle } from "./articles-ops.js";
 import { useTranslator } from "./i18n-context.js";
 import type { WorkspaceDrill } from "./builder-navigation.js";
 
@@ -86,6 +88,7 @@ export interface WorkspaceProps {
   readonly onPatchSite: (path: readonly (string | number)[], value: unknown) => void;
 
   readonly onApplySite: ApplySiteChange;
+  /** Today as `YYYY-MM-DD`, seeding a new translation's publication date. */
   readonly today: string;
   readonly onOpenArticle: (articleId: string) => void;
 
@@ -96,8 +99,8 @@ export interface WorkspaceProps {
   /** The preview pane, composed by the shell. */
   readonly preview: ReactNode;
   /** Phone-only pane switch. */
-  readonly pane: "edit" | "preview";
-  readonly onPaneChange: (pane: "edit" | "preview") => void;
+  readonly pane: SplitPane;
+  readonly onPaneChange: (pane: SplitPane) => void;
 }
 
 export function Workspace(props: WorkspaceProps): JSX.Element {
@@ -112,8 +115,13 @@ export function Workspace(props: WorkspaceProps): JSX.Element {
       : -1;
   const article = articleIndex >= 0 ? props.site.articles?.[articleIndex] : undefined;
 
-  const blocks: readonly BlockEnvelope[] = (page?.blocks ?? article?.blocks ?? []) as readonly BlockEnvelope[];
-  const contentTitle = page?.navLabel ?? article?.title ?? "";
+  const blocks: readonly BlockEnvelope[] = (page?.blocks ??
+    article?.blocks ??
+    []) as readonly BlockEnvelope[];
+  const rawTitle = page?.navLabel ?? article?.title ?? "";
+  // What the back button and Inspector headers call this content. An Article
+  // whose title has not been typed yet is still addressable.
+  const contentTitle = rawTitle.trim() === "" && isArticle ? t("articles.untitled") : rawTitle;
   const lang = page?.lang ?? article?.lang ?? props.site.defaultLanguage;
 
   // The shell reconciles a vanished target before we render, so this is the
@@ -136,6 +144,9 @@ export function Workspace(props: WorkspaceProps): JSX.Element {
   const backToOutline = (
     <Button
       type="button"
+      size="sm"
+      variant="ghost"
+      data-tone="accent"
       data-testid="drill-back"
       data-action="drill-back"
       onClick={() => props.onDrillChange({ kind: "outline" })}
@@ -150,6 +161,9 @@ export function Workspace(props: WorkspaceProps): JSX.Element {
       {drill.kind === "outline" ? (
         <Button
           type="button"
+          size="sm"
+          variant="ghost"
+          data-tone="accent"
           data-testid="workspace-back"
           data-action="workspace-back"
           onClick={props.onBack}
@@ -164,7 +178,10 @@ export function Workspace(props: WorkspaceProps): JSX.Element {
       )}
       <span data-pane-spacer />
       {article !== undefined && (
-        <Badge tone={STATE_TONE[article.state as keyof typeof STATE_TONE] ?? "neutral"}>
+        <Badge
+          tone={STATE_TONE[article.state as keyof typeof STATE_TONE] ?? "neutral"}
+          data-testid="workspace-state-badge"
+        >
           {t(`articles.state.${article.state}` as "articles.state.draft")}
         </Badge>
       )}
@@ -176,8 +193,11 @@ export function Workspace(props: WorkspaceProps): JSX.Element {
 
   if (drill.kind === "block" && activeBlock !== undefined) {
     const entry = catalog.entryFor(activeBlock.type);
-    const rawTitle = (activeBlock.data as { title?: unknown })?.title;
-    const blockTitle = typeof rawTitle === "string" && rawTitle.trim() !== "" ? rawTitle : entry.label;
+    const rawBlockTitle = (activeBlock.data as { title?: unknown })?.title;
+    const blockTitle =
+      typeof rawBlockTitle === "string" && rawBlockTitle.trim() !== ""
+        ? rawBlockTitle
+        : entry.label;
     body = (
       <div
         data-testid="inspector"
@@ -196,9 +216,7 @@ export function Workspace(props: WorkspaceProps): JSX.Element {
           containerLang={lang}
           {...(article === undefined ? {} : { containerArticleId: article.id })}
           onSetVariant={(variant) => props.onSetBlockVariant(activeBlock.id, variant)}
-          onPatchData={(subpath, value) =>
-            props.onPatchBlockData(activeBlockIndex, subpath, value)
-          }
+          onPatchData={(subpath, value) => props.onPatchBlockData(activeBlockIndex, subpath, value)}
           onArrayChangeData={(subpath, next) =>
             props.onArrayChangeBlockData(activeBlockIndex, subpath, next)
           }
@@ -275,7 +293,7 @@ export function Workspace(props: WorkspaceProps): JSX.Element {
     // — for an Article — Related Articles after them.
     const relatedEnabled = article?.relatedArticles?.enabled === true;
     body = (
-      <div data-testid="workspace-outline">
+      <div data-testid="workspace-outline" data-workspace-outline>
         <div data-title-field>
           <Label htmlFor="workspace-title">
             {isArticle ? t("workspace.title.article") : t("workspace.title.page")}
@@ -283,17 +301,30 @@ export function Workspace(props: WorkspaceProps): JSX.Element {
           <Input
             id="workspace-title"
             data-testid="workspace-title"
-            value={contentTitle}
+            className="h-11 text-(length:--sosb-text-lg) font-semibold"
+            {...(article !== undefined && articleIndex >= 0
+              ? { "data-field": `articles.${articleIndex}.title` }
+              : {})}
+            value={rawTitle}
+            placeholder={isArticle ? t("articles.untitled") : undefined}
             onChange={(event) => props.onTitleChange(event.currentTarget.value)}
           />
-          <span data-hint>/{page?.slug ?? article?.slug ?? ""}</span>
+          <span data-slug-hint>/{page?.slug ?? article?.slug ?? ""}</span>
         </div>
 
         {article !== undefined && articleIndex >= 0 && (
           <div data-card data-testid="workspace-state">
-            <div data-row>
-              <Label htmlFor="workspace-state-control">{t("articles.settings.state")}</Label>
+            <div data-row-between>
+              <div data-row>
+                <Label htmlFor="workspace-state-control">{t("articles.settings.state")}</Label>
+                <InfoHint
+                  label={t("articles.settings.state")}
+                  text={t("articles.settings.state.hint")}
+                  testId="workspace-state-hint"
+                />
+              </div>
               <Segmented
+                id="workspace-state-control"
                 ariaLabel={t("articles.settings.state")}
                 value={article.state}
                 onValueChange={(state) =>
@@ -305,12 +336,14 @@ export function Workspace(props: WorkspaceProps): JSX.Element {
                   testId: `workspace-state-${state}`,
                 }))}
               />
-              <InfoHint
-                label={t("articles.settings.state")}
-                text={t("articles.settings.state.hint")}
-                testId="workspace-state-hint"
-              />
             </div>
+            <ArticleTranslations
+              site={props.site}
+              articleIndex={articleIndex}
+              today={props.today}
+              onApply={props.onApplySite}
+              onOpenArticle={props.onOpenArticle}
+            />
           </div>
         )}
 
@@ -333,20 +366,20 @@ export function Workspace(props: WorkspaceProps): JSX.Element {
         </button>
 
         <section data-workspace-blocks>
-          <div data-row-between>
-            <h3>
-              {t("workspace.blocks")}
-              <InfoHint
-                label={t("workspace.blocks")}
-                text={t("workspace.blocks.info")}
-                testId="workspace-blocks-info"
-              />
-            </h3>
-          </div>
           <BlockListEditor
             site={props.site}
             pageSlug={page?.slug ?? article?.slug ?? ""}
             blocks={blocks}
+            heading={
+              <>
+                {t("workspace.blocks")}
+                <InfoHint
+                  label={t("workspace.blocks")}
+                  text={t("workspace.blocks.info")}
+                  testId="workspace-blocks-info"
+                />
+              </>
+            }
             onSelect={(blockId) => props.onDrillChange({ kind: "block", blockId })}
             onMove={props.onMoveBlock}
             onRemove={props.onRemoveBlock}
@@ -405,39 +438,85 @@ export function Workspace(props: WorkspaceProps): JSX.Element {
   }
 
   return (
-    <div data-testid="workspace" data-workspace>
-      {props.isNarrow && (
-        <div data-workspace-tabs>
-          <Segmented
-            ariaLabel={t("workspace.tabs.label")}
-            value={props.pane}
-            onValueChange={props.onPaneChange}
-            options={[
-              { value: "edit", label: t("workspace.tab.edit"), testId: "workspace-tab-edit" },
-              {
-                value: "preview",
-                label: t("workspace.tab.preview"),
-                testId: "workspace-tab-preview",
-              },
-            ]}
-          />
-        </div>
-      )}
+    <SplitView
+      testId="workspace"
+      isNarrow={props.isNarrow}
+      pane={props.pane}
+      onPaneChange={props.onPaneChange}
+      editor={
+        <>
+          {paneBar}
+          <div data-pane-body>{body}</div>
+        </>
+      }
+      preview={props.preview}
+    />
+  );
+}
 
-      <section
-        data-testid="editor-pane"
-        data-hidden={props.isNarrow && props.pane !== "edit" ? "true" : "false"}
-        aria-label={t("pane.editor.label")}
-      >
-        {paneBar}
-        <div data-pane-body>{body}</div>
-      </section>
+/**
+ * Create the Article's counterpart in another language.
+ *
+ * Issue #97 makes translations separate linked Articles with their own
+ * publication state, which means the author needs a way to *make* one.
+ * Only languages with no counterpart in the translation group are offered:
+ * `addArticleTranslation` refuses a second Article in a language the group
+ * already occupies, and a button that silently does nothing is worse than no
+ * button. Renders nothing on a single-language Site.
+ */
+function ArticleTranslations(props: {
+  readonly site: Site;
+  readonly articleIndex: number;
+  readonly today: string;
+  readonly onApply: ApplySiteChange;
+  readonly onOpenArticle: (articleId: string) => void;
+}): JSX.Element | null {
+  const t = useTranslator();
+  const article = (props.site.articles ?? [])[props.articleIndex];
+  if (article === undefined) return null;
+  if (props.site.languages.length < 2) return null;
 
-      <div
-        data-workspace-preview
-        data-hidden={props.isNarrow && props.pane !== "preview" ? "true" : "false"}
-      >
-        {props.preview}
+  const group = article.translationGroup;
+  const taken = new Set<string>([article.lang]);
+  if (group !== undefined) {
+    for (const other of props.site.articles ?? []) {
+      if (other.translationGroup === group) taken.add(other.lang);
+    }
+  }
+  const missing = props.site.languages.filter((lang) => !taken.has(lang));
+  if (missing.length === 0) return null;
+
+  return (
+    <div data-row-between data-testid="article-translations">
+      <div data-row>
+        <Label>{t("articles.settings.language")}</Label>
+        <Badge tone="outline">{article.lang}</Badge>
+        <InfoHint
+          label={t("articles.settings.language")}
+          text={t("articles.settings.language.hint")}
+          testId="article-translations-hint"
+        />
+      </div>
+      <div data-row>
+        {missing.map((lang) => (
+          <Button
+            key={lang}
+            type="button"
+            size="sm"
+            data-testid={`article-add-translation-${lang}`}
+            onClick={() => {
+              let createdId: string | undefined;
+              props.onApply((site) => {
+                const result = addArticleTranslation(site, props.articleIndex, lang, props.today);
+                createdId = result.articleId;
+                return result.site;
+              });
+              if (createdId !== undefined) props.onOpenArticle(createdId);
+            }}
+          >
+            {t("articles.action.addTranslation", { lang })}
+          </Button>
+        ))}
       </div>
     </div>
   );

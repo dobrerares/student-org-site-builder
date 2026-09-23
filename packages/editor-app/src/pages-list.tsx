@@ -61,6 +61,8 @@ export interface PagesListProps {
   readonly query?: string;
   /** Hide the inline "add a page" form — the destination has its own. */
   readonly hideAddForm?: boolean;
+  /** Hide the section's own heading — the Pages destination supplies one. */
+  readonly hideHeader?: boolean;
 }
 
 /**
@@ -134,9 +136,7 @@ export function PagesList(props: PagesListProps): JSX.Element {
   const needle = (props.query ?? "").trim().toLowerCase();
   function matchesQuery(page: Page): boolean {
     if (needle === "") return true;
-    return (
-      page.navLabel.toLowerCase().includes(needle) || page.slug.toLowerCase().includes(needle)
-    );
+    return page.navLabel.toLowerCase().includes(needle) || page.slug.toLowerCase().includes(needle);
   }
   const anyMatch = site.pages.some(matchesQuery);
 
@@ -157,6 +157,7 @@ export function PagesList(props: PagesListProps): JSX.Element {
       >
         <Button
           type="button"
+          variant="ghost"
           data-action="select"
           data-index={idx}
           title={isActive ? "You are editing this page" : "Edit this page"}
@@ -166,12 +167,14 @@ export function PagesList(props: PagesListProps): JSX.Element {
           <span data-page-meta>
             <span data-field="slug">/{page.slug}</span>
             {isMultiLanguage ? <span data-field="lang">{page.lang}</span> : null}
-            {!page.showInNav ? <span data-page-hidden>hidden from menu</span> : null}
+            {!page.showInNav ? <span data-page-hidden>{t("pages.meta.hidden")}</span> : null}
           </span>
         </Button>
         <span data-row-actions role="group" aria-label={`Actions for ${page.navLabel}`}>
           <Button
             type="button"
+            variant="ghost"
+            size="icon-sm"
             data-action="move-up"
             data-icon-button
             data-index={idx}
@@ -184,6 +187,8 @@ export function PagesList(props: PagesListProps): JSX.Element {
           </Button>
           <Button
             type="button"
+            variant="ghost"
+            size="icon-sm"
             data-action="move-down"
             data-icon-button
             data-index={idx}
@@ -196,6 +201,8 @@ export function PagesList(props: PagesListProps): JSX.Element {
           </Button>
           <Button
             type="button"
+            variant="ghost"
+            size="icon-sm"
             data-action="clone"
             data-icon-button
             data-index={idx}
@@ -207,6 +214,8 @@ export function PagesList(props: PagesListProps): JSX.Element {
           </Button>
           <Button
             type="button"
+            variant="ghost"
+            size={confirming ? "sm" : "icon-sm"}
             data-action="delete"
             data-icon-button={confirming ? undefined : true}
             data-tone="danger"
@@ -239,6 +248,7 @@ export function PagesList(props: PagesListProps): JSX.Element {
           <Button
             key={lng}
             type="button"
+            size="sm"
             data-action="add-language-version"
             data-index={idx}
             data-target-lang={lng}
@@ -255,13 +265,15 @@ export function PagesList(props: PagesListProps): JSX.Element {
   }
 
   return (
-    <section data-testid="pages-list" aria-label="Pages">
-      <header>
-        <div data-section-heading>
-          <h3>Pages</h3>
-          <p data-section-hint>Each page becomes an entry in your site menu.</p>
-        </div>
-      </header>
+    <section data-testid="pages-list" aria-label={t("pages.title")}>
+      {props.hideHeader === true ? null : (
+        <header>
+          <div data-section-heading>
+            <h3>{t("pages.title")}</h3>
+            <p data-section-hint>{t("pages.info")}</p>
+          </div>
+        </header>
+      )}
       {!anyMatch ? (
         <p data-testid="pages-list-no-matches" data-empty-state>
           {t("pages.empty.filtered")}
@@ -294,41 +306,41 @@ export function PagesList(props: PagesListProps): JSX.Element {
         </ol>
       )}
       {props.hideAddForm === true ? null : (
-      <form
-        data-testid="pages-list-add"
-        onSubmit={(event) => {
-          event.preventDefault();
-          attemptAdd();
-        }}
-      >
-        <label>
-          <span>Add a page</span>
-          <Input
-            type="text"
-            data-testid="pages-list-add-slug"
-            value={newSlug}
-            onInput={(event: React.FormEvent<HTMLInputElement>) => {
-              setNewSlug(event.currentTarget.value);
-              if (addError !== null) setAddError(null);
-            }}
-            placeholder="e.g. Events, About us, Contact"
-            autoComplete="off"
-          />
-        </label>
-        <Button type="submit" data-action="add" data-variant="primary">
-          Create page
-        </Button>
-        <p data-form-help>
-          {newSlug.trim().length > 0 && checkSlug(newSlug.trim()) !== null
-            ? `Link will be /${slugify(newSlug) || "…"}`
-            : "You can rename it or change its link later in Page settings."}
-        </p>
-        {addError !== null && (
-          <p data-testid="pages-list-add-error" role="alert">
-            {addError}
+        <form
+          data-testid="pages-list-add"
+          onSubmit={(event) => {
+            event.preventDefault();
+            attemptAdd();
+          }}
+        >
+          <label>
+            <span>Add a page</span>
+            <Input
+              type="text"
+              data-testid="pages-list-add-slug"
+              value={newSlug}
+              onInput={(event: React.FormEvent<HTMLInputElement>) => {
+                setNewSlug(event.currentTarget.value);
+                if (addError !== null) setAddError(null);
+              }}
+              placeholder="e.g. Events, About us, Contact"
+              autoComplete="off"
+            />
+          </label>
+          <Button type="submit" variant="primary" data-action="add" data-variant="primary">
+            Create page
+          </Button>
+          <p data-form-help>
+            {newSlug.trim().length > 0 && checkSlug(newSlug.trim()) !== null
+              ? `Link will be /${slugify(newSlug) || "…"}`
+              : "You can rename it or change its link later in Page settings."}
           </p>
-        )}
-      </form>
+          {addError !== null && (
+            <p data-testid="pages-list-add-error" role="alert">
+              {addError}
+            </p>
+          )}
+        </form>
       )}
     </section>
   );

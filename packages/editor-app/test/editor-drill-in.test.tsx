@@ -1,19 +1,17 @@
 /** @jsxImportSource react */
 // @vitest-environment jsdom
 /**
- * Tests for the editor pane's drill-in inspector pattern (ADR 0042).
+ * Tests for the workspace's drill-in Inspector (ADR 0042, kept by issue #102).
  *
- * The editor pane has three view branches:
- *  - blocks (default): pages list, block list with drill-in click target,
- *                      Site settings affordance, locale toggle.
- *  - block:            pages list, back-to-blocks affordance, BlockForm
- *                      mounted with the active block's data schema.
- *  - settings:         pages list, back-to-blocks affordance, SpineForm
- *                      (the legacy site-spine form).
+ * A Page opens into a workspace whose editing pane has one of four bodies:
+ *  - the outline (default): title, the settings row, the Block list;
+ *  - a Block Inspector: back button naming the content, BlockForm;
+ *  - the settings Inspector: back button, the page's own spine fields;
+ *  - (Articles only) Related Articles.
  *
- * These tests assert the pane shape per branch and the entry/exit
- * behaviour: clicking a row drills in, clicking back drills out, Escape
- * drills out, switching pages while drilled into a block drills out.
+ * Site-wide forms — the spine and the Theme — are no longer drill targets
+ * inside a page. They are main-navigation destinations with an adjacent
+ * preview, and are checked here for exactly that.
  */
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/react";
@@ -23,18 +21,10 @@ import { encodePreviewMessage } from "@sosb/preview-bridge";
 
 import minimal from "./fixtures/minimal-site.json" with { type: "json" };
 import { announcePreviewReady, capturePreviewMessages } from "./helpers/preview.js";
+import { openPage, openSection, setViewportWidth } from "./helpers/nav.js";
 import { EditorApp } from "../src/editor-app.js";
 
 const baseSite = minimal as unknown as Site;
-
-function setViewportWidth(width: number): void {
-  Object.defineProperty(window, "innerWidth", {
-    configurable: true,
-    writable: true,
-    value: width,
-  });
-  window.dispatchEvent(new Event("resize"));
-}
 
 function siteWithMultiplePagesAndBlocks(): Site {
   const site = structuredClone(baseSite);
@@ -117,283 +107,217 @@ function siteWithCustomHtml(): Site {
   return site;
 }
 
-describe("EditorApp drill-in inspector", () => {
+function mountOnHomePage(site: Site): HTMLElement {
+  const { container } = render(<EditorApp initial={site} />);
+  openPage(container, 0);
+  return container;
+}
+
+function q<T extends Element = HTMLElement>(container: HTMLElement, selector: string): T {
+  const node = container.querySelector<T>(selector);
+  if (node === null) throw new Error(`expected ${selector}`);
+  return node;
+}
+
+describe("Workspace drill-in Inspector", () => {
   beforeEach(() => setViewportWidth(1200));
   afterEach(() => cleanup());
 
-  test("un-drilled view shows the block list and a Site settings affordance, NOT the SpineForm", () => {
-    const { container } = render(<EditorApp initial={structuredClone(baseSite)} />);
+  test("the outline shows the Block list and the settings row, NOT the SpineForm", () => {
+    const container = mountOnHomePage(structuredClone(baseSite));
 
+    expect(container.querySelector('[data-testid="workspace-outline"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="block-list"]')).not.toBeNull();
-    expect(container.querySelector('[data-testid="site-settings-link"]')).not.toBeNull();
-    // SpineForm is hidden in the un-drilled view.
+    expect(container.querySelector('[data-testid="workspace-settings-link"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="spine-form"]')).toBeNull();
-    // No block-form mounted either.
     expect(container.querySelector('[data-testid="block-form"]')).toBeNull();
   });
 
-  test("each block row exposes a drill-in select button bearing the block's id", () => {
-    const { container } = render(<EditorApp initial={siteWithMultiplePagesAndBlocks()} />);
-
-    const rows = container.querySelectorAll('[data-testid="block-row"]');
-    expect(rows.length).toBe(2);
-
-    const selects = container.querySelectorAll('[data-testid="block-row-select"]');
-    expect(selects.length).toBe(2);
+  test("each block row exposes a drill-in select button", () => {
+    const container = mountOnHomePage(siteWithMultiplePagesAndBlocks());
+    expect(container.querySelectorAll('[data-testid="block-row"]').length).toBe(2);
+    expect(container.querySelectorAll('[data-testid="block-row-select"]').length).toBe(2);
   });
 
-  test("clicking a block row's select target mounts a BlockForm for that block", () => {
-    const { container } = render(<EditorApp initial={siteWithMultiplePagesAndBlocks()} />);
+  test("selecting a Block mounts its Inspector with a back button naming the page", () => {
+    const container = mountOnHomePage(siteWithMultiplePagesAndBlocks());
+    fireEvent.click(q(container, '[data-testid="block-row-select"]'));
 
-    const firstSelect = container.querySelectorAll<HTMLButtonElement>(
-      '[data-testid="block-row-select"]',
-    )[0];
-    expect(firstSelect).not.toBeUndefined();
-    fireEvent.click(firstSelect!);
-
-    const inspector = container.querySelector('[data-testid="inspector"]');
-    expect(inspector).not.toBeNull();
-    expect(inspector?.getAttribute("data-inspector-mode")).toBe("block");
-    expect(inspector?.getAttribute("data-block-id")).toBe("blk_home_hero");
-    expect(inspector?.getAttribute("data-block-type")).toBe("hero");
+    const inspector = q(container, '[data-testid="inspector"]');
+    expect(inspector.getAttribute("data-inspector-mode")).toBe("block");
+    expect(inspector.getAttribute("data-block-id")).toBe("blk_home_hero");
+    expect(inspector.getAttribute("data-block-type")).toBe("hero");
     expect(container.querySelector('[data-testid="block-form"]')).not.toBeNull();
 
-    // Block list is hidden while drilled in.
+    // The outline is replaced, and the way back is labelled with the content.
     expect(container.querySelector('[data-testid="block-list"]')).toBeNull();
-    // Pages list stays visible so page-switching is always available.
-    expect(container.querySelector('[data-testid="pages-list"]')).not.toBeNull();
+    expect(q(container, '[data-testid="drill-back"]').textContent).toContain("Acasă");
+    // The preview stays beside the Inspector on a wide window.
+    expect(container.querySelector('[data-testid="preview-pane"]')).not.toBeNull();
   });
 
   test("editing a field inside the BlockForm patches the block's data on the snapshot", () => {
-    const initial = siteWithMultiplePagesAndBlocks();
-    const seenSnapshots: Site[] = [];
+    const seen: Site[] = [];
     const { container } = render(
-      <EditorApp initial={initial} onExport={(s) => seenSnapshots.push(s)} />,
+      <EditorApp initial={siteWithMultiplePagesAndBlocks()} onExport={(s) => seen.push(s)} />,
     );
+    openPage(container, 0);
 
-    // Watch what the host pushes into the live preview. Edits reach the
-    // preview as `previewHtml` messages now, not as a `srcdoc` rewrite.
     const preview = capturePreviewMessages(
-      container.querySelector<HTMLIFrameElement>('[data-testid="preview-pane"] iframe')!,
+      q<HTMLIFrameElement>(container, '[data-testid="preview-pane"] iframe'),
     );
     announcePreviewReady();
 
-    // Drill into the first block (blk_home_hero on `acasa`).
-    fireEvent.click(
-      container.querySelector<HTMLButtonElement>('[data-testid="block-row-select"]')!,
+    fireEvent.click(q(container, '[data-testid="block-row-select"]'));
+    const titleInput = q<HTMLInputElement>(
+      container,
+      '[data-testid="block-form"] [data-field="title"]',
     );
-
-    // Find the title input inside the BlockForm and edit it.
-    const blockForm = container.querySelector('[data-testid="block-form"]');
-    expect(blockForm).not.toBeNull();
-    const titleInput = blockForm?.querySelector<HTMLInputElement>('[data-field="title"]');
-    expect(titleInput).not.toBeNull();
-    fireEvent.input(titleInput!, { target: { value: "Edited Title" } });
-
-    // The preview must now be showing the new title.
+    fireEvent.input(titleInput, { target: { value: "Edited Title" } });
     expect(preview.latestHtml()).toContain("Edited Title");
 
-    // Trigger an export to capture the live snapshot.
-    fireEvent.click(container.querySelector<HTMLButtonElement>('button[data-action="export"]')!);
-    const last = seenSnapshots[seenSnapshots.length - 1];
-    expect(last).toBeDefined();
-    const block = last?.pages[0]?.blocks[0];
-    expect(block).toBeDefined();
-    expect((block?.data as { title?: string }).title).toBe("Edited Title");
+    // Export website → readiness panel → export, to capture the live snapshot.
+    fireEvent.click(q(container, 'button[data-action="export"]'));
+    fireEvent.click(q(container, '[data-testid="export-confirm-button"]'));
+    const last = seen[seen.length - 1];
+    expect((last?.pages[0]?.blocks[0]?.data as { title?: string }).title).toBe("Edited Title");
   });
 
   test("adding a nested team social row creates editable defaults and keeps preview rendering", () => {
-    const { container } = render(<EditorApp initial={siteWithTeamGrid()} />);
+    const container = mountOnHomePage(siteWithTeamGrid());
     const preview = capturePreviewMessages(
-      container.querySelector<HTMLIFrameElement>('[data-testid="preview-pane"] iframe')!,
+      q<HTMLIFrameElement>(container, '[data-testid="preview-pane"] iframe'),
     );
     announcePreviewReady();
 
-    fireEvent.click(
-      container.querySelector<HTMLButtonElement>('[data-testid="block-row-select"]')!,
+    fireEvent.click(q(container, '[data-testid="block-row-select"]'));
+    const addSocial = q(
+      container,
+      'fieldset[data-field="people.0.socials"] button[data-action="add"]',
     );
+    fireEvent.click(addSocial);
 
-    const socialsFieldset = container.querySelector<HTMLElement>(
-      'fieldset[data-field="people.0.socials"]',
+    expect(q<HTMLInputElement>(container, '[data-field="people.0.socials.0.platform"]').value).toBe(
+      "website",
     );
-    expect(socialsFieldset).not.toBeNull();
-    const addSocial = socialsFieldset!.querySelector<HTMLButtonElement>(
-      'button[data-action="add"]',
-    );
-    expect(addSocial).not.toBeNull();
-
-    fireEvent.click(addSocial!);
-
-    const platform = container.querySelector<HTMLInputElement>(
-      '[data-field="people.0.socials.0.platform"]',
-    );
-    const url = container.querySelector<HTMLInputElement>('[data-field="people.0.socials.0.url"]');
-    expect(platform?.value).toBe("website");
-    expect(url?.value).toBe("/");
-
+    expect(q<HTMLInputElement>(container, '[data-field="people.0.socials.0.url"]').value).toBe("/");
     expect(preview.latestHtml()).toContain("team-person__social--website");
   });
 
   test("customHTML drills into the dedicated textarea and safety-warning form", () => {
-    const { container } = render(<EditorApp initial={siteWithCustomHtml()} />);
+    const container = mountOnHomePage(siteWithCustomHtml());
     const preview = capturePreviewMessages(
-      container.querySelector<HTMLIFrameElement>('[data-testid="preview-pane"] iframe')!,
+      q<HTMLIFrameElement>(container, '[data-testid="preview-pane"] iframe'),
     );
     announcePreviewReady();
 
-    fireEvent.click(
-      container.querySelector<HTMLButtonElement>('[data-testid="block-row-select"]')!,
-    );
+    fireEvent.click(q(container, '[data-testid="block-row-select"]'));
 
     expect(container.querySelector('[data-testid="block-form"]')).toBeNull();
     expect(container.querySelector('[data-block-form="customHTML"]')).not.toBeNull();
-    const textarea = container.querySelector<HTMLTextAreaElement>('[data-field="data.html"]');
-    expect(textarea).not.toBeNull();
-    expect(textarea!.tagName).toBe("TEXTAREA");
-
-    fireEvent.input(textarea!, { target: { value: "<p>Edited custom HTML</p>" } });
-
+    const textarea = q<HTMLTextAreaElement>(container, '[data-field="data.html"]');
+    expect(textarea.tagName).toBe("TEXTAREA");
+    fireEvent.input(textarea, { target: { value: "<p>Edited custom HTML</p>" } });
     expect(preview.latestHtml()).toContain("Edited custom HTML");
 
-    const sanitize = container.querySelector<HTMLInputElement>('[data-field="data.sanitize"]');
-    expect(sanitize).not.toBeNull();
-    fireEvent.click(sanitize!);
+    fireEvent.click(q(container, '[data-field="data.sanitize"]'));
     expect(container.querySelector('[data-testid="custom-html-danger"]')).not.toBeNull();
   });
 
-  test("the back-to-blocks button drills out of the block inspector", () => {
-    const { container } = render(<EditorApp initial={siteWithMultiplePagesAndBlocks()} />);
-
-    fireEvent.click(
-      container.querySelector<HTMLButtonElement>('[data-testid="block-row-select"]')!,
-    );
+  test("the back button drills out of the Block Inspector to the outline", () => {
+    const container = mountOnHomePage(siteWithMultiplePagesAndBlocks());
+    fireEvent.click(q(container, '[data-testid="block-row-select"]'));
     expect(container.querySelector('[data-testid="block-form"]')).not.toBeNull();
 
-    const back = container.querySelector<HTMLButtonElement>('[data-testid="drill-back"]');
-    expect(back).not.toBeNull();
-    fireEvent.click(back!);
+    fireEvent.click(q(container, '[data-testid="drill-back"]'));
 
-    // Back to the un-drilled view.
     expect(container.querySelector('[data-testid="block-list"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="block-form"]')).toBeNull();
-    expect(container.querySelector('[data-testid="site-settings-link"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="workspace-settings-link"]')).not.toBeNull();
   });
 
-  test("Escape key from the block inspector drills out", () => {
-    const { container } = render(<EditorApp initial={siteWithMultiplePagesAndBlocks()} />);
-
-    fireEvent.click(
-      container.querySelector<HTMLButtonElement>('[data-testid="block-row-select"]')!,
-    );
-    expect(container.querySelector('[data-testid="block-form"]')).not.toBeNull();
+  test("Escape from the Block Inspector drills out but stays in the workspace", () => {
+    const container = mountOnHomePage(siteWithMultiplePagesAndBlocks());
+    fireEvent.click(q(container, '[data-testid="block-row-select"]'));
 
     fireEvent.keyDown(window, { key: "Escape" });
 
-    expect(container.querySelector('[data-testid="block-list"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="block-form"]')).toBeNull();
+    expect(container.querySelector('[data-testid="block-list"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="workspace"]')).not.toBeNull();
   });
 
-  test("clicking the Site settings affordance mounts the SpineForm", () => {
-    const { container } = render(<EditorApp initial={structuredClone(baseSite)} />);
+  test("the settings row mounts the page's own settings, not the whole spine", () => {
+    const container = mountOnHomePage(structuredClone(baseSite));
+    fireEvent.click(q(container, '[data-testid="workspace-settings-link"]'));
 
-    expect(container.querySelector('[data-testid="spine-form"]')).toBeNull();
-
-    fireEvent.click(
-      container.querySelector<HTMLButtonElement>('[data-testid="site-settings-link"]')!,
-    );
-
-    const inspector = container.querySelector('[data-testid="inspector"]');
-    expect(inspector).not.toBeNull();
-    expect(inspector?.getAttribute("data-inspector-mode")).toBe("settings");
-    expect(container.querySelector('[data-testid="spine-form"]')).not.toBeNull();
-
-    // Block list hidden while drilled into settings.
+    const inspector = q(container, '[data-testid="inspector"]');
+    expect(inspector.getAttribute("data-inspector-mode")).toBe("page");
+    expect(container.querySelector('[data-field="pages.0.navLabel"]')).not.toBeNull();
+    expect(container.querySelector('[data-field="org.name"]')).toBeNull();
     expect(container.querySelector('[data-testid="block-list"]')).toBeNull();
-    // Pages list stays.
-    expect(container.querySelector('[data-testid="pages-list"]')).not.toBeNull();
   });
 
-  test("Escape from the settings inspector drills out", () => {
-    const { container } = render(<EditorApp initial={structuredClone(baseSite)} />);
-
-    fireEvent.click(
-      container.querySelector<HTMLButtonElement>('[data-testid="site-settings-link"]')!,
-    );
-    expect(container.querySelector('[data-testid="spine-form"]')).not.toBeNull();
+  test("Escape from the settings Inspector drills out", () => {
+    const container = mountOnHomePage(structuredClone(baseSite));
+    fireEvent.click(q(container, '[data-testid="workspace-settings-link"]'));
+    expect(container.querySelector('[data-inspector-mode="page"]')).not.toBeNull();
 
     fireEvent.keyDown(window, { key: "Escape" });
 
-    expect(container.querySelector('[data-testid="spine-form"]')).toBeNull();
+    expect(container.querySelector('[data-inspector-mode="page"]')).toBeNull();
     expect(container.querySelector('[data-testid="block-list"]')).not.toBeNull();
   });
 
-  test("clicking the Theme affordance drills into the ThemeForm", () => {
+  test("Site settings is a destination: the spine form beside the preview", () => {
     const { container } = render(<EditorApp initial={structuredClone(baseSite)} />);
+    openSection(container, "settings");
 
-    const themeLink = container.querySelector<HTMLButtonElement>('[data-testid="drill-in-theme"]');
-    expect(themeLink).not.toBeNull();
+    expect(container.querySelector('[data-testid="settings-screen"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="spine-form"]')).not.toBeNull();
+    expect(container.querySelector('[data-field="org.name"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="preview-pane"]')).not.toBeNull();
+    expect(q(container, '[data-testid="nav-settings"]').getAttribute("aria-current")).toBe("page");
+  });
 
-    fireEvent.click(themeLink!);
+  test("Theme is a destination: the ThemeForm beside the preview", () => {
+    const { container } = render(<EditorApp initial={structuredClone(baseSite)} />);
+    openSection(container, "theme");
 
-    const inspector = container.querySelector('[data-testid="inspector"]');
-    expect(inspector).not.toBeNull();
-    expect(inspector?.getAttribute("data-inspector-mode")).toBe("theme");
+    expect(container.querySelector('[data-testid="theme-screen"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="theme-form"]')).not.toBeNull();
-
-    // Block list hidden while drilled into theme.
+    expect(container.querySelector('[data-testid="preview-pane"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="block-list"]')).toBeNull();
-    // Pages list stays.
-    expect(container.querySelector('[data-testid="pages-list"]')).not.toBeNull();
   });
 
-  test("the back-to-blocks button drills out of the theme inspector", () => {
-    const { container } = render(<EditorApp initial={structuredClone(baseSite)} />);
-
-    fireEvent.click(container.querySelector<HTMLButtonElement>('[data-testid="drill-in-theme"]')!);
-    expect(container.querySelector('[data-testid="theme-form"]')).not.toBeNull();
-
-    const back = container.querySelector<HTMLButtonElement>('[data-testid="drill-back"]');
-    expect(back).not.toBeNull();
-    fireEvent.click(back!);
-
-    expect(container.querySelector('[data-testid="theme-form"]')).toBeNull();
-    expect(container.querySelector('[data-testid="block-list"]')).not.toBeNull();
-    expect(container.querySelector('[data-testid="drill-in-theme"]')).not.toBeNull();
-  });
-
-  test("switching pages while drilled into a block drills back out to the new page's block list", () => {
-    const { container } = render(<EditorApp initial={siteWithMultiplePagesAndBlocks()} />);
-
-    // Drill into a block on `acasa`.
-    fireEvent.click(
-      container.querySelector<HTMLButtonElement>('[data-testid="block-row-select"]')!,
-    );
+  test("editing the previewed page while drilled into a Block lands on that page's outline", async () => {
+    const container = mountOnHomePage(siteWithMultiplePagesAndBlocks());
+    fireEvent.click(q(container, '[data-testid="block-row-select"]'));
     expect(container.querySelector('[data-testid="block-form"]')).not.toBeNull();
 
-    // Switch to `despre`.
-    const selectAbout = container.querySelector<HTMLButtonElement>(
-      '[data-action="select"][data-index="1"]',
-    );
-    expect(selectAbout).not.toBeNull();
-    fireEvent.click(selectAbout!);
+    // Follow a link in the preview, then take up its offer to edit that page.
+    await act(async () => {
+      window.dispatchEvent(
+        new MessageEvent("message", {
+          data: encodePreviewMessage({ type: "navigate", path: "/despre/" }),
+        }),
+      );
+      await Promise.resolve();
+    });
+    fireEvent.click(q(container, '[data-testid="preview-edit-this"]'));
 
-    // Drilled back out — the block list for `despre` is now visible.
+    // The Block that was open belongs to the page we left, so the new page
+    // opens on its outline rather than on a form bound to nothing.
     expect(container.querySelector('[data-testid="block-form"]')).toBeNull();
-    const blockList = container.querySelector('[data-testid="block-list"]');
-    expect(blockList).not.toBeNull();
-    expect(blockList?.getAttribute("data-page-slug")).toBe("despre");
+    expect(q(container, '[data-testid="block-list"]').getAttribute("data-page-slug")).toBe(
+      "despre",
+    );
   });
 
-  test("preview navigate messages switch the active page", async () => {
-    const { container } = render(<EditorApp initial={siteWithMultiplePagesAndBlocks()} />);
+  test("a link followed in the preview moves the preview, not the editing pane", async () => {
+    const container = mountOnHomePage(siteWithMultiplePagesAndBlocks());
+    expect(q(container, '[data-testid="block-list"]').getAttribute("data-page-slug")).toBe("acasa");
 
-    expect(
-      container.querySelector('[data-testid="block-list"]')?.getAttribute("data-page-slug"),
-    ).toBe("acasa");
-    await Promise.resolve();
-
-    // The navigate message arrives outside React's event system, so the
-    // resulting state update needs an explicit `act` flush.
     await act(async () => {
       window.dispatchEvent(
         new MessageEvent("message", {
@@ -403,69 +327,60 @@ describe("EditorApp drill-in inspector", () => {
       await Promise.resolve();
     });
 
-    expect(
-      container.querySelector('[data-testid="block-list"]')?.getAttribute("data-page-slug"),
-    ).toBe("despre");
+    // Still editing the home page…
+    expect(q(container, '[data-testid="block-list"]').getAttribute("data-page-slug")).toBe("acasa");
+    // …while the preview shows the page the visitor would have reached.
+    expect(q(container, '[data-testid="preview-target-title"]').textContent).toBe("Despre");
+    expect(container.querySelector('[data-testid="preview-return"]')).not.toBeNull();
+
+    // "Edit this Page" makes the previewed page the edited one.
+    fireEvent.click(q(container, '[data-testid="preview-edit-this"]'));
+    expect(q(container, '[data-testid="block-list"]').getAttribute("data-page-slug")).toBe(
+      "despre",
+    );
+    expect(container.querySelector('[data-testid="preview-return"]')).toBeNull();
   });
 
-  test("removing the block you are drilled into falls back to the un-drilled view", () => {
-    const initial = siteWithMultiplePagesAndBlocks();
-    const { container } = render(<EditorApp initial={initial} />);
+  test("removing the Block you are drilled into falls back to the outline", () => {
+    const container = mountOnHomePage(siteWithMultiplePagesAndBlocks());
 
-    // Drill into the first block on `acasa` (blk_home_hero).
     fireEvent.click(
       container.querySelectorAll<HTMLButtonElement>('[data-testid="block-row-select"]')[0]!,
     );
     expect(container.querySelector('[data-testid="block-form"]')).not.toBeNull();
-
-    // Drill back out and remove the very block we were just inspecting.
-    fireEvent.click(container.querySelector<HTMLButtonElement>('[data-testid="drill-back"]')!);
+    fireEvent.click(q(container, '[data-testid="drill-back"]'));
     fireEvent.click(
       container.querySelectorAll<HTMLButtonElement>('[data-testid="block-remove"]')[0]!,
     );
 
-    // The remaining block is `blk_home_quote`. Drill into it, then remove
-    // it directly via the remove control on the row beneath the inspector
-    // — the inspector falls back to the un-drilled view rather than
-    // dangling on a vanished block.
-    const remainingSelect = container.querySelector<HTMLButtonElement>(
-      '[data-testid="block-row-select"]',
-    );
-    expect(remainingSelect).not.toBeNull();
-    fireEvent.click(remainingSelect!);
+    fireEvent.click(q(container, '[data-testid="block-row-select"]'));
     expect(container.querySelector('[data-testid="block-form"]')).not.toBeNull();
+    fireEvent.click(q(container, '[data-testid="drill-back"]'));
+    fireEvent.click(q(container, '[data-testid="block-remove"]'));
 
-    fireEvent.click(container.querySelector<HTMLButtonElement>('[data-testid="drill-back"]')!);
-    fireEvent.click(container.querySelector<HTMLButtonElement>('[data-testid="block-remove"]')!);
-
-    // No blocks left — block list still visible, no inspector.
     expect(container.querySelector('[data-testid="block-form"]')).toBeNull();
     expect(container.querySelectorAll('[data-testid="block-row"]').length).toBe(0);
   });
 
-  test("narrow-viewport tab layout: drill-in lives inside the Editor tab and is unaffected by the Preview tab", () => {
+  test("phone layout: the Inspector survives switching to the preview and back", () => {
     setViewportWidth(600);
-    const { container } = render(<EditorApp initial={siteWithMultiplePagesAndBlocks()} />);
+    const container = mountOnHomePage(siteWithMultiplePagesAndBlocks());
 
-    // Editor tab is active by default — drill in.
-    fireEvent.click(
-      container.querySelector<HTMLButtonElement>('[data-testid="block-row-select"]')!,
-    );
+    fireEvent.click(q(container, '[data-testid="block-row-select"]'));
     expect(container.querySelector('[data-testid="block-form"]')).not.toBeNull();
 
-    // Switch to Preview tab — block-form is removed (preview replaces the
-    // editor pane), but the drill state is preserved internally.
-    const tabs = container.querySelectorAll<HTMLButtonElement>('[data-testid="layout-tab"]');
-    const previewTab = Array.from(tabs).find((t) => t.textContent?.trim() === "Preview");
-    expect(previewTab).not.toBeUndefined();
-    fireEvent.click(previewTab!);
-    expect(container.querySelector('[data-testid="block-form"]')).toBeNull();
-    expect(container.querySelector('[data-testid="preview-pane"]')).not.toBeNull();
+    fireEvent.click(q(container, '[data-testid="workspace-tab-preview"]'));
+    // Hidden, not unmounted: the drill state and the form both survive.
+    expect(q(container, '[data-testid="editor-pane"]').getAttribute("data-hidden")).toBe("true");
+    expect(
+      q(container, '[data-testid="preview-pane"]')
+        .closest("[data-hidden]")
+        ?.getAttribute("data-hidden"),
+    ).toBe("false");
+    expect(container.querySelector('[data-testid="block-form"]')).not.toBeNull();
 
-    // Switch back to Editor — block-form is visible again because the
-    // drill state was preserved.
-    const editorTab = Array.from(tabs).find((t) => t.textContent?.trim() === "Editor");
-    fireEvent.click(editorTab!);
+    fireEvent.click(q(container, '[data-testid="workspace-tab-edit"]'));
+    expect(q(container, '[data-testid="editor-pane"]').getAttribute("data-hidden")).toBe("false");
     expect(container.querySelector('[data-testid="block-form"]')).not.toBeNull();
   });
 });

@@ -43,60 +43,122 @@ afterEach(() => {
   cleanup();
 });
 
-describe("editor shell — Pages / Articles switch", () => {
-  test("the editor opens on Pages", () => {
+describe("editor shell — Articles destination and workspace", () => {
+  test("the editor opens on the Overview, with Articles one click away", () => {
     const { getByTestId, queryByTestId } = render(<EditorApp initial={baseSite()} />);
-    expect(queryByTestId("articles-panel")).toBeNull();
-    expect(getByTestId("content-kind-pages").getAttribute("aria-pressed")).toBe("true");
+    expect(getByTestId("overview")).toBeTruthy();
+    expect(queryByTestId("articles-screen")).toBeNull();
+    expect(getByTestId("nav-overview").getAttribute("aria-current")).toBe("page");
   });
 
-  test("switching to Articles shows the Articles panel", () => {
+  test("the Articles destination lists articles", () => {
     const { getByTestId } = render(<EditorApp initial={siteWithArticle()} />);
-    fireEvent.click(getByTestId("content-kind-articles"));
-    expect(getByTestId("articles-panel")).toBeTruthy();
+    fireEvent.click(getByTestId("nav-articles"));
+    expect(getByTestId("articles-screen")).toBeTruthy();
     expect(getByTestId("article-row-art_1")).toBeTruthy();
+    expect(getByTestId("nav-articles").getAttribute("aria-current")).toBe("page");
   });
 
-  test("opening an article mounts its workspace with settings and blocks", () => {
-    const { getByTestId } = render(<EditorApp initial={siteWithArticle()} />);
-    fireEvent.click(getByTestId("content-kind-articles"));
+  test("opening an article mounts its workspace: title, state, Blocks, settings behind a row", () => {
+    const { container, getByTestId } = render(<EditorApp initial={siteWithArticle()} />);
+    fireEvent.click(getByTestId("nav-articles"));
     fireEvent.click(getByTestId("article-open-art_1"));
-    const inspector = getByTestId("inspector");
-    expect(inspector.getAttribute("data-inspector-mode")).toBe("article");
-    expect(getByTestId("article-settings-form")).toBeTruthy();
+
+    expect((getByTestId("workspace-title") as HTMLInputElement).value).toBe("Gala de final");
+    expect(getByTestId("workspace-state-published").getAttribute("aria-pressed")).toBe("true");
     expect(getByTestId("block-list")).toBeTruthy();
+    // The preview beside it renders the Article itself.
+    expect(
+      container
+        .querySelector<HTMLIFrameElement>('[data-testid="preview-pane"] iframe')
+        ?.getAttribute("srcdoc"),
+    ).toContain("Gala de final");
+
+    fireEvent.click(getByTestId("workspace-settings-link"));
+    expect(getByTestId("inspector").getAttribute("data-inspector-mode")).toBe("article-settings");
+    expect(getByTestId("article-settings-form")).toBeTruthy();
+    expect(getByTestId("drill-back").textContent).toContain("Gala de final");
   });
 
   test("the article workspace reuses the shared block inspector", () => {
     const { getByTestId } = render(<EditorApp initial={siteWithArticle()} />);
-    fireEvent.click(getByTestId("content-kind-articles"));
+    fireEvent.click(getByTestId("nav-articles"));
     fireEvent.click(getByTestId("article-open-art_1"));
     const selectButton = getByTestId("block-list").querySelector(
       '[data-testid="block-row-select"]',
     );
     fireEvent.click(selectButton!);
-    expect(getByTestId("inspector").getAttribute("data-inspector-mode")).toBe("article-block");
+    const inspector = getByTestId("inspector");
+    expect(inspector.getAttribute("data-inspector-mode")).toBe("block");
+    expect(inspector.getAttribute("data-block-type")).toBe("richText");
   });
 
   test("related articles is off by default and preserves settings when toggled", () => {
     const { getByTestId, queryByTestId } = render(<EditorApp initial={siteWithArticle()} />);
-    fireEvent.click(getByTestId("content-kind-articles"));
+    fireEvent.click(getByTestId("nav-articles"));
     fireEvent.click(getByTestId("article-open-art_1"));
     const toggle = getByTestId("article-related-toggle") as HTMLInputElement;
     expect(toggle.checked).toBe(false);
-    expect(queryByTestId("article-list-inspector")).toBeNull();
+    expect(queryByTestId("article-related-configure")).toBeNull();
+
     fireEvent.click(toggle);
+    fireEvent.click(getByTestId("article-related-configure"));
+    expect(getByTestId("inspector").getAttribute("data-inspector-mode")).toBe("related");
     expect(getByTestId("article-list-inspector")).toBeTruthy();
+
+    fireEvent.click(getByTestId("drill-back"));
     fireEvent.click(getByTestId("article-related-toggle"));
-    expect(queryByTestId("article-list-inspector")).toBeNull();
+    expect(queryByTestId("article-related-configure")).toBeNull();
+    // Switching back on restores the configuration rather than starting over.
+    fireEvent.click(getByTestId("article-related-toggle"));
+    expect(queryByTestId("article-related-configure")).not.toBeNull();
   });
 
   test("going back returns to the list", () => {
     const { getByTestId, queryByTestId } = render(<EditorApp initial={siteWithArticle()} />);
-    fireEvent.click(getByTestId("content-kind-articles"));
+    fireEvent.click(getByTestId("nav-articles"));
     fireEvent.click(getByTestId("article-open-art_1"));
+    fireEvent.click(getByTestId("workspace-back"));
+    expect(getByTestId("articles-screen")).toBeTruthy();
+    expect(queryByTestId("workspace")).toBeNull();
+  });
+
+  test("Create Article opens a Draft at once, and its address follows the title", () => {
+    const { getByTestId, queryByTestId } = render(<EditorApp initial={baseSite()} />);
+    fireEvent.click(getByTestId("nav-create-article"));
+
+    expect(getByTestId("workspace")).toBeTruthy();
+    expect((getByTestId("workspace-title") as HTMLInputElement).value).toBe("");
+    expect(getByTestId("workspace-state-draft").getAttribute("aria-pressed")).toBe("true");
+    // One Rich-text Block to start writing in.
+    expect(getByTestId("block-list").querySelectorAll('[data-testid="block-row"]').length).toBe(1);
+    expect(queryByTestId("article-create-dialog")).toBeNull();
+
+    fireEvent.change(getByTestId("workspace-title"), { target: { value: "Gala de final" } });
+    fireEvent.click(getByTestId("workspace-settings-link"));
+    expect(
+      (getByTestId("article-settings-form").querySelector("#article-slug") as HTMLInputElement)
+        .value,
+    ).toBe("gala-de-final");
+  });
+
+  test("the address stops following the title once the author edits it", () => {
+    const { getByTestId } = render(<EditorApp initial={baseSite()} />);
+    fireEvent.click(getByTestId("nav-create-article"));
+    fireEvent.click(getByTestId("workspace-settings-link"));
+    const slug = getByTestId("article-settings-form").querySelector(
+      "#article-slug",
+    ) as HTMLInputElement;
+    fireEvent.change(slug, { target: { value: "gala-2026" } });
+    fireEvent.blur(slug);
     fireEvent.click(getByTestId("drill-back"));
-    expect(queryByTestId("article-settings-form")).toBeNull();
+
+    fireEvent.change(getByTestId("workspace-title"), { target: { value: "Alt titlu" } });
+    fireEvent.click(getByTestId("workspace-settings-link"));
+    expect(
+      (getByTestId("article-settings-form").querySelector("#article-slug") as HTMLInputElement)
+        .value,
+    ).toBe("gala-2026");
   });
 
   test("an articleList block on a page gets the hand-coded inspector", () => {
@@ -108,6 +170,7 @@ describe("editor shell — Pages / Articles switch", () => {
       data: { title: "Noutăți", mode: "byTag" },
     } as never);
     const { getByTestId, getAllByTestId } = render(<EditorApp initial={site} />);
+    fireEvent.click(getByTestId("overview-page-acasa"));
     const selects = getAllByTestId("block-row-select");
     fireEvent.click(selects[selects.length - 1]!);
     expect(getByTestId("article-list-inspector")).toBeTruthy();

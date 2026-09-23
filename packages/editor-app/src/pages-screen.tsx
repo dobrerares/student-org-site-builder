@@ -43,11 +43,7 @@ export function PagesScreen(props: PagesScreenProps): JSX.Element {
         <div data-row-between>
           <h1>
             {t("pages.title")}
-            <InfoHint
-              label={t("pages.title")}
-              text={t("pages.info")}
-              testId="pages-screen-info"
-            />
+            <InfoHint label={t("pages.title")} text={t("pages.info")} testId="pages-screen-info" />
           </h1>
           <Button
             type="button"
@@ -77,6 +73,7 @@ export function PagesScreen(props: PagesScreenProps): JSX.Element {
         activeIndex={props.activeIndex}
         query={query}
         hideAddForm
+        hideHeader
         onSelect={props.onOpen}
         // Creating a page is the destination's own primary action, so the
         // list's inline form is hidden and this never fires.

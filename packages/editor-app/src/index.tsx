@@ -78,16 +78,39 @@ export {
 } from "./sosb-update-bridge.js";
 export { EDITOR_APP_CSS } from "./editor-app-css.js";
 
-// Articles (issue #97 / #98). Exported as standalone components because the
-// navigation redesign in issue #102 will re-home them without rewriting them.
-export { ArticlesPanel } from "./articles-panel.js";
-export type { ArticlesPanelProps } from "./articles-panel.js";
+// The redesigned builder's surfaces (issue #102), exported standalone so a
+// host can compose its own chrome the way it already could with the
+// validation surfaces above.
+export { OverviewScreen, type OverviewScreenProps } from "./overview-screen.js";
+export { PagesScreen, type PagesScreenProps } from "./pages-screen.js";
+export { ArticlesScreen, type ArticlesScreenProps } from "./articles-screen.js";
+export { Workspace, type WorkspaceProps, type WorkspaceTarget } from "./workspace.js";
+export { SplitView, type SplitPane, type SplitViewProps } from "./split-view.js";
+export { BlockInspector, type BlockInspectorProps } from "./block-inspector.js";
+export { PreviewPane, type PreviewPaneProps } from "./preview-pane.js";
+export { MainNav, type MainNavProps } from "./main-nav.js";
+export { ExportReadinessPanel, type ExportReadinessPanelProps } from "./export-readiness.js";
+export { FindingList, type FindingListProps } from "./findings-list.js";
+export {
+  INITIAL_DESTINATION,
+  NAV_SECTIONS,
+  OUTLINE_DRILL,
+  backDestination,
+  destinationForSection,
+  isWorkspace,
+  reconcileDestination,
+  reconcileDrill,
+  sectionOf,
+  type Destination,
+  type NavSection,
+  type WorkspaceDrill,
+} from "./builder-navigation.js";
+
+// Articles (issue #97 / #98).
 export { ArticleSettingsForm } from "./article-settings-form.js";
 export type { ApplySiteChange, ArticleSettingsFormProps } from "./article-settings-form.js";
 export { ArticleListInspector } from "./article-list-inspector.js";
 export type { ArticleListInspectorProps } from "./article-list-inspector.js";
-export { ArticleWorkspace } from "./article-workspace.js";
-export type { ArticleWorkspaceProps } from "./article-workspace.js";
 export { TagManager } from "./tag-manager.js";
 export type { TagManagerProps } from "./tag-manager.js";
 export { TagPicker } from "./tag-picker.js";

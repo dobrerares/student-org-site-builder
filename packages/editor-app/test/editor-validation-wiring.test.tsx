@@ -1,11 +1,17 @@
 /** @jsxImportSource react */
 // @vitest-environment jsdom
+/**
+ * Integration: validation reaches the author in two places — the Overview's
+ * Site Health card and the export readiness panel — and both offer a repair
+ * action that opens the right destination and focuses the field.
+ */
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import type { Site } from "@sosb/schema";
 
 import tiered from "./fixtures/issue-tiered-site.json" with { type: "json" };
 import minimal from "./fixtures/minimal-site.json" with { type: "json" };
+import { setViewportWidth } from "./helpers/nav.js";
 import { EditorApp } from "../src/editor-app.js";
 
 const tieredSite = tiered as unknown as Site;
@@ -40,79 +46,52 @@ function siteWithBlockValidationIssue(): Site {
   return site;
 }
 
-beforeEach(() => {
-  Object.defineProperty(window, "innerWidth", {
-    configurable: true,
-    writable: true,
-    value: 1200,
-  });
-});
+beforeEach(() => setViewportWidth(1200));
 
-/**
- * Integration: the editor wires the Site Health panel + footer + export
- * dialog together, so changes in `EditorState` flow through to all three
- * surfaces.
- */
-describe("EditorApp validation wiring", () => {
-  afterEach(() => {
-    cleanup();
-  });
+describe("Overview Site Health", () => {
+  afterEach(() => cleanup());
 
-  test("renders the health footer with current aggregate counts", () => {
+  test("lists the current errors and warnings as findings", () => {
     const { container } = render(<EditorApp initial={structuredClone(tieredSite)} />);
-    const footer = container.querySelector('[data-testid="health-footer"]');
-    expect(footer).not.toBeNull();
+    const health = container.querySelector('[data-testid="overview-health"]');
+    expect(health).not.toBeNull();
 
     // Tiered fixture produces ≥1 error and ≥1 warning.
-    const errCount = footer!.querySelector('[data-count="error"]')?.textContent ?? "";
-    const warnCount = footer!.querySelector('[data-count="warning"]')?.textContent ?? "";
-    const errN = Number(errCount.replace(/\D+/g, "")) || 0;
-    const warnN = Number(warnCount.replace(/\D+/g, "")) || 0;
-    expect(errN).toBeGreaterThan(0);
-    expect(warnN).toBeGreaterThan(0);
+    const findings = container.querySelectorAll('[data-testid="overview-findings"] [data-finding]');
+    const severities = Array.from(findings).map((f) => f.getAttribute("data-severity"));
+    expect(severities).toContain("error");
+    expect(severities).toContain("warning");
+    expect(
+      container.querySelector('[data-testid="overview-health-summary"]')?.textContent,
+    ).not.toContain("All good");
   });
 
-  test("toggling the footer opens the Site Health panel", () => {
+  test("Fix on a spine issue opens Site settings and focuses the field", async () => {
     const { container } = render(<EditorApp initial={structuredClone(tieredSite)} />);
-    expect(container.querySelector('[data-testid="site-health-panel"]')).toBeNull();
 
-    const toggle = container.querySelector<HTMLElement>('[data-testid="health-footer-toggle"]');
-    expect(toggle).not.toBeNull();
-    fireEvent.click(toggle!);
+    // The missing-org-email warning ("org.email") maps to the spine form's
+    // `[data-field="org.email"]` input.
+    const fix = container.querySelector<HTMLElement>(
+      '[data-testid="overview-findings"] [data-finding][data-path="org.email"] [data-testid="finding-fix"]',
+    );
+    expect(fix).not.toBeNull();
+    fireEvent.click(fix!);
 
-    expect(container.querySelector('[data-testid="site-health-panel"]')).not.toBeNull();
-  });
-
-  test("clicking an issue in the panel focuses the corresponding form field", async () => {
-    const { container } = render(<EditorApp initial={structuredClone(tieredSite)} />);
-    const toggle = container.querySelector<HTMLElement>('[data-testid="health-footer-toggle"]');
-    fireEvent.click(toggle!);
-
-    // Pick a row whose path lands on a real spine-form input. The fixture's
-    // missing-org-email warning ("org.email") maps cleanly to the
-    // `[data-field="org.email"]` input the spine form emits.
-    const orgEmailRow = container.querySelector<HTMLElement>('[data-issue][data-path="org.email"]');
-    expect(orgEmailRow).not.toBeNull();
-    fireEvent.click(orgEmailRow!);
-
-    // The editor should focus the matching field. We assert via document.activeElement.
+    expect(container.querySelector('[data-testid="settings-screen"]')).not.toBeNull();
     const target = container.querySelector<HTMLInputElement>('[data-field="org.email"]');
     expect(target).not.toBeNull();
-    // Allow a microtask for the focus to settle.
     await Promise.resolve();
     expect(document.activeElement).toBe(target);
   });
 
-  test("clicking a block issue drills into the block and focuses the relative block field", async () => {
+  test("Fix on a Block issue opens the page, drills into the Block and focuses the field", async () => {
     const { container } = render(<EditorApp initial={siteWithBlockValidationIssue()} />);
-    const toggle = container.querySelector<HTMLElement>('[data-testid="health-footer-toggle"]');
-    fireEvent.click(toggle!);
 
-    const coordinatesIssue = container.querySelector<HTMLElement>(
-      '[data-issue][data-path="pages.0.blocks.0.data.mapEmbed.coordinates"]',
+    const fix = container.querySelector<HTMLElement>(
+      '[data-finding][data-path="pages.0.blocks.0.data.mapEmbed.coordinates"] [data-testid="finding-fix"]',
     );
-    expect(coordinatesIssue).not.toBeNull();
-    fireEvent.click(coordinatesIssue!);
+    expect(fix).not.toBeNull();
+    fireEvent.click(fix!);
 
     await Promise.resolve();
     await Promise.resolve();
@@ -127,48 +106,46 @@ describe("EditorApp validation wiring", () => {
     expect(document.activeElement).toBe(latInput);
   });
 
-  test("clean site (no issues) shows zero counts in the footer", () => {
-    const { container } = render(<EditorApp initial={structuredClone(minimalSite)} />);
-    const footer = container.querySelector('[data-testid="health-footer"]');
-    expect(footer).not.toBeNull();
-    const errCount = footer!.querySelector('[data-count="error"]')?.textContent ?? "";
-    expect(errCount.replace(/\D+/g, "")).toBe("0");
+  test("a clean site says so and lists nothing", () => {
+    const { container } = render(<EditorApp initial={cleanExportSite()} />);
+    expect(container.querySelector('[data-testid="overview-health-summary"]')?.textContent).toBe(
+      "All good",
+    );
+    expect(
+      container.querySelectorAll('[data-testid="overview-findings"] [data-finding]').length,
+    ).toBe(0);
   });
 });
 
 /**
- * AC #4: Export gate. When errors are present, clicking Export must open
- * the confirmation dialog and `onExport` must NOT fire until the user
- * types the gate phrase. With warnings only, `onExport` fires after a
- * single confirmation click. With no issues, `onExport` fires immediately.
+ * Export website always opens the readiness panel (issue #102). With errors
+ * present the export button stays disabled until the gate phrase is typed
+ * (ADR 0016); with nothing wrong it exports in one click; the panel is where
+ * the author learns that exporting does not update the live website.
  */
-describe("EditorApp pre-export gate", () => {
-  afterEach(() => {
-    cleanup();
-  });
+describe("Export readiness", () => {
+  afterEach(() => cleanup());
 
-  test("with errors present, clicking Export opens the dialog and does not fire onExport", () => {
+  test("with errors present, the panel opens and export waits for the phrase", () => {
     const exports: Site[] = [];
     const { container } = render(
       <EditorApp initial={structuredClone(tieredSite)} onExport={(s) => exports.push(s)} />,
     );
-    const exportBtn = container.querySelector<HTMLButtonElement>('button[data-action="export"]');
-    expect(exportBtn).not.toBeNull();
-    fireEvent.click(exportBtn!);
+    fireEvent.click(container.querySelector<HTMLButtonElement>('button[data-action="export"]')!);
 
-    // Dialog opens.
-    const dialog = container.querySelector('[data-testid="export-confirm-dialog"]');
-    expect(dialog).not.toBeNull();
-    // No export fired yet.
+    const panel = container.querySelector('[data-testid="export-readiness"]');
+    expect(panel).not.toBeNull();
+    expect(
+      panel!.querySelectorAll('[data-testid="export-blockers"] [data-finding]').length,
+    ).toBeGreaterThan(0);
     expect(exports.length).toBe(0);
 
-    // Confirm button is disabled until the gate phrase is typed.
-    const confirm = dialog!.querySelector<HTMLButtonElement>(
+    const confirm = panel!.querySelector<HTMLButtonElement>(
       '[data-testid="export-confirm-button"]',
     );
     expect(confirm!.disabled).toBe(true);
 
-    const input = dialog!.querySelector<HTMLInputElement>('[data-testid="export-confirm-input"]');
+    const input = panel!.querySelector<HTMLInputElement>('[data-testid="export-confirm-input"]');
     fireEvent.input(input!, { target: { value: "DOWNLOAD" } });
     expect(confirm!.disabled).toBe(false);
     fireEvent.click(confirm!);
@@ -176,32 +153,52 @@ describe("EditorApp pre-export gate", () => {
     expect(exports.length).toBe(1);
   });
 
-  test("clean site exports immediately without opening the dialog", () => {
+  test("a clean site still opens the panel and exports in one click", () => {
     const exports: Site[] = [];
     const { container } = render(
       <EditorApp initial={cleanExportSite()} onExport={(s) => exports.push(s)} />,
     );
-    const exportBtn = container.querySelector<HTMLButtonElement>('button[data-action="export"]');
-    fireEvent.click(exportBtn!);
+    fireEvent.click(container.querySelector<HTMLButtonElement>('button[data-action="export"]')!);
 
-    expect(container.querySelector('[data-testid="export-confirm-dialog"]')).toBeNull();
+    const panel = container.querySelector('[data-testid="export-readiness"]');
+    expect(panel).not.toBeNull();
+    expect(panel!.querySelector('[data-testid="export-ready"]')).not.toBeNull();
+    expect(panel!.querySelector('[data-testid="export-confirm-input"]')).toBeNull();
+    // The explanation that exporting does not update the live site is behind an (i).
+    expect(panel!.querySelector('[data-testid="export-info"]')).not.toBeNull();
+    expect(exports.length).toBe(0);
+
+    fireEvent.click(
+      panel!.querySelector<HTMLButtonElement>('[data-testid="export-confirm-button"]')!,
+    );
     expect(exports.length).toBe(1);
+    expect(container.querySelector('[data-testid="export-readiness"]')).toBeNull();
   });
 
-  test("cancel from the dialog leaves the editor untouched and does not fire onExport", () => {
+  test("Fix from the panel closes it and opens the destination", () => {
+    const { container } = render(<EditorApp initial={structuredClone(tieredSite)} />);
+    fireEvent.click(container.querySelector<HTMLButtonElement>('button[data-action="export"]')!);
+    const fix = container.querySelector<HTMLElement>(
+      '[data-testid="export-readiness"] [data-finding][data-path="org.email"] [data-testid="finding-fix"]',
+    );
+    expect(fix).not.toBeNull();
+    fireEvent.click(fix!);
+
+    expect(container.querySelector('[data-testid="export-readiness"]')).toBeNull();
+    expect(container.querySelector('[data-testid="settings-screen"]')).not.toBeNull();
+  });
+
+  test("cancel leaves the editor untouched and does not fire onExport", () => {
     const exports: Site[] = [];
     const { container } = render(
       <EditorApp initial={structuredClone(tieredSite)} onExport={(s) => exports.push(s)} />,
     );
-    const exportBtn = container.querySelector<HTMLButtonElement>('button[data-action="export"]');
-    fireEvent.click(exportBtn!);
+    fireEvent.click(container.querySelector<HTMLButtonElement>('button[data-action="export"]')!);
+    fireEvent.click(
+      container.querySelector<HTMLButtonElement>('[data-testid="export-cancel-button"]')!,
+    );
 
-    const dialog = container.querySelector('[data-testid="export-confirm-dialog"]');
-    const cancel = dialog!.querySelector<HTMLButtonElement>('[data-testid="export-cancel-button"]');
-    fireEvent.click(cancel!);
-
-    // Dialog closes; no export.
-    expect(container.querySelector('[data-testid="export-confirm-dialog"]')).toBeNull();
+    expect(container.querySelector('[data-testid="export-readiness"]')).toBeNull();
     expect(exports.length).toBe(0);
   });
 });

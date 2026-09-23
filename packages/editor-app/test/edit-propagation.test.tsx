@@ -5,6 +5,7 @@ import { render, cleanup, fireEvent } from "@testing-library/react";
 import type { Site } from "@sosb/schema";
 
 import minimal from "./fixtures/minimal-site.json" with { type: "json" };
+import { openSection } from "./helpers/nav.js";
 import { EditorApp } from "../src/editor-app.js";
 
 const baseSite = minimal as unknown as Site;
@@ -36,6 +37,10 @@ describe("edit propagation via the preview bridge", () => {
     });
     const { container } = render(<EditorApp initial={structuredClone(baseSite)} />);
 
+    // The site spine (which carries `org.name`) is the Site settings
+    // destination, which keeps a preview beside the form.
+    openSection(container, "settings");
+
     const iframe = container.querySelector<HTMLIFrameElement>(
       '[data-testid="preview-pane"] iframe',
     );
@@ -52,16 +57,6 @@ describe("edit propagation via the preview bridge", () => {
         },
       }),
     });
-
-    // The site spine (which carries `org.name`) lives behind the
-    // "Site settings" drill-in affordance per ADR 0042. Click it first so
-    // the SpineForm mounts and the `[data-field="org.name"]` input exists
-    // to receive the keystroke.
-    const drillSettings = container.querySelector<HTMLButtonElement>(
-      '[data-testid="site-settings-link"]',
-    );
-    expect(drillSettings).not.toBeNull();
-    fireEvent.click(drillSettings!);
 
     // Find the org-name input. The form generator renders one input per
     // string field, and we tag each by its dotted path (e.g.

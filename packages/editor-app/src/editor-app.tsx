@@ -2,34 +2,30 @@
 /**
  * EditorApp — the top-level React shell.
  *
- * Layout responsibilities:
+ * Shape (issue #102, ADR 0053):
  *
- * - At ≥768px: side-by-side editor pane (forms) and preview pane (iframe).
- * - At <768px: a tab strip with `Editor` and `Preview` tabs swapping the
- *   single visible pane.
- * - A top bar with `Import`, `Export`, `Reset` buttons (wired to the
- *   `onImport`, `onExport`, `onReset` callbacks).
- * - A health footer (always visible) showing aggregate validation counts.
- *   Clicking the footer toggles the Site Health panel.
- * - A pre-export confirmation dialog shown when the user clicks Export
- *   and the current snapshot has any errors or warnings.
+ * - A top bar: menu button (phone), brand, local save status with its
+ *   "downloaded copy" line, undo/redo, Open, Start over, **Save project** and
+ *   **Export website**.
+ * - Persistent main navigation (`MainNav`) over five destinations — Overview,
+ *   Pages, Articles, Theme, Site settings — plus Create Page / Create Article
+ *   and the content-language picker. A rail on wide windows, a drawer on
+ *   phones.
+ * - A main area showing the current `Destination` (`builder-navigation.ts`):
+ *   the Overview, the Pages or Articles list, or a focused `Workspace` for one
+ *   Page or Article. Theme and Site settings are site-wide forms that keep an
+ *   adjacent preview. Every preview-bearing destination is a `SplitView`:
+ *   editing beside preview on wide windows, one at a time on phones.
+ * - Inside a workspace, ADR 0042's drill-in is preserved as `WorkspaceDrill`:
+ *   the outline, or a focused Inspector for one Block, the content's settings,
+ *   or Related Articles. Escape drills out one level; it never leaves the
+ *   workspace.
+ * - Export website opens the readiness panel (`ExportReadinessPanel`); Save
+ *   project writes the editable archive and is never gated by validation.
  *
- * Editor pane shape (ADR 0042 — drill-in inspector):
- *
- * The editor pane is no longer a flat stack of forms. It has three view
- * branches gated on a discriminated `DrillMode`:
- *
- * - `{ kind: "blocks" }` (default): PagesList, BlockListEditor (rows expose
- *   a click target that drills in), Site settings affordance, LocaleToggle.
- * - `{ kind: "block", blockId }`:    PagesList, back-to-blocks, BlockForm
- *   for the active block, LocaleToggle.
- * - `{ kind: "settings" }`:          PagesList, back-to-blocks, SpineForm,
- *   LocaleToggle.
- *
- * Drill-in is triggered by clicking a block row's primary affordance or
- * the Site settings link; drill-out by clicking the back affordance or
- * pressing Escape. Switching pages while drilled into a block drills you
- * back out (the previously-active block isn't on the new page).
+ * What the preview shows (`previewTarget`) is separate from what is being
+ * edited: clicks inside the preview behave like the public website, and
+ * "Edit this Page / Article" makes the previewed thing the edited thing.
  *
  * Editor responsibilities:
  *
@@ -108,7 +104,8 @@ import { IconClose, IconLayout, IconMenu, IconRedo, IconUndo } from "./icons.js"
 import { InfoHint } from "./info-hint.js";
 import { addLanguageVersion, addPage, clonePage, deletePage, movePage } from "./pages-ops.js";
 import { AddBlockDialog } from "./add-block-dialog.js";
-import { ArticlesPanel } from "./articles-panel.js";
+import { ArticlesScreen } from "./articles-screen.js";
+import { SplitView, type SplitPane } from "./split-view.js";
 import { defaultBlockFor } from "./block-defaults.js";
 import {
   addBlockToPage,
@@ -139,7 +136,7 @@ import {
   type Destination,
   type WorkspaceDrill,
 } from "./builder-navigation.js";
-import { createArticle, updateArticle } from "./articles-ops.js";
+import { createArticle, slugifyTitle, uniqueArticleSlug, updateArticle } from "./articles-ops.js";
 import { exportToZip, importFromZip, ZipImportError } from "@sosb/zip";
 import {
   SITE_VFS_PREFIXES,
@@ -314,6 +311,16 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     props.autosaveVfs === undefined ? "localOnly" : "saved",
   );
   const saveStatusSeqRef = useRef(0);
+  /**
+   * Local save status, shown in the top bar.
+   *
+   * Two separate facts, because conflating them is what makes people lose
+   * work: `savedAt` is the editable project kept in this browser, and
+   * `downloadedAt` is the last time a copy left the machine. An author who
+   * sees only "Saved" can reasonably believe they have a file somewhere.
+   */
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [downloadedAt, setDownloadedAt] = useState<string | null>(null);
   useEffect(() => state.subscribe(setSnapshot), [state]);
 
   useEffect(() => {
@@ -328,7 +335,9 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       void state
         .flush()
         .then(() => {
-          if (seq === saveStatusSeqRef.current) setSaveStatus("saved");
+          if (seq !== saveStatusSeqRef.current) return;
+          setSaveStatus("saved");
+          setSavedAt(nowLabel());
         })
         .catch(() => {
           if (seq === saveStatusSeqRef.current) setSaveStatus("error");
@@ -437,7 +446,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   const isNarrow = viewportWidth < MOBILE_BREAKPOINT_PX;
   // Phone layout: editing and preview are shown one at a time inside a
   // workspace, and the main navigation collapses into a drawer.
-  const [workspacePane, setWorkspacePane] = useState<"edit" | "preview">("edit");
+  const [workspacePane, setWorkspacePane] = useState<SplitPane>("edit");
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   /**
@@ -520,17 +529,6 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
 
   // Export readiness panel disclosure.
   const [exportOpen, setExportOpen] = useState<boolean>(false);
-
-  /**
-   * Local save status, shown in the top bar.
-   *
-   * Two separate facts, because conflating them is what makes people lose
-   * work: `savedAt` is the editable project kept in this browser, and
-   * `downloadedAt` is the last time a copy left the machine. An author who
-   * sees only "Saved" can reasonably believe they have a file somewhere.
-   */
-  const [savedAt, setSavedAt] = useState<string | null>(null);
-  const [downloadedAt, setDownloadedAt] = useState<string | null>(null);
 
   /**
    * The language new content is created in. Defaults to the Site's own
@@ -875,10 +873,11 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       : (snapshot.pages[safePreviewTarget.index]?.lang ?? ""),
   ].join("\u0000");
 
-
   const previewedTitle =
     safePreviewTarget.kind === "article"
-      ? (previewedArticle?.title ?? "")
+      ? previewedArticle === undefined || previewedArticle.title.trim() === ""
+        ? t("articles.untitled")
+        : previewedArticle.title
       : (snapshot.pages[safePreviewTarget.index]?.navLabel ?? "");
 
   /**
@@ -1077,10 +1076,33 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     patch(["pages", safeActivePageIndex, "blocks", blockIndex, "data"], data);
   }
 
-  /** Rename the content being edited: a Page's menu label, an Article's title. */
+  /**
+   * Rename the content being edited: a Page's menu label, an Article's title.
+   *
+   * A new Article opens with an empty title (issue #102), so its address
+   * cannot be derived at creation the way the old title-first dialog did.
+   * While the Article is still a Draft with no slug history and an address
+   * that is still the one derived from its title, the address keeps following
+   * the title. The moment the author edits the address, publishes, or a rename
+   * has minted history, it stops — a live URL must never change under them.
+   */
   function onWorkspaceTitleChange(value: string): void {
     if (editingArticle) {
-      applyArticleChange((site) => updateArticle(site, articleIndex, { title: value }));
+      applyArticleChange((site) => {
+        const article = (site.articles ?? [])[articleIndex];
+        if (article === undefined) return site;
+        const derived = slugifyTitle(article.title);
+        const follows =
+          article.state === "draft" &&
+          (article.slugHistory ?? []).length === 0 &&
+          (article.slug === derived || /^-\d+$/.test(article.slug.slice(derived.length))) &&
+          article.slug.startsWith(derived);
+        const renamed = updateArticle(site, articleIndex, { title: value });
+        if (!follows) return renamed;
+        return updateArticle(renamed, articleIndex, {
+          slug: uniqueArticleSlug(renamed, article.lang, slugifyTitle(value), article.id),
+        });
+      });
       return;
     }
     patch(["pages", safeActivePageIndex, "navLabel"], value);
@@ -1296,15 +1318,21 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       const article = (snapshot.articles ?? [])[path[1]];
       if (article !== undefined) {
         const isBlock =
-          path.length >= 5 && path[2] === "blocks" && typeof path[3] === "number" && path[4] === "data";
+          path.length >= 5 &&
+          path[2] === "blocks" &&
+          typeof path[3] === "number" &&
+          path[4] === "data";
         const targetBlock = isBlock ? article.blocks?.[path[3] as number] : undefined;
         go({ kind: "articleWorkspace", articleId: article.id });
         if (targetBlock !== undefined) {
           setDrill({ kind: "block", blockId: targetBlock.id });
           focusIssue = { ...issue, path: path.slice(5) };
+        } else if (path[2] === "title") {
+          // The title is edited on the outline, not in Article settings.
+          setDrill(OUTLINE_DRILL);
         } else {
+          // The settings form tags its inputs with full `articles.N.…` paths.
           setDrill({ kind: "settings" });
-          focusIssue = { ...issue, path: path.slice(2) };
         }
         pendingIssueRef.current = focusIssue;
         return;
@@ -1316,7 +1344,10 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       const targetPage = snapshot.pages[pageIndex];
       if (targetPage !== undefined) {
         const isBlock =
-          path.length >= 5 && path[2] === "blocks" && typeof path[3] === "number" && path[4] === "data";
+          path.length >= 5 &&
+          path[2] === "blocks" &&
+          typeof path[3] === "number" &&
+          path[4] === "data";
         const targetBlock = isBlock ? targetPage.blocks?.[path[3] as number] : undefined;
         go({ kind: "pageWorkspace", pageIndex });
         if (targetBlock !== undefined) {
@@ -1363,9 +1394,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       // Download button did nothing at all, with no clue why, which is the
       // worst possible reading of "the export is blocked".
       window.alert(
-        err instanceof Error
-          ? `Your site could not be downloaded. ${err.message}`
-          : "Your site could not be downloaded.",
+        t("builder.export.failed", { reason: err instanceof Error ? err.message : "" }).trim(),
       );
     }
   }
@@ -1397,6 +1426,15 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
    * (ADR 0016, and issue #102's third round).
    */
   function handleSaveProject(): void {
+    if (props.autosaveVfs === undefined) {
+      // No host persistence (the archival single-file build, an embedded
+      // editor): the only way to keep the work is the downloaded archive, and
+      // that must never be gated by validation, so it skips the readiness
+      // panel entirely.
+      setDownloadedAt(nowLabel());
+      void performExport();
+      return;
+    }
     const seq = ++saveStatusSeqRef.current;
     setSaveStatus("saving");
     void state
@@ -1448,7 +1486,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
           ? err.message
           : err instanceof Error
             ? err.message
-            : "Import failed.";
+            : t("builder.import.failed");
       window.alert(message);
     }
   }
@@ -1469,12 +1507,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     // No host-provided reset: the browser shell keeps the draft in this
     // browser, so going back to the start screen is safe and reversible
     // ("Continue draft" brings it back).
-    if (
-      typeof window !== "undefined" &&
-      window.confirm(
-        "Go back to the start screen? Your work stays saved in this browser and you can continue it later.",
-      )
-    ) {
+    if (typeof window !== "undefined" && window.confirm(t("builder.reset.confirm"))) {
       window.location.reload();
     }
   }
@@ -1592,16 +1625,13 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     );
   } else if (reconciled.kind === "articles") {
     main = (
-      <div data-testid="articles-screen" data-screen>
-        <ArticlesPanel
-          site={snapshot}
-          onApply={applyArticleChange}
-          onSelect={(articleId) => go({ kind: "articleWorkspace", articleId })}
-          contentLanguage={contentLanguage}
-          today={todayIso()}
-          {...(activeArticle === undefined ? {} : { activeArticleId: activeArticle.id })}
-        />
-      </div>
+      <ArticlesScreen
+        site={snapshot}
+        onApply={applyArticleChange}
+        onOpen={(articleId) => go({ kind: "articleWorkspace", articleId })}
+        onCreate={handleCreateArticle}
+        {...(activeArticle === undefined ? {} : { activeArticleId: activeArticle.id })}
+      />
     );
   } else if (reconciled.kind === "theme") {
     // Theme and Site settings keep an adjacent preview even though they are
@@ -1609,12 +1639,23 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     // a theme without seeing it is exactly the problem the live preview
     // exists to solve.
     main = (
-      <div data-testid="theme-screen" data-two-pane>
-        <section data-testid="editor-pane" aria-label={t("pane.editor.label")}>
+      <SplitView
+        testId="theme-screen"
+        isNarrow={isNarrow}
+        pane={workspacePane}
+        onPaneChange={setWorkspacePane}
+        editor={
           <div data-pane-body>
             <div data-screen>
               <header data-screen-head>
-                <h1>{t("builder.nav.theme")}</h1>
+                <h1>
+                  {t("builder.nav.theme")}
+                  <InfoHint
+                    label={t("builder.nav.theme")}
+                    text={t("theme.info")}
+                    testId="theme-screen-info"
+                  />
+                </h1>
               </header>
               <ThemeForm
                 site={snapshot}
@@ -1627,18 +1668,29 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
               />
             </div>
           </div>
-        </section>
-        {previewPane}
-      </div>
+        }
+        preview={previewPane}
+      />
     );
   } else {
     main = (
-      <div data-testid="settings-screen" data-two-pane>
-        <section data-testid="editor-pane" aria-label={t("pane.editor.label")}>
+      <SplitView
+        testId="settings-screen"
+        isNarrow={isNarrow}
+        pane={workspacePane}
+        onPaneChange={setWorkspacePane}
+        editor={
           <div data-pane-body>
             <div data-screen>
               <header data-screen-head>
-                <h1>{t("builder.nav.settings")}</h1>
+                <h1>
+                  {t("builder.nav.settings")}
+                  <InfoHint
+                    label={t("builder.nav.settings")}
+                    text={t("settings.info")}
+                    testId="settings-screen-info"
+                  />
+                </h1>
               </header>
               <SpineForm
                 fields={fields}
@@ -1651,9 +1703,9 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
               <LocaleToggle />
             </div>
           </div>
-        </section>
-        {previewPane}
-      </div>
+        }
+        preview={previewPane}
+      />
     );
   }
 
@@ -1698,19 +1750,16 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
             <IconLayout size={18} />
           </span>
           <div data-tip-body>
-            <strong>How this works</strong>
-            <p>
-              Pick a page or article, then choose a block to change its text and images. The
-              preview beside it updates as you type. When you are happy, use{" "}
-              <b>{t("builder.action.export")}</b> to get your site as a folder ready to publish.
-            </p>
+            <strong>{t("builder.tip.title")}</strong>
+            <p>{t("builder.tip.body", { action: t("builder.action.export") })}</p>
           </div>
           <Button
             type="button"
             size="icon-sm"
+            variant="ghost"
             data-testid="getting-started-dismiss"
-            aria-label="Hide this tip"
-            title="Hide this tip"
+            aria-label={t("builder.tip.dismiss")}
+            title={t("builder.tip.dismiss")}
             onClick={dismissTip}
           >
             <IconClose size={16} />
@@ -1764,9 +1813,11 @@ function TopBar(props: TopBarProps): JSX.Element {
       ? t("saveStatus.saving")
       : props.saveStatus === "error"
         ? t("saveStatus.error")
-        : props.savedAt !== null
-          ? `${t("saveStatus.saved")} · ${props.savedAt}`
-          : t("builder.save.never");
+        : props.saveStatus === "localOnly"
+          ? t("saveStatus.localOnly")
+          : props.savedAt !== null
+            ? `${t("saveStatus.saved")} · ${props.savedAt}`
+            : t("builder.save.never");
 
   return (
     <header data-testid="top-bar">
@@ -1785,7 +1836,7 @@ function TopBar(props: TopBarProps): JSX.Element {
         <span data-brand-mark aria-hidden="true">
           <IconLayout size={18} />
         </span>
-        <span data-brand-name>Site Builder</span>
+        <span data-brand-name>{t("builder.brand")}</span>
       </div>
 
       <span data-topbar-spacer />
@@ -1810,15 +1861,15 @@ function TopBar(props: TopBarProps): JSX.Element {
       </p>
 
       <div data-topbar-actions>
-        <span data-button-group role="group" aria-label="History">
+        <span data-button-group role="group" aria-label={t("builder.history")}>
           <Button
             type="button"
             size="icon"
             data-testid="undo-button"
             data-action="undo"
             data-icon-button
-            aria-label="Undo (Ctrl+Z)"
-            title="Undo (Ctrl+Z)"
+            aria-label={t("builder.undo")}
+            title={t("builder.undo")}
             disabled={!props.canUndo}
             onClick={props.onUndo}
           >
@@ -1830,8 +1881,8 @@ function TopBar(props: TopBarProps): JSX.Element {
             data-testid="redo-button"
             data-action="redo"
             data-icon-button
-            aria-label="Redo (Ctrl+Shift+Z)"
-            title="Redo (Ctrl+Shift+Z)"
+            aria-label={t("builder.redo")}
+            title={t("builder.redo")}
             disabled={!props.canRedo}
             onClick={props.onRedo}
           >
@@ -1841,7 +1892,7 @@ function TopBar(props: TopBarProps): JSX.Element {
         <Button
           type="button"
           data-action="import"
-          title="Open a .zip you downloaded earlier"
+          title={t("builder.import.title")}
           onClick={props.onImport}
         >
           {t("topbar.import")}
@@ -1849,7 +1900,7 @@ function TopBar(props: TopBarProps): JSX.Element {
         <Button
           type="button"
           data-action="reset"
-          title="Go back to the start screen"
+          title={t("builder.reset.title")}
           onClick={props.onReset}
         >
           {t("topbar.reset")}
