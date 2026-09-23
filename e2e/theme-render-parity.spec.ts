@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { build as esbuild } from "esbuild";
-import { readdirSync, readFileSync, statSync, writeFileSync, mkdirSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
 
@@ -109,7 +109,13 @@ async function bundleForNode(): Promise<ThemeRenderModule> {
     outFile,
     out.text.replace(/\bwindow\.__sosbThemeRender\s*=/, "globalThis.__sosbThemeRender ="),
   );
-  await import(pathToFileURL(outFile).href);
+  try {
+    await import(pathToFileURL(outFile).href);
+  } finally {
+    // The bundle embeds the QuickJS wasm (~1 MB per run); once imported the
+    // file has done its job and should not accumulate in the cache dir.
+    rmSync(outFile, { force: true });
+  }
   return (globalThis as unknown as { __sosbThemeRender: ThemeRenderModule }).__sosbThemeRender;
 }
 
