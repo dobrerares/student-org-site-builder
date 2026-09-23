@@ -3,6 +3,7 @@ import { build as esbuild } from "esbuild";
 import { createServer, type Server } from "node:http";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { openFirstPage } from "./builder-helpers.js";
 
 /**
  * Rich-text editing — end-to-end through the real editor (issue #100).
@@ -137,7 +138,11 @@ test("type, format, link, insert an image, undo — and the preview keeps up", a
   const server = await startServer();
   try {
     await page.goto(`${server.url}/`);
-    await expect(page.getByTestId("editor-pane")).toBeVisible({ timeout: 15_000 });
+    // The builder opens on the content Overview (issue #102); the Block list
+    // lives in the page workspace.
+    await expect(page.getByTestId("overview")).toBeVisible({ timeout: 15_000 });
+    await openFirstPage(page);
+    await expect(page.getByTestId("editor-pane")).toBeVisible();
 
     // Drill into the Rich-text Block.
     const row = page.locator('[data-testid="block-row"][data-block-id="blk_prose"]');

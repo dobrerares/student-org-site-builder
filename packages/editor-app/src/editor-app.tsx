@@ -140,6 +140,7 @@ import { createArticle, slugifyTitle, uniqueArticleSlug, updateArticle } from ".
 import { exportToZip, importFromZip, ZipImportError } from "@sosb/zip";
 import {
   SITE_VFS_PREFIXES,
+  assetHashFromPath,
   downloadBlob,
   exportZipBasename,
   mergeAssetVfs,
@@ -360,11 +361,6 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       }),
     [],
   );
-  // Validation result is recomputed on every snapshot change. `validate()`
-  // is pure / cheap — running it inline keeps the panel and footer
-  // perfectly in sync without a separate event channel.
-  const validationResult = useMemo<ValidationResult>(() => validate(snapshot), [snapshot]);
-
   /**
    * Push the current snapshot onto the history stack. Called after a
    * discrete user action (block add/remove/reorder, form edit committed via
@@ -413,6 +409,22 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       if (event.key !== "z" && event.key !== "Z") return;
       const mod = event.ctrlKey || event.metaKey;
       if (!mod) return;
+      // Inside rich-text editing, Ctrl/Cmd+Z belongs to the local typing
+      // history (issue #100). ProseMirror's own history plugin handles the
+      // keystroke; stealing it here would undo a whole editing visit when
+      // the author meant to undo a word.
+      const target = event.target;
+      if (target instanceof Element && target.closest("[data-rich-text-surface]") !== null) {
+        return;
+      }
+      // Inside a modal dialog (the link or image dialog, the export gate),
+      // Ctrl/Cmd+Z is the focused input's own undo. Rewinding Site history
+      // underneath an open dialog would desynchronise whatever the dialog
+      // is about to commit — and, for the rich-text dialogs, the mounted
+      // editor too.
+      if (target instanceof Element && target.closest('[aria-modal="true"]') !== null) {
+        return;
+      }
       event.preventDefault();
       if (event.shiftKey) {
         doRedo();
@@ -661,6 +673,29 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   if (displayUrlCacheRef.current === undefined) {
     displayUrlCacheRef.current = new Map();
   }
+
+  // Validation result is recomputed on every snapshot change. `validate()`
+  // is pure / cheap — running it inline keeps the panel and footer
+  // perfectly in sync without a separate event channel.
+  //
+  // `assetPathExists` closes the one gap the Site data cannot fill: an asset
+  // reference is structurally complete even when the file behind it is gone,
+  // and ADR 0048 makes a missing rich-text image a non-overridable public-
+  // export blocker. The display-URL cache is the synchronous view of what the
+  // project VFS holds — it is keyed by content hash, which is the last path
+  // segment of every `assets/<hash>.<ext>` — so it answers the question
+  // without turning validation async.
+  //
+  // `assetEpoch` is a dependency because the cache is filled after mount and
+  // after every upload; without it the panel would keep reporting the state
+  // the project had before its files finished loading.
+  const validationResult = useMemo<ValidationResult>(
+    () =>
+      validate(snapshot, {
+        assetPathExists: (path) => displayUrlCacheRef.current?.has(assetHashFromPath(path)) ?? true,
+      }),
+    [snapshot, assetEpoch],
+  );
   // Revoke all minted blob URLs on unmount so we don't leak object-URL
   // entries past the editor's lifetime. `URL.revokeObjectURL` is a
   // no-op for non-blob URLs, but we guard anyway since the cache is
@@ -1093,6 +1128,48 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   }
 
   /** Replace a Block's whole `data` object — the customHTML form edits it wholesale. */
+  /**
+   * Patch Block data *without* pushing a Site-history entry.
+   *
+   * The rich-text editor's history contract (issue #100) is one Site-history
+   * entry per editing visit, not one per keystroke — but the content must
+   * still reach preview, validation and export immediately. Splitting the
+   * write from the snapshot is how those two coexist: this does the write,
+   * and `commitRichTextVisit` below does the snapshot, once, when the visit
+   * ends. Rich text writes the whole `doc` in one go, so a single-key
+   * subpath is all this needs.
+   */
+  function onPatchWorkspaceBlockDataQuiet(
+    blockIndex: number,
+    subpath: readonly (string | number)[],
+    value: unknown,
+  ): void {
+    const key = subpath[0];
+    if (subpath.length !== 1 || typeof key !== "string") {
+      throw new Error(
+        `onPatchWorkspaceBlockDataQuiet: expected a single string key, got ${subpath.join(".")}`,
+      );
+    }
+    const dataPath: (string | number)[] = editingArticle
+      ? ["articles", articleIndex, "blocks", blockIndex, "data"]
+      : ["pages", safeActivePageIndex, "blocks", blockIndex, "data"];
+    state.update((draft) => {
+      const blockData = getAtPath(draft, dataPath) as Record<string, unknown>;
+      setAtPath(draft as unknown as Record<string, unknown>, dataPath, {
+        ...blockData,
+        [key]: value,
+      });
+    });
+  }
+
+  /**
+   * End a rich-text editing visit: one Site-history entry that restores the
+   * content as it was when the author arrived.
+   */
+  function commitRichTextVisit(): void {
+    pushHistory(state.getSnapshot());
+  }
+
   function onReplaceWorkspaceBlockData(blockIndex: number, data: unknown): void {
     if (editingArticle) {
       patchArticleBlockData(blockIndex, [], data);
@@ -1604,6 +1681,8 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
           applySite(setBlockVariant(snapshot, blockId, variant))
         }
         onPatchBlockData={onPatchWorkspaceBlockData}
+        onPatchBlockDataQuiet={onPatchWorkspaceBlockDataQuiet}
+        onCommitRichTextVisit={commitRichTextVisit}
         onArrayChangeBlockData={onArrayChangeWorkspaceBlockData}
         onReplaceBlockData={onReplaceWorkspaceBlockData}
         pageSettingsFields={pageSettingsFields}

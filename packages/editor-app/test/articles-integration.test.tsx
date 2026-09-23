@@ -99,7 +99,7 @@ describe("editor shell — Articles destination and workspace", () => {
     // the form its Site-aware context the author could not write at all —
     // the field would render as an inert marker instead.
     const { getByTestId, container } = render(<EditorApp initial={siteWithArticle()} />);
-    fireEvent.click(getByTestId("content-kind-articles"));
+    fireEvent.click(getByTestId("nav-articles"));
     fireEvent.click(getByTestId("article-open-art_1"));
     fireEvent.click(getByTestId("block-list").querySelector('[data-testid="block-row-select"]')!);
     await waitFor(() =>
