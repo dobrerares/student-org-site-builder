@@ -47,12 +47,14 @@ re-apply by hand.
 1. **`role="toolbar"` with arrow-key roving focus.** Upstream's `Toolbar` is a
    plain `<div>`, so all fourteen buttons are tab stops sitting between the
    author and the text they are editing. This version is one tab stop; the
-   arrows move within it.
+   arrows move within it, and Home / End jump to the first and last control.
 2. **`aria-pressed` instead of an `active` class.** Upstream's `RteButton`
    takes `active?: boolean` and expresses it purely as a CSS class, which is
    invisible to assistive technology. These are formatting toggles and several
    may be active at once, so `aria-pressed` is the right state (not
-   `aria-checked`).
+   `aria-checked`). It is emitted only for buttons that are toggles (the
+   caller passes `pressed`); action buttons such as Undo carry no
+   `aria-pressed` at all.
 3. **`onMouseDown` prevents default.** Clicking a toolbar button would
    otherwise move focus out of the editing surface and collapse the selection,
    so "select three words, click Bold" would bold nothing. Load-bearing, not a

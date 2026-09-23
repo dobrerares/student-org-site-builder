@@ -40,7 +40,8 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
   const ref = useRef<HTMLDivElement | null>(null);
 
   const onKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+    const { key } = event;
+    if (key !== "ArrowRight" && key !== "ArrowLeft" && key !== "Home" && key !== "End") return;
     const root = ref.current;
     if (root === null) return;
     const buttons = Array.from(root.querySelectorAll<HTMLButtonElement>("button:not([disabled])"));
@@ -48,8 +49,12 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
     const current = buttons.indexOf(document.activeElement as HTMLButtonElement);
     if (current === -1) return;
     event.preventDefault();
-    const delta = event.key === "ArrowRight" ? 1 : -1;
-    const next = (current + delta + buttons.length) % buttons.length;
+    const next =
+      key === "Home"
+        ? 0
+        : key === "End"
+          ? buttons.length - 1
+          : (current + (key === "ArrowRight" ? 1 : -1) + buttons.length) % buttons.length;
     buttons[next]?.focus();
   }, []);
 
@@ -79,10 +84,14 @@ export interface ToolbarButtonProps {
 }
 
 /**
- * A toggle button.
+ * A toolbar button — a toggle when `pressed` is given, a plain action
+ * button otherwise.
  *
  * `aria-pressed` rather than `aria-checked`: these are formatting toggles,
- * not radio choices, and several may be active at once.
+ * not radio choices, and several may be active at once. It is only emitted
+ * when the caller supplies `pressed`: an action such as Undo or Add image
+ * with `aria-pressed="false"` would be announced as a toggle that is off,
+ * which is a promise the button does not keep.
  *
  * `onMouseDown` preventing default is load-bearing, not a tweak. Clicking a
  * toolbar button would otherwise move focus out of the editing surface,
@@ -97,7 +106,7 @@ export function ToolbarButton(props: ToolbarButtonProps): JSX.Element {
       data-sosb-ui
       title={props.label}
       aria-label={props.label}
-      aria-pressed={props.pressed ?? false}
+      {...(props.pressed === undefined ? {} : { "aria-pressed": props.pressed })}
       disabled={props.disabled ?? false}
       tabIndex={props.tabIndex ?? -1}
       {...(props.testId === undefined ? {} : { "data-testid": props.testId })}

@@ -1161,6 +1161,20 @@ body {
   font-size: var(--step--2);
   color: var(--ink-3);
 }
+/* An image whose bytes are not in the project: a labelled placeholder, not a
+ * broken-image icon (issue #100). Site Health carries the matching finding. */
+[data-testid="editor-pane"] .rich-text-editing .rich-text-figure__missing {
+  display: grid;
+  place-items: center;
+  min-height: 6rem;
+  padding: 12px;
+  border: 1px dashed var(--line-2);
+  border-radius: var(--radius-1);
+  background: var(--surface-2);
+  color: var(--ink-3);
+  font-size: var(--step--1);
+  text-align: center;
+}
 [data-testid="editor-pane"] .rich-text-editing .ProseMirror-selectednode {
   outline: 2px solid var(--accent-1);
 }

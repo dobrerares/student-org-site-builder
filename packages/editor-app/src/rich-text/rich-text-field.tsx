@@ -31,6 +31,14 @@
  *   snapshot is pushed if anything changed. Undoing from outside the field
  *   therefore restores the content as it was when the author arrived,
  *   rather than replaying three hundred keystrokes.
+ * - **A Site undo re-seeds the field.** Tiptap owns the document while it is
+ *   mounted, so when Site data changes underneath it — Site undo/redo with
+ *   focus elsewhere is the realistic case — the surface would otherwise keep
+ *   showing the old words, and the next keystroke would write them back,
+ *   silently reverting the undo. `RichTextField` therefore compares the
+ *   stored document against the one it last seeded or emitted and remounts
+ *   the surface when they differ. A remount also starts a fresh local
+ *   history, which is the contract for returning to a Block.
  *
  * ## Unsupported content
  *
@@ -102,11 +110,38 @@ export function RichTextField(props: RichTextFieldProps): JSX.Element {
     [props.value],
   );
 
+  // The document as last handed to, or received from, the editing surface.
+  // Site data that differs from it changed *outside* the field (a Site undo,
+  // a redo), and the surface must be re-seeded — see the module docblock.
+  const serialized = JSON.stringify(props.value ?? emptyRichTextDocument());
+  const seenRef = useRef<string>(serialized);
+  const [seed, setSeed] = useState(0);
+  useEffect(() => {
+    if (serialized === seenRef.current) return;
+    seenRef.current = serialized;
+    setSeed((value) => value + 1);
+  }, [serialized]);
+
+  const onChangeRef = useRef(props.onChange);
+  onChangeRef.current = props.onChange;
+  const onChange = useCallback((next: RichTextDocument) => {
+    seenRef.current = JSON.stringify(next);
+    onChangeRef.current(next);
+  }, []);
+
   if (unsupported.length > 0) {
     return <UnsupportedNotice types={unsupported.map((entry) => entry.type)} />;
   }
 
-  return <EditableRichText {...props} context={context} key="editable" t={t} />;
+  return (
+    <EditableRichText
+      key={`editable-${seed}`}
+      value={props.value}
+      onChange={onChange}
+      context={context}
+      t={t}
+    />
+  );
 }
 
 function UnsupportedNotice(props: { types: readonly string[] }): JSX.Element {
@@ -139,6 +174,11 @@ function EditableRichText(
   onChangeRef.current = props.onChange;
   const commitVisitRef = useRef(context.onCommitVisit);
   commitVisitRef.current = context.onCommitVisit;
+  // Read through a ref so the extension, configured once at mount, always
+  // sees the host's current resolver (the display-URL cache fills in after
+  // uploads and after a project finishes loading).
+  const displayUrlForRef = useRef(context.displayUrlFor);
+  displayUrlForRef.current = context.displayUrlFor;
 
   const initialContent = useMemo(
     () => docToProseMirror(props.value),
@@ -167,7 +207,7 @@ function EditableRichText(
         heading: { levels: [2, 3, 4] },
       }),
       SosbLink,
-      SosbImage,
+      SosbImage.configure({ displayUrlFor: (ref) => displayUrlForRef.current?.(ref) }),
       RichTextAlign,
     ],
     content: initialContent,

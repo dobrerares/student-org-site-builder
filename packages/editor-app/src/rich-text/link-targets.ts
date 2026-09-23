@@ -7,7 +7,8 @@
  * easier to reason about — and test — without a React tree around it.
  */
 
-import { ARTICLE_ROUTE_PREFIX, articlesOf, type RichTextLinkTarget, type Site } from "@sosb/schema";
+import { articlesOf, type RichTextLinkTarget, type Site } from "@sosb/schema";
+import { articlePath, pagePath } from "@sosb/renderer";
 
 export interface LinkTargetOption {
   /** Stable key for list rendering; not the stored identity. */
@@ -34,13 +35,17 @@ export interface LinkTargetOption {
 export function linkTargetsFor(site: Site, lang: string): LinkTargetOption[] {
   const out: LinkTargetOption[] = [];
 
+  // The secondary line is the path a visitor would see, taken from the same
+  // routing the Renderer uses rather than rebuilt here: a language home is
+  // `/` whatever its slug, and a secondary-language Page or Article carries
+  // its language segment.
   site.pages.forEach((page, index) => {
     if (page.lang !== lang) return;
     out.push({
       key: `page:${index}`,
       kind: "page",
       label: page.navLabel,
-      hint: page.slug === "" ? "/" : `/${page.slug}/`,
+      hint: pagePath(site, page),
       lang: page.lang,
       isDraft: false,
       index,
@@ -53,12 +58,7 @@ export function linkTargetsFor(site: Site, lang: string): LinkTargetOption[] {
       key: `article:${index}`,
       kind: "article",
       label: article.title,
-      // The path a visitor would see. Secondary-language Articles carry the
-      // language segment, exactly as `articlePath` emits it.
-      hint:
-        article.lang === site.defaultLanguage
-          ? `/${ARTICLE_ROUTE_PREFIX}/${article.slug}/`
-          : `/${article.lang}/${ARTICLE_ROUTE_PREFIX}/${article.slug}/`,
+      hint: articlePath(site, article),
       lang,
       isDraft: article.state === "draft",
       index,
@@ -76,7 +76,12 @@ export function matchesQuery(option: LinkTargetOption, query: string): boolean {
 }
 
 function fold(value: string): string {
-  return value.toLocaleLowerCase("ro").normalize("NFD").replace(/[̀-ͯ]/g, "");
+  // Strip combining diacritical marks (U+0300–U+036F) after NFD, so "ș"
+  // and "s" compare equal.
+  return value
+    .toLocaleLowerCase("ro")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 }
 
 /**

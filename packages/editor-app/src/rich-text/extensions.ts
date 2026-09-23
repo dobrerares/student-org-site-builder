@@ -10,8 +10,9 @@
  *   ways to express a link and one of them would silently win.
  * - **`sosbImage`** stores an asset reference from the project's pipeline,
  *   not a URL. It is an atom: the caption and description are edited through
- *   the picker, never as free-floating text inside the document.
- * - **`richTextAlign`** adds the `align` attribute to paragraphs and
+ *   the picker, never as free-floating text inside the document. The host
+ *   supplies `displayUrlFor` so the surface can show the bytes.
+ * - **`richTextAlign`** carries the `align` attribute of paragraphs and
  *   headings, matching the document vocabulary.
  *
  * The `renderHTML` implementations here are *editor chrome only*. Public
@@ -22,7 +23,7 @@
  */
 
 import { Extension, Mark, Node, mergeAttributes } from "@tiptap/core";
-import { isAcceptableLinkUrl, type RichTextLinkTarget } from "@sosb/schema";
+import { isAcceptableLinkUrl, type AssetRefLike, type RichTextLinkTarget } from "@sosb/schema";
 import { SOSB_IMAGE_NODE, SOSB_LINK_MARK } from "./doc-prosemirror.js";
 
 declare module "@tiptap/core" {
@@ -33,9 +34,6 @@ declare module "@tiptap/core" {
     };
     sosbImage: {
       insertSosbImage: (attrs: { asset: unknown; caption?: string }) => ReturnType;
-    };
-    richTextAlign: {
-      setRichTextAlign: (align: string | null) => ReturnType;
     };
   }
 }
@@ -96,11 +94,23 @@ export const SosbLink = Mark.create({
   },
 
   parseHTML() {
-    // Pasted `<a>` elements keep their words but lose their href: a pasted
-    // link cannot be trusted to point anywhere in this project, and issue
-    // #100 requires paste to retain supported formatting without importing
-    // arbitrary layout or addresses. The author re-links deliberately.
-    return [];
+    // Issue #100: paste retains links. A pasted `<a>` becomes an *external*
+    // target when its href passes the same rule the link dialog applies;
+    // anything else — `javascript:`, a bare fragment, no href at all — keeps
+    // its words and loses the link. Internal targets cannot arrive this way:
+    // they are identities, not addresses, and only the dialog can mint them.
+    // (Copy and paste *within* the editor carries the structured attrs
+    // through ProseMirror's own clipboard format, so those survive intact.)
+    return [
+      {
+        tag: "a[href]",
+        getAttrs: (element) => {
+          const href = element.getAttribute("href")?.trim() ?? "";
+          if (href === "" || !isAcceptableLinkUrl(href)) return false;
+          return { target: { kind: "external", href } satisfies RichTextLinkTarget };
+        },
+      },
+    ];
   },
 
   renderHTML({ HTMLAttributes, mark }) {
@@ -116,20 +126,39 @@ export const SosbLink = Mark.create({
   },
 
   addCommands() {
+    // Both commands first widen a collapsed selection to the whole link the
+    // caret sits in. Without that, "put the caret in a link, choose a new
+    // target" would only set a stored mark for the *next* keystroke and leave
+    // the existing link untouched, and "remove link" would do nothing
+    // visible. With a real selection `extendMarkRange` is a no-op, so
+    // linking a fresh selection is unaffected.
     return {
       setSosbLink:
         (target: RichTextLinkTarget) =>
-        ({ commands }) =>
-          commands.setMark(SOSB_LINK_MARK, { target }),
+        ({ chain }) =>
+          chain().extendMarkRange(SOSB_LINK_MARK).setMark(SOSB_LINK_MARK, { target }).run(),
       unsetSosbLink:
         () =>
-        ({ commands }) =>
-          commands.unsetMark(SOSB_LINK_MARK),
+        ({ chain }) =>
+          chain().extendMarkRange(SOSB_LINK_MARK).unsetMark(SOSB_LINK_MARK).run(),
     };
   },
 });
 
-export const SosbImage = Node.create({
+export interface SosbImageOptions {
+  /**
+   * Resolve an asset reference to something the editing surface can show —
+   * the same `blob:` URL the asset picker and the preview use. The stored
+   * `path` (`assets/<hash>.<ext>`) is a project-archive path, not a URL the
+   * editor page can fetch, so without this every image is a broken image.
+   * Returning `undefined` means the bytes are not in the project: the node
+   * renders as a labelled placeholder so the author sees that a file is
+   * missing rather than a blank.
+   */
+  readonly displayUrlFor: ((ref: AssetRefLike) => string | undefined) | undefined;
+}
+
+export const SosbImage = Node.create<SosbImageOptions>({
   name: SOSB_IMAGE_NODE,
   group: "block",
   // Images occupy their own line; text wrapping and arbitrary positioning
@@ -137,6 +166,10 @@ export const SosbImage = Node.create({
   atom: true,
   draggable: true,
   selectable: true,
+
+  addOptions() {
+    return { displayUrlFor: undefined };
+  },
 
   addAttributes() {
     return {
@@ -156,13 +189,28 @@ export const SosbImage = Node.create({
   renderHTML({ node }) {
     const asset = node.attrs["asset"] as { path?: unknown; alt?: unknown } | null;
     const alt = typeof asset?.alt === "string" ? asset.alt : "";
-    const src = typeof asset?.path === "string" ? asset.path : "";
     const caption = typeof node.attrs["caption"] === "string" ? node.attrs["caption"] : "";
+    const src =
+      asset !== null && typeof asset.path === "string"
+        ? this.options.displayUrlFor?.(asset as AssetRefLike)
+        : undefined;
+    const figcaption = caption === "" ? [] : [["figcaption", {}, caption]];
+    if (src === undefined) {
+      // Missing bytes: an editor placeholder (issue #100), never a broken
+      // image icon and never the raw path. The description still shows so
+      // the author knows *which* image this was.
+      return [
+        "figure",
+        { "data-sosb-image": "", "data-missing": "", class: "rich-text-figure" },
+        ["div", { class: "rich-text-figure__missing", role: "img", "aria-label": alt }, alt],
+        ...figcaption,
+      ];
+    }
     return [
       "figure",
       { "data-sosb-image": "", class: "rich-text-figure" },
       ["img", { src, alt }],
-      ...(caption === "" ? [] : [["figcaption", {}, caption]]),
+      ...figcaption,
     ];
   },
 
@@ -179,6 +227,12 @@ export const SosbImage = Node.create({
   },
 });
 
+/**
+ * Carries the document's per-node `align` through the editor untouched. No
+ * toolbar control sets it — Block-level `titleAlign` / `paragraphAlign` are
+ * the author-facing alignment — but a document that already has it (a
+ * hand-edited file, a future editor) must not lose it on the round trip.
+ */
 export const RichTextAlign = Extension.create({
   name: "richTextAlign",
 
@@ -198,15 +252,5 @@ export const RichTextAlign = Extension.create({
         },
       },
     ];
-  },
-
-  addCommands() {
-    return {
-      setRichTextAlign:
-        (align: string | null) =>
-        ({ commands }) =>
-          commands.updateAttributes("paragraph", { align }) ||
-          commands.updateAttributes("heading", { align }),
-    };
   },
 });

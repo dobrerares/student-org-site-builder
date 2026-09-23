@@ -204,6 +204,17 @@ test("type, format, link, insert an image, undo — and the preview keeps up", a
     await page.getByTestId("rich-text-image-insert").click();
     await expect(page.getByTestId("rich-text-image-dialog")).toHaveCount(0);
 
+    // The editing surface shows the bytes too — through the same display URL
+    // the picker used, not the archive path the editor page cannot fetch.
+    const surfaceImage = surface.locator("figure img");
+    await expect(surfaceImage).toBeVisible();
+    await expect
+      .poll(
+        async () => await surfaceImage.evaluate((img) => (img as HTMLImageElement).naturalWidth),
+        { timeout: 5_000 },
+      )
+      .toBeGreaterThan(0);
+
     // The bytes actually load in the preview — the same assertion the asset
     // picker spec leans on, and for the same reason: an unresolved src stays
     // in the DOM with naturalWidth 0.

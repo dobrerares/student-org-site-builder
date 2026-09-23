@@ -2,6 +2,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
+import type { JSX } from "react";
 import type { AssetRefLike, RichTextDocument, Site } from "@sosb/schema";
 import minimalSite from "./fixtures/minimal-site.json" with { type: "json" };
 import { RichTextField, type RichTextFieldContext } from "../src/rich-text/rich-text-field.js";
@@ -134,6 +135,28 @@ describe("RichTextField — toolbar", () => {
     expect(bold.getAttribute("aria-pressed")).toBe("false");
   });
 
+  test("action buttons are not announced as toggles", async () => {
+    // Undo, redo, link and image *do* something; an `aria-pressed="false"`
+    // on them would be read out as a toggle that is off.
+    const { container } = await renderField(doc(para("x")));
+    for (const id of ["rich-text-undo", "rich-text-redo", "rich-text-image", "rich-text-unlink"]) {
+      expect(container.querySelector(`[data-testid="${id}"]`)?.hasAttribute("aria-pressed")).toBe(
+        false,
+      );
+    }
+  });
+
+  test("Home and End jump to the first and last control", async () => {
+    const { container } = await renderField(doc(para("x")));
+    const toolbar = container.querySelector('[role="toolbar"]')!;
+    const enabled = Array.from(toolbar.querySelectorAll("button:not([disabled])"));
+    enabled[0]!.focus();
+    fireEvent.keyDown(toolbar, { key: "End" });
+    expect(document.activeElement).toBe(enabled[enabled.length - 1]);
+    fireEvent.keyDown(toolbar, { key: "Home" });
+    expect(document.activeElement).toBe(enabled[0]);
+  });
+
   test("remove-link is offered only inside a link", async () => {
     const plain = await renderField(doc(para("x")));
     expect(
@@ -189,6 +212,93 @@ describe("RichTextField — unsupported content", () => {
       <RichTextField value={unreadable} onChange={vi.fn()} context={contextWith()} />,
     );
     await expectNoAxeViolations(container);
+  });
+});
+
+describe("RichTextField — images on the editing surface", () => {
+  const image = {
+    type: "image",
+    asset: {
+      hash: "abc",
+      path: "assets/abc.png",
+      metadataPath: "assets/abc.json",
+      mime: "image/png",
+      width: 10,
+      height: 10,
+      alt: "Sala de curs",
+    },
+  };
+
+  test("shows the bytes through the host's display URL", async () => {
+    const { container } = await renderField(
+      doc(image),
+      contextWith({ displayUrlFor: (ref) => (ref.hash === "abc" ? "blob:abc" : undefined) }),
+    );
+    const img = container.querySelector('[data-testid="rich-text-surface"] figure img');
+    expect(img?.getAttribute("src")).toBe("blob:abc");
+    expect(img?.getAttribute("alt")).toBe("Sala de curs");
+  });
+
+  test("shows a placeholder when the project no longer holds the bytes", async () => {
+    // Issue #100: "Missing files show editor placeholders."
+    const { container } = await renderField(
+      doc(image),
+      contextWith({ displayUrlFor: () => undefined }),
+    );
+    const figure = container.querySelector('[data-testid="rich-text-surface"] figure');
+    expect(figure?.hasAttribute("data-missing")).toBe(true);
+    expect(figure?.querySelector("img")).toBeNull();
+    expect(figure?.textContent).toContain("Sala de curs");
+  });
+});
+
+describe("RichTextField — the stored document changes underneath the field", () => {
+  function Harness(props: {
+    value: RichTextDocument;
+    onChange?: (next: RichTextDocument) => void;
+  }): JSX.Element {
+    return (
+      <RichTextField
+        value={props.value}
+        onChange={props.onChange ?? vi.fn()}
+        context={contextWith()}
+      />
+    );
+  }
+
+  test("a Site undo re-seeds the surface with the restored words", async () => {
+    // Tiptap owns the document while mounted. If Site data changes underneath
+    // it — a Site undo with focus elsewhere — the surface must follow, or the
+    // next keystroke writes the stale words back and silently reverts the undo.
+    const view = render(<Harness value={doc(para("după editare"))} />);
+    await waitFor(() =>
+      expect(view.container.querySelector('[data-testid="rich-text-surface"]')).not.toBeNull(),
+    );
+    view.rerender(<Harness value={doc(para("înainte de editare"))} />);
+    await waitFor(() =>
+      expect(
+        view.container.querySelector('[data-testid="rich-text-surface"]')?.textContent,
+      ).toContain("înainte de editare"),
+    );
+    expect(view.container.textContent).not.toContain("după editare");
+  });
+
+  test("the document coming back from its own onChange does not remount the surface", async () => {
+    // Every keystroke writes the document into Site data and it arrives back
+    // as a new prop. Remounting on that would drop the caret and the local
+    // history on every character typed.
+    let latest: RichTextDocument | undefined;
+    const view = render(<Harness value={doc(para("x"))} onChange={(next) => (latest = next)} />);
+    await waitFor(() =>
+      expect(view.container.querySelector('[data-testid="rich-text-surface"]')).not.toBeNull(),
+    );
+    const before = view.container.querySelector('[data-testid="rich-text-surface"]');
+    // Same content, different object identity — what the state store hands
+    // back after a quiet patch.
+    view.rerender(<Harness value={doc(para("x"))} onChange={(next) => (latest = next)} />);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(view.container.querySelector('[data-testid="rich-text-surface"]')).toBe(before);
+    expect(latest).toBeUndefined();
   });
 });
 

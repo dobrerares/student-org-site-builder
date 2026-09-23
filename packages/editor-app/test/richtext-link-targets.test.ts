@@ -48,13 +48,30 @@ describe("linkTargetsFor", () => {
   });
 
   test("shows the URL a visitor would see as the secondary line", () => {
+    // Taken from the Renderer's own routing: the language home is `/`
+    // whatever its slug, and a secondary language carries its segment.
     const site = siteWith(
-      [page("despre", "Despre")],
-      [{ id: "a1", lang: "ro", slug: "stire", title: "O știre", state: "published" }],
+      [
+        page("acasa", "Acasă"),
+        { ...(page("despre", "Despre") as object), navOrder: 1 },
+        { ...(page("about", "About") as object), lang: "en", navOrder: 1 },
+        { ...(page("home", "Home") as object), lang: "en" },
+      ],
+      [
+        { id: "a1", lang: "ro", slug: "stire", title: "O știre", state: "published" },
+        { id: "a2", lang: "en", slug: "news", title: "News", state: "published" },
+      ],
     );
-    const options = linkTargetsFor(site, "ro");
-    expect(options[0]?.hint).toBe("/despre/");
-    expect(options[1]?.hint).toBe("/articles/stire/");
+    expect(linkTargetsFor(site, "ro").map((o) => o.hint)).toEqual([
+      "/",
+      "/despre/",
+      "/articles/stire/",
+    ]);
+    expect(linkTargetsFor(site, "en").map((o) => o.hint)).toEqual([
+      "/en/about/",
+      "/en/",
+      "/en/articles/news/",
+    ]);
   });
 
   test("includes Drafts, flagged", () => {
