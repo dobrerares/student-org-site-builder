@@ -152,6 +152,38 @@ export function omittedBlocksFor(site: Site, bundle: ThemeBundle | undefined): O
 }
 
 /**
+ * A package-relative file path, as the manifest's own path rule spells it
+ * (`THEME_PATH_RE` in `@sosb/theme-package`, duplicated here because the
+ * renderer cannot import the package loader): plain segments, no scheme, no
+ * leading slash, nothing a browser could read as anything but a path.
+ */
+const PACKAGE_PATH_RE = /^[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*$/;
+
+/**
+ * Is this a Site asset the pipeline could have produced?
+ *
+ * The helpers' return values are trusted by identity in the tree validator,
+ * which is what lets a preview `blob:` URL through — so what goes *into* a
+ * helper has to be something the builder would have minted a URL for. Site
+ * assets live under `assets/` (the pipeline writes `assets/<hash>.<ext>`);
+ * anything with a scheme, a `//`, a `..` segment or a character that has no
+ * business in a path is not one, and `mediaUrl` answers `null` for it rather
+ * than handing the design a trusted string it wrote itself.
+ */
+function isSiteAssetPath(path: string): boolean {
+  if (!path.startsWith("assets/")) return false;
+  if (path.includes("//") || path.includes("\\")) return false;
+  if (path.split("/").some((segment) => segment === "..")) return false;
+  for (let i = 0; i < path.length; i += 1) {
+    const code = path.charCodeAt(i);
+    if (code <= 0x20 || code === 0x7f) return false;
+    const ch = path[i]!;
+    if (ch === '"' || ch === "'" || ch === "<" || ch === ">") return false;
+  }
+  return true;
+}
+
+/**
  * Per-call helper state.
  *
  * `trusted` collects every URL the builder itself produced during this call.
@@ -179,11 +211,16 @@ class HelperScope {
     return {
       asset: (path: string): string => {
         const clean = String(path).replace(/^\.?\//, "");
+        if (!PACKAGE_PATH_RE.test(clean) || clean.split("/").includes("..")) {
+          throw new Error(
+            `asset(): "${String(path).slice(0, 60)}" is not a package-relative path such as "assets/x.svg".`,
+          );
+        }
         return this.trust(resolveAssetUrl(themeAssetPrefix(bundle.id) + clean, assetUrlForPath));
       },
       mediaUrl: (ref: unknown): string | null => {
         const path = typeof ref === "string" ? ref : assetRefPath(ref);
-        if (path === undefined || path.length === 0) return null;
+        if (path === undefined || !isSiteAssetPath(path)) return null;
         return this.trust(resolveAssetUrl(path, assetUrlForPath));
       },
       mediaAlt: (ref: unknown): string => (typeof ref === "string" ? "" : assetRefAlt(ref)),
@@ -414,20 +451,28 @@ function asRenderError(
 /**
  * The builder-owned failure box.
  *
- * Preview only, and deliberately not styled by the Theme: a Theme whose code
+ * Its one sentence follows the page language by the same family rule as the
+ * rest of the renderer's visitor copy; the technical detail after it is the
+ * error message as thrown. Preview only, and deliberately not styled by the Theme: a Theme whose code
  * just crashed is not the thing to ask for a presentation of the crash. The
  * inline style is the builder's own and is the one place in the output where
  * that is true.
  */
-function ThemeErrorBox(props: { message: string }): preact.JSX.Element {
+const THEME_ERROR_COPY = {
+  ro: "Această temă nu a putut afișa această parte a paginii.",
+  en: "This Theme could not render this part of the page.",
+} as const;
+
+function ThemeErrorBox(props: { message: string; lang: string }): preact.JSX.Element {
   return (
     <div
       {...{ "data-sosb-theme-error": "" }}
       role="alert"
+      lang={languageFamily(props.lang)}
       style="margin:1rem;padding:1rem;border:2px solid #b3261e;border-radius:4px;background:#fff;color:#410e0b;font:14px/1.5 system-ui,sans-serif"
     >
       <strong style="display:block;margin-bottom:.25rem">
-        This Theme could not render this part of the page.
+        {THEME_ERROR_COPY[languageFamily(props.lang)]}
       </strong>
       {props.message}
     </div>
@@ -464,7 +509,7 @@ export function renderDesignedBlock(
     const error = asRenderError(cause, ctx.bundle, block.id, block.type);
     ctx.onIssue?.({ kind: "render-failed", document: ctx.docRef, error });
     if (ctx.mode === "deploy") throw error;
-    return <ThemeErrorBox message={error.message} />;
+    return <ThemeErrorBox message={error.message} lang={ctx.lang} />;
   }
 }
 
@@ -516,6 +561,6 @@ export function renderDesignedShell(
 }
 
 /** The preview-mode error box, for the shell-failure fallback path. */
-export function themeErrorBox(message: string): preact.JSX.Element {
-  return <ThemeErrorBox message={message} />;
+export function themeErrorBox(message: string, lang: string): preact.JSX.Element {
+  return <ThemeErrorBox message={message} lang={lang} />;
 }

@@ -295,6 +295,82 @@ describe("what a tree may not contain", () => {
     );
   });
 
+  test("mediaUrl() answers null for anything that is not a Site asset path", () => {
+    // The helper's return value is trusted by identity, so its *input* must
+    // be something the builder would have minted a URL for. A design cannot
+    // launder a scheme, a protocol-relative host or a path escape through it.
+    const bundle = bundleWith({
+      blocks: {
+        hero: (i, h) => [
+          "p",
+          {
+            "data-js": String(h.mediaUrl("javascript:alert(1)")),
+            "data-host": String(h.mediaUrl({ path: "//evil.test/x.png" })),
+            "data-up": String(h.mediaUrl("assets/../../index.html")),
+            "data-quote": String(h.mediaUrl('assets/x".png')),
+            "data-real": String(h.mediaUrl(i.data.backgroundImage)),
+          },
+        ],
+      },
+    });
+    expect(render(siteFor(), bundle)).toContain(
+      '<p data-host="null" data-js="null" data-quote="null" data-real="assets/hero.jpg" data-up="null"',
+    );
+  });
+
+  test("asset() refuses a path that could not be a package file", () => {
+    const bundle = bundleWith({
+      blocks: { hero: (_i, h) => ["img", { src: h.asset("../../etc/passwd"), alt: "" }] },
+    });
+    const error = expectRenderError(() => render(siteFor(), bundle), "threw", /package-relative/);
+    expect(error.subject).toBe("blk_home_hero");
+    const scheme = bundleWith({
+      blocks: { hero: (_i, h) => ["img", { src: h.asset("javascript:alert(1)"), alt: "" }] },
+    });
+    expectRenderError(() => render(siteFor(), scheme), "threw", /package-relative/);
+  });
+
+  test("srcset is checked one candidate at a time", () => {
+    const fine = bundleWith({
+      blocks: {
+        hero: (_i, h) => [
+          "img",
+          {
+            alt: "",
+            src: h.asset("assets/a.png"),
+            srcset: `${h.asset("assets/a.png")} 1x, ${h.asset("assets/b.png")} 2x`,
+          },
+        ],
+      },
+    });
+    expect(render(siteFor(), fine)).toContain(
+      'srcset="assets/theme/org.example.fake/assets/a.png 1x, assets/theme/org.example.fake/assets/b.png 2x"',
+    );
+    // A safe first candidate does not vouch for the second.
+    const smuggled = bundleWith({
+      blocks: {
+        hero: () => ["img", { alt: "", srcset: "https://cdn.test/a.png 1x, //evil.test/b.png 2x" }],
+      },
+    });
+    expectRenderError(
+      () => render(siteFor(), smuggled),
+      "invalid-tree",
+      /"srcset" is not an acceptable URL \("\/\/evil\.test/,
+    );
+    // Two URLs with no descriptor between them is not a candidate list.
+    const malformed = bundleWith({
+      blocks: { hero: () => ["img", { alt: "", srcset: "assets/a.png assets/b.png 2x" }] },
+    });
+    expectRenderError(() => render(siteFor(), malformed), "invalid-tree", /well-formed candidate/);
+  });
+
+  test("an attribute name that is not a plain name is refused, not silently dropped", () => {
+    const bundle = bundleWith({
+      blocks: { hero: () => ["div", { "data-a onmouseover=alert(1)": "1" }] },
+    });
+    expectRenderError(() => render(siteFor(), bundle), "invalid-tree", /invalid name/);
+  });
+
   test("a new-tab link gets noopener noreferrer whether the design asked or not", () => {
     const bundle = bundleWith({
       blocks: {
@@ -356,8 +432,17 @@ describe("failure surfaces per mode", () => {
   test("preview mode reports through onIssue and renders a builder-owned box", () => {
     const issues: ThemeRenderIssue[] = [];
     const html = render(siteFor(), throwing, { mode: "preview", issues });
-    expect(html).toContain('data-sosb-theme-error role="alert"');
+    expect(html).toContain('data-sosb-theme-error role="alert" lang="ro"');
+    expect(html).toContain("Această temă nu a putut afișa această parte a paginii.");
     expect(html).toContain("kaput");
+    const english = siteFor((s) => {
+      s.languages = ["en"];
+      s.defaultLanguage = "en";
+      s.pages[0]!.lang = "en";
+    });
+    expect(render(english, throwing, { mode: "preview" })).toContain(
+      "This Theme could not render this part of the page.",
+    );
     expect(issues).toHaveLength(1);
     expect(issues[0]!.kind).toBe("render-failed");
     if (issues[0]!.kind === "render-failed") {

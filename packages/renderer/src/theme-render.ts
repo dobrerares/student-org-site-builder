@@ -113,12 +113,19 @@ export function isThemeRenderError(value: unknown): value is ThemeRenderError {
  * Block next to it.
  */
 export interface ThemeRenderHelpers {
-  /** A file inside the Theme package (`assets/x.svg`) → its canonical URL. */
+  /**
+   * A file inside the Theme package (`assets/x.svg`) → its canonical URL.
+   * Throws for anything that is not a package-relative path (a scheme, a
+   * `..` segment): the result is trusted by identity downstream, so the
+   * input has to be something the package could actually contain.
+   */
   asset(path: string): string;
   /**
    * A Site asset — an `AssetRef` out of Block data, or its bare path — to the
    * URL that resolves in this render target. `null` when the slot is empty,
-   * which is the common case a design has to handle.
+   * which is the common case a design has to handle, and `null` for anything
+   * that is not a Site asset path (`assets/…`): a design cannot launder a URL
+   * of its own through the helper's trusted return value.
    */
   mediaUrl(ref: unknown): string | null;
   /** The screen-reader description stored on a Site asset, or `""`. */
@@ -525,6 +532,52 @@ function hasUnsafePathCharacter(value: string): boolean {
   return false;
 }
 
+/**
+ * The shape of an attribute name a design may use.
+ *
+ * `preact-render-to-string` drops an attribute whose name it cannot serialise
+ * (a space, a quote) rather than emitting it, so this is not an injection
+ * surface — but a silently dropped attribute is exactly the kind of failure
+ * the tree contract promises to make locatable. Letters, digits and hyphens,
+ * which covers every HTML attribute, every `data-*`/`aria-*` and the
+ * camel-cased SVG names (`viewBox`).
+ */
+const ATTR_NAME_RE = /^[a-z][a-z0-9-]*$/i;
+
+/**
+ * The URLs in a `srcset`, or `undefined` when the value is not a well-formed
+ * candidate list.
+ *
+ * Follows the HTML parsing algorithm's shape: a candidate is a URL, then
+ * optional descriptors (`1x`, `2.5x`, `800w`, `100h`), and a comma ends it.
+ * The URL is never split on commas inside it, because the spec collects a
+ * URL up to whitespace and only trims commas at its end. Each URL is then
+ * checked like any other `src`, so a protocol-relative or `javascript:`
+ * candidate hiding behind a harmless first one is refused.
+ */
+function srcsetCandidateUrls(value: string): string[] | undefined {
+  const tokens = value.split(/[\t\n\f\r ]+/).filter((token) => token.length > 0);
+  const urls: string[] = [];
+  let i = 0;
+  while (i < tokens.length) {
+    let url = tokens[i++]!.replace(/^,+/, "");
+    if (url.length === 0) continue;
+    const terminated = url.endsWith(",");
+    url = url.replace(/,+$/, "");
+    if (url.length === 0) return undefined;
+    urls.push(url);
+    if (terminated) continue;
+    // Descriptors until one carries the trailing comma; anything else in
+    // that position (a bare URL, say) means the list is malformed.
+    while (i < tokens.length) {
+      const descriptor = tokens[i++]!;
+      if (!/^\d+(?:\.\d+)?[wxh],?$/.test(descriptor)) return undefined;
+      if (descriptor.endsWith(",")) break;
+    }
+  }
+  return urls;
+}
+
 function attrIsAllowed(tag: string, name: string, svg: boolean): boolean {
   if (name.startsWith("data-") || name.startsWith("aria-")) return true;
   if (GLOBAL_ATTRS.has(name)) return true;
@@ -547,6 +600,12 @@ function convertAttrs(
 ): Record<string, unknown> {
   const props: Record<string, unknown> = {};
   for (const name of Object.keys(node.attrs).sort()) {
+    if (!ATTR_NAME_RE.test(name)) {
+      reject(
+        ctx,
+        `<${node.tag}> carries an attribute with an invalid name ("${name.slice(0, 40)}").`,
+      );
+    }
     if (/^on/i.test(name)) {
       reject(
         ctx,
@@ -581,12 +640,23 @@ function convertAttrs(
     if (typeof value !== "string") {
       reject(ctx, `<${node.tag}> attribute "${name}" must be a string, number or boolean.`);
     }
-    if (URL_ATTRS.has(name) && !isSafeTreeUrl(value, ctx.trustedUrls)) {
-      reject(
-        ctx,
-        `<${node.tag}> attribute "${name}" is not an acceptable URL ("${value.slice(0, 60)}"). ` +
-          `Use input.asset(), input.pageUrl() or input.articleUrl(), or a plain http(s)/mailto/tel URL.`,
-      );
+    if (URL_ATTRS.has(name)) {
+      const urls = name === "srcset" ? srcsetCandidateUrls(value) : [value];
+      if (urls === undefined) {
+        reject(
+          ctx,
+          `<${node.tag}> attribute "srcset" is not a well-formed candidate list ("${value.slice(0, 60)}"). ` +
+            `Write it as "url 1x, url 2x" with a descriptor per candidate.`,
+        );
+      }
+      const offending = urls.find((url) => !isSafeTreeUrl(url, ctx.trustedUrls));
+      if (offending !== undefined) {
+        reject(
+          ctx,
+          `<${node.tag}> attribute "${name}" is not an acceptable URL ("${offending.slice(0, 60)}"). ` +
+            `Use input.asset(), input.mediaUrl(), input.pageUrl() or input.articleUrl(), or a plain http(s)/mailto/tel URL.`,
+        );
+      }
     }
     props[name] = value;
   }

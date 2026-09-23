@@ -923,7 +923,7 @@ function DocumentShell(props: {
       // editable page; a blank one is not, so the content survives and the
       // box says which Theme broke.
       <>
-        {themeErrorBox(designedShell.error.message)}
+        {themeErrorBox(designedShell.error.message, target.lang)}
         {builtInBody}
       </>
     );
