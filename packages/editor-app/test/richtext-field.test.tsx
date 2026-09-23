@@ -149,7 +149,9 @@ describe("RichTextField — toolbar", () => {
   test("Home and End jump to the first and last control", async () => {
     const { container } = await renderField(doc(para("x")));
     const toolbar = container.querySelector('[role="toolbar"]')!;
-    const enabled = Array.from(toolbar.querySelectorAll("button:not([disabled])"));
+    const enabled = Array.from(
+      toolbar.querySelectorAll<HTMLButtonElement>("button:not([disabled])"),
+    );
     enabled[0]!.focus();
     fireEvent.keyDown(toolbar, { key: "End" });
     expect(document.activeElement).toBe(enabled[enabled.length - 1]);

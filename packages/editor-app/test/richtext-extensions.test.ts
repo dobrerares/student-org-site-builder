@@ -167,7 +167,9 @@ describe("sosbImage — what the editing surface shows", () => {
     expect(html).not.toContain("<img");
     expect(html).toContain('aria-label="Membrii asociației"');
     // The stored node is untouched: the placeholder is display only.
-    const json = instance.getJSON() as { content: { type: string; attrs?: { asset: unknown } }[] };
+    const json = instance.getJSON() as unknown as {
+      content: { type: string; attrs?: { asset: unknown } }[];
+    };
     const image = json.content.find((n) => n.type === SOSB_IMAGE_NODE);
     expect(image?.attrs?.asset).toEqual(asset);
   });
