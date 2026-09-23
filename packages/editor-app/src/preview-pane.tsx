@@ -249,11 +249,7 @@ export function PreviewPane(props: PreviewPaneProps): JSX.Element {
       <div data-testid="preview-toolbar" data-pane-bar>
         <span data-pane-kicker>
           {t("preview.title")}
-          <InfoHint
-            label={t("preview.title")}
-            text={t("preview.info")}
-            testId="preview-info"
-          />
+          <InfoHint label={t("preview.title")} text={t("preview.info")} testId="preview-info" />
         </span>
         <span data-preview-title data-truncate data-testid="preview-target-title">
           {props.previewedTitle}

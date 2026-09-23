@@ -78,11 +78,7 @@ export function ExportReadinessPanel(props: ExportReadinessPanelProps): JSX.Elem
       <>
         <h2 id={headingId}>
           {t("export.title")}
-          <InfoHint
-            label={t("export.info.label")}
-            text={t("export.info")}
-            testId="export-info"
-          />
+          <InfoHint label={t("export.info.label")} text={t("export.info")} testId="export-info" />
         </h2>
 
         {hasErrors ? (

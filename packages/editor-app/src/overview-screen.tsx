@@ -151,7 +151,9 @@ export function OverviewScreen(props: OverviewScreenProps): JSX.Element {
                     onClick={() => props.onOpenArticle(article.id)}
                   >
                     <span data-summary-main>
-                      <span data-summary-title>{article.title}</span>
+                      <span data-summary-title>
+                        {article.title.trim() === "" ? t("articles.untitled") : article.title}
+                      </span>
                       <span data-summary-meta>{article.publishedAt}</span>
                     </span>
                     <Badge tone="outline">{article.lang}</Badge>
@@ -211,7 +213,11 @@ export function OverviewScreen(props: OverviewScreenProps): JSX.Element {
       </section>
 
       <div data-row>
-        <Button type="button" data-testid="overview-theme" onClick={() => props.onNavigate("theme")}>
+        <Button
+          type="button"
+          data-testid="overview-theme"
+          onClick={() => props.onNavigate("theme")}
+        >
           {t("builder.nav.theme")}
         </Button>
         <Button
