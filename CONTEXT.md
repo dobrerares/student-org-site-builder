@@ -210,8 +210,9 @@ can never disagree with what exports.
 _Avoid_: list config, filter.
 
 **Blocking issue**:
-A validation `error` carrying `blocking: true`, which the pre-export
-dialog will not let the author override. ADR 0016's "never hard-block"
+A validation `error` carrying `blocking: true`, which the export
+readiness panel will not let the author override — its export button is
+disabled outright (ADR 0053). ADR 0016's "never hard-block"
 rule still governs every other error; this is the narrow ADR 0048 carve-out
 for public content that cannot be produced correctly at all — today, an
 active explicit Article-list selection pointing at a Draft or deleted
@@ -473,9 +474,10 @@ host-side, so there is exactly one Renderer code path).
 A full `srcdoc` reload is used, deliberately, when the previewed page,
 theme or language changes: those are different documents, and carrying
 state across them would be wrong.
-An interactive preview mode (ADR 0046) is still future work — the
-preview remains a picture the user edits through the forms, not a
-surface they click into.
+An interactive preview mode (ADR 0046) is still future work. Links
+inside the preview navigate it the way the public website would (ADR
+0053), but Blocks are not selected or edited by clicking them — editing
+goes through the forms.
 
 **Spine patch** vs **block patch**:
 A field edit in the SpineForm produces a "spine patch" with a path
@@ -494,8 +496,10 @@ the state model.
 **Validation**:
 Schema-level checks plus quality nudges (missing alt text, low contrast,
 broken internal links). Returns a tiered list of `errors`, `warnings`,
-`info`. Surfaced through the **Site Health** footer + panel and the
-pre-export confirm dialog.
+`info`. Surfaced through the Overview's **Site Health** card and the
+**export readiness panel** (ADR 0053). The earlier health footer, side
+panel and pre-export dialog remain exported components for hosts that
+compose their own chrome; the shell no longer mounts them.
 
 ## Relationships
 

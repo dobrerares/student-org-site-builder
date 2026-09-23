@@ -1,6 +1,7 @@
 # 0042 — Editor pane drill-in pattern, block-form wiring, and curated seed
 
-- **Status:** Accepted
+- **Status:** Accepted — the shell layout is revised by
+  [ADR 0053](0053-builder-navigation-state-model.md); the Inspector drill-in stands
 - **Date:** 2026-05-11
 - **Issue:** TBD (cuts the deferred block-CRUD work from ADR 0035's "Out of
   scope" section, plus the seed-swap follow-up to ADR 0024)

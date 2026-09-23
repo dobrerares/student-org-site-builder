@@ -133,6 +133,10 @@ stop it — a live URL never changes under the author.
 - The health footer, the Site Health side panel and the pre-export
   confirmation dialog are no longer mounted by the shell. Their components
   remain exported for hosts that composed their own chrome.
+- Create Page and Create Article both create in the navigation's content
+  language, which falls back to the Site's default whenever the chosen one
+  is no longer declared (a different project was imported, a language was
+  removed).
 - Tests and specs that assumed a Block list at boot now open a page first
   (`test/helpers/nav.ts`, `e2e/builder-helpers.ts`).
 - Vocabulary in `CONTEXT.md`: **Destination**, **Overview**, **Workspace**,

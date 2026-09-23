@@ -177,8 +177,10 @@ Inspector and PR #116's preview fidelity.
 - **Tiptap `RichTextField`** (feat/rich-text) had not merged when this
   landed; the Rich-text Block still edits Markdown in a textarea. Wiring is a
   swap inside `BlockInspector` once it does.
-- `PagesList` and `BlockListEditor` row copy ("Add section", "Move up",
-  "Duplicate") predates the i18n pass and is still English-only.
+- The Add-block dialog's chrome and the block catalog's labels and
+  descriptions (`block-catalog.ts`) predate the i18n pass and are still
+  English-only. The `PagesList` and `BlockListEditor` row copy was translated
+  in the #118 review.
 - The Overview's article date is shown raw (`YYYY-MM-DD`).
 
 ## Decisions worth knowing
@@ -194,6 +196,9 @@ Inspector and PR #116's preview fidelity.
 - **Article ids are never reused while referenced.** `nextArticleId` counts
   referenced ids as well as existing ones, so replacement content cannot
   inherit a deleted Article's placements.
+- **Create Page and Create Article use the content language.** The
+  navigation's picker applies to both; it falls back to the Site's default
+  when the chosen language is no longer declared.
 - **Language is fixed at creation.** Translations are separate linked Articles,
   so there is no language selector on an existing Article; use "add
   translation" instead.

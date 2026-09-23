@@ -1,6 +1,8 @@
 # 0008 — Validation surfaces (Site Health panel, health footer, export gate)
 
-- **Status:** Accepted
+- **Status:** Accepted — surfaces revised by [ADR 0053](0053-builder-navigation-state-model.md):
+  the export readiness panel replaces the pre-export dialog, and the shell no
+  longer mounts the health footer or the side panel (both stay exported)
 - **Date:** 2026-05-05
 - **Issue:** #25
 
@@ -12,8 +14,11 @@ exceptions to the override rule below: unavailable active explicit Article-list
 selections, missing image bytes, and unsupported rich-text content in public
 content block public export without an override. Draft-only problems do not;
 editable archive saving remains available. Broken prose links warn and render
-unlinked text; missing image descriptions remain warnings. These are planned
-changes; the historical implementation described below still allows overrides.
+unlinked text; missing image descriptions remain warnings. The Article-list
+carve-out is implemented: `ValidationIssue.blocking` disables the export
+button in the readiness panel (ADR 0053 §5). Missing image bytes and
+unsupported rich-text content are still planned; the historical implementation
+described below allowed an override for everything.
 
 ## Context
 
