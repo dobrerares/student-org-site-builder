@@ -10,8 +10,9 @@ import {
 } from "./article-select.js";
 import type { ArticleSelection } from "./blocks/article-list.js";
 import { DEFAULT_ARTICLE_LIST_MODE } from "./blocks/article-list.js";
-import { SiteSchema, type Site } from "./site.js";
+import { SiteSchema } from "./site.js";
 import { checkSlug } from "./slug.js";
+import { sanitizeUrl } from "@sosb/markdown";
 import {
   collectRichTextImages,
   collectRichTextLinkTargets,
@@ -968,7 +969,7 @@ function makeLinkTargetResolver(
     if (typeof page.id === "string" && page.id.length > 0) pageIds.add(page.id);
   }
 
-  const articles = articlesById(site as unknown as Site);
+  const articles = articlesById(site);
 
   return (target: RichTextLinkTarget): LinkTargetState => {
     if (target.kind === "page") return pageIds.has(target.pageId) ? "ok" : "missing";
@@ -1049,9 +1050,28 @@ function runRichTextRules(
     }
   }
 
-  if (context.resolveLinkTarget !== undefined) {
-    for (const link of collectRichTextLinkTargets(doc)) {
-      if (link.target.kind === "external") continue;
+  for (const link of collectRichTextLinkTargets(doc)) {
+    if (link.target.kind === "external") {
+      // The document schema refuses unsafe hrefs on the way in, but a text
+      // node whose link fails that check still parses — as an unknown node,
+      // which is what keeps hand-edited content from making a project
+      // unopenable. The Renderer's sanitiser then drops the href and the
+      // words render unlinked, exactly like a deleted Page target. Without
+      // this rule that would happen silently; with it, it is a repairable
+      // Site Health finding like every other broken link (ADR 0048).
+      if (typeof link.target.href !== "string" || sanitizeUrl(link.target.href) === null) {
+        result.warnings.push({
+          severity: "warning",
+          path: ["data", "doc", ...link.path, "href"],
+          code: "block.richText.link.invalid",
+          message:
+            "A link in this text section has an address that cannot be used on a website. " +
+            "It will show as plain text until you change it to a web, email or telephone address.",
+        });
+      }
+      continue;
+    }
+    if (context.resolveLinkTarget !== undefined) {
       const state = context.resolveLinkTarget(link.target);
       if (state === "ok") continue;
       result.warnings.push({

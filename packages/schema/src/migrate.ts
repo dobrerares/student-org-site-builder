@@ -139,24 +139,38 @@ export function migrateSite(data: unknown): SiteMigrationResult {
 
   // Block migrations run after the site-level ladder, because a site
   // migration may add or move Block containers and the block pass should see
-  // the final layout. Every Block in the project is visited — Pages today,
-  // and Articles as well once issue #97 lands, which is why the container
-  // list is data-driven rather than a hard-coded `pages` walk.
+  // the final layout. Every Block in the project is visited — Pages and
+  // Articles (issue #97) — which is why the container list is data-driven
+  // rather than a hard-coded `pages` walk.
   const blockMigrations: AppliedBlockMigration[] = [];
   working = migrateAllBlocks(working, blockMigrations);
 
   return { data: working, appliedVersions: applied, blockMigrations };
 }
 
+/**
+ * Whether the load-time pass should hand a Block to `migrateBlock` at all.
+ *
+ * Two kinds of Block are deliberately left untouched rather than rejected:
+ *
+ * - **Structurally broken** ones (no type, no integer version). Rejecting
+ *   them here would turn a reportable validation error into an unopenable
+ *   project, the opposite of what the migration is for.
+ * - **Newer than this editor** ones. ADR 0002's forward-compatibility contract
+ *   is that content from a newer editor survives a read-write-read cycle
+ *   byte-identically, and ADR 0048 adds that it is shown read-only and never
+ *   simplified. `migrateBlock` itself throws for a newer version — that is
+ *   the right answer for a caller asking to bump one Block — but at load
+ *   time the project must still open, with the mismatch reported by
+ *   validation as an ordinary schema error on that Block.
+ */
 function isMigratableBlock(block: unknown): boolean {
   if (typeof block !== "object" || block === null) return false;
   const enveloped = block as { type?: unknown; version?: unknown };
-  return (
-    typeof enveloped.type === "string" &&
-    enveloped.type.length > 0 &&
-    typeof enveloped.version === "number" &&
-    Number.isInteger(enveloped.version)
-  );
+  if (typeof enveloped.type !== "string" || enveloped.type.length === 0) return false;
+  if (typeof enveloped.version !== "number" || !Number.isInteger(enveloped.version)) return false;
+  const known = KNOWN_BLOCK_VERSIONS[enveloped.type];
+  return known === undefined || enveloped.version <= known;
 }
 
 /** Containers on the Site whose members each carry a `blocks` array. */
@@ -180,9 +194,6 @@ function migrateAllBlocks(data: unknown, log: AppliedBlockMigration[]): unknown 
 
       let blocksChanged = false;
       const migratedBlocks = blocks.map((block, blockIndex) => {
-        // Structurally broken Blocks are left alone. Rejecting them here
-        // would turn a reportable validation error into an unopenable
-        // project, which is the opposite of what the migration is for.
         if (!isMigratableBlock(block)) return block;
         const result = migrateBlock(block);
         if (result.appliedVersions.length === 0) return block;

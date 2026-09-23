@@ -106,6 +106,24 @@ describe("richText v1 → v2 migration", () => {
     expect(twice.data).toBe(once.data);
   });
 
+  test("a Block newer than this editor is preserved, not rejected", () => {
+    // ADR 0002: content from a newer editor must survive a read-write-read
+    // cycle. `migrateBlock` throws for a newer version, but the load-time
+    // pass must not — that would turn "shown read-only, reported by
+    // validation" into an unopenable project.
+    const future = { id: "b_future", type: "richText", version: 99, data: { doc: { v: 9 } } };
+    const legacy = legacyBlock("b_legacy", "text");
+    const result = migrateSite(siteWith([future, legacy]));
+    const blocks = (result.data as { pages: { blocks: unknown[] }[] }).pages[0]!.blocks;
+    expect(blocks[0]).toEqual(future);
+    expect((blocks[1] as { version: number }).version).toBe(RICH_TEXT_BLOCK_VERSION);
+    expect(result.blockMigrations.map((m) => m.path)).toEqual([["pages", 0, "blocks", 1]]);
+    // The mismatch is still reported, as an ordinary (overridable) error.
+    const codes = validate(result.data).errors.map((e) => e.path.join("."));
+    expect(codes.some((path) => path.startsWith("pages.0.blocks.0"))).toBe(true);
+    expect(() => migrateBlock(future)).toThrow(/newer/);
+  });
+
   test("a Site with no legacy Blocks comes back untouched, by identity", () => {
     const current = siteWith([
       {

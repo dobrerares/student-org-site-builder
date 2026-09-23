@@ -193,7 +193,46 @@ describe("rich-text validation — link targets", () => {
     const result = validate(
       siteWith(doc(linkPara({ kind: "external", href: "https://anosr.ro" }))),
     );
-    expect(result.warnings.map((w) => w.code)).not.toContain("block.richText.link.missing");
+    const codes = result.warnings.map((w) => w.code);
+    expect(codes).not.toContain("block.richText.link.missing");
+    expect(codes).not.toContain("block.richText.link.invalid");
+  });
+
+  test("an external address the Renderer would refuse warns instead of vanishing", () => {
+    // The schema rejects the href, the text node falls back to the loose
+    // parse, and the Renderer drops the link — all silently, unless
+    // validation says so. A hand-edited project file is the realistic source.
+    const result = validate(
+      siteWith(doc(linkPara({ kind: "external", href: "javascript:alert(1)" }))),
+    );
+    const issue = result.warnings.find((w) => w.code === "block.richText.link.invalid");
+    expect(issue).toBeDefined();
+    expect(issue?.path).toEqual([
+      "pages",
+      0,
+      "blocks",
+      0,
+      "data",
+      "doc",
+      "content",
+      0,
+      "content",
+      0,
+      "marks",
+      0,
+      "target",
+      "href",
+    ]);
+    expect(result.errors).toEqual([]);
+    expect(hasBlockingIssues(result)).toBe(false);
+  });
+
+  test("addresses the legacy Markdown renderer accepted stay valid after migration", () => {
+    // `[text](#anchor)` migrates to an external target the schema's own rule
+    // would not accept, yet it still renders as a link. The rule follows the
+    // Renderer, not the schema, so migrated content does not warn.
+    const result = validate(siteWith(doc(linkPara({ kind: "external", href: "#sus" }))));
+    expect(result.warnings.map((w) => w.code)).not.toContain("block.richText.link.invalid");
   });
 });
 
