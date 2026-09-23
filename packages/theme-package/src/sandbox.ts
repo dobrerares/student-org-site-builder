@@ -74,9 +74,11 @@ const MEMORY_LIMIT_BYTES = 48 * 1024 * 1024;
  * at a time until WebAssembly refused to grow the memory — which aborts the
  * module for every Theme in the session. Two guards close that: a design
  * that blew its ceiling is not run again for that subject (see `invoke`),
- * and no call may leave the heap above this cap, whatever it was at the
- * start. The engine starts at 16 MB; 256 MB is room for a handful of Themes
- * and one accident, not for a runaway.
+ * and once the heap is above this cap no call may grow it further. A call
+ * that fits in what earlier failures freed still runs — the cap is a fact
+ * about the session, and a design must not fail because of history. The
+ * engine starts at 16 MB; 256 MB is room for a handful of Themes and a few
+ * accidents, not for a runaway.
  */
 const HEAP_HARD_CAP_BYTES = 256 * 1024 * 1024;
 
@@ -247,6 +249,7 @@ function guestError(
   blockType: string | undefined,
   exhausted: boolean,
   heapExceeded = false,
+  heapCapped = false,
 ): ThemeRenderError {
   let detail: string;
   try {
@@ -277,6 +280,15 @@ function guestError(
   // and stays a plain throw — the message already says what happened.) Both
   // are resource exhaustion rather than a bug in the design's *logic*, and
   // the author needs to hear that distinction.
+  if (heapCapped) {
+    return new ThemeRenderError({
+      code: "memory",
+      themeId,
+      subject,
+      blockType,
+      detail: `the Theme sandbox's shared memory is exhausted for this session (over ${Math.round(HEAP_HARD_CAP_BYTES / (1024 * 1024))} MB after earlier failures). Reload the editor.`,
+    });
+  }
   if (heapExceeded || /\bout of memory\b/i.test(detail)) {
     return new ThemeRenderError({
       code: "memory",
@@ -318,10 +330,20 @@ export function compileThemeRenderModule(themeId: string, source: string): Theme
   let exhausted = false;
   let heapAtStart = heapBytes();
   let heapExceeded = false;
+  let heapCapped = false;
   runtime.setInterruptHandler(() => {
     const now = heapBytes();
-    if (now - heapAtStart > MEMORY_LIMIT_BYTES || now > HEAP_HARD_CAP_BYTES) {
+    if (now - heapAtStart > MEMORY_LIMIT_BYTES) {
       heapExceeded = true;
+      return true;
+    }
+    // The heap never shrinks, so "above the cap" is a fact about the session,
+    // not about this call. Only a call that grows the heap further while it
+    // is above the cap is stopped; a call that lives in freed chunks is not,
+    // and the same Site keeps rendering the same bytes whatever happened
+    // earlier (ADR 0032).
+    if (now > HEAP_HARD_CAP_BYTES && now > heapAtStart) {
+      heapCapped = true;
       return true;
     }
     if (--budget > 0) return false;
@@ -464,6 +486,7 @@ export function compileThemeRenderModule(themeId: string, source: string): Theme
     exhausted = false;
     heapAtStart = heapBytes();
     heapExceeded = false;
+    heapCapped = false;
     active = helpers;
     const argHandles: QuickJSHandle[] = [];
     let fn: QuickJSHandle | undefined;
@@ -495,8 +518,11 @@ export function compileThemeRenderModule(themeId: string, source: string): Theme
           blockType,
           exhausted,
           heapExceeded,
+          heapCapped,
         );
-        if (error.code === "memory") memoryFailed.add(memoryKey);
+        // The cap is the session's condition, not this design's fault, so it
+        // does not mark the subject; the per-call ceiling does.
+        if (error.code === "memory" && !heapCapped) memoryFailed.add(memoryKey);
         throw error;
       }
       const json = context.getString(result.value);

@@ -90,9 +90,17 @@ page's language.
 Because a helper's return value is accepted by the validator by identity —
 that is how a preview `blob:` URL gets through a check that would otherwise
 refuse it — what goes _into_ a helper is policed: `asset()` accepts only a
-package-relative path and throws otherwise, and `mediaUrl()` answers `null`
-for anything that is not a Site asset path (`assets/…` with no scheme, `//` or
-`..` segment). A design cannot launder a URL of its own through a helper.
+package-relative path to a file the Theme publishes and throws otherwise,
+`mediaUrl()` answers `null` for anything that is not a Site asset path
+(`assets/…` with no scheme, `//` or `..` segment), and `articleUrl()` answers
+`null` for a Draft. A design cannot launder a URL of its own through a helper,
+and cannot be handed a URL to a file the build never writes.
+
+The build publishes a package's `bundle.assets` and its fonts, nothing else,
+and phase one filled `bundle.assets` from the stylesheet's `url()` references
+alone. A design references files the stylesheet never does, so a package with
+a `render.js` also publishes everything under `assets/`; a declarative package
+is unchanged.
 
 ### The builder keeps the document
 
@@ -198,8 +206,11 @@ Two guards close that. A subject — the shell, or a Block type — whose design
 has blown the ceiling once is refused in that realm from then on, with a
 `memory` error saying so, until the Theme is re-imported (a fresh realm) or the
 editor reloaded; the author has already been told which Block failed and why.
-And no call may leave the shared heap above an absolute 256 MB cap, whatever
-it was at the start (the engine starts at 16 MB).
+And once the shared heap is above an absolute 256 MB cap (the engine starts
+at 16 MB), no call may grow it further — a call that fits in what earlier
+failures freed still runs, because the cap is a fact about the session and a
+design must not fail because of history (ADR 0032); the error for that case
+says the sandbox's memory is exhausted and to reload the editor.
 
 ### The public-site script
 
