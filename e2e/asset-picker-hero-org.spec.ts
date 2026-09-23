@@ -4,6 +4,8 @@ import { createServer, type Server } from "node:http";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
+import { openFirstPage, openSection } from "./builder-helpers.js";
+
 /**
  * Hero background + org.logo asset pickers (scope D).
  */
@@ -127,7 +129,8 @@ test("hero block: re-upload then Replace image loads thumbnail bytes", async ({ 
   const server = await startServer(FIXTURE);
   try {
     await page.goto(`${server.url}/`);
-    await expect(page.getByTestId("editor-pane")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId("editor-app")).toBeVisible({ timeout: 10_000 });
+    await openFirstPage(page);
 
     await page
       .locator('[data-testid="block-row"][data-block-id="blk_home_hero"]')
@@ -166,13 +169,14 @@ test("site settings: org.logo upload shows thumbnail", async ({ page }) => {
   const server = await startServer(FIXTURE);
   try {
     await page.goto(`${server.url}/`);
-    await expect(page.getByTestId("editor-pane")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId("editor-app")).toBeVisible({ timeout: 10_000 });
 
-    await page.getByTestId("site-settings-link").click();
-    await expect(page.locator('[data-inspector-mode="settings"]')).toBeVisible();
+    // Site settings is a main-navigation destination (issue #102).
+    await openSection(page, "settings");
+    await expect(page.getByTestId("settings-screen")).toBeVisible();
 
     const settingsPicker = page.locator(
-      '[data-inspector-mode="settings"] [data-testid="asset-picker"]',
+      '[data-testid="settings-screen"] [data-testid="asset-picker"]',
     );
     await settingsPicker.locator('[data-testid="asset-picker-add"]').click();
     await settingsPicker.locator('[data-testid="asset-picker-file-input"]').setInputFiles({

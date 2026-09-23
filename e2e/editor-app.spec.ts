@@ -4,12 +4,16 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
+import { openFirstPage } from "./builder-helpers.js";
+
 /**
- * Editor-app shell — desktop two-pane and mobile tabs (binding ACs).
+ * Editor-app shell — desktop split view and the phone Edit / Preview switch
+ * (binding ACs, updated for issue #102).
  *
- * These specs render the real `<EditorApp>` Preact component into a real
+ * These specs render the real `<EditorApp>` React component into a real
  * headless Chromium page at two viewport widths and assert the structural
- * shape of the rendered DOM. The unit tests under
+ * shape of the rendered DOM. The builder opens into the content Overview,
+ * so each spec opens the first page before looking for a workspace. The unit tests under
  * `packages/editor-app/test/layout.test.tsx` cover the same logic against
  * jsdom; this e2e adds the binding "in a real browser" check that the AC
  * implies.
@@ -51,7 +55,7 @@ async function bundleForBrowser(): Promise<string> {
   return out.text;
 }
 
-test("at 1200px viewport, the editor renders the two-pane layout", async ({ page }) => {
+test("at 1200px viewport, a page opens into the side-by-side split view", async ({ page }) => {
   await page.setViewportSize({ width: 1200, height: 900 });
   const bundle = await bundleForBrowser();
 
@@ -63,6 +67,11 @@ test("at 1200px viewport, the editor renders the two-pane layout", async ({ page
     window.__sosbEditor.mount(siteData as never, root);
   }, fixture);
 
+  // The Site opens into the content Overview with the navigation rail.
+  await expect(page.getByTestId("overview")).toBeVisible();
+  await expect(page.getByTestId("main-nav")).toBeVisible();
+
+  await openFirstPage(page);
   await expect(page.getByTestId("editor-pane")).toBeVisible();
   await expect(page.getByTestId("preview-pane")).toBeVisible();
   await expect(page.getByTestId("layout-tabs")).toHaveCount(0);
@@ -74,7 +83,7 @@ test("at 1200px viewport, the editor renders the two-pane layout", async ({ page
   await expect(page.locator('[data-action="reset"]')).toBeVisible();
 });
 
-test("at 600px viewport, the editor renders Editor | Preview tabs", async ({ page }) => {
+test("at 600px viewport, a page shows editing and preview one at a time", async ({ page }) => {
   await page.setViewportSize({ width: 600, height: 900 });
   const bundle = await bundleForBrowser();
 
@@ -86,11 +95,19 @@ test("at 600px viewport, the editor renders Editor | Preview tabs", async ({ pag
     window.__sosbEditor.mount(siteData as never, root);
   }, fixture);
 
+  // The navigation is a drawer at this width; the helper opens it.
+  await expect(page.getByTestId("main-nav")).toBeHidden();
+  await openFirstPage(page);
+
   await expect(page.getByTestId("layout-tabs")).toBeVisible();
-  const tabs = page.getByTestId("layout-tab");
-  await expect(tabs).toHaveCount(2);
-  await expect(tabs.nth(0)).toHaveText("Editor");
-  await expect(tabs.nth(1)).toHaveText("Preview");
+  await expect(page.getByTestId("workspace-tab-edit")).toHaveText("Edit");
+  await expect(page.getByTestId("workspace-tab-preview")).toHaveText("Preview");
+  await expect(page.getByTestId("editor-pane")).toBeVisible();
+  await expect(page.getByTestId("preview-pane")).toBeHidden();
+
+  await page.getByTestId("workspace-tab-preview").click();
+  await expect(page.getByTestId("preview-pane")).toBeVisible();
+  await expect(page.getByTestId("editor-pane")).toBeHidden();
 });
 
 test("the iframe preview's srcdoc is a complete HTML document with the org name", async ({
@@ -106,6 +123,7 @@ test("the iframe preview's srcdoc is a complete HTML document with the org name"
     if (root === null) throw new Error("missing root");
     window.__sosbEditor.mount(siteData as never, root);
   }, fixture);
+  await openFirstPage(page);
 
   const srcdoc = await page.locator('[data-testid="preview-pane"] iframe').getAttribute("srcdoc");
   expect(srcdoc).not.toBeNull();
@@ -120,7 +138,7 @@ test("the iframe preview's srcdoc is a complete HTML document with the org name"
   );
 });
 
-test("clicking preview nav changes the active editor page instead of navigating the iframe", async ({
+test("clicking preview nav moves the preview like the public site and offers Edit this Page", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1200, height: 900 });
@@ -152,17 +170,26 @@ test("clicking preview nav changes the active editor page instead of navigating 
     if (root === null) throw new Error("missing root");
     window.__sosbEditor.mount(siteData as never, root);
   }, twoPageFixture);
+  await openFirstPage(page);
 
   const frame = page.frameLocator('[data-testid="preview-pane"] iframe');
   const aboutLink = frame.getByRole("link", { name: "Despre", exact: true });
   await expect(aboutLink).toHaveCount(1);
   await aboutLink.click();
 
-  await expect(page.locator('[data-testid="pages-list-item"][data-active="true"]')).toContainText(
-    "Despre",
-  );
+  // The preview follows the link (issue #102: preview clicks behave like the
+  // public website)…
+  await expect(page.getByTestId("preview-target-title")).toHaveText("Despre");
   const srcdoc = await page.locator('[data-testid="preview-pane"] iframe').getAttribute("srcdoc");
   expect(srcdoc).toContain("About page");
+  // …while the editing pane stays on the page being edited, with a way back.
+  await expect(page.getByTestId("workspace-title")).toHaveValue("Acasă");
+  await expect(page.getByTestId("preview-return")).toBeVisible();
+
+  // "Edit this Page" makes the previewed page the edited one.
+  await page.getByTestId("preview-edit-this").click();
+  await expect(page.getByTestId("workspace-title")).toHaveValue("Despre");
+  await expect(page.getByTestId("preview-return")).toHaveCount(0);
 });
 
 test("preview viewport controls resize the iframe shell", async ({ page }) => {
@@ -176,6 +203,7 @@ test("preview viewport controls resize the iframe shell", async ({ page }) => {
     if (root === null) throw new Error("missing root");
     window.__sosbEditor.mount(siteData as never, root);
   }, fixture);
+  await openFirstPage(page);
 
   const frame = page.getByTestId("preview-frame-shell");
   await expect(frame).toHaveAttribute("data-preview-viewport", "fit");
@@ -215,6 +243,7 @@ test("the desktop preset fits inside the preview pane instead of overflowing", a
     if (root === null) throw new Error("missing root");
     window.__sosbEditor.mount(siteData as never, root);
   }, fixture);
+  await openFirstPage(page);
 
   await page.locator('[data-testid="viewport-preview-option"][data-viewport="desktop"]').click();
   const frame = page.getByTestId("preview-frame-shell");

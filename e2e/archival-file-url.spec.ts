@@ -3,6 +3,8 @@ import { readFileSync, existsSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
 
+import { openFirstPage } from "./builder-helpers.js";
+
 import { runArchivalBuild } from "../packages/browser-shell/scripts/run-archival-build.js";
 
 /**
@@ -43,9 +45,12 @@ test("the archival HTML loads from file:// and opens the editor's two-pane layou
   await expect(page.getByTestId("welcome-screen")).toBeVisible();
   await page.getByTestId("welcome-action-blank").click();
 
+  // The builder opens on the Overview (issue #102); a page opens the split view.
+  await expect(page.getByTestId("overview")).toBeVisible();
+  await expect(page.getByTestId("top-bar")).toBeVisible();
+  await openFirstPage(page);
   await expect(page.getByTestId("editor-pane")).toBeVisible();
   await expect(page.getByTestId("preview-pane")).toBeVisible();
-  await expect(page.getByTestId("top-bar")).toBeVisible();
 });
 
 test("the archival HTML's <head> declares no external script src", async () => {

@@ -4,6 +4,8 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
+import { openFirstPage } from "./builder-helpers.js";
+
 /**
  * Block library picker + DnD reorder + undo/redo — e2e (#27).
  *
@@ -57,6 +59,9 @@ async function mountEditor(
     if (root === null) throw new Error("missing root");
     window.__sosbEditor.mount(siteData as never, root);
   }, fixture);
+  // Blocks live in a page's workspace (issue #102); the builder opens on the
+  // Overview.
+  await openFirstPage(page);
 }
 
 test("the Add Block dialog opens and lists at least the hero block", async ({ page }) => {

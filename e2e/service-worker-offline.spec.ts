@@ -134,7 +134,7 @@ test("the SPA still renders after going offline (the SW serves the cached shell)
   try {
     // First load — registers SW and caches the shell.
     await page.goto(`${server.url}/`);
-    await expect(page.getByTestId("editor-pane")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId("editor-app")).toBeVisible({ timeout: 10_000 });
 
     // Wait for the SW to take control of the page.
     await page.waitForFunction(() => navigator.serviceWorker.controller !== null, null, {
@@ -144,12 +144,12 @@ test("the SPA still renders after going offline (the SW serves the cached shell)
     // Trigger a reload while the SW is active so the next reload is served
     // from the SW (and the cache is warm for the offline reload).
     await page.reload();
-    await expect(page.getByTestId("editor-pane")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId("editor-app")).toBeVisible({ timeout: 10_000 });
 
     // Now go offline and reload — the SW must serve the cached shell.
     await context.setOffline(true);
     await page.reload();
-    await expect(page.getByTestId("editor-pane")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId("editor-app")).toBeVisible({ timeout: 10_000 });
   } finally {
     await context.setOffline(false);
     await server.close();

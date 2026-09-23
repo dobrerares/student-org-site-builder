@@ -4,6 +4,8 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import type { Page } from "@playwright/test";
 
+import { exportWebsite, openFirstPage, openSection } from "./builder-helpers.js";
+
 /**
  * Articles end-to-end: create → write → publish → export.
  *
@@ -64,20 +66,29 @@ async function mountEditor(page: Page): Promise<void> {
   }, SITE);
 }
 
+/**
+ * Create Article is one click (issue #102): the Draft opens at once and the
+ * title is typed in the workspace, where the address follows it.
+ */
 async function createArticle(page: Page, title: string): Promise<void> {
-  await page.getByTestId("content-kind-articles").click();
+  await openSection(page, "articles");
   await page.getByTestId("articles-create").click();
-  await page.getByTestId("article-create-input").fill(title);
-  await page.getByTestId("article-create-submit").click();
+  await expect(page.getByTestId("workspace")).toBeVisible();
+  await page.getByTestId("workspace-title").fill(title);
+}
+
+/** Open the Article settings Inspector and return its address field. */
+async function openArticleSettings(page: Page) {
+  await page.getByTestId("workspace-settings-link").click();
+  await expect(page.getByTestId("article-settings-form")).toBeVisible();
+  return page.locator("#article-slug");
 }
 
 async function exportSite(page: Page): Promise<void> {
-  await page.locator('[data-action="export"]').click();
-  // The confirmation dialog only appears when validation found something.
-  const confirm = page.getByTestId("export-confirm-button");
-  if (await confirm.isVisible().catch(() => false)) {
-    await confirm.click();
-  }
+  await page.evaluate(() => {
+    window.__sosbArticles.lastExport = null;
+  });
+  await exportWebsite(page);
   await expect
     .poll(async () => page.evaluate(() => window.__sosbArticles.lastExport !== null))
     .toBe(true);
@@ -93,12 +104,13 @@ test("create, write, publish, and export an article", async ({ page }) => {
   // 1. Create — the new Article opens immediately as a Draft with a title
   //    and one Rich-text Block (issue #102).
   await createArticle(page, "Gala de final");
-  await expect(page.getByTestId("article-settings-form")).toBeVisible();
-  const stateSelect = page.locator("#article-state");
-  await expect(stateSelect).toHaveValue("draft");
+  await expect(page.getByTestId("workspace-state-draft")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("block-row")).toHaveCount(1);
 
-  // The slug is derived from the title, with diacritics folded.
-  await expect(page.locator("#article-slug")).toHaveValue("gala-de-final");
+  // The address follows the title, with diacritics folded.
+  const slug = await openArticleSettings(page);
+  await expect(slug).toHaveValue("gala-de-final");
+  await page.getByTestId("drill-back").click();
 
   // 2. Write — drill into the seeded Rich-text Block and type.
   await page.getByTestId("block-row-select").first().click();
@@ -112,9 +124,12 @@ test("create, write, publish, and export an article", async ({ page }) => {
   expect(draftExport?.error).toBeNull();
   expect(draftExport?.paths).not.toContain("articles/gala-de-final/index.html");
 
-  // 3. Publish.
-  await stateSelect.selectOption("published");
-  await expect(stateSelect).toHaveValue("published");
+  // 3. Publish — the visible state selector on the outline.
+  await page.getByTestId("workspace-state-published").click();
+  await expect(page.getByTestId("workspace-state-published")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
 
   // 4. Export — the Article is now a real file at the ADR 0047 URL.
   await exportSite(page);
@@ -140,7 +155,7 @@ test("create, write, publish, and export an article", async ({ page }) => {
 test("an unlisted article exports with noindex and stays out of the sitemap", async ({ page }) => {
   await mountEditor(page);
   await createArticle(page, "Raport intern");
-  await page.locator("#article-state").selectOption("unlisted");
+  await page.getByTestId("workspace-state-unlisted").click();
 
   await exportSite(page);
   const result = await readExport(page);
@@ -155,9 +170,9 @@ test("an unlisted article exports with noindex and stays out of the sitemap", as
 test("renaming a published article's link keeps the old URL working", async ({ page }) => {
   await mountEditor(page);
   await createArticle(page, "Gala de final");
-  await page.locator("#article-state").selectOption("published");
+  await page.getByTestId("workspace-state-published").click();
 
-  const slug = page.locator("#article-slug");
+  const slug = await openArticleSettings(page);
   await slug.fill("gala-2026");
   await slug.blur();
   await expect(slug).toHaveValue("gala-2026");
@@ -175,10 +190,10 @@ test("renaming a published article's link keeps the old URL working", async ({ p
 test("an article list on a page shows published articles in the preview", async ({ page }) => {
   await mountEditor(page);
   await createArticle(page, "Gala de final");
-  await page.locator("#article-state").selectOption("published");
+  await page.getByTestId("workspace-state-published").click();
 
-  // Back to Pages, add an article list to the home page.
-  await page.getByTestId("content-kind-pages").click();
+  // Over to the home page, add an article list to it.
+  await openFirstPage(page);
   await page.getByTestId("block-add").click();
   await page.locator('[data-block-type="articleList"]').click();
 

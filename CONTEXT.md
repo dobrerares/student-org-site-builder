@@ -280,18 +280,60 @@ Patch paths reflect the distinction: `["pages", 0, "blocks", 2]` is an
 envelope path, `["pages", 0, "blocks", 2, "data", "title"]` is a data
 path.
 
-**Inspector** (the editor's drill-in panel):
-The drilled-in view shown when the user clicks a block row in the
-**BlockListEditor**. Replaces the un-drilled editor pane body with the
-**BlockForm** for the active block. The user "drills in" to a block,
-edits, then "drills out" via a back affordance. Pattern recorded in
-ADR 0042.
+**Destination**:
+Where the builder is: one of the five main-navigation entries — Overview,
+Pages, Articles, Theme, Site settings — or a **Workspace** opened from the
+Pages or Articles list. A closed union in `builder-navigation.ts`, held as
+shell state (no URL router) and reconciled on every render so a deleted or
+imported-away target falls back to its list (ADR 0053).
+_Avoid_: route, screen (a screen is what a destination renders), mode.
+
+**Overview**:
+The destination a Site opens into: a Pages summary, an Articles summary
+with per-state counts, Create Page / Create Article, and **Site Health**
+with actionable findings. Theme and Site settings stay in the navigation.
+_Avoid_: dashboard, home (that is a Page).
+
+**Workspace**:
+The focused editing surface for one Page or one Article, reached from its
+list: a back button to that list, the title, the settings row, the Block
+outline and — for an Article — the publication state, language versions and
+Related Articles. Editing beside the preview on larger screens, one at a
+time behind an Edit / Preview switch on phones (**split view**). Pages and
+Articles share one component.
+_Avoid_: editor pane (that is the left half of a workspace), article editor.
+
+**Inspector** (the workspace's drill-in panel):
+The focused view opened from a workspace outline: a Block's **BlockForm**,
+the content's own settings, or an Article's Related Articles. Replaces the
+outline in the editing pane and carries a back button naming the content
+("Back to “Acasă”"); Escape drills out one level and never leaves the
+workspace. Pattern recorded in ADR 0042, carried into workspaces by
+ADR 0053.
 _Avoid_: detail pane, block editor pane.
 
 **Active block**:
 The single block currently selected in the **Inspector**. Distinct from
-the **active page** (selected in **PagesList**) and the **active page
-index** (the snapshot field that drives the preview).
+the content open in the **Workspace** and from the **preview target**.
+
+**Preview target**:
+What the preview pane is showing — a Page or an Article by index — held
+separately from what is being edited. Opening a workspace points it at the
+content being edited; clicks inside the preview move it the way the public
+website would; **Edit this Page / Edit this Article** makes the previewed
+thing the edited thing (ADR 0053).
+_Avoid_: active page index (the old name for one half of this).
+
+**Save project / Export website**:
+Two distinct top-bar actions. Save project writes the editable archive,
+Drafts included, and is never gated by validation. Export website opens the
+**export readiness panel** — the problems that stop an export with a repair
+action each, the warnings that do not, an (i) explaining that exporting does
+not update the live website, and the export button. The gate is the
+schema's: **blocking** issues disable export, ordinary errors keep the
+typed-phrase override (ADR 0016), warnings gate nothing.
+_Avoid_: download (ambiguous between the two), publish (nothing here
+publishes).
 
 **Block catalog**:
 Editor-side side table (`@sosb/editor-app/src/block-catalog.ts`) mapping
