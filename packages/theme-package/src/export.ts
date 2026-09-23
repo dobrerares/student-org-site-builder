@@ -15,11 +15,9 @@
 
 import { ZipDriver } from "@sosb/vfs/zip-driver";
 import type { Vfs } from "@sosb/vfs/vfs";
-import { ThemePackageError } from "./errors.js";
 import {
   THEME_PACKAGE_EXTENSION,
-  THEME_VFS_PREFIX,
-  loadThemePackage,
+  loadThemePackageFromVfs,
   type LoadedThemePackage,
 } from "./load.js";
 
@@ -56,20 +54,10 @@ export async function exportInstalledThemePackage(
   vfs: Vfs,
   themeId: string,
 ): Promise<{ bytes: Uint8Array; filename: string }> {
-  const prefix = `${THEME_VFS_PREFIX}${themeId}/`;
-  const paths = await vfs.list(prefix);
-  if (paths.length === 0) {
-    throw new ThemePackageError(
-      "manifest-missing",
-      `No Theme package is installed at ${prefix}.`,
-      prefix,
-    );
-  }
-  const files = new Map<string, Uint8Array>();
-  for (const path of paths) {
-    files.set(path.slice(prefix.length), await vfs.read(path));
-  }
-  const loaded = loadThemePackage(files);
+  // The VFS loader, not a private copy of it: it starts the render sandbox
+  // before reading, so a package with a `render.js` re-validates here even
+  // when this is the first Theme code the process has touched (ADR 0054).
+  const loaded = await loadThemePackageFromVfs(vfs, themeId);
   try {
     return {
       bytes: exportThemePackage(loaded),

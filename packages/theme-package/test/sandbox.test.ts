@@ -246,6 +246,33 @@ describe("failure is loud and attributable", () => {
     }
   }, 60_000);
 
+  test("a design that blew its memory ceiling is not run again for that subject", () => {
+    // The shared wasm heap never shrinks, and a design re-run on every
+    // preview edit would be granted a fresh ceiling each time. After one
+    // memory failure the same Block type is refused outright — the other
+    // designs in the realm keep working.
+    const module = design(`export default {
+      blocks: {
+        hungry: () => { const keep = []; for (;;) keep.push(new Array(64).fill("x")); },
+        fine: () => ["p", null, "ok"],
+      },
+    }`);
+    try {
+      expect(() => module.renderBlock("hungry", {}, helpers)).toThrow(/memory limit/);
+      try {
+        module.renderBlock("hungry", {}, helpers);
+        throw new Error("expected the design to be refused");
+      } catch (error) {
+        expect(error).toBeInstanceOf(ThemeRenderError);
+        expect((error as ThemeRenderError).code).toBe("memory");
+        expect((error as ThemeRenderError).message).toMatch(/not run again/);
+      }
+      expect(module.renderBlock("fine", {}, helpers)).toEqual(["p", null, "ok"]);
+    } finally {
+      module.dispose();
+    }
+  }, 60_000);
+
   test("the budget is per call, so one runaway Block does not poison the next", () => {
     const module = design(`export default {
       blocks: {

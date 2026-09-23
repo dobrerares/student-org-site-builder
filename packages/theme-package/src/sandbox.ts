@@ -64,6 +64,23 @@ import { ThemeRenderError } from "@sosb/renderer";
 const MEMORY_LIMIT_BYTES = 48 * 1024 * 1024;
 
 /**
+ * Absolute ceiling on the wasm heap every realm in the process shares.
+ *
+ * The per-call check above measures *growth* since the call began, and that
+ * alone ratchets: what a failed call allocated is freed back to the engine's
+ * allocator but never returned to the browser, so the next call fills the
+ * freed chunks before the heap grows again and is allowed another full
+ * ceiling on top. A design that failed on every keystroke would climb 48 MB
+ * at a time until WebAssembly refused to grow the memory — which aborts the
+ * module for every Theme in the session. Two guards close that: a design
+ * that blew its ceiling is not run again for that subject (see `invoke`),
+ * and no call may leave the heap above this cap, whatever it was at the
+ * start. The engine starts at 16 MB; 256 MB is room for a handful of Themes
+ * and one accident, not for a runaway.
+ */
+const HEAP_HARD_CAP_BYTES = 256 * 1024 * 1024;
+
+/**
  * Guest stack ceiling. A runaway recursion becomes an error, not a crash.
  *
  * Deliberately smaller than the host's own stack. QuickJS checks this limit
@@ -302,7 +319,8 @@ export function compileThemeRenderModule(themeId: string, source: string): Theme
   let heapAtStart = heapBytes();
   let heapExceeded = false;
   runtime.setInterruptHandler(() => {
-    if (heapBytes() - heapAtStart > MEMORY_LIMIT_BYTES) {
+    const now = heapBytes();
+    if (now - heapAtStart > MEMORY_LIMIT_BYTES || now > HEAP_HARD_CAP_BYTES) {
       heapExceeded = true;
       return true;
     }
@@ -330,6 +348,17 @@ export function compileThemeRenderModule(themeId: string, source: string): Theme
 
   /** Helpers for the call currently in flight. Swapped before each call. */
   let active: ThemeRenderHelpers | undefined;
+
+  /**
+   * Subjects (`shell`, or a Block type) whose design has already blown the
+   * memory ceiling in this realm. Not run again: the preview re-renders on
+   * every edit, and a design that allocates without bound for some Block
+   * would otherwise be given another 48 MB each time, ratcheting the shared
+   * heap towards the point where the engine aborts for every Theme. The
+   * author has already been told which Block failed and why; re-importing
+   * the Theme (a fresh realm) or reloading the editor clears the mark.
+   */
+  const memoryFailed = new Set<string>();
 
   function disposeAll(): void {
     if (disposed) return;
@@ -418,6 +447,19 @@ export function compileThemeRenderModule(themeId: string, source: string): Theme
           : "this Theme's design has already been released.",
       });
     }
+    const memoryKey = blockType ?? subject;
+    if (memoryFailed.has(memoryKey)) {
+      throw new ThemeRenderError({
+        code: "memory",
+        themeId,
+        subject,
+        blockType,
+        detail:
+          "the design ran past its memory limit earlier in this session and is not run again for this " +
+          (blockType === undefined ? "shell" : "Block type") +
+          " until the Theme is re-imported or the editor reloaded.",
+      });
+    }
     budget = CALL_BUDGET;
     exhausted = false;
     heapAtStart = heapBytes();
@@ -445,7 +487,7 @@ export function compileThemeRenderModule(themeId: string, source: string): Theme
         });
       }
       if (result.error !== undefined) {
-        throw guestError(
+        const error = guestError(
           context,
           result.error,
           themeId,
@@ -454,6 +496,8 @@ export function compileThemeRenderModule(themeId: string, source: string): Theme
           exhausted,
           heapExceeded,
         );
+        if (error.code === "memory") memoryFailed.add(memoryKey);
+        throw error;
       }
       const json = context.getString(result.value);
       result.value.dispose();

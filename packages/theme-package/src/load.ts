@@ -247,8 +247,13 @@ export function loadThemePackage(files: ReadonlyMap<string, Uint8Array>): Loaded
     blockVariants[blockType] = toVariants(list);
   }
 
-  const render = loadRenderModule(manifest, files);
+  // The public script is checked before the design is compiled, so that every
+  // rejection this function can raise happens before a sandbox realm exists.
+  // `loadRenderModule` must stay the last step that can throw: a realm
+  // created for a package that is then rejected would have no owner to
+  // release it, and the wasm heap never shrinks (ADR 0054).
   const publicScript = loadPublicScript(manifest, files);
+  const render = loadRenderModule(manifest, files);
 
   const bundle: ThemeBundle = {
     id: manifest.id,
@@ -331,6 +336,13 @@ function loadPublicScript(
   files: ReadonlyMap<string, Uint8Array>,
 ): ThemePublicScript | undefined {
   if (manifest.public === undefined) return undefined;
+  if (manifest.render !== undefined && manifest.public.file === manifest.render) {
+    throw new ThemePackageError(
+      "manifest-invalid",
+      `public.file names "${manifest.render}", the rendering module. A design runs at build time and is never published; ship the public-site script as a separate file.`,
+      "public.file",
+    );
+  }
   const bytes = files.get(manifest.public.file);
   if (bytes === undefined) {
     throw new ThemePackageError(

@@ -175,6 +175,31 @@ describe("manifest: public", () => {
     );
   });
 
+  test("may not name the rendering module: render.js is never published", () => {
+    expectRejection(
+      pkg(
+        { ...MANIFEST, render: "render.js", public: { file: "render.js", network: [] } },
+        { "render.js": "export default { blocks: {} }" },
+      ),
+      "manifest-invalid",
+      /never published/,
+    );
+  });
+
+  test("is checked before the design is compiled, so a rejected package leaves no realm behind", () => {
+    // Both are wrong here; the public script's missing file must be the
+    // error, because it is checked first and the broken render.js is never
+    // handed to the sandbox.
+    expectRejection(
+      pkg(
+        { ...MANIFEST, render: "render.js", public: { file: "public.js", network: [] } },
+        { "render.js": "export default { blocks: {" },
+      ),
+      "file-missing",
+      /public\.js/,
+    );
+  });
+
   test("a complete declaration loads with hosts sorted and bytes verbatim", () => {
     const bundle = load(
       pkg(
