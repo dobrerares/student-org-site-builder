@@ -427,13 +427,17 @@ function asNode(value: unknown): NormalisedNode | undefined {
   if (Array.isArray(value)) {
     const [tag, attrs, ...children] = value as readonly unknown[];
     if (typeof tag !== "string") return undefined;
+    // `attrs` may be omitted (`["div", child, …]`). Two documented children
+    // are plain records — a `richText()` sentinel and an object-form node —
+    // and neither is an attribute map, so they are read as the first child.
+    const isAttrs =
+      isPlainRecord(attrs) &&
+      richTextIndexOf(attrs) === undefined &&
+      typeof attrs["tag"] !== "string";
     return {
       tag,
-      attrs: isPlainRecord(attrs) ? attrs : {},
-      children:
-        attrs === null || attrs === undefined || isPlainRecord(attrs)
-          ? children
-          : [attrs, ...children],
+      attrs: isAttrs ? attrs : {},
+      children: attrs === null || attrs === undefined || isAttrs ? children : [attrs, ...children],
     };
   }
   if (isPlainRecord(value) && typeof value["tag"] === "string") {

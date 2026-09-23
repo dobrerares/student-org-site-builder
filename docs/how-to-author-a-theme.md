@@ -77,7 +77,8 @@ my-theme/
   render.js       # optional executable design (Block markup, page shell)
   public.js       # optional public-site script, declared with its dependencies
   fonts/          # packaged .woff2 files, each declared in the manifest
-  assets/         # decorative images your CSS references relatively
+  assets/         # images your CSS references relatively; with a render.js,
+                  # everything in here is published for input.asset()
   README.md       # optional, carried verbatim
   LICENSE         # optional, carried verbatim
 ```
@@ -411,7 +412,9 @@ that normalise to the same thing:
 Rules of the shape:
 
 - The array form is `[tag, attrs, ...children]`. `attrs` may be `null` or
-  omitted entirely (`["br"]`, `["span"]`).
+  omitted entirely (`["br"]`, `["span"]`, `["div", "text"]`). A `richText()`
+  result or an object-form node in the `attrs` position is read as the first
+  child, not as attributes.
 - Children may be strings, numbers, nested nodes, or arrays of those. `null`,
   `undefined`, `true` and `false` render nothing, so `cond ? node : null` is
   the idiom for optional content.
@@ -532,15 +535,15 @@ baseline styles keep applying.
 
 Every helper lives on `input`:
 
-| Helper                 | Returns                                                                                                                                                                                                         |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `input.asset(path)`    | The URL of a file in your package (`assets/x.svg`). Resolves to a real file in a build and a `blob:` URL in the preview; you never see the difference. Throws for anything that is not a package-relative path. |
-| `input.mediaUrl(ref)`  | The URL of a Site asset — an image reference out of Block data or `org.logo.path` — or `null` when the slot is empty. Also `null` for anything that is not a Site asset path (`assets/…`). Handle `null`.       |
-| `input.mediaAlt(ref)`  | The screen-reader description stored on that asset, or `""`.                                                                                                                                                    |
-| `input.pageUrl(id)`    | The href of the Page with id `"<lang>:<slug>"`, or `null`.                                                                                                                                                      |
-| `input.articleUrl(id)` | The href of an Article by its permanent id, or `null`.                                                                                                                                                          |
-| `input.richText(doc)`  | Builder-rendered, sanitised prose for a rich-text value. Place the result in your tree like any child. It is an opaque token, not a string: there is no raw HTML from a design.                                 |
-| `input.t(key)`         | A visitor-facing word in the page's language. Unknown keys come back unchanged.                                                                                                                                 |
+| Helper                 | Returns                                                                                                                                                                                                                                                                                                                                                                        |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `input.asset(path)`    | The URL of a file in your package (`assets/x.svg`). Resolves to a real file in a build and a `blob:` URL in the preview; you never see the difference. Throws for anything that is not a package-relative path, and for a file the Theme does not publish: with a `render.js`, everything under `assets/` is published, plus the fonts and whatever the stylesheet references. |
+| `input.mediaUrl(ref)`  | The URL of a Site asset — an image reference out of Block data or `org.logo.path` — or `null` when the slot is empty. Also `null` for anything that is not a Site asset path (`assets/…`). Handle `null`.                                                                                                                                                                      |
+| `input.mediaAlt(ref)`  | The screen-reader description stored on that asset, or `""`.                                                                                                                                                                                                                                                                                                                   |
+| `input.pageUrl(id)`    | The href of the Page with id `"<lang>:<slug>"`, or `null`.                                                                                                                                                                                                                                                                                                                     |
+| `input.articleUrl(id)` | The href of an Article by its permanent id, or `null` — also `null` for a Draft, which the public Site does not have.                                                                                                                                                                                                                                                          |
+| `input.richText(doc)`  | Builder-rendered, sanitised prose for a rich-text value. Place the result in your tree like any child. It is an opaque token, not a string: there is no raw HTML from a design.                                                                                                                                                                                                |
+| `input.t(key)`         | A visitor-facing word in the page's language. Unknown keys come back unchanged.                                                                                                                                                                                                                                                                                                |
 
 Keys `t()` answers: `menu`, `close`, `navigation`, `home`, `since`,
 `siteInfo`, `skipToContent`, `languageLabel`, `publishedOn`, `relatedTitle`,

@@ -63,7 +63,9 @@ function bundleWith(design: Design | undefined, extra: Partial<ThemeBundle> = {}
     blockVariants: {},
     shellVariants: [],
     fontSource: { kind: "registry" },
-    assets: new Map(),
+    assets: new Map(
+      ["assets/x.svg", "assets/a.png", "assets/b.png"].map((path) => [path, new Uint8Array([1])]),
+    ),
     render: design === undefined ? undefined : moduleFrom(design),
     ...extra,
   };
@@ -316,6 +318,59 @@ describe("what a tree may not contain", () => {
     expect(render(siteFor(), bundle)).toContain(
       '<p data-host="null" data-js="null" data-quote="null" data-real="assets/hero.jpg" data-up="null"',
     );
+  });
+
+  test("asset() refuses a file the Theme does not publish", () => {
+    // The build writes `bundle.assets` and the fonts, nothing else; a URL to
+    // anything else would be a broken image with no error to trace it by.
+    const bundle = bundleWith({
+      blocks: { hero: (_i, h) => ["img", { src: h.asset("assets/nope.svg"), alt: "" }] },
+    });
+    expectRenderError(() => render(siteFor(), bundle), "threw", /not a file this Theme publishes/);
+  });
+
+  test("articleUrl() answers null for a Draft, which the public Site does not have", () => {
+    const bundle = bundleWith({
+      blocks: {
+        hero: (_i, h) => [
+          "p",
+          {
+            "data-draft": String(h.articleUrl("art_draft")),
+            "data-live": String(h.articleUrl("art_live")),
+          },
+        ],
+      },
+    });
+    const site = siteFor((s) => {
+      const base = {
+        slug: "x",
+        lang: "ro",
+        title: "X",
+        publishedAt: "2026-01-01",
+        blocks: [],
+      };
+      s.articles = [
+        { ...base, id: "art_draft", state: "draft" },
+        { ...base, id: "art_live", slug: "y", state: "published" },
+      ] as unknown as Site["articles"];
+    });
+    expect(render(site, bundle)).toContain('data-draft="null" data-live="/articles/y/"');
+  });
+
+  test("a richText() result or an object-form node may sit where attrs would go", () => {
+    const bundle = bundleWith({
+      blocks: {
+        hero: (_i, h) => [
+          "div",
+          { class: "wrap" },
+          ["div", h.richText("**bold**")],
+          ["ul", { tag: "li", children: "one" }, ["li", null, "two"]],
+        ],
+      },
+    });
+    const html = render(siteFor(), bundle);
+    expect(html).toContain('<div><div class="rich-text"><p><strong>bold</strong></p>');
+    expect(html).toContain("<ul><li>one</li><li>two</li></ul>");
   });
 
   test("asset() refuses a path that could not be a package file", () => {
@@ -573,6 +628,18 @@ describe("omitted Blocks (ADR 0045)", () => {
     render(site, bundle, { issues });
     const reported = issues.flatMap((i) => (i.kind === "omitted-block" ? [i.omitted] : []));
     expect(omittedBlocksFor(site, bundle)).toEqual(reported);
+
+    // Including the document title on a Page with no SEO title, which falls
+    // back to the organisation's name in <title> and must do so here too.
+    const untitled = withCustom();
+    delete (untitled.pages[0] as { seo?: unknown }).seo;
+    const untitledIssues: ThemeRenderIssue[] = [];
+    render(untitled, bundle, { issues: untitledIssues });
+    const untitledReported = untitledIssues.flatMap((i) =>
+      i.kind === "omitted-block" ? [i.omitted] : [],
+    );
+    expect(untitledReported[0]?.document.title).toBe("Stub Org");
+    expect(omittedBlocksFor(untitled, bundle)).toEqual(untitledReported);
     // Under a built-in Theme the rule is the same: a Custom Block has no design.
     expect(omittedBlocksFor(site, undefined)).toEqual(reported);
     expect(blockHasDesign(undefined, "hero")).toBe(true);
@@ -610,6 +677,7 @@ describe("omitted Blocks (ADR 0045)", () => {
 
 describe("the public-site script", () => {
   const withScript = bundleWith(undefined, {
+    assets: new Map(),
     publicScript: {
       file: "public.js",
       bytes: new Uint8Array([1, 2, 3]),

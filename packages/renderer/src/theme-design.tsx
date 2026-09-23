@@ -29,7 +29,7 @@
  * and no explanation.
  */
 
-import type { BlockEnvelope, Site } from "@sosb/schema";
+import type { Article, BlockEnvelope, Page, Site } from "@sosb/schema";
 import { isKnownBlockType } from "@sosb/schema";
 import { markdownToHtml } from "@sosb/markdown";
 import { articleCopy, languageFamily, type ArticleCopyKey } from "./article-text.js";
@@ -130,25 +130,40 @@ export function omittedBlocksFor(site: Site, bundle: ThemeBundle | undefined): O
       omitted.push({ document, blockId: block.id, blockType: block.type });
     }
   };
-  for (const page of site.pages) {
-    collect(page.blocks, {
-      kind: "page",
-      id: `${page.lang}:${page.slug}`,
-      title:
-        page.seo?.title !== undefined && page.seo.title.length > 0 ? page.seo.title : page.navLabel,
-      lang: page.lang,
-    });
-  }
+  for (const page of site.pages) collect(page.blocks, pageDocumentRef(site, page));
   for (const article of site.articles ?? []) {
     if (article.state === "draft") continue;
-    collect(article.blocks, {
-      kind: "article",
-      id: article.id,
-      title: article.title,
-      lang: article.lang,
-    });
+    collect(article.blocks, articleDocumentRef(article));
   }
   return omitted;
+}
+
+/**
+ * The title a Page publishes: its SEO title, else the organisation's name.
+ *
+ * One rule for `<title>`, for what a design is told in `input.document.title`
+ * and for the pre-flight omission list, so the three can never name the same
+ * Page differently.
+ */
+export function pageDocumentTitle(site: Site, page: Page): string {
+  const candidate = page.seo?.title;
+  if (typeof candidate === "string" && candidate.length > 0) return candidate;
+  return site.org.name;
+}
+
+/** The document ref for a Page, shared by the render and the pre-flight list. */
+export function pageDocumentRef(site: Site, page: Page): RenderedDocumentRef {
+  return {
+    kind: "page",
+    id: `${page.lang}:${page.slug}`,
+    title: pageDocumentTitle(site, page),
+    lang: page.lang,
+  };
+}
+
+/** The document ref for an Article, shared by the render and the pre-flight list. */
+export function articleDocumentRef(article: Article): RenderedDocumentRef {
+  return { kind: "article", id: article.id, title: article.title, lang: article.lang };
 }
 
 /**
@@ -216,6 +231,17 @@ class HelperScope {
             `asset(): "${String(path).slice(0, 60)}" is not a package-relative path such as "assets/x.svg".`,
           );
         }
+        // A URL to a file the build never writes is a broken image nobody
+        // can trace: the build publishes `bundle.assets` and the fonts, and
+        // nothing else, so the helper answers only for those.
+        const published =
+          bundle.assets.has(clean) ||
+          (bundle.fontSource.kind === "bundle" && bundle.fontSource.bytes.has(clean));
+        if (!published) {
+          throw new Error(
+            `asset(): "${clean.slice(0, 60)}" is not a file this Theme publishes. Put it under assets/ or reference it from the stylesheet.`,
+          );
+        }
         return this.trust(resolveAssetUrl(themeAssetPrefix(bundle.id) + clean, assetUrlForPath));
       },
       mediaUrl: (ref: unknown): string | null => {
@@ -231,7 +257,9 @@ class HelperScope {
       },
       articleUrl: (articleId: string): string | null => {
         const article = (site.articles ?? []).find((a) => a.id === articleId);
-        if (article === undefined) return null;
+        // A Draft is not on the public Site (ADR 0047): linking to it would
+        // publish a 404 and its unpublished slug.
+        if (article === undefined || article.state === "draft") return null;
         return this.trust(articlePath(site, article));
       },
       richText: (doc: unknown): unknown => {

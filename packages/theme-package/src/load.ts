@@ -242,6 +242,18 @@ export function loadThemePackage(files: ReadonlyMap<string, Uint8Array>): Loaded
     }
     assets.set(ref, bytes);
   }
+  // An executable design may reference files the stylesheet never does
+  // (`input.asset("assets/brand.svg")`), and the build publishes exactly
+  // `bundle.assets` plus the fonts. So a package with a `render.js` publishes
+  // everything under `assets/` as well; anything elsewhere must be referenced
+  // by the stylesheet. A declarative package is unchanged: it publishes only
+  // what its CSS references, as phase one did.
+  if (manifest.render !== undefined) {
+    for (const [path, bytes] of files) {
+      if (!path.startsWith("assets/") || assets.has(path) || fontBytes.has(path)) continue;
+      assets.set(path, bytes);
+    }
+  }
   const blockVariants: Record<string, readonly ThemeVariant[]> = {};
   for (const [blockType, list] of Object.entries(manifest.variants)) {
     blockVariants[blockType] = toVariants(list);

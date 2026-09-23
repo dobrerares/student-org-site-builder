@@ -288,6 +288,27 @@ describe("a package with render.js, end to end", () => {
     );
   });
 
+  test("publishes every file under assets/ so a design can reference what the CSS does not", () => {
+    const bundle = load(
+      pkg(
+        { ...MANIFEST, render: "render.js" },
+        {
+          "render.js": `export default { blocks: { hero(i) { return ["img", { src: i.asset("assets/brand.svg"), alt: "" }]; } } }`,
+          "assets/brand.svg": "<svg/>",
+          "notes/private.txt": "not published",
+        },
+      ),
+    );
+    const dist = build(site(), { themes: [bundle], skipValidation: true });
+    expect(dist.get(`assets/theme/${THEME_ID}/assets/brand.svg`)).toEqual(enc.encode("<svg/>"));
+    expect(dist.has(`assets/theme/${THEME_ID}/notes/private.txt`)).toBe(false);
+    expect(dist.get("index.html")).toContain(`src="assets/theme/${THEME_ID}/assets/brand.svg"`);
+
+    // A declarative package is unchanged: only what the stylesheet references.
+    const declarative = load(pkg(MANIFEST, { "assets/brand.svg": "<svg/>" }));
+    expect(declarative.assets.size).toBe(0);
+  });
+
   test("a design that throws stops build() and names the Theme and the Block", () => {
     const bundle = load(
       pkg(

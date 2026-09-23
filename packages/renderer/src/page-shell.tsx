@@ -65,7 +65,10 @@ import { themeAssetPrefix } from "./theme-bundle.js";
 import { activeBlockVariant } from "./theme-reference.js";
 import type { DesignContext, ShellInputParts, ThemeRenderIssue } from "./theme-design.js";
 import {
+  articleDocumentRef,
   blockHasDesign,
+  pageDocumentRef,
+  pageDocumentTitle,
   renderDesignedBlock,
   renderDesignedShell,
   themeDesignsBlockType,
@@ -120,9 +123,7 @@ function variantFor(block: BlockEnvelope, theme: ThemeBundle | undefined): strin
  */
 
 function pageTitle(site: Site, page: Page): string {
-  const candidate = page.seo?.title;
-  if (typeof candidate === "string" && candidate.length > 0) return candidate;
-  return site.org.name;
+  return pageDocumentTitle(site, page);
 }
 
 function pageDescription(site: Site, page: Page): string | undefined {
@@ -442,12 +443,7 @@ export function PageShell(props: {
   const design = designContextFor(
     site,
     theme,
-    {
-      kind: "page",
-      id: `${page.lang}:${page.slug}`,
-      title: pageTitle(site, page),
-      lang: page.lang,
-    },
+    pageDocumentRef(site, page),
     assetUrlForPath,
     mode,
     onIssue,
@@ -659,7 +655,7 @@ export function ArticleShell(props: {
   const design = designContextFor(
     site,
     theme,
-    { kind: "article", id: article.id, title: article.title, lang: article.lang },
+    articleDocumentRef(article),
     assetUrlForPath,
     mode,
     onIssue,
