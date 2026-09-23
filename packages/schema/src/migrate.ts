@@ -156,21 +156,29 @@ export function migrateSite(data: unknown): SiteMigrationResult {
  * - **Structurally broken** ones (no type, no integer version). Rejecting
  *   them here would turn a reportable validation error into an unopenable
  *   project, the opposite of what the migration is for.
- * - **Newer than this editor** ones. ADR 0002's forward-compatibility contract
- *   is that content from a newer editor survives a read-write-read cycle
+ * - **Newer than this editor** ones, and ones with no registered path up to
+ *   the current version. ADR 0002's forward-compatibility contract is that
+ *   content from a newer editor survives a read-write-read cycle
  *   byte-identically, and ADR 0048 adds that it is shown read-only and never
- *   simplified. `migrateBlock` itself throws for a newer version — that is
- *   the right answer for a caller asking to bump one Block — but at load
- *   time the project must still open, with the mismatch reported by
- *   validation as an ordinary schema error on that Block.
+ *   simplified. `migrateBlock` itself throws in both cases — that is the
+ *   right answer for a caller asking to bump one Block — but at load time
+ *   the project must still open (the autosave restore would otherwise
+ *   discard the draft), with the mismatch reported by validation as an
+ *   ordinary schema error on that Block.
  */
 function isMigratableBlock(block: unknown): boolean {
   if (typeof block !== "object" || block === null) return false;
   const enveloped = block as { type?: unknown; version?: unknown };
-  if (typeof enveloped.type !== "string" || enveloped.type.length === 0) return false;
-  if (typeof enveloped.version !== "number" || !Number.isInteger(enveloped.version)) return false;
-  const known = KNOWN_BLOCK_VERSIONS[enveloped.type];
-  return known === undefined || enveloped.version <= known;
+  const { type, version } = enveloped;
+  if (typeof type !== "string" || type.length === 0) return false;
+  if (typeof version !== "number" || !Number.isInteger(version)) return false;
+  const target = KNOWN_BLOCK_VERSIONS[type];
+  if (target === undefined) return true;
+  if (version > target) return false;
+  for (let from = version; from < target; from += 1) {
+    if (!BLOCK_MIGRATIONS.some((m) => m.type === type && m.from === from)) return false;
+  }
+  return true;
 }
 
 /** Containers on the Site whose members each carry a `blocks` array. */

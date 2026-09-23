@@ -240,3 +240,86 @@ describe("richText block schema", () => {
     expect(validateBlock(block).ok).toBe(true);
   });
 });
+
+describe("RichTextBlockSchema — malformed known nodes are errors, not unknown content", () => {
+  // The unknown-node fallback exists for types this version has no schema
+  // for. A known type with the wrong shape must not slip through it: it
+  // would parse cleanly, raise nothing in Site Health, and render as nothing.
+  function blockWith(...content: unknown[]): unknown {
+    return { id: "blk_shape", type: "richText", version: 2, data: { doc: docWith(...content) } };
+  }
+
+  test("a heading outside h2–h4 fails to parse", () => {
+    const result = RichTextBlockSchema.safeParse(
+      blockWith({ type: "heading", level: 7, content: [{ type: "text", text: "x" }] }),
+    );
+    expect(result.success).toBe(false);
+  });
+
+  test("an image without an asset reference fails to parse", () => {
+    const result = RichTextBlockSchema.safeParse(blockWith({ type: "image", caption: "x" }));
+    expect(result.success).toBe(false);
+  });
+
+  test("a link whose address the Renderer would refuse fails to parse", () => {
+    const result = RichTextBlockSchema.safeParse(
+      blockWith({
+        type: "paragraph",
+        content: [
+          {
+            type: "text",
+            text: "click",
+            marks: [{ type: "link", target: { kind: "external", href: "javascript:alert(1)" } }],
+          },
+        ],
+      }),
+    );
+    expect(result.success).toBe(false);
+  });
+
+  test("a block-level node inside a paragraph fails to parse", () => {
+    const result = RichTextBlockSchema.safeParse(
+      blockWith({
+        type: "paragraph",
+        content: [{ type: "image", asset: { hash: "a", path: "assets/a.png" } }],
+      }),
+    );
+    expect(result.success).toBe(false);
+  });
+
+  test("addresses the legacy Markdown renderer linked stay valid", () => {
+    // `[x](#top)` and `[x](./despre)` migrate to external targets; the schema
+    // follows the Renderer's sanitiser, not the dialog's stricter typed-input
+    // rule, so migrated content parses exactly as it renders.
+    for (const href of ["#top", "./despre", "/despre/", "https://anosr.ro", "mailto:a@b.ro"]) {
+      const result = RichTextBlockSchema.safeParse(
+        blockWith({
+          type: "paragraph",
+          content: [
+            {
+              type: "text",
+              text: "x",
+              marks: [{ type: "link", target: { kind: "external", href } }],
+            },
+          ],
+        }),
+      );
+      expect(result.success, href).toBe(true);
+    }
+  });
+
+  test("an unknown mark on otherwise valid text still parses and round-trips", () => {
+    const block = blockWith({
+      type: "paragraph",
+      content: [
+        {
+          type: "text",
+          text: "hi",
+          marks: [{ type: "bold" }, { type: "futureHighlight", hue: 3 }],
+        },
+      ],
+    });
+    const parsed = RichTextBlockSchema.parse(block);
+    expect(JSON.parse(JSON.stringify(parsed))).toEqual(block);
+  });
+});

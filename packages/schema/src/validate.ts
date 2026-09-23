@@ -12,7 +12,6 @@ import type { ArticleSelection } from "./blocks/article-list.js";
 import { DEFAULT_ARTICLE_LIST_MODE } from "./blocks/article-list.js";
 import { SiteSchema } from "./site.js";
 import { checkSlug } from "./slug.js";
-import { sanitizeUrl } from "@sosb/markdown";
 import {
   collectRichTextImages,
   collectRichTextLinkTargets,
@@ -1050,28 +1049,12 @@ function runRichTextRules(
     }
   }
 
-  for (const link of collectRichTextLinkTargets(doc)) {
-    if (link.target.kind === "external") {
-      // The document schema refuses unsafe hrefs on the way in, but a text
-      // node whose link fails that check still parses — as an unknown node,
-      // which is what keeps hand-edited content from making a project
-      // unopenable. The Renderer's sanitiser then drops the href and the
-      // words render unlinked, exactly like a deleted Page target. Without
-      // this rule that would happen silently; with it, it is a repairable
-      // Site Health finding like every other broken link (ADR 0048).
-      if (typeof link.target.href !== "string" || sanitizeUrl(link.target.href) === null) {
-        result.warnings.push({
-          severity: "warning",
-          path: ["data", "doc", ...link.path, "href"],
-          code: "block.richText.link.invalid",
-          message:
-            "A link in this text section has an address that cannot be used on a website. " +
-            "It will show as plain text until you change it to a web, email or telephone address.",
-        });
-      }
-      continue;
-    }
-    if (context.resolveLinkTarget !== undefined) {
+  // External addresses need no rule here: the document schema accepts exactly
+  // what the Renderer will link (see `RichTextExternalLinkSchema`), so an
+  // unusable one is a schema error on the Block, never a silent drop.
+  if (context.resolveLinkTarget !== undefined) {
+    for (const link of collectRichTextLinkTargets(doc)) {
+      if (link.target.kind === "external") continue;
       const state = context.resolveLinkTarget(link.target);
       if (state === "ok") continue;
       result.warnings.push({

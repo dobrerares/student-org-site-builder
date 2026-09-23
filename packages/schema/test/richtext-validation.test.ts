@@ -193,46 +193,30 @@ describe("rich-text validation — link targets", () => {
     const result = validate(
       siteWith(doc(linkPara({ kind: "external", href: "https://anosr.ro" }))),
     );
-    const codes = result.warnings.map((w) => w.code);
-    expect(codes).not.toContain("block.richText.link.missing");
-    expect(codes).not.toContain("block.richText.link.invalid");
+    expect(result.warnings.map((w) => w.code)).not.toContain("block.richText.link.missing");
   });
 
-  test("an external address the Renderer would refuse warns instead of vanishing", () => {
-    // The schema rejects the href, the text node falls back to the loose
-    // parse, and the Renderer drops the link — all silently, unless
-    // validation says so. A hand-edited project file is the realistic source.
+  test("an external address the Renderer would refuse is a schema error, never silent", () => {
+    // A hand-edited project file is the realistic source. The document schema
+    // accepts exactly what the Renderer links, so the text node does not fall
+    // back to the loose unknown-node shape: the Block fails to parse and the
+    // author sees where. An ordinary, overridable error — not a blocker.
     const result = validate(
       siteWith(doc(linkPara({ kind: "external", href: "javascript:alert(1)" }))),
     );
-    const issue = result.warnings.find((w) => w.code === "block.richText.link.invalid");
-    expect(issue).toBeDefined();
-    expect(issue?.path).toEqual([
-      "pages",
-      0,
-      "blocks",
-      0,
-      "data",
-      "doc",
-      "content",
-      0,
-      "content",
-      0,
-      "marks",
-      0,
-      "target",
-      "href",
-    ]);
-    expect(result.errors).toEqual([]);
+    expect(result.errors.length).toBeGreaterThan(0);
+    expect(result.errors.every((e) => e.path.slice(0, 4).join(".") === "pages.0.blocks.0")).toBe(
+      true,
+    );
     expect(hasBlockingIssues(result)).toBe(false);
   });
 
   test("addresses the legacy Markdown renderer accepted stay valid after migration", () => {
-    // `[text](#anchor)` migrates to an external target the schema's own rule
-    // would not accept, yet it still renders as a link. The rule follows the
-    // Renderer, not the schema, so migrated content does not warn.
+    // `[text](#anchor)` migrates to an external target the link dialog's
+    // typed-input rule would not accept, yet it renders as a link. The schema
+    // follows the Renderer, so migrated content raises nothing.
     const result = validate(siteWith(doc(linkPara({ kind: "external", href: "#sus" }))));
-    expect(result.warnings.map((w) => w.code)).not.toContain("block.richText.link.invalid");
+    expect(result.errors).toEqual([]);
   });
 });
 

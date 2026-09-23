@@ -124,6 +124,16 @@ describe("richText v1 → v2 migration", () => {
     expect(() => migrateBlock(future)).toThrow(/newer/);
   });
 
+  test("a known Block with no registered path to the current version is left alone", () => {
+    // `migrateBlock` throws for it; the load-time pass must not, or the
+    // autosave restore would discard the whole draft over one Block.
+    const orphan = { id: "b_v0", type: "richText", version: 0, data: { markdown: "x" } };
+    const result = migrateSite(siteWith([orphan]));
+    expect((result.data as { pages: { blocks: unknown[] }[] }).pages[0]!.blocks[0]).toEqual(orphan);
+    expect(result.blockMigrations).toEqual([]);
+    expect(() => migrateBlock(orphan)).toThrow(/no migration/);
+  });
+
   test("a Site with no legacy Blocks comes back untouched, by identity", () => {
     const current = siteWith([
       {

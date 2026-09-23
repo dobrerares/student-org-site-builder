@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isAcceptableLinkUrl } from "./url.js";
+import { sanitizeUrl } from "@sosb/markdown";
 
 /**
  * Structured Rich-text document (ADR 0048, issue #100).
@@ -9,7 +9,16 @@ import { isAcceptableLinkUrl } from "./url.js";
  * implementation detail of `@sosb/editor-app`, and the public Renderer never
  * loads it. The vocabulary below is the whole supported surface; anything
  * else that arrives in a project file is preserved verbatim as an *unknown
- * node* (see `RichTextUnknownNodeSchema`) rather than being simplified away.
+ * node* or *unknown mark* (see `RichTextUnknownNodeSchema`) rather than being
+ * simplified away.
+ *
+ * "Unknown" means a `type` this version has no schema for. A node whose type
+ * *is* known but whose shape is wrong — a heading at level 7, an image with
+ * no asset, a link with an unusable address — is not unknown content; it is
+ * a malformed document, and it fails to parse like any other malformed Block
+ * data (ADR 0002: schema violations are errors). The fallbacks below are
+ * therefore restricted to unknown types on purpose, so a hand-edited mistake
+ * surfaces in Site Health instead of rendering as nothing.
  *
  * Three properties the rest of the system leans on:
  *
@@ -58,13 +67,17 @@ export type RichTextHeadingLevel = (typeof RICH_TEXT_HEADING_LEVELS)[number];
 export const RichTextExternalLinkSchema = z.looseObject({
   kind: z.literal("external"),
   /**
-   * Accepts the same shapes as every other link-bearing field in the schema:
-   * http(s), mailto, tel, and root-relative paths. Unsafe schemes are
-   * rejected here *and* re-checked by the Renderer's sanitiser — structured
-   * storage does not make imported content trusted.
+   * Exactly what the Renderer will put on an `href`: http(s), mailto, tel,
+   * and relative paths or fragments (`/despre/`, `./x`, `#sus`). This is the
+   * Renderer's own sanitiser rather than the stricter rule the link dialog
+   * applies to typed input, because the schema's question is "does this
+   * render as a link", and migrated Markdown such as `[x](#top)` must keep
+   * rendering exactly as it did. Unsafe schemes are rejected here *and*
+   * re-checked by the Renderer — structured storage does not make imported
+   * content trusted.
    */
-  href: z.string().refine(isAcceptableLinkUrl, {
-    message: "Link address must be a web, email, or telephone address.",
+  href: z.string().refine((href) => sanitizeUrl(href) !== null, {
+    message: "Link address must be a web, email or telephone address, or a path on this site.",
   }),
 });
 
@@ -104,7 +117,26 @@ export const RichTextLinkMarkSchema = z.looseObject({
   target: RichTextLinkTargetSchema,
 });
 
-export const RichTextMarkSchema = z.union([RichTextLinkMarkSchema, RichTextSimpleMarkSchema]);
+/**
+ * A mark whose type this version does not understand. Preserved verbatim,
+ * reported by `collectUnsupportedRichText`, never simplified (ADR 0048). The
+ * refinement keeps a *malformed* known mark — a link with an unusable
+ * address — from slipping through as if it were unknown.
+ */
+export const RichTextUnknownMarkSchema = z.looseObject({
+  type: z
+    .string()
+    .min(1)
+    .refine((type) => !isKnownRichTextMarkType(type), {
+      message: "A known mark type must match its own schema.",
+    }),
+});
+
+export const RichTextMarkSchema = z.union([
+  RichTextLinkMarkSchema,
+  RichTextSimpleMarkSchema,
+  RichTextUnknownMarkSchema,
+]);
 export type RichTextMark = z.infer<typeof RichTextMarkSchema>;
 
 /** Every mark type this version understands, for validation and the editor. */
@@ -175,9 +207,18 @@ export const RichTextImageNodeSchema = z.looseObject({
  * round-trips through this one byte-for-byte. Issue #100 forbids automatic
  * simplification: we preserve, mark the Block read-only in the editor, and
  * block public export until the vocabulary catches up.
+ *
+ * The refinement is what makes this a fallback for *unknown* content only: a
+ * known type that failed its own schema must not be accepted here, or a
+ * malformed document would parse cleanly and render as nothing.
  */
 export const RichTextUnknownNodeSchema = z.looseObject({
-  type: z.string().min(1),
+  type: z
+    .string()
+    .min(1)
+    .refine((type) => !isKnownRichTextNodeType(type), {
+      message: "A known node type must match its own schema.",
+    }),
 });
 
 export type RichTextUnknownNode = z.infer<typeof RichTextUnknownNodeSchema>;
