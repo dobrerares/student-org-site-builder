@@ -258,24 +258,29 @@ Implements [issue #100](issue-100-rich-text-contract.md) and the Tiptap half of
   would turn a missing description into a parse error, and issue #100 requires
   it to be a warning that never makes a project unopenable.
 - Unknown nodes and marks parse as loose objects and round-trip verbatim.
-  So does a _known_ node that fails its own rules (a heading at level 7, a
-  link whose href the schema refuses): the inline/block unions end in the
-  loose unknown-node shape, so a hand-edited file stays openable and the
-  Renderer is defensive about every field it reads.
+  A _known_ node that fails its own rules (a heading at level 7, an image
+  with no asset, an image inside a paragraph, a link with an unusable
+  address) is **not** unknown content: both fallbacks are restricted to
+  unknown types, so such a document fails to parse and validation reports a
+  schema error on the Block, like any other malformed Block data. The
+  external-href rule is the Renderer's sanitiser (paths and fragments
+  included), so migrated Markdown parses exactly as it renders. The Renderer
+  stays defensive about every field it reads regardless.
 - `richText` Block **v1 → v2**, registered in `BLOCK_MIGRATIONS` and run at
   load time — `migrateSite` now walks every Block container on the Site
   (`pages`, and `articles` when present), which it did not do before.
   `SiteMigrationResult` gained `blockMigrations[]`. A Block whose version is
-  _newer_ than this editor's is left untouched by that pass (validation
-  reports it as an ordinary schema error) rather than making the project
-  unopenable; `migrateBlock` itself still throws for it.
+  _newer_ than this editor's, or that has no registered migration path, is
+  left untouched by that pass and reported by validation as an ordinary
+  schema error; `migrateBlock` itself still throws for it. This matters for
+  the autosave "Continue draft" path, which would otherwise discard the whole
+  draft over one Block. Zip import still rejects any Site with validation
+  errors (pre-existing behaviour, unchanged by this PR).
 - `ValidationIssue.blocking` and `hasBlockingIssues` (see the conflict note
   below), plus the rules: `doc.empty` (warning),
   `content.unsupported` (error, blocking in public content),
   `image.bytes.missing` (error, blocking in public content),
-  `image.alt.missing` (warning), `link.missing` / `link.draft` /
-  `link.invalid` (warnings — the last for an external href the Renderer's
-  sanitiser would refuse, which otherwise rendered unlinked with no finding).
+  `image.alt.missing` (warning), `link.missing` / `link.draft` (warnings).
   The two blocking rules honour the Draft carve-out: the same content inside a
   Draft Article produces an ordinary error, and inside an Unlisted one a
   blocking error, because Unlisted pages are emitted.
@@ -349,6 +354,16 @@ Implements [issue #100](issue-100-rich-text-contract.md) and the Tiptap half of
   widen to the whole link first (`extendMarkRange`), as Tiptap's own Link
   does. Pasted `<a href>` elements keep their link as an external target when
   the href passes `isAcceptableLinkUrl`; pasted images are still declined.
+  With nothing selected and no link under the caret the dialog disables both
+  Add link buttons and applies nothing (applying would only set a stored mark
+  and, for an internal pick, stamp a Page id for no visible result).
+- `clonePage` / `addLanguageVersion` strip `Page.id` from the copy: two Pages
+  must never answer to one id, or the first match would win for every prose
+  link to either.
+- The editor stylesheet's rich-text rules use the sheet's own tokens
+  (`--rule-strong`, `--paper-*`, `--r-*`, `--accent`); a unit test fails on
+  any fallback-less `var()` the sheet does not declare, which is how a set of
+  rules written against another sheet's names was caught.
 - **Articles get the same editor.** `ArticleWorkspace` hands `BlockForm` the
   rich-text context and the quiet patch exactly as the Page Inspector does,
   with the link picker scoped to the Article's own language; `createArticle`
