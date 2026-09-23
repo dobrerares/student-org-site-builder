@@ -307,7 +307,7 @@ export const en: EnglishCatalog = {
     "These must be fixed before the website can be built. Your project is still saved — only the website export is affected.",
   "export.omitted": "Left out of the website ({count})",
   "export.omitted.info":
-    "These blocks will not appear on the exported website, because this Theme has no design for them. Your content is kept; switching Theme shows them again.",
+    "These blocks will not appear on the exported website, because this Theme has no design for them. Your content is kept; a Theme that has a design for them shows them again.",
   "export.omitted.page": "Page “{title}”: the {type} block has no design in this Theme.",
   "export.omitted.article": "Article “{title}”: the {type} block has no design in this Theme.",
   "export.omitted.ack": "I understand these blocks will not appear on the exported website.",
