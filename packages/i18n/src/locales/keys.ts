@@ -149,6 +149,7 @@ export type EditorMessageKey =
   // Builder shell — persistent navigation and top-bar actions (issue #102)
   | "builder.nav.label"
   | "builder.nav.group.site"
+  | "builder.nav.group.project"
   | "builder.nav.group.create"
   | "builder.nav.overview"
   | "builder.nav.pages"

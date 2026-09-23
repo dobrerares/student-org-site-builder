@@ -3012,6 +3012,35 @@ button[data-issue] [data-issue-path]::before {
   accent-color: var(--accent);
 }
 
+/* --- The (i) trigger ------------------------------------------------ */
+/* A 24px circle (WCAG 2.2 target size) sitting quietly beside its label,
+ * rather than the 32px icon-button square the generic chrome would give it. */
+[data-testid="editor-app"] button.info-hint__trigger,
+[data-dialog-host] button.info-hint__trigger {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-pill);
+  background: var(--paper-raised);
+  box-shadow: none;
+  color: var(--ink-3);
+  vertical-align: middle;
+}
+[data-testid="editor-app"] button.info-hint__trigger:hover:not(:disabled),
+[data-testid="editor-app"] button.info-hint__trigger[aria-expanded="true"],
+[data-testid="editor-app"] button.info-hint__trigger[data-popup-open] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+[data-testid="editor-app"] button.info-hint__trigger .icon {
+  width: 13px;
+  height: 13px;
+}
+
 /* --- Top bar additions ---------------------------------------------- */
 [data-testid="top-bar"] [data-drawer-button] {
   display: none;

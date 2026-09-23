@@ -55,6 +55,11 @@ export const DialogPopup = forwardRef<HTMLDivElement, DialogPopupProps>(function
       data-sosb-ui=""
       className={cn(
         "fixed top-1/2 left-1/2 z-80 flex max-h-[85vh] w-[min(34rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col gap-3 overflow-auto rounded-(--radius-sosb-lg) border border-border bg-card p-5 text-card-foreground shadow-2xl",
+        // Phones dock the dialog to the bottom of the screen instead of
+        // centring it: a thumb reaches the bottom, not the middle. Stated
+        // here rather than in the editor stylesheet because these utilities
+        // outrank it (issue #102's layer order), so an override there loses.
+        "max-md:top-auto max-md:right-2 max-md:bottom-2 max-md:left-2 max-md:w-auto max-md:max-h-[92vh] max-md:translate-none max-md:p-3",
         className,
       )}
       {...rest}

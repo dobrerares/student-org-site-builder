@@ -1740,6 +1740,20 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
           onContentLanguageChange={setContentLanguage}
           drawerOpen={drawerOpen}
           onCloseDrawer={() => setDrawerOpen(false)}
+          projectActions={
+            isNarrow
+              ? {
+                  onImport: () => {
+                    setDrawerOpen(false);
+                    handleImportClick();
+                  },
+                  onReset: () => {
+                    setDrawerOpen(false);
+                    handleResetClick();
+                  },
+                }
+              : undefined
+          }
         />
         <main data-builder-main>{main}</main>
       </div>
@@ -1824,6 +1838,9 @@ function TopBar(props: TopBarProps): JSX.Element {
       <Button
         type="button"
         size="icon"
+        // Utility classes rather than the editor sheet: the shared Button's
+        // own display utility outranks a `display: none` there.
+        className="max-md:h-8 max-md:w-8 md:hidden"
         data-testid="nav-drawer-open"
         data-drawer-button
         aria-label={t("builder.nav.open")}
@@ -1865,6 +1882,7 @@ function TopBar(props: TopBarProps): JSX.Element {
           <Button
             type="button"
             size="icon"
+            className="max-md:h-8 max-md:w-8"
             data-testid="undo-button"
             data-action="undo"
             data-icon-button
@@ -1878,6 +1896,7 @@ function TopBar(props: TopBarProps): JSX.Element {
           <Button
             type="button"
             size="icon"
+            className="max-md:h-8 max-md:w-8"
             data-testid="redo-button"
             data-action="redo"
             data-icon-button
@@ -1889,8 +1908,10 @@ function TopBar(props: TopBarProps): JSX.Element {
             <IconRedo size={16} />
           </Button>
         </span>
+        {/* On phones these two move into the navigation drawer. */}
         <Button
           type="button"
+          className="max-md:hidden"
           data-action="import"
           title={t("builder.import.title")}
           onClick={props.onImport}
@@ -1899,18 +1920,26 @@ function TopBar(props: TopBarProps): JSX.Element {
         </Button>
         <Button
           type="button"
+          className="max-md:hidden"
           data-action="reset"
           title={t("builder.reset.title")}
           onClick={props.onReset}
         >
           {t("topbar.reset")}
         </Button>
-        <Button type="button" data-testid="save-project" data-action="save" onClick={props.onSave}>
+        <Button
+          type="button"
+          className="max-md:h-8 max-md:px-2.5 max-md:text-(length:--sosb-text-sm)"
+          data-testid="save-project"
+          data-action="save"
+          onClick={props.onSave}
+        >
           {t("builder.action.save")}
         </Button>
         <Button
           type="button"
           variant="primary"
+          className="max-md:h-8 max-md:px-2.5 max-md:text-(length:--sosb-text-sm)"
           data-action="export"
           data-variant="primary"
           onClick={props.onExport}

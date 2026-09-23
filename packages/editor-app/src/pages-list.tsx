@@ -158,6 +158,7 @@ export function PagesList(props: PagesListProps): JSX.Element {
         <Button
           type="button"
           variant="ghost"
+          className="h-auto min-h-9 flex-col items-start justify-center gap-0 px-2 py-1 text-left whitespace-normal"
           data-action="select"
           data-index={idx}
           title={isActive ? "You are editing this page" : "Edit this page"}

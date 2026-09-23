@@ -209,6 +209,7 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
                 <Button
                   type="button"
                   variant="ghost"
+                  className="h-auto min-h-9 flex-col items-start justify-center gap-0 px-1.5 py-1 text-left whitespace-normal"
                   data-testid="block-row-select"
                   data-action="select"
                   aria-label={`Edit ${entry.label}`}

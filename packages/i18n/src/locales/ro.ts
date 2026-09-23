@@ -165,6 +165,7 @@ export const ro: RomanianCatalog = {
   // Builder shell — persistent navigation and top-bar actions
   "builder.nav.label": "Principal",
   "builder.nav.group.site": "Site",
+  "builder.nav.group.project": "Proiect",
   "builder.nav.group.create": "Creează",
   "builder.nav.overview": "Prezentare generală",
   "builder.nav.pages": "Pagini",

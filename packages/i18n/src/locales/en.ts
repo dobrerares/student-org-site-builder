@@ -151,6 +151,7 @@ export const en: EnglishCatalog = {
   // Builder shell — persistent navigation and top-bar actions
   "builder.nav.label": "Main",
   "builder.nav.group.site": "Site",
+  "builder.nav.group.project": "Project",
   "builder.nav.group.create": "Create",
   "builder.nav.overview": "Overview",
   "builder.nav.pages": "Pages",

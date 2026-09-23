@@ -48,6 +48,15 @@ export interface MainNavProps {
   /** Phone only: whether the drawer is open. */
   readonly drawerOpen: boolean;
   readonly onCloseDrawer: () => void;
+  /**
+   * Phone only: Open project / Start over. The top bar has no room for them
+   * beside Save project and Export website at 390px, and they are rare
+   * actions, so the drawer carries them there. Omitted on wide windows,
+   * where the top bar shows them and a second copy would just be noise.
+   */
+  readonly projectActions?:
+    | { readonly onImport: () => void; readonly onReset: () => void }
+    | undefined;
 }
 
 export function MainNav(props: MainNavProps): JSX.Element {
@@ -164,6 +173,28 @@ export function MainNav(props: MainNavProps): JSX.Element {
         >
           <span>{t("builder.action.createArticle")}</span>
         </button>
+
+        {props.projectActions !== undefined && (
+          <>
+            <span data-nav-group-label>{t("builder.nav.group.project")}</span>
+            <button
+              type="button"
+              data-testid="nav-import"
+              data-nav-item
+              onClick={props.projectActions.onImport}
+            >
+              <span>{t("topbar.import")}</span>
+            </button>
+            <button
+              type="button"
+              data-testid="nav-reset"
+              data-nav-item
+              onClick={props.projectActions.onReset}
+            >
+              <span>{t("topbar.reset")}</span>
+            </button>
+          </>
+        )}
 
         {props.languages.length > 1 && (
           <>
