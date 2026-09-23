@@ -178,7 +178,8 @@ _Avoid_: theme JS, client bundle, plugin script.
 **Omitted Block**:
 A Block whose type has neither a built-in component nor a design in the
 active Theme. Left out of the public Site, marked with an HTML comment,
-and listed for the author to acknowledge before export (ADR 0045).
+and listed in the export readiness panel for the author to acknowledge
+before export (ADR 0045).
 Reported by `build()` through `onOmittedBlock` / `buildWithReport`, and
 computed ahead of time by `omittedBlocksFor` from the same rule. Distinct
 from a **rendering failure**, which stops the export and cannot be

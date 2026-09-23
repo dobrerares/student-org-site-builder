@@ -62,7 +62,7 @@ convention:
    Block markup and the page shell, and a `public.js` that runs on the
    published Site. The design runs inside an engine the builder controls: no
    network, no files, no clock, no randomness, no timers, no imports, and a
-   budget on how long and how much memory a render may take. It returns
+   budget on how much work and memory a render may take. It returns
    _data_, not HTML. The whole contract is in
    [Executable designs](#executable-designs-renderjs) below.
 
@@ -448,7 +448,8 @@ dependency the render cannot check — deferred), and SVG `use`, `image` and
 **Attributes:** `class`, `id`, `lang`, `dir`, `hidden`, `role`, `tabindex`,
 `title`, `translate`, every `data-*` and `aria-*`, and the ordinary per-element
 attributes (`href`, `src`, `alt`, `width`, `height`, `loading`, `datetime`,
-`colspan`, `open`, `type`, `disabled`, …). Not available: any `on*` handler
+`colspan`, `open`, `type`, `disabled`, …). Names are plain — letters, digits
+and hyphens. Not available: any `on*` handler
 (behaviour belongs in `public.js`), `style` (put the rule in your stylesheet),
 and the attributes the builder places itself — `data-block`, `data-block-id`,
 `data-variant`, `data-shell-variant`.
@@ -457,8 +458,10 @@ and the attributes the builder places itself — `data-block`, `data-block-id`,
 value a helper returned (`input.asset()`, `input.mediaUrl()`,
 `input.pageUrl()`, `input.articleUrl()`, `input.homeHref`); a relative path
 without a scheme; a fragment; or a plain `http(s)`, `mailto` or `tel` URL.
-`javascript:`, `data:` and protocol-relative `//host` are refused. A link with
-`target="_blank"` gets `rel="noopener noreferrer"` added.
+`javascript:`, `data:` and protocol-relative `//host` are refused. A `srcset`
+is checked one candidate at a time (`url 1x, url 2x`; each URL under the same
+rule, each candidate with a descriptor). A link with `target="_blank"` gets
+`rel="noopener noreferrer"` added.
 
 A tree that breaks any of these is an `invalid-tree` error naming the node and
 the attribute.
@@ -529,15 +532,15 @@ baseline styles keep applying.
 
 Every helper lives on `input`:
 
-| Helper                 | Returns                                                                                                                                                                         |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `input.asset(path)`    | The URL of a file in your package (`assets/x.svg`). Resolves to a real file in a build and a `blob:` URL in the preview; you never see the difference.                          |
-| `input.mediaUrl(ref)`  | The URL of a Site asset — an image reference out of Block data or `org.logo.path` — or `null` when the slot is empty. Handle `null`.                                            |
-| `input.mediaAlt(ref)`  | The screen-reader description stored on that asset, or `""`.                                                                                                                    |
-| `input.pageUrl(id)`    | The href of the Page with id `"<lang>:<slug>"`, or `null`.                                                                                                                      |
-| `input.articleUrl(id)` | The href of an Article by its permanent id, or `null`.                                                                                                                          |
-| `input.richText(doc)`  | Builder-rendered, sanitised prose for a rich-text value. Place the result in your tree like any child. It is an opaque token, not a string: there is no raw HTML from a design. |
-| `input.t(key)`         | A visitor-facing word in the page's language. Unknown keys come back unchanged.                                                                                                 |
+| Helper                 | Returns                                                                                                                                                                                                         |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `input.asset(path)`    | The URL of a file in your package (`assets/x.svg`). Resolves to a real file in a build and a `blob:` URL in the preview; you never see the difference. Throws for anything that is not a package-relative path. |
+| `input.mediaUrl(ref)`  | The URL of a Site asset — an image reference out of Block data or `org.logo.path` — or `null` when the slot is empty. Also `null` for anything that is not a Site asset path (`assets/…`). Handle `null`.       |
+| `input.mediaAlt(ref)`  | The screen-reader description stored on that asset, or `""`.                                                                                                                                                    |
+| `input.pageUrl(id)`    | The href of the Page with id `"<lang>:<slug>"`, or `null`.                                                                                                                                                      |
+| `input.articleUrl(id)` | The href of an Article by its permanent id, or `null`.                                                                                                                                                          |
+| `input.richText(doc)`  | Builder-rendered, sanitised prose for a rich-text value. Place the result in your tree like any child. It is an opaque token, not a string: there is no raw HTML from a design.                                 |
+| `input.t(key)`         | A visitor-facing word in the page's language. Unknown keys come back unchanged.                                                                                                                                 |
 
 Keys `t()` answers: `menu`, `close`, `navigation`, `home`, `since`,
 `siteInfo`, `skipToContent`, `languageLabel`, `publishedOn`, `relatedTitle`,
@@ -562,13 +565,17 @@ identically in the browser, in Electron and in Node (ADR 0054). Inside it:
   promise that never settles.
 - **Budgets, per call:** roughly twenty million loop iterations or calls
   (`timeout`), 48 MB of new memory (`memory`), a 256 KB call stack (about 1,300
-  nested calls; a plain `stack overflow` error), 512 KB of source.
+  nested calls; a plain `stack overflow` error), 512 KB of source. A design
+  that hits the memory limit is not run again for that Block type (or the
+  shell) until the Theme is re-imported or the editor reloaded — the preview
+  re-renders on every edit, and a second run would only be the same failure
+  with a larger heap.
 - **The boundary is JSON.** Your input arrives as plain data and your tree
   leaves as plain data. Functions, cycles and host objects do not cross.
 
-Everything else in ECMAScript 2023 is there: modern syntax, `Map`/`Set`,
-`Intl`-free string and array methods, `JSON`, `structuredClone`-free but
-`JSON.parse(JSON.stringify(...))` works.
+Everything else in ECMAScript 2023 is there: modern syntax, `Map`/`Set`, the
+string and array methods, `JSON`. There is no `Intl` and no `structuredClone`;
+`JSON.parse(JSON.stringify(...))` works for a deep copy.
 
 There is no `console.log`. Debug by rendering the value into a `data-` attribute
 and reading it in the preview, or by loading the package in a test.
@@ -592,8 +599,8 @@ In an **export** the build stops with the same error; a rendering failure
 cannot be acknowledged away (ADR 0045).
 
 A Block whose type you do not design (and no built-in renders) is not an
-error. It is **omitted**: left out of the Site and listed in the export dialog
-for the author to acknowledge.
+error. It is **omitted**: left out of the Site and listed in the export
+readiness panel for the author to acknowledge.
 
 ### Determinism, in one sentence
 

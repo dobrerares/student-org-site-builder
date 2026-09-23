@@ -42,8 +42,8 @@ Two deliberate departures:
 ## The executable design
 
 `render.js` runs in the builder's sandbox (no network, files, clock or
-randomness; a budget on time and memory) and returns element trees, never
-HTML. It contributes:
+randomness; an instruction and memory budget) and returns element trees,
+never HTML. It contributes:
 
 - **A page shell** — a sticky header with the organisation's logo and
   wordmark, the navigation (with the phone-width menu button), the language

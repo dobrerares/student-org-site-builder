@@ -53,11 +53,12 @@ class: "lede" }, "text"]`, or the equivalent `{ tag, attrs, children }` —
 which the renderer validates and hands to Preact exactly like a built-in
 component's vnode. The validator holds a curated allow-list of tags (no
 `script`, `iframe`, `object`, `style`, `form` controls, `html`/`head`/`body`)
-and per-tag attributes; refuses any `on*` handler and any inline `style`;
-checks every URL-valued attribute with the same predicate the schema uses for
-links, accepting a builder-produced URL by identity; and refuses the
-attributes the builder itself places (`data-block`, `data-block-id`,
-`data-variant`, `data-shell-variant`). A new-tab anchor gets `rel="noopener
+and per-tag attributes; requires plain attribute names; refuses any `on*`
+handler and any inline `style`; checks every URL-valued attribute with the
+same predicate the schema uses for links (a `srcset` one candidate at a time),
+accepting a builder-produced URL by identity; and refuses the attributes the
+builder itself places (`data-block`, `data-block-id`, `data-variant`,
+`data-shell-variant`). A new-tab anchor gets `rel="noopener
 noreferrer"` whether the design asked or not.
 
 The three properties this buys are the ones ADR 0046 asks for. There is no
@@ -85,6 +86,13 @@ through the builder's own sanitising pipeline (it returns an opaque sentinel
 the renderer substitutes, so even prose never arrives as a string from the
 module), and `t()` for a small table of visitor-facing shell copy in the
 page's language.
+
+Because a helper's return value is accepted by the validator by identity —
+that is how a preview `blob:` URL gets through a check that would otherwise
+refuse it — what goes _into_ a helper is policed: `asset()` accepts only a
+package-relative path and throws otherwise, and `mediaUrl()` answers `null`
+for anything that is not a Site asset path (`assets/…` with no scheme, `//` or
+`..` segment). A design cannot launder a URL of its own through a helper.
 
 ### The builder keeps the document
 
@@ -119,9 +127,10 @@ HTML comment, and reported. `omittedBlocksFor(site, bundle)` computes the list
 statically from the same predicate the page shell renders with, so the editor
 can ask before it builds; `build()` reports the same Blocks through
 `onOmittedBlock` from the real render, and `buildWithReport()` returns them as
-a value. The export dialog lists them and gates the download on a checkbox —
-not a typed phrase, since nothing is broken, and not a plain warning, since
-the whole point is that the author reads it.
+a value. The export readiness panel (ADR 0053) lists them and gates the export
+on a checkbox — not a typed phrase, since nothing is broken, and not a plain
+warning, since the whole point is that the author reads it — on top of the
+validation gate, never instead of it.
 
 ### The sandbox is QuickJS compiled to WebAssembly
 
@@ -175,10 +184,22 @@ is caught. The guest stack is capped at 256 KB — smaller than the host's —
 because at 1 MB the host's own call stack overflowed first and left the engine
 in a state that could not be freed; at 256 KB the guest receives a clean
 `InternalError: stack overflow`, still with room for more than a thousand
-nested calls (1,362 measured) against a 64-level tree limit. Should a host exception ever escape a
-call anyway, the realm is marked poisoned and abandoned rather than freed,
-because freeing a corrupted runtime aborts the whole wasm module for every
-Theme in the session.
+nested calls (1,362 measured) against a 64-level tree limit. Should a host
+exception ever escape a call anyway, the realm is marked poisoned and
+abandoned rather than freed, because freeing a corrupted runtime aborts the
+whole wasm module for every Theme in the session.
+
+The per-call growth check alone would ratchet. What a failed call allocated
+goes back to the engine's allocator but never to the browser, so the next call
+fills the freed chunks first and is allowed a fresh ceiling on top; a design
+that failed on every preview edit would climb the shared heap 48 MB at a time
+until WebAssembly refused to grow it, which aborts the module for every Theme.
+Two guards close that. A subject — the shell, or a Block type — whose design
+has blown the ceiling once is refused in that realm from then on, with a
+`memory` error saying so, until the Theme is re-imported (a fresh realm) or the
+editor reloaded; the author has already been told which Block failed and why.
+And no call may leave the shared heap above an absolute 256 MB cap, whatever
+it was at the start (the engine starts at 16 MB).
 
 ### The public-site script
 
@@ -253,6 +274,12 @@ ineffective on this platform was discovered by measurement, not assumed. A
 ceiling enforced every ten thousand operations is imprecise, but it turns
 "the tab dies" into "this Block fails with a message", which is the whole
 purpose. The imprecision is documented rather than hidden.
+
+**Why refuse a design after one memory failure rather than keep retrying?**
+The preview re-renders on every edit. Retrying a design that allocates without
+bound is not a second chance, it is the same failure with a larger heap, and
+the heap is shared with every other Theme in the session. Refusing per subject
+keeps the rest of the Theme rendering; re-import is one action away.
 
 ## Consequences
 
