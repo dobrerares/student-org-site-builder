@@ -63,13 +63,13 @@ function wide(): void {
 
 async function mountWithPackage(
   packages: readonly Map<string, Uint8Array>[] = [packageFiles()],
+  vfs: MemoryDriver = new MemoryDriver(),
 ): Promise<{
   container: HTMLElement;
   frame: () => HTMLIFrameElement;
   toggle: () => HTMLInputElement;
 }> {
   wide();
-  const vfs = new MemoryDriver();
   for (const files of packages) {
     await installThemePackageIntoVfs(vfs, loadThemePackage(files));
   }
@@ -220,6 +220,33 @@ describe("the interactive preview toggle", () => {
     expect(status(container)).toBeNull();
     expect(toggle().checked).toBe(false);
     expect(frame().getAttribute("data-preview-mode")).toBe("static");
+  });
+
+  test("falls back to the static preview, and says why, when the uploads cannot be read", async () => {
+    // "Preparing…" forever would say nothing (ADR 0056 §3).
+    const vfs = new MemoryDriver();
+    const list = vfs.list.bind(vfs);
+    let broken = false;
+    vfs.list = async (prefix: string): Promise<string[]> => {
+      if (broken) throw new Error("disk gone");
+      return list(prefix);
+    };
+    const { container, frame, toggle } = await mountWithPackage([packageFiles()], vfs);
+    broken = true;
+    fireEvent.click(toggle());
+    await waitFor(() => expect(status(container)?.getAttribute("data-state")).toBe("failed"));
+    const strip = status(container)!;
+    expect(strip.getAttribute("role")).toBe("alert");
+    expect(strip.textContent).toBe(
+      "The interactive preview could not be prepared (disk gone). The static preview is shown.",
+    );
+    expect(toggle().checked).toBe(false);
+    expect(frame().getAttribute("data-preview-mode")).toBe("static");
+
+    // The next attempt starts clean.
+    broken = false;
+    await switchOn(container, toggle);
+    expect(status(container)?.getAttribute("role")).toBe("status");
   });
 
   test("while on, an edit reloads the document rather than morphing it", async () => {

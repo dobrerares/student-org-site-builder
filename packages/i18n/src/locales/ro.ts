@@ -312,6 +312,8 @@ export const ro: RomanianCatalog = {
   "preview.interactive.network": "Poate contacta: {hosts}.",
   "preview.interactive.network.none": "Nu contactează alte site-uri.",
   "preview.interactive.offline": "Fără conexiune la internet: {note}",
+  "preview.interactive.failed":
+    "Previzualizarea interactivă nu a putut fi pregătită ({message}). Este afișată previzualizarea statică.",
 
   // Export readiness panel
   "export.title": "Exportă site-ul",

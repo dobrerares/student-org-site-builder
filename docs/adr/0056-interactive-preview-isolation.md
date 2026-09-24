@@ -101,7 +101,9 @@ encoded from the bundle's bytes and cached per id and version like the blob
 cache; the Site's uploads are read from the project VFS and encoded once
 when the mode is switched on, re-encoded after an upload, and dropped the
 moment it is switched off. The pane shows "Preparing…" until the uploads are
-ready, so the document never boots with half its images missing.
+ready, so the document never boots with half its images missing; if they
+cannot be read at all, the switch falls back to off and the status line says
+why, rather than preparing forever.
 
 The public script itself is a `<script defer src="data:text/javascript;base64,…">`
 — the build's tag with a different URL, not an inline script, so the

@@ -118,6 +118,12 @@ export interface PreviewPaneProps {
    * script and boots in the opaque-origin frame. Defaults to `off`.
    */
   readonly interactive?: "off" | "preparing" | "on" | undefined;
+  /**
+   * Why the last request could not be prepared (the uploads could not be
+   * read). Shown as an alert in place of the status line while the mode is
+   * off, until the author switches again.
+   */
+  readonly interactiveError?: string | null | undefined;
   readonly onInteractiveChange?: ((on: boolean) => void) | undefined;
   /**
    * What the active Theme declared about its public-site script. The
@@ -362,6 +368,17 @@ export function PreviewPane(props: PreviewPaneProps): JSX.Element {
           </span>
         )}
       </div>
+
+      {props.publicScript !== undefined && interactiveMode === "off" && props.interactiveError && (
+        <p
+          data-preview-interactive-status
+          data-state="failed"
+          data-testid="preview-interactive-status"
+          role="alert"
+        >
+          {t("preview.interactive.failed", { message: props.interactiveError })}
+        </p>
+      )}
 
       {props.publicScript !== undefined && interactiveMode !== "off" && (
         // What is running and what it may reach, straight from the manifest

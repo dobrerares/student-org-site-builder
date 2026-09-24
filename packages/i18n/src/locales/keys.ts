@@ -326,6 +326,7 @@ export type EditorMessageKey =
   | "preview.interactive.network"
   | "preview.interactive.network.none"
   | "preview.interactive.offline"
+  | "preview.interactive.failed"
   // Export readiness panel
   | "export.title"
   | "export.info.label"

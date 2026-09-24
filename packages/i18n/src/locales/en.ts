@@ -297,6 +297,8 @@ export const en: EnglishCatalog = {
   "preview.interactive.network": "It may contact: {hosts}.",
   "preview.interactive.network.none": "It contacts no other websites.",
   "preview.interactive.offline": "Without an internet connection: {note}",
+  "preview.interactive.failed":
+    "The interactive preview could not be prepared ({message}). The static preview is shown.",
 
   // Export readiness panel
   "export.title": "Export website",

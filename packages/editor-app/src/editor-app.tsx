@@ -904,7 +904,9 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   const [interactiveThemeId, setInteractiveThemeId] = useState<string | null>(null);
   const activeThemeId = activeThemeBundle?.id;
   const interactiveRequested = interactiveThemeId !== null && interactiveThemeId === activeThemeId;
+  const [interactiveError, setInteractiveError] = useState<string | null>(null);
   function setInteractiveRequested(on: boolean): void {
+    setInteractiveError(null);
     setInteractiveThemeId(on ? (activeThemeId ?? null) : null);
   }
   useEffect(() => {
@@ -926,11 +928,21 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       return;
     }
     let cancelled = false;
-    void prepareInteractiveAssetUrls(assetVfsRef.current!).then((urls) => {
-      if (cancelled) return;
-      interactiveUploadsRef.current = urls;
-      setInteractiveEpoch((n) => n + 1);
-    });
+    prepareInteractiveAssetUrls(assetVfsRef.current!).then(
+      (urls) => {
+        if (cancelled) return;
+        interactiveUploadsRef.current = urls;
+        setInteractiveEpoch((n) => n + 1);
+      },
+      (error: unknown) => {
+        if (cancelled) return;
+        // The document must not boot with half its images missing (ADR 0056
+        // §3), and "Preparing…" forever would say nothing. Fall back to the
+        // static preview and let the status line say why.
+        setInteractiveError(error instanceof Error ? error.message : String(error));
+        setInteractiveThemeId(null);
+      },
+    );
     return () => {
       cancelled = true;
     };
@@ -1786,6 +1798,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       onReturnToTarget={handleReturnPreviewToTarget}
       onEditPreviewed={handleEditPreviewed}
       interactive={interactiveMode}
+      interactiveError={interactiveError}
       onInteractiveChange={setInteractiveRequested}
       publicScript={
         activePublicScript === undefined
