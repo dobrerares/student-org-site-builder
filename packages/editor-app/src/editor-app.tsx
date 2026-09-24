@@ -776,6 +776,21 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     void reloadInstalledThemes();
   }, []);
 
+  /**
+   * Drop every preview URL minted for Theme files — the static `blob:` cache
+   * and the interactive `data:` cache. Called *before* a reload of the
+   * installed Themes so the memory goes early, and *after* it because a
+   * render that happens while the reload is pending (a keystroke, an upload
+   * finishing) rebuilds both caches from the outgoing bundle; re-importing
+   * the same id and version with new bytes would then keep serving the old
+   * bytes. Nothing minted after the reload can be stale: by then the
+   * installed list already holds the new bundles.
+   */
+  function dropThemePreviewUrls(): void {
+    revokeThemeBlobUrls();
+    clearThemeDataUrls();
+  }
+
   async function importThemePackage(file: File): Promise<void> {
     const bytes = new Uint8Array(await file.arrayBuffer());
     // Load (and therefore fully validate) before writing anything: a rejected
@@ -786,11 +801,11 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     // load's sandbox realm has done its job.
     loaded.bundle.render?.dispose();
     // Re-importing the same id and version with different bytes is the normal
-    // rhythm of authoring a Theme, so the blob cache (keyed on id + version)
-    // has to be dropped on every import rather than trusted to notice.
-    revokeThemeBlobUrls();
-    clearThemeDataUrls();
+    // rhythm of authoring a Theme, so the URL caches (keyed on id + version)
+    // have to be dropped on every import rather than trusted to notice.
+    dropThemePreviewUrls();
     await reloadInstalledThemes();
+    dropThemePreviewUrls();
   }
 
   async function exportThemePackageFile(themeId: string): Promise<void> {
@@ -803,13 +818,13 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
 
   async function removeThemePackage(themeId: string): Promise<void> {
     await uninstallThemePackageFromVfs(assetVfsRef.current!, themeId);
-    // Drop the preview blob URLs minted for this Theme. Without this, removing
-    // and re-importing an edited Theme at the same version would keep serving
-    // the old bytes from the blob cache, and the author would conclude their
-    // edits had not taken.
-    revokeThemeBlobUrls();
-    clearThemeDataUrls();
+    // Drop the preview URLs minted for this Theme. Without this, removing and
+    // re-importing an edited Theme at the same version would keep serving the
+    // old bytes from the caches, and the author would conclude their edits
+    // had not taken.
+    dropThemePreviewUrls();
     await reloadInstalledThemes();
+    dropThemePreviewUrls();
   }
 
   /**
@@ -1682,9 +1697,9 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       // The incoming archive's Theme packages are only *installed* once this
       // list is rebuilt; without it the Site would render as if its own Theme
       // were missing until the editor was reloaded.
-      revokeThemeBlobUrls();
-      clearThemeDataUrls();
+      dropThemePreviewUrls();
       await reloadInstalledThemes();
+      dropThemePreviewUrls();
       // The interactive preview is a fact about this editing session, not
       // about a project: another project starts static (ADR 0046).
       setInteractiveThemeId(null);
