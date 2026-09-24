@@ -407,6 +407,39 @@ describe("author-controlled package updates", () => {
     expect(snapshots[1]!.pages[0]!.blocks[1]).toEqual(PARTNERS_BLOCK);
   });
 
+  test("a second package declaring a type another package already provides adapts nothing", async () => {
+    // `org.a.decl` sorts before `org.example.declaring`, so it stays the
+    // provider (ADR 0055); the incoming declaration at version 5 must not
+    // stamp the Block, which would make it data-newer under the real one.
+    const vfs = await vfsWithPartnersPackage({ id: "org.a.decl" });
+    const snapshots: Site[] = [];
+    const { container } = render(
+      <EditorApp
+        initial={siteWithPartners()}
+        initialAssetVfs={vfs}
+        onExport={(s) => snapshots.push(s)}
+      />,
+    );
+    await packagesLoaded(container, "org.a.decl");
+    await importPackage(
+      container,
+      packageZip({ version: "5.0.0", declaration: { ...PARTNERS_DECLARATION, version: 5 } }),
+    );
+    await waitFor(() => {
+      if (
+        container.querySelector(`[data-theme-package][data-theme-id="${PARTNERS_PACKAGE_ID}"]`) ===
+        null
+      ) {
+        throw new Error("not installed yet");
+      }
+    });
+    expect(container.querySelector('[data-testid="package-update-dialog"]')).toBeNull();
+    openPage(container, 0);
+    expect(container.querySelector('[data-testid="block-row-unavailable"]')).toBeNull();
+    exportSite(container);
+    expect(snapshots[0]!.pages[0]!.blocks[1]).toEqual(PARTNERS_BLOCK);
+  });
+
   test("an appearance-only update never asks and touches no Block", async () => {
     const vfs = await vfsWithPartnersPackage();
     const snapshots: Site[] = [];

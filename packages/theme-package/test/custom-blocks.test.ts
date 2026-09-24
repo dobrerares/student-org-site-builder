@@ -356,6 +356,51 @@ describe("the recovery copy", () => {
     expect(copy?.files.has("extra.txt")).toBe(false);
   });
 
+  test("a write that fails half-way leaves the earlier copy whole", async () => {
+    const vfs = new MemoryDriver();
+    const v1 = loadThemePackage(
+      pkg(
+        { ...MANIFEST, version: "1.0.0", blocks: ["blocks/partners/block.json"] },
+        {
+          "blocks/partners/block.json": PARTNERS,
+        },
+      ),
+    );
+    const v2 = loadThemePackage(
+      pkg(
+        { ...MANIFEST, version: "2.0.0", blocks: ["blocks/partners/block.json"] },
+        {
+          "blocks/partners/block.json": PARTNERS,
+        },
+      ),
+    );
+    await saveThemeRecoveryCopy(vfs, v1, [block]);
+    // Fail on the second write of the next save: the new copy never completes.
+    let writes = 0;
+    const flaky = new Proxy(vfs, {
+      get(target, property, receiver) {
+        if (property === "write") {
+          return async (path: string, bytes: Uint8Array) => {
+            writes += 1;
+            if (writes === 2) throw new Error("disk full");
+            return target.write(path, bytes);
+          };
+        }
+        return Reflect.get(target, property, receiver);
+      },
+    });
+    await expect(saveThemeRecoveryCopy(flaky, v2, [])).rejects.toThrow("disk full");
+    const copy = await readThemeRecoveryCopy(vfs, THEME_ID);
+    expect(copy?.version).toBe("1.0.0");
+    expect(copy?.blocks.get("blk_1")).toEqual(block);
+    expect(copy?.files.size).toBe(v1.files.size);
+    // Nothing of the failed attempt is listed as a copy; the next save cleans it up.
+    expect(await themeRecoveryIds(vfs)).toEqual([THEME_ID]);
+    await saveThemeRecoveryCopy(vfs, v2, []);
+    expect((await readThemeRecoveryCopy(vfs, THEME_ID))?.version).toBe("2.0.0");
+    expect(await vfs.list("themes-recovery-staging/")).toEqual([]);
+  });
+
   test("a blocks.json with malformed envelopes keeps only the well-formed ones", async () => {
     const vfs = new MemoryDriver();
     const enc = new TextEncoder();

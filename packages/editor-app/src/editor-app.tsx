@@ -59,6 +59,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   AssetRefLike,
   BlockEnvelope,
+  CustomBlockDeclaration,
   CustomBlockFailedPackageSource,
   CustomBlockPackageSource,
   DocumentAssetRef,
@@ -863,8 +864,8 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     const previous = installedThemes.find((bundle) => bundle.id === loaded.bundle.id);
     if (previous !== undefined && adapted !== snapshot) {
       const types = new Set([
-        ...(previous.customBlocks ?? []).map((d) => d.type),
-        ...(loaded.bundle.customBlocks ?? []).map((d) => d.type),
+        ...providedDeclarations(previous.id, previous.customBlocks).map((d) => d.type),
+        ...providedDeclarations(loaded.bundle.id, loaded.bundle.customBlocks).map((d) => d.type),
       ]);
       const affected: BlockEnvelope[] = [];
       for (const page of snapshot.pages) {
@@ -896,6 +897,29 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     await reloadInstalledThemes();
   }
 
+  /**
+   * The declarations of a package that the registry would actually consult
+   * once it is installed. When another installed package with a smaller id
+   * declares the same type, that one stays the provider (the deterministic
+   * rule of `buildCustomBlockRegistry`), and adapting Blocks to a declaration
+   * nobody consults would only stamp them with a foreign data version — and
+   * make them `data-newer` under the declaration that does govern them.
+   */
+  function providedDeclarations(
+    packageId: string,
+    declarations: readonly CustomBlockDeclaration[] | undefined,
+  ): CustomBlockDeclaration[] {
+    const others = installedThemes.filter((bundle) => bundle.id !== packageId);
+    return (declarations ?? []).filter(
+      (declaration) =>
+        !others.some(
+          (bundle) =>
+            bundle.id < packageId &&
+            (bundle.customBlocks ?? []).some((other) => other.type === declaration.type),
+        ),
+    );
+  }
+
   async function importThemePackage(file: File): Promise<void> {
     const bytes = new Uint8Array(await file.arrayBuffer());
     // Load (and therefore fully validate) before writing anything: a rejected
@@ -904,8 +928,8 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     const previous = installedThemes.find((bundle) => bundle.id === loaded.bundle.id);
     const { site: adapted, removed } = adaptSiteToDeclarations(
       snapshot,
-      loaded.bundle.customBlocks ?? [],
-      previous?.customBlocks ?? [],
+      providedDeclarations(loaded.bundle.id, loaded.bundle.customBlocks),
+      providedDeclarations(loaded.bundle.id, previous?.customBlocks),
     );
     if (removed.length > 0) {
       // Content would be removed: the author sees it and decides (issue-106

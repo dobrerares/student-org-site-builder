@@ -207,9 +207,14 @@ version; the same content in a different key order is not a change.
 A type's **first** import into a Site that already holds Blocks of it (an
 archive whose package was lost) has no outgoing declaration and no outgoing
 package to keep a copy of, so it removes nothing and asks nothing: the data
-is kept exactly, a data version below the declaration's is moved up to it,
-and a Block saved by a newer package than the one imported is left untouched
-and stays unavailable (`data-newer`) until that package arrives.
+is kept exactly and a data version below the declaration's is moved up to
+it. A Block whose data is newer than the declaration it would be adapted
+_from_ — the incoming one on a first import, the outgoing one on an update —
+is never touched: neither declaration describes it, so it keeps its version
+and stays unavailable (`data-newer`) until the package that wrote it arrives.
+When two installed packages declare the same type, only the provider the
+registry selects (the smaller package id) adapts anything; an import of the
+other package leaves those Blocks alone.
 
 If the list is non-empty the editor shows it and asks: _keep the current
 version_ (nothing at all is written) or _update and remove this content_.

@@ -24,6 +24,12 @@ import type { LoadedThemePackage } from "./load.js";
 
 /** Where recovery copies live inside a Site's VFS. */
 export const THEME_RECOVERY_VFS_PREFIX = "themes-recovery/";
+/**
+ * Where a copy is assembled before it replaces the previous one. Outside
+ * `themes-recovery/`, so it never travels in an archive and is never listed
+ * as a copy; a failure part-way leaves the earlier copy whole.
+ */
+const STAGING_PREFIX = "themes-recovery-staging/";
 
 const BLOCKS_FILE = "blocks.json";
 const PACKAGE_DIR = "package/";
@@ -47,21 +53,34 @@ function prefixFor(id: string): string {
 /**
  * Keep `previous` and the given Block envelopes as the recovery copy for its
  * package id, replacing any earlier copy.
+ *
+ * The copy is written in full to a staging prefix first and only then swapped
+ * in, so a write that fails half-way (a full disk, a closed tab) cannot leave
+ * the author with a copy that is neither the old one nor a complete new one.
  */
 export async function saveThemeRecoveryCopy(
   vfs: Vfs,
   previous: LoadedThemePackage,
   blocks: readonly BlockEnvelope[],
 ): Promise<void> {
-  const prefix = prefixFor(previous.bundle.id);
-  for (const existing of await vfs.list(prefix)) await vfs.delete(existing);
+  const id = previous.bundle.id;
+  const staging = `${STAGING_PREFIX}${id}/`;
+  for (const leftover of await vfs.list(staging)) await vfs.delete(leftover);
   for (const path of [...previous.files.keys()].sort()) {
-    await vfs.write(`${prefix}${PACKAGE_DIR}${path}`, previous.files.get(path)!);
+    await vfs.write(`${staging}${PACKAGE_DIR}${path}`, previous.files.get(path)!);
   }
   const byId: Record<string, BlockEnvelope> = {};
   for (const block of blocks) byId[block.id] = block;
   const record = { version: previous.bundle.version, blocks: byId };
-  await vfs.write(`${prefix}${BLOCKS_FILE}`, enc.encode(JSON.stringify(record, null, 2) + "\n"));
+  await vfs.write(`${staging}${BLOCKS_FILE}`, enc.encode(JSON.stringify(record, null, 2) + "\n"));
+
+  // Everything is staged: replace the earlier copy.
+  const prefix = prefixFor(id);
+  for (const existing of await vfs.list(prefix)) await vfs.delete(existing);
+  for (const path of await vfs.list(staging)) {
+    await vfs.write(`${prefix}${path.slice(staging.length)}`, await vfs.read(path));
+    await vfs.delete(path);
+  }
 }
 
 /** The package ids that have a recovery copy, sorted. */

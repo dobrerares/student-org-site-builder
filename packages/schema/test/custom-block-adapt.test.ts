@@ -258,6 +258,26 @@ describe("adaptSiteToDeclarations", () => {
     expect(removed[0]?.blockLabel).toEqual(v1.label);
   });
 
+  test("a Block already newer than the installed declaration is not reinterpreted", () => {
+    const site = structuredClone(historipol) as unknown as Site;
+    site.pages[0]!.blocks.push({ id: "b3", type: "org.example/partners", version: 3, data: SAVED });
+    const newer = site.pages[0]!.blocks.at(-1)!;
+    // Same version re-imported: v2 → v2 with data saved by v3.
+    const same = adaptSiteToDeclarations(site, [v2], [v2]);
+    expect(same.site).toBe(site);
+    expect(same.removed).toEqual([]);
+    // A later version imported: v2 → v4 still does not describe v3 data; the
+    // Block keeps its version (below v4 now) for the next re-import to stamp.
+    const v4 = decl({ ...PARTNERS_DECLARATION, version: 4, fields: v2.fields });
+    const later = adaptSiteToDeclarations(site, [v4], [v2]);
+    expect(later.site.pages[0]!.blocks.at(-1)).toBe(newer);
+    // An informed downgrade (data at the outgoing version) is still adapted:
+    // the outgoing declaration describes it exactly, and the list is shown.
+    newer.version = 2;
+    const down = adaptSiteToDeclarations(site, [v1], [v2]);
+    expect(down.site.pages[0]!.blocks.at(-1)!.version).toBe(1);
+  });
+
   test("without a previous declaration the data version moves up, never down", () => {
     const site = structuredClone(historipol) as unknown as Site;
     site.pages[0]!.blocks.push(

@@ -266,11 +266,15 @@ export interface AdaptedSite {
  * each envelope with the new data version.
  *
  * `previous` supplies the outgoing declarations by type, so a removed field
- * can be named by its old label. A type with no previous declaration is left
- * as it is, apart from a data version *below* the declaration's being moved
- * up to it; a Block saved by a newer package than the one being imported is
- * not touched at all, so it stays unavailable (`data-newer`) rather than
- * being silently reinterpreted.
+ * can be named by its old label. A Block whose data is newer than the
+ * declaration it would be adapted *from* is not touched at all: without a
+ * previous declaration that is one saved above the incoming version, with
+ * one it is one saved above the outgoing version (already `data-newer` under
+ * the installed package). Neither declaration describes such data, so
+ * adapting it would be a guess; it keeps its version and stays unavailable
+ * until the package that wrote it is imported. A type with no previous
+ * declaration is otherwise left as it is, apart from a data version below
+ * the declaration's being moved up to it.
  */
 export function adaptSiteToDeclarations(
   site: Site,
@@ -290,7 +294,8 @@ export function adaptSiteToDeclarations(
       const declaration = nextByType.get(block.type);
       if (declaration === undefined) return block;
       const outgoing = previousByType.get(block.type);
-      if (outgoing === undefined && block.version > declaration.version) return block;
+      const describedBy = outgoing ?? declaration;
+      if (block.version > describedBy.version) return block;
       const result = adaptCustomBlockData(outgoing, declaration, block.data);
       for (const entry of result.removed) {
         removed.push({
