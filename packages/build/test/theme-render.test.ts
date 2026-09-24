@@ -53,6 +53,18 @@ function bundle(extra: Partial<ThemeBundle> = {}): ThemeBundle {
     shellVariants: [],
     fontSource: { kind: "registry" },
     assets: new Map(),
+    // The Custom Block type is *declared* (ADR 0055), so a Theme without a
+    // design for it produces an omission (ADR 0045) rather than the
+    // missing-declaration refusal `custom-block-missing.test.ts` covers.
+    customBlocks: [
+      {
+        formatVersion: 1,
+        type: "org.example/partners",
+        version: 1,
+        label: "Partners",
+        fields: [{ name: "heading", kind: "text", label: "Heading" }],
+      },
+    ],
     ...extra,
   };
 }

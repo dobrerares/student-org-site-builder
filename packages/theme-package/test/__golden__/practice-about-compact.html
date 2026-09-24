@@ -2544,6 +2544,115 @@ summary:focus-visible,
   background-color: var(--color-surface);
 }
 
+/* -- partners (Custom Block, blocks/partners/block.json) ------------------ */
+
+/* Designed by render.js; the builder stamps data-block and data-variant onto
+   the root the design returns, so the addressing is the same as for a
+   built-in Block. The type id carries a slash, hence the quotes. */
+[data-block="org.example/partners"] .partners__intro {
+  color: var(--color-muted);
+  max-inline-size: var(--measure-body);
+}
+
+[data-block="org.example/partners"] .partners__group + .partners__group {
+  margin-block-start: var(--space-lg);
+}
+
+[data-block="org.example/partners"] .partners__group-title {
+  color: var(--color-accent);
+  font-size: var(--type-xs);
+  letter-spacing: 0.12em;
+  margin-block: 0 var(--space-sm);
+  text-transform: uppercase;
+}
+
+[data-block="org.example/partners"] .partners__list {
+  display: grid;
+  gap: var(--space-md);
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+[data-block="org.example/partners"] .partners__item {
+  border: 1px solid rgba(var(--color-accent-rgb), 0.18);
+  display: grid;
+  gap: var(--space-sm);
+  justify-items: center;
+  margin: 0;
+  padding: var(--space-md);
+}
+
+[data-block="org.example/partners"] .partners__logo {
+  block-size: 3.5rem;
+  filter: brightness(1.15);
+  inline-size: auto;
+  max-inline-size: 100%;
+  object-fit: contain;
+  opacity: 0.92;
+}
+
+[data-block="org.example/partners"] .partners__placeholder {
+  align-items: center;
+  block-size: 3.5rem;
+  border: 1px dashed rgba(var(--color-accent-rgb), 0.5);
+  color: var(--color-accent);
+  display: inline-flex;
+  font-family: var(--font-headline);
+  font-weight: 900;
+  inline-size: 3.5rem;
+  justify-content: center;
+}
+
+[data-block="org.example/partners"] .partners__name {
+  font-size: var(--type-sm);
+  text-align: center;
+}
+
+[data-block="org.example/partners"] .partners__link {
+  color: inherit;
+  display: block;
+  text-decoration: none;
+}
+
+[data-block="org.example/partners"] .partners__link:hover .partners__item,
+[data-block="org.example/partners"] .partners__link:focus-visible .partners__item {
+  border-color: var(--color-accent);
+}
+
+/* Band: each group one quiet row on the lighter panel, small logos, names
+   only for screen readers — the row reads as a credit line, not a section. */
+[data-block="org.example/partners"][data-variant="band"] {
+  background-color: var(--color-surface);
+}
+
+[data-block="org.example/partners"][data-variant="band"] .partners__list {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md) var(--space-lg);
+}
+
+[data-block="org.example/partners"][data-variant="band"] .partners__item {
+  border: 0;
+  padding: 0;
+}
+
+[data-block="org.example/partners"][data-variant="band"] .partners__logo,
+[data-block="org.example/partners"][data-variant="band"] .partners__placeholder {
+  block-size: 2.25rem;
+}
+
+[data-block="org.example/partners"][data-variant="band"] .partners__name {
+  block-size: 1px;
+  clip: rect(0 0 0 0);
+  inline-size: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+}
+
 /* -- quote ---------------------------------------------------------------- */
 
 [data-block="quote"] blockquote {
