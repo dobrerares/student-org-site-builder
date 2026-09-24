@@ -348,6 +348,17 @@ export const en: EnglishCatalog = {
   "preview.viewport.desktop": "Desktop",
   "preview.viewport.tablet": "Tablet",
   "preview.viewport.phone": "Phone",
+  // Interactive preview
+  "preview.interactive.label": "Interactive preview",
+  "preview.interactive.info":
+    "The preview is normally static: the Theme's own script does not run, so editing never contacts other websites. Turn this on to try the Theme's script the way visitors will. It runs only while this is on, in a sealed frame that cannot reach the builder or this computer, and it may contact the websites the Theme declares. While it is on, each edit reloads the preview.",
+  "preview.interactive.preparing": "Preparing the interactive preview…",
+  "preview.interactive.on": "Interactive preview is on: the Theme's script is running.",
+  "preview.interactive.network": "It may contact: {hosts}.",
+  "preview.interactive.network.none": "It contacts no other websites.",
+  "preview.interactive.offline": "Without an internet connection: {note}",
+  "preview.interactive.failed":
+    "The interactive preview could not be prepared ({message}). The static preview is shown.",
 
   // Export readiness panel
   "export.title": "Export website",

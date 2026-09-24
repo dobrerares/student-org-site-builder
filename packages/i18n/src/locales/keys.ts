@@ -366,6 +366,15 @@ export type EditorMessageKey =
   | "preview.viewport.desktop"
   | "preview.viewport.tablet"
   | "preview.viewport.phone"
+  // Interactive preview (ADR 0046, ADR 0056)
+  | "preview.interactive.label"
+  | "preview.interactive.info"
+  | "preview.interactive.preparing"
+  | "preview.interactive.on"
+  | "preview.interactive.network"
+  | "preview.interactive.network.none"
+  | "preview.interactive.offline"
+  | "preview.interactive.failed"
   // Export readiness panel
   | "export.title"
   | "export.info.label"

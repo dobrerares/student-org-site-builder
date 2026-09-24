@@ -143,6 +143,18 @@ export async function populateAssetDisplayUrls(
 export const populateImageDisplayUrls = populateAssetDisplayUrls;
 
 /**
+ * The MIME type the display-URL cache would give a canonical `assets/...`
+ * path, or `undefined` for an extension the editor does not preview. Shared
+ * with the interactive preview so its `data:` URLs carry the same types as
+ * the static preview's `blob:` URLs.
+ */
+export function assetMimeForPath(path: string): string | undefined {
+  const ext = path.split(".").pop()?.toLowerCase();
+  if (ext === undefined) return undefined;
+  return MIME_BY_EXTENSION[ext];
+}
+
+/**
  * The content hash embedded in a canonical `assets/<hash>.<ext>` path.
  *
  * The hash *is* the asset's identity — the display-URL cache above is keyed by

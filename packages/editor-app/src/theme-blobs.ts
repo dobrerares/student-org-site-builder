@@ -28,8 +28,11 @@ interface ThemeBlobEntry {
 
 const cache = new Map<string, ThemeBlobEntry>();
 
-/** Best-effort MIME so the browser treats fonts and images correctly. */
-function mimeFor(path: string): string {
+/**
+ * Best-effort MIME so the browser treats fonts and images correctly. Shared
+ * with the interactive preview, which serves the same files as `data:` URLs.
+ */
+export function themeAssetMime(path: string): string {
   if (path.endsWith(".woff2")) return "font/woff2";
   if (path.endsWith(".svg")) return "image/svg+xml";
   if (path.endsWith(".png")) return "image/png";
@@ -66,7 +69,7 @@ export function getThemeBlobUrls(bundle: ThemeBundle | undefined): ReadonlyMap<s
   for (const [path, bytes] of themeAssetsFor(bundle)) {
     // Copy into a fresh buffer: `Blob` keeps a reference, and the bundle's
     // bytes are shared with the VFS.
-    const blob = new Blob([new Uint8Array(bytes)], { type: mimeFor(path) });
+    const blob = new Blob([new Uint8Array(bytes)], { type: themeAssetMime(path) });
     urls.set(path, URL.createObjectURL(blob));
   }
   const entry: ThemeBlobEntry = { version: bundle.version, urls };
