@@ -59,7 +59,13 @@ const COPY = {
 
 export type ArticleCopyKey = keyof (typeof COPY)["en"];
 
-function languageFamily(lang: string): "ro" | "en" {
+/**
+ * Which of the renderer's two copy tables a page language falls into. Exported
+ * for the Theme-design `t()` helper, which resolves its own small table of
+ * shell copy by the same rule so a Theme's "Menu" and the builder's
+ * "Published on" agree about what language the page is in.
+ */
+export function languageFamily(lang: string): "ro" | "en" {
   return lang.toLowerCase().startsWith("en") ? "en" : "ro";
 }
 

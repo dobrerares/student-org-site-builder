@@ -35,6 +35,7 @@ import {
   themeAssetPrefix,
 } from "./theme-bundle.js";
 import { rewriteThemeCssUrls } from "./theme-assets.js";
+import type { ThemeRenderIssue } from "./theme-design.js";
 
 export interface RenderOptions {
   /**
@@ -82,6 +83,31 @@ export interface RenderOptions {
    * throws rather than silently preferring one.
    */
   readonly theme?: ThemeBundle | undefined;
+  /**
+   * Sink for everything the active Theme's executable design reported while
+   * rendering this document (ADR 0054): Blocks omitted for want of a design,
+   * and rendering failures.
+   *
+   * A callback rather than a second return value because `renderSite` returns
+   * a string and always has — the build pipeline and the editor both depend on
+   * that, and widening the return type to carry a diagnostic would churn every
+   * call site for the benefit of two.
+   *
+   * In `deploy` mode a failure is *also* thrown, so `build()` stops on it
+   * (ADR 0045). In `preview` mode it is reported and a builder-owned error box
+   * takes the Block's place, because a blank preview teaches an author
+   * nothing.
+   */
+  readonly onIssue?: ((issue: ThemeRenderIssue) => void) | undefined;
+  /**
+   * Emit the Theme's `public.js` tag. Defaults to `false`.
+   *
+   * `build()` sets it; the editor preview does not. ADR 0046: the preview is
+   * static by default, so ordinary content editing never triggers a Theme
+   * script's external calls. The later interactive-preview mode flips this one
+   * flag rather than taking a second rendering path.
+   */
+  readonly includePublicScript?: boolean | undefined;
 }
 
 /**
@@ -148,6 +174,8 @@ export function renderSite(data: Site, themeId: string, opts?: RenderOptions): s
         assetUrlForPath={assetUrlForPath}
         theme={bundle}
         shellVariant={shellVariant}
+        onIssue={opts?.onIssue}
+        includePublicScript={opts?.includePublicScript === true}
       />,
     );
     return `<!doctype html>${articleBody}`;
@@ -186,6 +214,8 @@ export function renderSite(data: Site, themeId: string, opts?: RenderOptions): s
       assetUrlForPath={assetUrlForPath}
       theme={bundle}
       shellVariant={shellVariant}
+      onIssue={opts?.onIssue}
+      includePublicScript={opts?.includePublicScript === true}
     />,
   );
   return `<!doctype html>${body}`;
@@ -390,6 +420,38 @@ export {
   variantsForBlockType,
 } from "./theme-bundle.js";
 export { rewriteThemeCssUrls, themeAssetsFor } from "./theme-assets.js";
+
+// The executable Theme rendering contract (ADR 0054). `@sosb/theme-package`
+// builds a `ThemeRenderModule` from a package's `render.js` and hangs it on
+// the bundle; everything here is what a Theme's output has to survive.
+export {
+  CONTENT_SLOT_TAG,
+  ThemeRenderError,
+  blockTreeToVNode,
+  isThemeRenderError,
+  richTextSentinel,
+  shellTreeToVNode,
+} from "./theme-render.js";
+export type {
+  ElementTree,
+  ThemePublicScript,
+  ThemeRenderErrorCode,
+  ThemeRenderHelpers,
+  ThemeRenderModule,
+  TreeContext,
+} from "./theme-render.js";
+export {
+  THEME_COPY_KEYS,
+  blockHasDesign,
+  omittedBlocksFor,
+  themeDesignsBlockType,
+} from "./theme-design.js";
+export type {
+  OmittedBlock,
+  RenderedDocumentRef,
+  ShellCopyKey,
+  ThemeRenderIssue,
+} from "./theme-design.js";
 export { activeBlockVariant, themeReferenceIssue } from "./theme-reference.js";
 export type { ThemeReferenceIssue } from "./theme-reference.js";
 

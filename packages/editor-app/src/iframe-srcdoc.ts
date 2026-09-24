@@ -20,6 +20,19 @@ import type { RenderOptions } from "@sosb/renderer";
 import { renderPreviewHtml } from "./preview-html.js";
 
 /**
+ * Preview-only switches, threaded through unchanged to `renderSite`.
+ *
+ * `includePublicScript` emits the active Theme package's `public.js` into the
+ * preview document. Off by default: ADR 0046 keeps ordinary editing static so
+ * a Theme script's external calls never fire while an author types. The
+ * interactive-preview toggle (issue #110) flips exactly this flag — nothing
+ * else about the render changes, so what the toggle shows is what ships.
+ */
+export interface PreviewOptions {
+  readonly includePublicScript?: boolean | undefined;
+}
+
+/**
  * Preview an Article instead of a Page.
  *
  * Kept as a separate entry point rather than an overload of `iframeSrcdoc`
@@ -33,6 +46,7 @@ export function iframeSrcdocForArticle(
   articleIndex: number,
   assetUrlForPath?: RenderOptions["assetUrlForPath"],
   theme?: RenderOptions["theme"],
+  preview?: PreviewOptions,
 ): string {
   return renderPreviewHtml(site, themeId, {
     mode: "preview",
@@ -42,6 +56,7 @@ export function iframeSrcdocForArticle(
     // An Article previewed under a different theme object than the Page next
     // to it is exactly the drift the seam exists to prevent.
     ...(theme !== undefined ? { theme } : {}),
+    ...(preview?.includePublicScript === true ? { includePublicScript: true } : {}),
   });
 }
 
@@ -51,6 +66,7 @@ export function iframeSrcdoc(
   pageIndex?: number,
   assetUrlForPath?: RenderOptions["assetUrlForPath"],
   theme?: RenderOptions["theme"],
+  preview?: PreviewOptions,
 ): string {
   return renderPreviewHtml(site, themeId, {
     mode: "preview",
@@ -60,5 +76,6 @@ export function iframeSrcdoc(
     // preview look the id up separately — is what guarantees the preview and
     // the export are rendered from the same theme data (ADR 0052).
     ...(theme !== undefined ? { theme } : {}),
+    ...(preview?.includePublicScript === true ? { includePublicScript: true } : {}),
   });
 }

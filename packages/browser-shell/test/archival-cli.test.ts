@@ -6,7 +6,9 @@ import path from "node:path";
 import { runArchivalBuild } from "../scripts/run-archival-build.js";
 
 /**
- * AC #3 — `pnpm build:archival` produces a single `builder.html` ≤ 3MB.
+ * AC #3 — `pnpm build:archival` produces a single `builder.html` within the
+ * archival size budget: originally 3 MB, raised to 4 MiB by ADR 0054 once the
+ * Tiptap editor (ADR 0048) and the QuickJS sandbox shared one bundle.
  *
  * The CLI script (`scripts/build-archival.mjs`) is a one-liner that calls
  * `runArchivalBuild()`. Testing the function directly (not via a child
@@ -20,13 +22,13 @@ const pkgRoot = path.resolve(__dirname, "..");
 const outPath = path.join(pkgRoot, "dist", "archival", "builder.html");
 
 describe("runArchivalBuild end-to-end", () => {
-  test("produces dist/archival/builder.html ≤ 3MB with no external local script refs", async () => {
+  test("produces dist/archival/builder.html ≤ 4 MiB with no external local script refs", async () => {
     await runArchivalBuild({ outDir: path.join(pkgRoot, "dist", "archival") });
 
     expect(existsSync(outPath)).toBe(true);
     const stat = statSync(outPath);
     expect(stat.size).toBeGreaterThan(0);
-    expect(stat.size).toBeLessThanOrEqual(3 * 1024 * 1024);
+    expect(stat.size).toBeLessThanOrEqual(4 * 1024 * 1024);
 
     const html = readFileSync(outPath, "utf8");
     expect(html.startsWith("<!doctype html>") || html.startsWith("<!DOCTYPE html>")).toBe(true);

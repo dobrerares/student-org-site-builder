@@ -17,7 +17,7 @@
 
 import type { Article, Page, Site, ValidationIssue } from "@sosb/schema";
 import { validate } from "@sosb/schema";
-import type { ThemeBundle } from "@sosb/renderer";
+import type { OmittedBlock, ThemeBundle, ThemeRenderIssue } from "@sosb/renderer";
 import {
   articleCopy,
   articleDistPath,
@@ -144,6 +144,24 @@ export interface BuildOptions {
    * built in nor listed fails with `BuildThemeMissingError`.
    */
   readonly themes?: readonly ThemeBundle[];
+  /**
+   * Receives every Block the build left out for want of a design (ADR 0045):
+   * a Custom Block type the active Theme does not render. Reported from the
+   * real render, once per Block, in output order.
+   *
+   * Omission is not failure. The build completes and the Site is publishable;
+   * the editor's job is to make the author acknowledge the list first. A
+   * Theme's rendering code *crashing* is different — that throws a
+   * `ThemeRenderError` out of `build()` and cannot be acknowledged away.
+   */
+  readonly onOmittedBlock?: (omitted: OmittedBlock) => void;
+}
+
+/** `buildWithReport`'s result: the dist folder plus what the build left out. */
+export interface BuildResult {
+  readonly dist: DistFolder;
+  /** Blocks omitted for want of a design, in output order (ADR 0045). */
+  readonly omittedBlocks: readonly OmittedBlock[];
 }
 
 /**
@@ -204,10 +222,24 @@ export function build(site: Site, options: BuildOptions = {}): DistFolder {
 
   const dist: DistFolder = new Map();
 
+  // What every page render is told about the Theme's executable design
+  // (ADR 0054): emit the Theme's public-site script — a build is the one
+  // place it belongs, the editor preview stays static (ADR 0046) — and route
+  // omitted Blocks to the caller. Rendering failures are thrown by the
+  // renderer itself in deploy mode, so the sink only ever sees omissions.
+  const onIssue = (issue: ThemeRenderIssue): void => {
+    if (issue.kind === "omitted-block") options.onOmittedBlock?.(issue.omitted);
+  };
+  const renderOptions = {
+    theme: themeBundle,
+    includePublicScript: true,
+    ...(options.onOmittedBlock === undefined ? {} : { onIssue }),
+  } as const;
+
   // Insert pages in `pages[]` order so the Map iteration order is
   // deterministic and the home page (when it is at index 0) is first.
   site.pages.forEach((page, idx) => {
-    const renderedHtml = renderSite(site, themeId, { pageIndex: idx, theme: themeBundle });
+    const renderedHtml = renderSite(site, themeId, { pageIndex: idx, ...renderOptions });
     let html = injectSeoMeta(renderedHtml, site, page, siteUrl);
     if (options._testInjectExtraCss !== undefined && options._testInjectExtraCss.length > 0) {
       html = injectExtraInlineCss(html, options._testInjectExtraCss);
@@ -221,7 +253,7 @@ export function build(site: Site, options: BuildOptions = {}): DistFolder {
   // — they are reachable by URL, just undiscoverable.
   (site.articles ?? []).forEach((article, idx) => {
     if (article.state === "draft") return;
-    const renderedHtml = renderSite(site, themeId, { articleIndex: idx, theme: themeBundle });
+    const renderedHtml = renderSite(site, themeId, { articleIndex: idx, ...renderOptions });
     let html = injectArticleSeoMeta(renderedHtml, site, article, siteUrl);
     if (options._testInjectExtraCss !== undefined && options._testInjectExtraCss.length > 0) {
       html = injectExtraInlineCss(html, options._testInjectExtraCss);
@@ -279,6 +311,26 @@ export function build(site: Site, options: BuildOptions = {}): DistFolder {
   }
 
   return dist;
+}
+
+/**
+ * `build()` plus the list of Blocks it omitted, for callers that want the
+ * answer as a value rather than a callback — the editor's export flow, which
+ * has to show the list and get an acknowledgement (ADR 0045).
+ *
+ * A wrapper rather than a change to `build()`'s return type: `build()` has
+ * returned the dist Map since ADR 0004 and every consumer indexes it directly.
+ */
+export function buildWithReport(site: Site, options: BuildOptions = {}): BuildResult {
+  const omittedBlocks: OmittedBlock[] = [];
+  const dist = build(site, {
+    ...options,
+    onOmittedBlock: (omitted) => {
+      omittedBlocks.push(omitted);
+      options.onOmittedBlock?.(omitted);
+    },
+  });
+  return { dist, omittedBlocks };
 }
 
 /**

@@ -45,6 +45,7 @@ export { SpineForm, applyPatch } from "./spine-form.js";
 export { fieldsFromSchema, type FieldNode } from "./form-generator.js";
 export { renderPreviewHtml } from "./preview-html.js";
 export { iframeSrcdoc } from "./iframe-srcdoc.js";
+export type { PreviewOptions } from "./iframe-srcdoc.js";
 export { PagesList, type PagesListProps } from "./pages-list.js";
 export { addPage, clonePage, deletePage, movePage } from "./pages-ops.js";
 export { CustomHtmlBlockForm, type CustomHtmlBlockFormProps } from "./custom-html-form.js";

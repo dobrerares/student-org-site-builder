@@ -60,13 +60,15 @@ describe("a well-formed package", () => {
     expect(manifest.description).toBe("");
   });
 
-  test("preserves unknown manifest keys so a phase-two package still parses", () => {
-    // ADR 0050's forward-compatibility rule: a package carrying phase-two
-    // keys must load in this builder, not be rejected as malformed.
+  test("preserves unknown manifest keys so a future package still parses", () => {
+    // ADR 0050's forward-compatibility rule: a package carrying keys this
+    // builder has never heard of must load, not be rejected as malformed.
+    // (`render` and `public` stopped being unknown in phase two — ADR 0054 —
+    // and are now validated; see render-modules.test.ts.)
     const { manifest } = loadThemePackage(
-      pkg({ ...VALID_MANIFEST, render: "render.js", blocks: [{ type: "x/y" }] }),
+      pkg({ ...VALID_MANIFEST, blocks: [{ type: "x/y" }], preview: { swatches: [] } }),
     );
-    expect((manifest as unknown as { render?: string }).render).toBe("render.js");
+    expect((manifest as unknown as { blocks?: unknown }).blocks).toEqual([{ type: "x/y" }]);
   });
 });
 

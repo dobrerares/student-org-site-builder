@@ -103,6 +103,48 @@ const FontSchema = z.looseObject({
   unicodeRange: z.string().optional(),
 });
 
+/**
+ * The public-site script and what it depends on (ADR 0046, ADR 0054).
+ *
+ * `network` is **required** when the block is present, even when the honest
+ * answer is `[]`. ADR 0046 says each extension "must document those
+ * dependencies and which functionality is unavailable offline"; a field with a
+ * default would let a Theme ship a script that calls out while the manifest
+ * stayed silent, which is the exact failure the rule exists to prevent. Making
+ * the empty case an explicit `[]` also means "this script is self-contained"
+ * is something the author *said*, not something the builder assumed.
+ *
+ * `offline` is required only when `network` is non-empty, because with no
+ * hosts there is nothing to be unavailable.
+ */
+/**
+ * A host the public-site script may contact: a bare hostname, optionally with
+ * a port or a leading `*.` wildcard. Not a URL — a scheme or a path here is a
+ * sign the author pasted an endpoint, and an endpoint is not a dependency
+ * declaration a reader can scan.
+ */
+export const THEME_NETWORK_HOST_RE =
+  /^(?:\*\.)?[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*(?::\d{1,5})?$/i;
+
+const PublicScriptSchema = z
+  .looseObject({
+    file: ThemePathSchema,
+    /** Hosts the script may contact on the published Site. `[]` for none. */
+    network: z.array(
+      z
+        .string()
+        .min(1)
+        .regex(THEME_NETWORK_HOST_RE, "must be a hostname such as 'api.example.org', not a URL"),
+    ),
+    /** What stops working without a network. */
+    offline: z.string().min(1).optional(),
+  })
+  .refine((v) => v.network.length === 0 || (v.offline ?? "").length > 0, {
+    message:
+      "declares network hosts, so it must also declare `offline` — what stops working without a connection",
+    path: ["offline"],
+  });
+
 const BuilderCompatSchema = z.looseObject({
   /**
    * The manifest format the package is authored against. Separate from the
@@ -145,6 +187,14 @@ export const ThemeManifestSchema = z.looseObject({
   fonts: z.array(FontSchema).default([]),
   /** Entry stylesheet, bundle-relative. */
   css: ThemePathSchema.default("theme.css"),
+  /**
+   * The executable rendering module (ADR 0054), bundle-relative. Absent for a
+   * declarative package, which is still a complete Theme — phase two adds a
+   * capability, it does not raise the floor.
+   */
+  render: ThemePathSchema.optional(),
+  /** The public-site script and its declared external dependencies. */
+  public: PublicScriptSchema.optional(),
   // There is deliberately no `preview` block of swatches and sample words.
   // The pickers render a real miniature of the Theme instead, so a
   // hand-written palette here would be a second copy of what `theme.css`
@@ -153,5 +203,6 @@ export const ThemeManifestSchema = z.looseObject({
 });
 
 export type ThemeManifest = z.infer<typeof ThemeManifestSchema>;
+export type ThemeManifestPublicScript = z.infer<typeof PublicScriptSchema>;
 export type ThemeManifestVariant = z.infer<typeof VariantSchema>;
 export type ThemeManifestFont = z.infer<typeof FontSchema>;

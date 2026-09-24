@@ -20,14 +20,23 @@
  *    PRD's "never hard-block" rule.
  *  - warnings never gate anything.
  *
- * Saving the editable project is deliberately unaffected in all three cases,
- * and the panel says so.
+ * A fourth, separate gate comes from ADR 0045: a Block the active Theme has
+ * no design for is left out of the published Site, and the author must
+ * acknowledge that list before the export proceeds. It is not an error (the
+ * Site is publishable and nothing is lost) and not a warning (a warning can be
+ * clicked past without reading), so it is a checkbox — the smallest control
+ * that cannot be passed by accident — on top of whatever the validation
+ * result requires, never instead of it.
+ *
+ * Saving the editable project is deliberately unaffected in all cases, and
+ * the panel says so.
  */
 import type { JSX } from "react";
 import type * as React from "react";
 import { useEffect, useState } from "react";
 import type { ValidationIssue, ValidationResult } from "@sosb/schema";
 import { hasBlockingIssues } from "@sosb/schema";
+import type { OmittedBlock } from "@sosb/renderer";
 import { Button, Input } from "@sosb/ui";
 
 import { EditorDialog } from "./editor-dialog.js";
@@ -45,24 +54,37 @@ export interface ExportReadinessPanelProps {
   readonly onExport: () => void;
   /** Open the destination owning an issue, closing the panel on the way. */
   readonly onFix: (issue: ValidationIssue) => void;
+  /**
+   * Blocks the active Theme has no design for, which the exported Site will
+   * leave out (ADR 0045). Non-empty means the author must tick the
+   * acknowledgement before the export proceeds.
+   */
+  readonly omittedBlocks?: readonly OmittedBlock[] | undefined;
 }
 
 export function ExportReadinessPanel(props: ExportReadinessPanelProps): JSX.Element {
   const t = useTranslator();
   const [phrase, setPhrase] = useState("");
-  // The gate starts over every time the panel opens. The old confirmation
+  const [omissionsAcknowledged, setOmissionsAcknowledged] = useState(false);
+  // The gates start over every time the panel opens. The old confirmation
   // dialog got this for free by being unmounted on cancel; this panel stays
-  // mounted, so a phrase typed and then abandoned must be cleared by hand.
+  // mounted, so a phrase typed and then abandoned — or a box ticked and then
+  // abandoned — must be cleared by hand.
   useEffect(() => {
-    if (!props.open) setPhrase("");
+    if (!props.open) {
+      setPhrase("");
+      setOmissionsAcknowledged(false);
+    }
   }, [props.open]);
 
   const blocked = hasBlockingIssues(props.result);
   const errors = props.result.errors;
   const warnings = props.result.warnings;
+  const omitted = props.omittedBlocks ?? [];
   const hasErrors = errors.length > 0;
   const needsOverride = hasErrors && !blocked;
-  const canExport = blocked ? false : needsOverride ? phrase === CONFIRM_PHRASE : true;
+  const issueGate = blocked ? false : needsOverride ? phrase === CONFIRM_PHRASE : true;
+  const canExport = issueGate && (omitted.length === 0 || omissionsAcknowledged);
 
   const headingId = "export-readiness-heading";
 
@@ -114,6 +136,44 @@ export function ExportReadinessPanel(props: ExportReadinessPanelProps): JSX.Elem
               />
             </h3>
             <FindingList issues={warnings} onFix={props.onFix} testId="export-warnings" />
+          </section>
+        )}
+
+        {omitted.length > 0 && (
+          <section data-export-group="omitted" data-testid="export-omitted-blocks">
+            <h3>{t("export.omitted", { count: omitted.length })}</h3>
+            <p data-export-omitted-info>{t("export.omitted.info")}</p>
+            <ul data-export-omitted-list>
+              {omitted.map((entry) => (
+                <li
+                  key={`${entry.document.kind}-${entry.document.id}-${entry.blockId}`}
+                  data-omitted-block
+                  data-block-type={entry.blockType}
+                  data-block-id={entry.blockId}
+                >
+                  {t(
+                    entry.document.kind === "article"
+                      ? "export.omitted.article"
+                      : "export.omitted.page",
+                    {
+                      title: entry.document.title,
+                      type: entry.blockType,
+                    },
+                  )}
+                </li>
+              ))}
+            </ul>
+            <label data-testid="export-omitted-ack-label">
+              <input
+                type="checkbox"
+                data-testid="export-omitted-ack"
+                checked={omissionsAcknowledged}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                  setOmissionsAcknowledged(event.currentTarget.checked)
+                }
+              />
+              <span>{t("export.omitted.ack")}</span>
+            </label>
           </section>
         )}
 

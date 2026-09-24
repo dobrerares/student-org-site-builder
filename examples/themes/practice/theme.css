@@ -18,6 +18,13 @@
  *
  * Block designs are addressed as `[data-block="hero"][data-variant="split"]`.
  * Shell designs are addressed via `[data-shell-variant]` on <body>.
+ *
+ * Since 1.1.0 the page shell and the hero are produced by `render.js` (see
+ * that file). The shell reuses the builder's own hooks — `[data-site-nav]`,
+ * `.site-nav__inner`, `.site-nav__brand`, `[data-language-switcher]` — so the
+ * phase-one rules below still apply, and adds a wordmark, a phone-width menu
+ * button, and a colophon; those rules live in the "executable shell" section
+ * near the end.
  */
 
 /* ---------------------------------------------------------------- shell -- */
@@ -292,6 +299,12 @@ summary:focus-visible,
   max-height: 2rem;
 }
 
+/* Compact keeps the logo and drops the wordmark beside it; with no logo the
+   wordmark is the only brand mark and stays. */
+[data-shell-variant="compact"] [data-site-nav] .site-nav__logo + .site-nav__wordmark {
+  display: none;
+}
+
 [data-shell-variant="compact"] main > [data-block] {
   padding-block: calc(var(--section-gap) * 0.7);
 }
@@ -362,6 +375,45 @@ summary:focus-visible,
 
 [data-block="hero"][data-variant="spotlight"] .hero__inner {
   padding-block: calc(var(--space-xl) * 1.5);
+}
+
+/* Spotlight, executable edition (render.js): concentric rings behind the
+   title, each word of the title stepped a little, and a short gold rule under
+   the subtitle. The rings are inline SVG produced by the design and coloured
+   through `currentColor`, so an author's accent override recolours them. */
+[data-block="hero"] .hero__rings {
+  block-size: 100%;
+  color: var(--color-accent);
+  inline-size: 100%;
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+[data-block="hero"].hero--has-image .hero__rings {
+  z-index: 1;
+}
+
+[data-block="hero"].hero--spotlight .hero__inner {
+  position: relative;
+  z-index: 2;
+}
+
+[data-block="hero"] .hero__word {
+  display: inline-block;
+}
+
+[data-block="hero"] .hero__word:nth-child(even) {
+  transform: translateY(0.06em);
+}
+
+[data-block="hero"] .hero__rule {
+  background-color: var(--color-accent);
+  block-size: 4px;
+  display: block;
+  inline-size: 4.5rem;
+  margin-block-start: var(--space-lg);
+  margin-inline: auto;
 }
 
 /* Variant: split — title beside the image. Grid placement only; the DOM
@@ -688,6 +740,193 @@ main a:not([class]) {
 [data-block="ctaBanner"][data-variant="gold"] a {
   background-color: var(--color-bg);
   color: var(--color-fg);
+}
+
+/* -- executable shell (render.js) ---------------------------------------- */
+
+/* The brand link carries the logo and a wordmark; the nav-link underline
+   animation is for destinations, not for the mark. */
+[data-site-nav] .site-nav__brand {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--space-sm);
+  padding-block: 0;
+  text-decoration: none;
+}
+
+[data-site-nav] .site-nav__brand::after {
+  content: none;
+}
+
+[data-site-nav] .site-nav__wordmark {
+  color: var(--color-fg);
+  font-family: var(--font-headline);
+  font-size: var(--type-lg);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+/* The language switcher sits in the header row rather than on its own line. */
+.site-header [data-language-switcher] {
+  margin: 0;
+  max-width: none;
+  padding: 0;
+}
+
+/* Menu button. Shipped `hidden` by render.js; public.js reveals it and marks
+   the header `data-nav-enhanced`. Only then does the list collapse on a
+   phone — a page whose script did not run keeps the wrapped list. */
+[data-site-nav] .site-nav__toggle {
+  align-items: center;
+  background: none;
+  border: 1px solid rgba(var(--color-accent-rgb), 0.45);
+  color: var(--color-fg);
+  cursor: pointer;
+  display: none;
+  font-family: var(--font-headline);
+  font-size: var(--type-xs);
+  font-weight: 700;
+  gap: var(--space-xs);
+  letter-spacing: 0.08em;
+  margin-inline-start: auto;
+  padding: 0.4rem 0.7rem;
+  text-transform: uppercase;
+}
+
+[data-site-nav] .site-nav__toggle-bars {
+  display: inline-grid;
+  gap: 3px;
+}
+
+[data-site-nav] .site-nav__toggle-bars span {
+  background-color: var(--color-accent);
+  block-size: 2px;
+  display: block;
+  inline-size: 1.1rem;
+}
+
+[data-site-nav] .site-nav__toggle[aria-expanded="true"] .site-nav__toggle-bars span:nth-child(2) {
+  opacity: 0;
+}
+
+@media (max-width: 40rem) {
+  [data-site-nav][data-nav-enhanced="true"] .site-nav__toggle {
+    display: inline-flex;
+  }
+
+  /* The <nav> is the flex item of .site-nav__inner (the list sits inside
+     it), so it is the <nav> that leaves the row when closed and takes a full
+     row of its own when open. */
+  [data-site-nav][data-nav-enhanced="true"] .site-nav__inner > nav {
+    display: none;
+  }
+
+  [data-site-nav][data-nav-enhanced="true"][data-nav-open="true"] .site-nav__inner > nav {
+    display: block;
+    flex-basis: 100%;
+  }
+
+  [data-site-nav][data-nav-enhanced="true"][data-nav-open="true"] .site-nav__list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* With the toggle in the row, the brand and button share the first line. */
+  [data-site-nav][data-nav-enhanced="true"] .site-nav__inner {
+    align-items: center;
+    flex-direction: row;
+  }
+}
+
+/* Sticky-header shrink, driven by public.js. */
+[data-site-nav] .site-nav__inner {
+  transition: padding 160ms ease-out;
+}
+
+[data-site-nav][data-scrolled="true"] .site-nav__inner {
+  padding-block: var(--space-xs);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-site-nav] .site-nav__inner {
+    transition: none;
+  }
+}
+
+/* Colophon: the strip under the author's footer Block. */
+.site-colophon {
+  border-block-start: 1px solid rgba(var(--color-accent-rgb), 0.25);
+  padding: var(--space-lg) var(--space-md);
+}
+
+.site-colophon__inner {
+  align-items: start;
+  display: grid;
+  gap: var(--space-md) var(--space-lg);
+  grid-template-columns: 1fr auto;
+  margin-inline: auto;
+  max-width: 72rem;
+}
+
+.site-colophon__brand {
+  color: var(--color-fg);
+  font-family: var(--font-headline);
+  font-size: var(--type-lg);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.site-colophon__tagline {
+  color: var(--color-muted);
+  font-size: var(--type-sm);
+  margin: var(--space-xs) 0 0;
+}
+
+.site-colophon__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-md);
+  justify-content: flex-end;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.site-colophon__nav a {
+  color: var(--color-muted);
+  font-family: var(--font-headline);
+  font-size: var(--type-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.site-colophon__nav a:hover {
+  color: var(--color-accent);
+}
+
+.site-colophon__meta {
+  color: var(--color-muted);
+  font-size: var(--type-xs);
+  grid-column: 1 / -1;
+  letter-spacing: 0.08em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+@media (max-width: 40rem) {
+  .site-colophon__inner {
+    grid-template-columns: 1fr;
+  }
+
+  .site-colophon__nav {
+    justify-content: flex-start;
+  }
 }
 
 /* -- footer --------------------------------------------------------------- */

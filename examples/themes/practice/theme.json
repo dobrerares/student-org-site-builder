@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "id": "org.example.practice",
   "name": "Practice",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "builder": {
     "formatVersion": 1
   },
-  "description": "A dark, high-contrast Theme for student societies: deep navy ground, pale gold accents, heavy grotesque headlines. Recreates the project's published design reference over the builder's existing Blocks.",
+  "description": "A dark, high-contrast Theme for student societies: deep navy ground, pale gold accents, heavy grotesque headlines. Recreates the project's published design reference with an executable page shell and a spotlight hero over the builder's existing Blocks.",
   "author": "Student Org Site Builder contributors",
   "license": "MIT",
   "supports": {
@@ -100,6 +100,11 @@
     }
   ],
   "css": "theme.css",
+  "render": "render.js",
+  "public": {
+    "file": "public.js",
+    "network": []
+  },
   "variants": {
     "hero": [
       {

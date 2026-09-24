@@ -78,6 +78,7 @@ export function themeAssetsFor(bundle: {
   readonly id: string;
   readonly assets: ReadonlyMap<string, Uint8Array>;
   readonly fontSource: { readonly kind: string; readonly bytes?: ReadonlyMap<string, Uint8Array> };
+  readonly publicScript?: { readonly file: string; readonly bytes: Uint8Array } | undefined;
 }): Map<string, Uint8Array> {
   const out = new Map<string, Uint8Array>();
   const prefix = themeAssetPrefix(bundle.id);
@@ -89,6 +90,14 @@ export function themeAssetsFor(bundle: {
     for (const path of [...bytes.keys()].sort()) {
       out.set(prefix + path, bytes.get(path)!);
     }
+  }
+  // The public-site script rides the same prefix as the fonts and images, so
+  // the build writes it, the preview mints a blob for it and the zip export
+  // mirrors it with no second rule to keep in step. `render.js` deliberately
+  // does *not* appear here: it runs at build time and shipping it to visitors
+  // would publish the Theme's source for no benefit.
+  if (bundle.publicScript !== undefined) {
+    out.set(prefix + bundle.publicScript.file, bundle.publicScript.bytes);
   }
   return out;
 }

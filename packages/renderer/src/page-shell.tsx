@@ -48,6 +48,7 @@ import {
   articleHreflangEntriesFor,
   articleLanguageSwitcherEntriesFor,
   articlePath,
+  homePagePathForLanguage,
   hreflangEntriesFor,
   languageHomeIndex,
   languageSwitcherEntriesFor,
@@ -60,7 +61,19 @@ import { PREVIEW_MORPH_SCRIPT, PREVIEW_MORPH_SCRIPT_MARKER } from "./preview-mor
 import type { AssetUrlForPath } from "./asset-url.js";
 import { resolveAssetUrl } from "./asset-url.js";
 import type { ThemeBundle } from "./theme-bundle.js";
+import { themeAssetPrefix } from "./theme-bundle.js";
 import { activeBlockVariant } from "./theme-reference.js";
+import type { DesignContext, ShellInputParts, ThemeRenderIssue } from "./theme-design.js";
+import {
+  articleDocumentRef,
+  blockHasDesign,
+  pageDocumentRef,
+  pageDocumentTitle,
+  renderDesignedBlock,
+  renderDesignedShell,
+  themeDesignsBlockType,
+  themeErrorBox,
+} from "./theme-design.js";
 import type { RichTextRenderContext } from "./rich-text-html.js";
 import { makeRichTextLinkResolver } from "./rich-text-links.js";
 
@@ -112,9 +125,7 @@ function variantFor(block: BlockEnvelope, theme: ThemeBundle | undefined): strin
  */
 
 function pageTitle(site: Site, page: Page): string {
-  const candidate = page.seo?.title;
-  if (typeof candidate === "string" && candidate.length > 0) return candidate;
-  return site.org.name;
+  return pageDocumentTitle(site, page);
 }
 
 function pageDescription(site: Site, page: Page): string | undefined {
@@ -171,6 +182,15 @@ interface BlockRenderContext {
   /** Set only when the blocks belong to an Article. */
   readonly containerArticleId?: string | undefined;
   /**
+   * Everything an executable Theme design needs (ADR 0054). Absent for
+   * built-in Themes and for declarative packages, and every path below reads
+   * absence as "render the built-in component" — which is why adding this
+   * changed no existing output.
+   */
+  readonly design?: DesignContext | undefined;
+  /** Active page-shell variant, handed to designs as part of Theme settings. */
+  readonly shellVariant?: string | undefined;
+  /**
    * Asset and link resolution for Rich-text documents (ADR 0048). Built once
    * per rendered document rather than per Block: the link resolver indexes
    * the Site's Pages and Articles.
@@ -182,6 +202,20 @@ function renderBlock(block: BlockEnvelope, ctx: BlockRenderContext): preact.JSX.
   const assetUrlForPath = ctx.assetUrlForPath;
   const pageLang = ctx.lang;
   const variant = variantFor(block, ctx.theme);
+  // A Theme design wins over the built-in component. That is what "Custom
+  // Themes may control Block markup" means (ADR 0046): overriding `hero` uses
+  // the same mechanism as supplying a design for `org.example/partners`, not a
+  // second one that could behave differently.
+  if (
+    ctx.design !== undefined &&
+    ctx.theme !== undefined &&
+    themeDesignsBlockType(ctx.theme, block.type)
+  ) {
+    // A design that returns null has rendered nothing on purpose. An empty
+    // fragment keeps that distinct from "no component at all", which is the
+    // only case the unknown-block marker below is for.
+    return renderDesignedBlock(block, ctx.design, variant, ctx.shellVariant) ?? <></>;
+  }
   if (!isKnownBlockType(block.type)) return null;
   if (block.type === "articleList") {
     return (
@@ -349,6 +383,25 @@ function renderBlocks(
       {blocks.map((block) => {
         const rendered = renderBlock(block, ctx);
         if (rendered !== null) return rendered;
+        // No built-in component and no Theme design: the Block is *omitted*
+        // (ADR 0045) and reported, so the editor can require the author to
+        // acknowledge the omission before export rather than let them discover
+        // it on the published Site. Only an unknown type reaches this branch —
+        // a built-in component is a vnode even when it renders nothing — and
+        // `blockHasDesign` is the same predicate `omittedBlocksFor` uses, so
+        // the pre-flight list and the render report cannot disagree. The
+        // comment below is the pre-existing marker and stays, so the built-in
+        // golden files are untouched.
+        if (ctx.design !== undefined && !blockHasDesign(ctx.theme, block.type)) {
+          ctx.design.onIssue?.({
+            kind: "omitted-block",
+            omitted: {
+              document: ctx.design.docRef,
+              blockId: block.id,
+              blockType: block.type,
+            },
+          });
+        }
         return (
           <div
             key={block.id}
@@ -382,6 +435,10 @@ export function PageShell(props: {
   theme?: ThemeBundle | undefined;
   /** Page-shell variant, already gated against the active theme. */
   shellVariant?: string | undefined;
+  /** Sink for omitted Blocks and Theme rendering failures (ADR 0054). */
+  onIssue?: ((issue: ThemeRenderIssue) => void) | undefined;
+  /** Emit the Theme's `public.js` tag. Off in preview (ADR 0046). */
+  includePublicScript?: boolean | undefined;
 }): preact.JSX.Element {
   const {
     site,
@@ -392,14 +449,26 @@ export function PageShell(props: {
     assetUrlForPath,
     theme,
     shellVariant,
+    onIssue,
+    includePublicScript = false,
   } = props;
   const contentBlocks = page.blocks.filter((block) => block.type !== "siteFooter");
   const footerBlocks = page.blocks.filter((block) => block.type === "siteFooter");
+  const design = designContextFor(
+    site,
+    theme,
+    pageDocumentRef(site, page),
+    assetUrlForPath,
+    mode,
+    onIssue,
+  );
   const ctx: BlockRenderContext = {
     site,
     lang: page.lang,
     assetUrlForPath,
     theme,
+    design,
+    shellVariant,
     // Built once per document: the link resolver indexes the Site's Pages and
     // Articles, which would be wasteful to rebuild per Block.
     richText: { assetUrlForPath, resolveLink: makeRichTextLinkResolver(site) },
@@ -431,6 +500,9 @@ export function PageShell(props: {
       mode={mode}
       assetUrlForPath={assetUrlForPath}
       shellVariant={shellVariant}
+      design={design}
+      includePublicScript={includePublicScript}
+      theme={theme}
     />
   );
 }
@@ -579,6 +651,10 @@ export function ArticleShell(props: {
   theme?: ThemeBundle | undefined;
   /** Page-shell variant, already gated against the active theme. */
   shellVariant?: string | undefined;
+  /** Sink for omitted Blocks and Theme rendering failures (ADR 0054). */
+  onIssue?: ((issue: ThemeRenderIssue) => void) | undefined;
+  /** Emit the Theme's `public.js` tag. Off in preview (ADR 0046). */
+  includePublicScript?: boolean | undefined;
 }): preact.JSX.Element {
   const {
     site,
@@ -589,8 +665,18 @@ export function ArticleShell(props: {
     assetUrlForPath,
     theme,
     shellVariant,
+    onIssue,
+    includePublicScript = false,
   } = props;
   const contentBlocks = article.blocks.filter((block) => block.type !== "siteFooter");
+  const design = designContextFor(
+    site,
+    theme,
+    articleDocumentRef(article),
+    assetUrlForPath,
+    mode,
+    onIssue,
+  );
   // An Article's Blocks get the same variant treatment a Page's do: the
   // Theme seam knows nothing about which kind of document a Block sits in.
   const ctx: BlockRenderContext = {
@@ -599,6 +685,8 @@ export function ArticleShell(props: {
     assetUrlForPath,
     theme,
     containerArticleId: article.id,
+    design,
+    shellVariant,
     // Article bodies start with a Rich-text Block, so this is not optional
     // decoration: without it every prose link inside an Article would render
     // as unlinked text.
@@ -663,8 +751,33 @@ export function ArticleShell(props: {
       mode={mode}
       assetUrlForPath={assetUrlForPath}
       shellVariant={shellVariant}
+      design={design}
+      includePublicScript={includePublicScript}
+      theme={theme}
     />
   );
+}
+
+/**
+ * Assemble the per-document state an executable Theme design needs, or
+ * `undefined` when there is no design to run.
+ *
+ * Returning `undefined` rather than a context with a null module is what keeps
+ * the "no design" path free of any Theme-render machinery at all — a built-in
+ * Theme does not pay for a feature it does not use, and its bytes cannot
+ * change by accident.
+ */
+function designContextFor(
+  site: Site,
+  theme: ThemeBundle | undefined,
+  docRef: DesignContext["docRef"],
+  assetUrlForPath: AssetUrlForPath | undefined,
+  mode: "deploy" | "preview",
+  onIssue: ((issue: ThemeRenderIssue) => void) | undefined,
+): DesignContext | undefined {
+  if (theme === undefined) return undefined;
+  if (theme.render === undefined && onIssue === undefined) return undefined;
+  return { site, bundle: theme, lang: docRef.lang, docRef, assetUrlForPath, mode, onIssue };
 }
 
 function DocumentShell(props: {
@@ -675,6 +788,9 @@ function DocumentShell(props: {
   mode: "deploy" | "preview";
   assetUrlForPath: AssetUrlForPath | undefined;
   shellVariant: string | undefined;
+  design?: DesignContext | undefined;
+  theme?: ThemeBundle | undefined;
+  includePublicScript?: boolean | undefined;
 }): preact.JSX.Element {
   const { site, target, css, fontPreloads, mode, assetUrlForPath, shellVariant } = props;
   const { title, description, ogImage } = target;
@@ -701,6 +817,144 @@ function DocumentShell(props: {
   // into Articles — so on a single-page site the first CTA click navigated the
   // preview iframe off the editor's origin.
   const isPreviewMode = mode === "preview";
+
+  // The visible page shell, in the builder's own markup. Kept as a value
+  // rather than inlined into the JSX because it is now one of two possible
+  // bodies, and because it is the fallback a failed Theme shell falls back to.
+  const builtInBody = (
+    <>
+      {/* Site-level navigation. Hidden when only one page is in-nav for this
+       * language so single-page UX is preserved. The link list is ordered
+       * by navOrder; the active page is marked with aria-current="page" and
+       * data-active="true" so themes can style without re-ordering DOM. */}
+      {navPages.length > 1 && (
+        <nav data-site-nav aria-label="Site navigation">
+          <div class="site-nav__inner">
+            {navLogo !== undefined && (
+              <a class="site-nav__brand" href="/" aria-label={site.org.name}>
+                <img
+                  class="site-nav__logo"
+                  src={resolveAssetUrl(navLogo.path, assetUrlForPath)}
+                  alt={navLogoAlt}
+                  width={navLogo.width > 0 ? navLogo.width : undefined}
+                  height={navLogo.height > 0 ? navLogo.height : undefined}
+                />
+              </a>
+            )}
+            <ul>
+              {navPages.map((entry) => {
+                const href = pagePath(site, entry);
+                const isActive = href === target.activeHref;
+                return (
+                  <li key={`${entry.lang}:${entry.slug}`}>
+                    <a
+                      href={href}
+                      data-active={isActive ? "true" : "false"}
+                      aria-current={isActive ? "page" : undefined}
+                    >
+                      {entry.navLabel}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </nav>
+      )}
+      {/* Language switcher. Rendered when the site has 2+ declared
+       * languages. Native names only (no flags — see PRD § 109). The
+       * active language self-links so theme styling can rely on
+       * aria-current; non-active languages link to localizedAs
+       * counterparts, with a graceful fallback to the language home when
+       * no counterpart exists. Articles use a stricter rule: only
+       * Published counterparts, and no language-home fallback. */}
+      {target.switcherEntries.length > 0 && (
+        <nav data-language-switcher aria-label="Language">
+          <ul>
+            {target.switcherEntries.map((entry) => (
+              <li key={entry.lang}>
+                <a
+                  href={entry.href}
+                  lang={entry.lang}
+                  hrefLang={entry.lang}
+                  data-active={entry.isActive ? "true" : "false"}
+                  aria-current={entry.isActive ? "true" : undefined}
+                >
+                  {entry.nativeName}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
+      <main>{target.mainContent}</main>
+      {target.footerContent}
+    </>
+  );
+
+  // What the builder inserts at the Theme shell's content slot: the `<main>`
+  // landmark with the page's Blocks in author order, then any site-footer
+  // Block. Identical to what the built-in shell puts between its nav and its
+  // scripts, so a Theme shell changes the chrome around the content and never
+  // the content's own reading order (ADR 0046).
+  const slotContent = (
+    <>
+      <main>{target.mainContent}</main>
+      {target.footerContent}
+    </>
+  );
+
+  const shellParts: ShellInputParts = {
+    title,
+    description,
+    homeHref: homePagePathForLanguage(site, target.lang),
+    nav: navPages.map((entry) => {
+      const href = pagePath(site, entry);
+      return {
+        id: `${entry.lang}:${entry.slug}`,
+        label: entry.navLabel,
+        href,
+        isActive: href === target.activeHref,
+      };
+    }),
+    languages: target.switcherEntries.map((entry) => ({
+      lang: entry.lang,
+      nativeName: entry.nativeName,
+      href: entry.href,
+      isActive: entry.isActive,
+    })),
+    shellVariant,
+  };
+
+  const designedShell =
+    props.design === undefined
+      ? undefined
+      : renderDesignedShell(props.design, shellParts, slotContent);
+  const body =
+    designedShell === undefined ? (
+      builtInBody
+    ) : designedShell.body !== undefined ? (
+      designedShell.body
+    ) : (
+      // Preview only — deploy rethrows. A page with no header is still an
+      // editable page; a blank one is not, so the content survives and the
+      // box says which Theme broke.
+      <>
+        {themeErrorBox(designedShell.error.message, target.lang)}
+        {builtInBody}
+      </>
+    );
+
+  // The Theme's public-site script. Off by default and on in a build: ADR 0046
+  // keeps the editor preview static so ordinary content editing never fires a
+  // Theme's external calls.
+  const publicScriptSrc =
+    props.includePublicScript === true && props.theme?.publicScript !== undefined
+      ? resolveAssetUrl(
+          themeAssetPrefix(props.theme.id) + props.theme.publicScript.file,
+          assetUrlForPath,
+        )
+      : undefined;
 
   return (
     <html lang={target.lang}>
@@ -745,72 +999,7 @@ function DocumentShell(props: {
        * unchanged. ADR 0046 still owns the shell; a variant restyles it and
        * must not reorder content. */}
       <body data-shell-variant={shellVariant}>
-        {/* Site-level navigation. Hidden when only one page is in-nav for this
-         * language so single-page UX is preserved. The link list is ordered
-         * by navOrder; the active page is marked with aria-current="page" and
-         * data-active="true" so themes can style without re-ordering DOM. */}
-        {navPages.length > 1 && (
-          <nav data-site-nav aria-label="Site navigation">
-            <div class="site-nav__inner">
-              {navLogo !== undefined && (
-                <a class="site-nav__brand" href="/" aria-label={site.org.name}>
-                  <img
-                    class="site-nav__logo"
-                    src={resolveAssetUrl(navLogo.path, assetUrlForPath)}
-                    alt={navLogoAlt}
-                    width={navLogo.width > 0 ? navLogo.width : undefined}
-                    height={navLogo.height > 0 ? navLogo.height : undefined}
-                  />
-                </a>
-              )}
-              <ul>
-                {navPages.map((entry) => {
-                  const href = pagePath(site, entry);
-                  const isActive = href === target.activeHref;
-                  return (
-                    <li key={`${entry.lang}:${entry.slug}`}>
-                      <a
-                        href={href}
-                        data-active={isActive ? "true" : "false"}
-                        aria-current={isActive ? "page" : undefined}
-                      >
-                        {entry.navLabel}
-                      </a>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </nav>
-        )}
-        {/* Language switcher. Rendered when the site has 2+ declared
-         * languages. Native names only (no flags — see PRD § 109). The
-         * active language self-links so theme styling can rely on
-         * aria-current; non-active languages link to localizedAs
-         * counterparts, with a graceful fallback to the language home when
-         * no counterpart exists. Articles use a stricter rule: only
-         * Published counterparts, and no language-home fallback. */}
-        {target.switcherEntries.length > 0 && (
-          <nav data-language-switcher aria-label="Language">
-            <ul>
-              {target.switcherEntries.map((entry) => (
-                <li key={entry.lang}>
-                  <a
-                    href={entry.href}
-                    lang={entry.lang}
-                    hrefLang={entry.lang}
-                    data-active={entry.isActive ? "true" : "false"}
-                    aria-current={entry.isActive ? "true" : undefined}
-                  >
-                    {entry.nativeName}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        )}
-        <main>{target.mainContent}</main>
-        {target.footerContent}
+        {body}
         {target.hasLazyEmbed && (
           <script
             {...{ [EMBED_LOADER_MARKER]: "" }}
@@ -826,6 +1015,14 @@ function DocumentShell(props: {
             data-sosb="event-list-past-fade"
             dangerouslySetInnerHTML={{ __html: EVENT_LIST_PAST_FADE_SCRIPT }}
           />
+        )}
+        {/* The Theme's own public-site script. `defer` rather than inline:
+         * ADR 0046 requires core content and Page navigation to work before
+         * JavaScript runs, and a deferred external file cannot block the
+         * parse. It is emitted after the builder's own enhancements so a
+         * Theme script observes the finished markup. */}
+        {publicScriptSrc !== undefined && (
+          <script defer src={publicScriptSrc} {...{ "data-sosb-theme-script": "" }} />
         )}
         {isPreviewMode && (
           <script

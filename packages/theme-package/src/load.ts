@@ -10,10 +10,23 @@
  * becomes a function of how the Theme happened to arrive.
  */
 
-import type { ThemeBundle, ThemeFontFace, ThemeVariant } from "@sosb/renderer";
+import type {
+  ThemeBundle,
+  ThemeFontFace,
+  ThemePublicScript,
+  ThemeRenderModule,
+  ThemeVariant,
+} from "@sosb/renderer";
 import { ZipDriver } from "@sosb/vfs/zip-driver";
 import type { Vfs } from "@sosb/vfs/vfs";
 import { ThemePackageError } from "./errors.js";
+import {
+  RENDER_MODULE_MAX_BYTES,
+  ThemeSandboxNotReadyError,
+  compileThemeRenderModule,
+  initThemeSandbox,
+  themeSandboxReady,
+} from "./sandbox.js";
 import { assertThemeCssIsOffline, referencedLocalUrls } from "./css-safety.js";
 import {
   THEME_FORMAT_VERSION,
@@ -227,12 +240,42 @@ export function loadThemePackage(files: ReadonlyMap<string, Uint8Array>): Loaded
         ref,
       );
     }
+    // The stylesheet may not smuggle the design module out as a decorative
+    // file: render.js runs at build time and is never published (ADR 0054).
+    if (ref === manifest.render) continue;
     assets.set(ref, bytes);
+  }
+  // An executable design may reference files the stylesheet never does
+  // (`input.asset("assets/brand.svg")`), and the build publishes exactly
+  // `bundle.assets` plus the fonts. So a package with a `render.js` publishes
+  // everything under `assets/` as well; anything elsewhere must be referenced
+  // by the stylesheet. A declarative package is unchanged: it publishes only
+  // what its CSS references, as phase one did.
+  if (manifest.render !== undefined) {
+    const code = new Set([
+      THEME_MANIFEST_FILE,
+      manifest.css,
+      manifest.render,
+      manifest.public?.file,
+    ]);
+    for (const [path, bytes] of files) {
+      if (!path.startsWith("assets/") || assets.has(path) || fontBytes.has(path)) continue;
+      if (code.has(path)) continue;
+      assets.set(path, bytes);
+    }
   }
   const blockVariants: Record<string, readonly ThemeVariant[]> = {};
   for (const [blockType, list] of Object.entries(manifest.variants)) {
     blockVariants[blockType] = toVariants(list);
   }
+
+  // The public script is checked before the design is compiled, so that every
+  // rejection this function can raise happens before a sandbox realm exists.
+  // `loadRenderModule` must stay the last step that can throw: a realm
+  // created for a package that is then rejected would have no owner to
+  // release it, and the wasm heap never shrinks (ADR 0054).
+  const publicScript = loadPublicScript(manifest, files);
+  const render = loadRenderModule(manifest, files);
 
   const bundle: ThemeBundle = {
     id: manifest.id,
@@ -254,9 +297,88 @@ export function loadThemePackage(files: ReadonlyMap<string, Uint8Array>): Loaded
     fontSource:
       faces.length === 0 ? { kind: "registry" } : { kind: "bundle", faces, bytes: fontBytes },
     assets,
+    render,
+    publicScript,
   };
 
   return { bundle, manifest, files: new Map(files) };
+}
+
+/**
+ * Compile the package's `render.js`, if it has one (ADR 0054).
+ *
+ * Compiling at *import* time rather than at first render is deliberate. A
+ * design with a syntax error or no default export is a broken package, and the
+ * moment to say so is while the author is importing it — not three pages into
+ * an export, and certainly not silently, leaving the Theme's CSS to style
+ * markup it was never written for.
+ */
+function loadRenderModule(
+  manifest: ThemeManifest,
+  files: ReadonlyMap<string, Uint8Array>,
+): ThemeRenderModule | undefined {
+  if (manifest.render === undefined) return undefined;
+  const bytes = files.get(manifest.render);
+  if (bytes === undefined) {
+    throw new ThemePackageError(
+      "file-missing",
+      `The manifest names "${manifest.render}" as its rendering module, but the package does not contain it.`,
+      manifest.render,
+    );
+  }
+  if (bytes.byteLength > RENDER_MODULE_MAX_BYTES) {
+    throw new ThemePackageError(
+      "render-invalid",
+      `${manifest.render} is ${Math.round(bytes.byteLength / 1024)} KB, over the ` +
+        `${Math.round(RENDER_MODULE_MAX_BYTES / 1024)} KB limit for a rendering module. ` +
+        `A design is code; bundle data as assets instead.`,
+      manifest.render,
+    );
+  }
+  if (!themeSandboxReady()) throw new ThemeSandboxNotReadyError();
+  try {
+    return compileThemeRenderModule(manifest.id, decoder.decode(bytes));
+  } catch (cause) {
+    if (cause instanceof ThemeSandboxNotReadyError) throw cause;
+    const detail = cause instanceof Error ? cause.message : String(cause);
+    throw new ThemePackageError("render-invalid", detail, manifest.render);
+  }
+}
+
+/**
+ * Read the package's `public.js` and its declared dependencies.
+ *
+ * The script's bytes are carried verbatim: the builder never rewrites, minifies
+ * or wraps them. ADR 0046 lets a public-site script bundle a framework and
+ * exceed the built-in script budget, so anything we did to it here would be a
+ * transformation of code we do not understand.
+ */
+function loadPublicScript(
+  manifest: ThemeManifest,
+  files: ReadonlyMap<string, Uint8Array>,
+): ThemePublicScript | undefined {
+  if (manifest.public === undefined) return undefined;
+  if (manifest.render !== undefined && manifest.public.file === manifest.render) {
+    throw new ThemePackageError(
+      "manifest-invalid",
+      `public.file names "${manifest.render}", the rendering module. A design runs at build time and is never published; ship the public-site script as a separate file.`,
+      "public.file",
+    );
+  }
+  const bytes = files.get(manifest.public.file);
+  if (bytes === undefined) {
+    throw new ThemePackageError(
+      "file-missing",
+      `The manifest names "${manifest.public.file}" as its public-site script, but the package does not contain it.`,
+      manifest.public.file,
+    );
+  }
+  return {
+    file: manifest.public.file,
+    bytes,
+    network: [...manifest.public.network].sort(),
+    offline: manifest.public.offline,
+  };
 }
 
 /**
@@ -267,6 +389,10 @@ export function loadThemePackage(files: ReadonlyMap<string, Uint8Array>): Loaded
  * importer already applies to untrusted archives.
  */
 export async function loadThemePackageFromZip(zipBytes: Uint8Array): Promise<LoadedThemePackage> {
+  // The one asynchronous step in the whole Theme path (ADR 0054). Doing it
+  // here, rather than asking every caller to remember, is why `renderSite`
+  // can stay synchronous without anybody having to think about it.
+  await initThemeSandbox();
   let driver: ZipDriver;
   try {
     driver = ZipDriver.fromZipBytes(zipBytes);
@@ -293,6 +419,7 @@ export async function loadThemePackageFromVfs(
   vfs: Vfs,
   themeId: string,
 ): Promise<LoadedThemePackage> {
+  await initThemeSandbox();
   const prefix = `${THEME_VFS_PREFIX}${themeId}/`;
   const paths = await vfs.list(prefix);
   if (paths.length === 0) {

@@ -3118,6 +3118,31 @@ button[data-issue] [data-issue-path]::before {
   margin-top: var(--sp-3);
   font-size: var(--step--1);
 }
+/* Omitted Blocks (ADR 0045): a list to read and a box to tick. */
+[data-export-omitted-info] {
+  margin: 0;
+  font-size: var(--step--1);
+  color: var(--ink-2);
+}
+[data-export-omitted-list] {
+  margin: 0;
+  padding-left: var(--sp-3);
+  font-size: var(--step--1);
+}
+[data-export-omitted-list] li {
+  margin-top: var(--sp-0);
+}
+[data-testid="export-omitted-ack-label"] {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-1);
+  margin-top: var(--sp-1);
+  font-size: var(--step--1);
+}
+[data-testid="export-omitted-ack-label"] input {
+  flex: none;
+  margin-top: 0.2em;
+}
 [data-export-override-hint] {
   font-size: var(--step--2);
   color: var(--ink-3);

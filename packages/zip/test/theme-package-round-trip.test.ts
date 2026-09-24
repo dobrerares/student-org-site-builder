@@ -20,7 +20,8 @@ import {
   installedThemeIds,
   loadThemePackageFromVfs,
 } from "@sosb/theme-package";
-import { loadThemePackageFromDirectory } from "@sosb/theme-package/node";
+import { loadThemePackageFromDirectoryAsync } from "@sosb/theme-package/node";
+import type { ThemeBundle } from "@sosb/renderer";
 import type { Site } from "@sosb/schema";
 import { renderSite } from "@sosb/renderer";
 
@@ -32,7 +33,23 @@ const HISTORIPOL_DATA = fileURLToPath(
   new URL("../../themes/src/templates/asociatia-studenteasca-demo/data.json", import.meta.url),
 );
 
-const loadedExample = loadThemePackageFromDirectory(EXAMPLE_DIR);
+// The example ships a `render.js`, so the sandbox engine has to be up before
+// the package can be loaded (ADR 0054) — hence the asynchronous loader.
+const loadedExample = await loadThemePackageFromDirectoryAsync(EXAMPLE_DIR);
+
+/** A bundle minus its live sandbox module, for structural equality checks. */
+function comparable(bundle: ThemeBundle): Omit<ThemeBundle, "render"> & {
+  design: { blockTypes: readonly string[]; hasShell: boolean } | undefined;
+} {
+  const { render, ...rest } = bundle;
+  return {
+    ...rest,
+    design:
+      render === undefined
+        ? undefined
+        : { blockTypes: render.blockTypes, hasShell: render.hasShell },
+  };
+}
 
 function practiceSite(): Site {
   const site = JSON.parse(readFileSync(HISTORIPOL_DATA, "utf8")) as Site;
@@ -62,7 +79,13 @@ describe("Theme packages in the editable archive", () => {
 
     expect(await installedThemeIds(imported.vfs)).toEqual(["org.example.practice"]);
     const reloaded = await loadThemePackageFromVfs(imported.vfs, "org.example.practice");
-    expect(reloaded.bundle).toEqual(loadedExample.bundle);
+    expect(comparable(reloaded.bundle)).toEqual(comparable(loadedExample.bundle));
+    // Every file, byte for byte — the design and the public script included.
+    expect([...reloaded.files.keys()].sort()).toEqual([...loadedExample.files.keys()].sort());
+    for (const [path, bytes] of loadedExample.files) {
+      expect(reloaded.files.get(path)).toEqual(bytes);
+    }
+    reloaded.bundle.render?.dispose();
   });
 
   test("the recipient renders the same page the sender saw", async () => {
@@ -88,6 +111,12 @@ describe("Theme packages in the editable archive", () => {
     );
     const text = new TextDecoder().decode(reExported);
     expect(text).toContain("assets/theme/org.example.practice");
+    // The editable archive carries the whole package, render.js included;
+    // the built Site inside it carries the public script and never the design
+    // (ADR 0054).
+    expect(text).toContain("themes/org.example.practice/render.js");
+    expect(text).toContain("dist/assets/theme/org.example.practice/public.js");
+    expect(text).not.toContain("dist/assets/theme/org.example.practice/render.js");
   });
 
   test("a standalone Theme export carries no Site content", async () => {

@@ -154,13 +154,64 @@ _Avoid_: template, skin, custom Site.
 **Theme package**:
 The shareable form of a Custom Theme: a `.sosb-theme.zip` archive (or an
 equivalent directory) holding a `theme.json` manifest, a stylesheet,
-packaged fonts and decorative assets. It has a namespaced permanent id
-(`org.example.practice`) and its own semver version, separate from any
-Site. Imported packages are stored **per Site** under `themes/<id>/`, so
-they travel inside the editable archive and a recipient can open it
-offline. A package never contains Site content. See
-[ADR 0050](docs/adr/0050-theme-package-format.md).
+packaged fonts and decorative assets, and optionally a **Theme design**
+(`render.js`) and a **public-site script** (`public.js`). It has a
+namespaced permanent id (`org.example.practice`) and its own semver
+version, separate from any Site. Imported packages are stored **per Site**
+under `themes/<id>/`, so they travel inside the editable archive and a
+recipient can open it offline. A package never contains Site content. See
+[ADR 0050](docs/adr/0050-theme-package-format.md) and
+[ADR 0054](docs/adr/0054-executable-theme-rendering-and-sandbox.md).
 _Avoid_: plugin, extension pack, theme file.
+
+**Theme design**:
+A Theme package's executable rendering module, `render.js`: a default
+export of `blocks` (one function per Block type it renders — overriding a
+built-in or rendering a Custom Block type) and an optional `shell`
+(header, navigation, footer and content layout around a single content
+slot). A design returns **element trees**, never HTML, and runs in the
+**render sandbox** at preview and export time. It holds no editable
+content of its own (ADR 0046).
+_Avoid_: theme script, template function, render hook.
+
+**Element tree**:
+The data a Theme design returns: `["p", { class: "lede" }, "text"]` or
+`{ tag, attrs, children }`. Validated by the renderer against an
+allow-list of elements and attributes and a URL rule, then rendered with
+Preact like a built-in Block. A Block design's root is stamped with
+`data-block`, `data-block-id` and `data-variant`; a shell's `["slot"]` is
+where the builder places the page's Blocks.
+_Avoid_: virtual DOM, JSX, HTML string.
+
+**Render sandbox**:
+Where a Theme design runs: QuickJS compiled to WebAssembly, one realm per
+Theme, started once asynchronously at package load and called
+synchronously per render. No network, files, clock, randomness, timers or
+imports; a per-call instruction budget and memory ceiling; data crosses
+the boundary as JSON. The same engine in browser, Electron and Node, which
+is what keeps preview/export parity for executable Themes.
+_Avoid_: VM, worker, iframe sandbox.
+
+**Public-site script**:
+A Theme package's `public.js`, emitted as a deferred `<script>` on every
+page of the **built** Site and never run during a render or in the
+ordinary (static) editor preview. Declared in the manifest with the hosts
+it may contact (`network`, required even when empty) and what stops
+working offline (`offline`). Exempt from the builder's script budget
+(ADR 0046). The `includePublicScript` preview option is the seam the
+interactive-preview mode will switch on.
+_Avoid_: theme JS, client bundle, plugin script.
+
+**Omitted Block**:
+A Block whose type has neither a built-in component nor a design in the
+active Theme. Left out of the public Site, marked with an HTML comment,
+and listed in the export readiness panel for the author to acknowledge
+before export (ADR 0045).
+Reported by `build()` through `onOmittedBlock` / `buildWithReport`, and
+computed ahead of time by `omittedBlocksFor` from the same rule. Distinct
+from a **rendering failure**, which stops the export and cannot be
+acknowledged away.
+_Avoid_: unsupported block, missing block, broken block.
 
 **Block design variant**:
 A named presentation of a Block type offered by a Theme and selected by
@@ -180,9 +231,10 @@ _Avoid_: header layout, chrome preset.
 
 **Theme bundle**:
 The resolved, ready-to-render form of a Theme inside the codebase — id,
-CSS, baseline tokens, supported appearance controls, variants, fonts and
-assets. Built-in Themes and imported Theme packages both reduce to one,
-so the renderer has a single code path
+CSS, baseline tokens, supported appearance controls, variants, fonts,
+assets and, for an executable package, its loaded Theme design (`render`)
+and public-site script (`publicScript`). Built-in Themes and imported
+Theme packages both reduce to one, so the renderer has a single code path
 ([ADR 0052](docs/adr/0052-renderer-theme-seam.md)). An implementation
 term, not something an author ever sees.
 _Avoid_: theme object, compiled theme.
@@ -507,7 +559,9 @@ state across them would be wrong.
 An interactive preview mode (ADR 0046) is still future work. Links
 inside the preview navigate it the way the public website would (ADR
 0053), but Blocks are not selected or edited by clicking them — editing
-goes through the forms.
+goes through the forms. The seam for public-site scripts exists:
+`iframeSrcdoc`'s `includePublicScript` preview option emits the active
+Theme's public-site script, and nothing in the UI sets it yet.
 
 **Spine patch** vs **block patch**:
 A field edit in the SpineForm produces a "spine patch" with a path

@@ -21,14 +21,16 @@ import { describe, expect, test } from "vitest";
 import { renderSite, themeAssetsFor } from "@sosb/renderer";
 import { build } from "@sosb/build";
 import type { Site } from "@sosb/schema";
-import { loadThemePackageFromDirectory } from "../src/node.js";
+import { loadThemePackageFromDirectoryAsync } from "../src/node.js";
 
 const EXAMPLE_DIR = fileURLToPath(new URL("../../../examples/themes/practice", import.meta.url));
 const HISTORIPOL_DATA = fileURLToPath(
   new URL("../../themes/src/templates/asociatia-studenteasca-demo/data.json", import.meta.url),
 );
 
-const { bundle } = loadThemePackageFromDirectory(EXAMPLE_DIR);
+// Top-level await: the example ships a `render.js`, so the sandbox engine has
+// to be up before the package can be loaded (ADR 0054).
+const { bundle } = await loadThemePackageFromDirectoryAsync(EXAMPLE_DIR);
 
 function practiceSite(): Site {
   const site = JSON.parse(readFileSync(HISTORIPOL_DATA, "utf8")) as Site;
@@ -112,12 +114,51 @@ describe("preview/build parity with a Theme package", () => {
 
     // And the built output carries that same rendering. `build()` overlays
     // JSON-LD into `<head>` (issue #17), so the documents are not byte-equal
-    // — but the styled body and the composed stylesheet must be.
+    // — but the styled body and the composed stylesheet must be. A build
+    // emits the Theme's public script (ADR 0046), so the comparable render is
+    // the one with it switched on.
     const home = dist.get("index.html");
     expect(typeof home).toBe("string");
-    const deployedHome = renderSite(site, bundle.id, { pageIndex: 0, theme: bundle });
+    const deployedHome = renderSite(site, bundle.id, {
+      pageIndex: 0,
+      theme: bundle,
+      includePublicScript: true,
+    });
     expect(styleBlockOf(home as string)).toBe(styleBlockOf(deployedHome));
     expect(home as string).toContain(bodyOf(deployedHome));
+  });
+
+  test("the public script is the only difference between a static and an interactive preview", () => {
+    // Same posture as the test above: the preview is the blob-resolved
+    // render, without the preview-mode bridge scripts, so that what is being
+    // compared against the build is the Theme's contribution and nothing
+    // editor-specific.
+    const site = practiceSite();
+    site.pages.forEach((_page, idx) => {
+      const staticPreview = renderSite(site, bundle.id, {
+        pageIndex: idx,
+        theme: bundle,
+        assetUrlForPath: previewResolver,
+      });
+      const interactive = renderSite(site, bundle.id, {
+        pageIndex: idx,
+        theme: bundle,
+        assetUrlForPath: previewResolver,
+        includePublicScript: true,
+      });
+      const deployed = renderSite(site, bundle.id, {
+        pageIndex: idx,
+        theme: bundle,
+        includePublicScript: true,
+      });
+      const tag = `<script defer src="${PREVIEW_PREFIX}assets/theme/${bundle.id}/public.js" data-sosb-theme-script></script>`;
+      expect(staticPreview).not.toContain("data-sosb-theme-script");
+      expect(interactive).toContain(tag);
+      expect(interactive.replace(tag, "")).toBe(staticPreview);
+      // With the script on, the interactive preview and the build agree
+      // modulo the same two URL differences as everything else.
+      expect(normalise(interactive)).toBe(normalise(deployed));
+    });
   });
 
   test("the preview resolves exactly the paths the build writes", () => {
