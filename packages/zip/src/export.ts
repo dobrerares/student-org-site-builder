@@ -84,6 +84,12 @@ export async function exportToZip(siteData: unknown, vfs: Vfs): Promise<Blob> {
   for (const path of await vfs.list("themes/")) {
     await driver.write(path, await vfs.read(path));
   }
+  // The recovery copy an author-controlled package update leaves behind
+  // (ADR 0055) travels too, so "restore the previous version" works after a
+  // save and on another machine. Never mirrored into `dist/`.
+  for (const path of await vfs.list("themes-recovery/")) {
+    await driver.write(path, await vfs.read(path));
+  }
 
   // 3. Built static site. The editor's export-confirm flow already showed
   // validation issues; `skipValidation` lets the user's explicit download

@@ -113,7 +113,8 @@ export async function importFromZip(blob: Blob): Promise<ImportResult> {
     );
   }
 
-  // 6. Copy assets and installed Theme packages into a fresh MemoryDriver.
+  // 6. Copy assets, installed Theme packages and package recovery copies into
+  // a fresh MemoryDriver.
   //
   // `themes/` restores alongside `assets/` so that reopening an archive
   // offline gives back the Site *and* the design it was authored with. The
@@ -121,7 +122,7 @@ export async function importFromZip(blob: Blob): Promise<ImportResult> {
   // not stop a Site from opening (ADR 0051 — content is preserved and the
   // problem is surfaced as a repairable issue, not an import failure).
   const vfs = new MemoryDriver();
-  for (const prefix of ["assets/", "themes/"]) {
+  for (const prefix of ["assets/", "themes/", "themes-recovery/"]) {
     for (const path of await zipDriver.list(prefix)) {
       await vfs.write(path, await zipDriver.read(path));
     }

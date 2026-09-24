@@ -16,7 +16,7 @@
  */
 
 import type { Article, Page, Site, ValidationIssue } from "@sosb/schema";
-import { validate } from "@sosb/schema";
+import { isCustomBlockType, validate } from "@sosb/schema";
 import type { OmittedBlock, ThemeBundle, ThemeRenderIssue } from "@sosb/renderer";
 import {
   articleCopy,
@@ -79,6 +79,32 @@ export class BuildThemeMissingError extends Error {
         `Pass it through options.themes, or switch the Site to a built-in Theme.`,
     );
     this.themeId = themeId;
+  }
+}
+
+/**
+ * Thrown when a Page or a public Article holds a Custom Block whose type no
+ * supplied Theme package declares (ADR 0055).
+ *
+ * The issue-106 plan's "missing required extension": the Site opens and saves
+ * with the Block's data intact, but public export stops until the package is
+ * restored. This is deliberately *not* the omission path (ADR 0045) — that is
+ * for a declared type the active Theme happens not to design, which the author
+ * may acknowledge. A missing declaration is a damaged archive, and the author
+ * cannot know what the published page would be missing.
+ */
+export class BuildCustomBlockMissingError extends Error {
+  public override readonly name = "BuildCustomBlockMissingError";
+  public readonly blockType: string;
+  public readonly blockId: string;
+
+  constructor(blockType: string, blockId: string) {
+    super(
+      `build: block ${blockId} is a Custom Block of type "${blockType}", and no supplied ` +
+        `Theme package declares that type. Import the package that provides it before exporting.`,
+    );
+    this.blockType = blockType;
+    this.blockId = blockId;
   }
 }
 
@@ -218,6 +244,25 @@ export function build(site: Site, options: BuildOptions = {}): DistFolder {
 
   if (site.pages.length === 0) {
     throw new Error("build: site has no pages");
+  }
+
+  // Every Custom Block type on a public page must be declared by *some*
+  // supplied package — not necessarily the active Theme. Whether the active
+  // Theme designs it is the separate, acknowledgeable omission question.
+  const declaredTypes = new Set<string>();
+  for (const bundle of options.themes ?? []) {
+    for (const declaration of bundle.customBlocks ?? []) declaredTypes.add(declaration.type);
+  }
+  const requireDeclared = (blocks: readonly Site["pages"][number]["blocks"][number][]): void => {
+    for (const block of blocks) {
+      if (isCustomBlockType(block.type) && !declaredTypes.has(block.type)) {
+        throw new BuildCustomBlockMissingError(block.type, block.id);
+      }
+    }
+  };
+  for (const page of site.pages) requireDeclared(page.blocks);
+  for (const article of site.articles ?? []) {
+    if (article.state !== "draft") requireDeclared(article.blocks);
   }
 
   const dist: DistFolder = new Map();
