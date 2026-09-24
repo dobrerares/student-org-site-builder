@@ -197,21 +197,48 @@ fields that remain with the same kind keep their content; new fields start
 empty (or at their switch/choice default, only when the update _introduces_
 them); a field that is gone, or whose kind changed, takes its content with
 it — and every such value is **listed** with its old label, a preview and the
-Page or Article it sits in. Keys neither declaration knows are preserved
-(ADR 0002). Every adapted envelope is stamped with the new data version.
+Page or Article it sits in, in the editor's language. The rules are driven by
+the two declarations, never by the shape of a value: a key the outgoing
+declaration did not name is kept as it is, whatever it holds, and validation
+reports a shape the field cannot show. Keys neither declaration knows are
+preserved (ADR 0002). Every adapted envelope is stamped with the new data
+version; the same content in a different key order is not a change.
+
+A type's **first** import into a Site that already holds Blocks of it (an
+archive whose package was lost) has no outgoing declaration and no outgoing
+package to keep a copy of, so it removes nothing and asks nothing: the data
+is kept exactly, a data version below the declaration's is moved up to it,
+and a Block saved by a newer package than the one imported is left untouched
+and stays unavailable (`data-newer`) until that package arrives.
 
 If the list is non-empty the editor shows it and asks: _keep the current
 version_ (nothing at all is written) or _update and remove this content_.
 An update that removes nothing — an appearance-only release, a version that
 only adds fields — never asks and writes nothing to Blocks it does not
-change. Before an update that touches Blocks is applied, the outgoing
-package's installed files and the affected envelopes are kept under
-`themes-recovery/<id>/` in the Site's VFS, which travels in the editable
-archive like `themes/`. The Theme packages panel offers _Restore previous
-version (x.y.z)_: it re-validates the copy by loading it, reinstalls it, puts
-the saved envelopes back where a Block with the same id still exists, and
-discards the copy. One copy per package id; the next update replaces it.
-A failed import changes nothing, as before.
+change. Before an update that changes any Block — data or version — is
+applied, the outgoing package's installed files and the affected envelopes
+are kept under `themes-recovery/<id>/` in the Site's VFS, which travels in
+the editable archive like `themes/`; if that copy cannot be made the update
+does not happen. The Theme packages panel offers _Restore previous version
+(x.y.z)_: it re-validates the copy by loading it, reinstalls it, puts the
+saved envelopes back where a Block with the same id still exists, and
+discards the copy. One copy per package id; the next update that changes a
+Block replaces it, and an update that changes none leaves it alone, so an
+appearance-only release cannot overwrite the copy the author may still want
+back. A failed import changes nothing, as before.
+
+### Saving is never refused; exporting the website is
+
+`build()` refuses a Custom Block no supplied package honours (above) and a
+missing Theme (ADR 0051), and the same `exportToZip` writes both the
+editable archive and the public `dist/` inside it. The two callers now say
+which they are: _Export website_ requires the public Site and is refused
+loudly, as before; _Save project_ in a shell without its own persistence
+passes `publicSite: "when-buildable"` and gets the complete editable archive
+— Site, assets, packages, recovery copies — without `dist/` and `DEPLOY.md`
+when one of those two refusals occurs. Any other build failure still rejects.
+This is the plan's "the Site can still be opened and saved" made true in the
+archival single-file editor, whose only way to keep work is that download.
 
 The rest of the lifecycle is unchanged: packages travel with the editable
 archive (`themes/`), a same-id import replaces, removal is blocked while in
@@ -272,6 +299,10 @@ benefit nobody asked for.
 - The zip layer mirrors `themes-recovery/` alongside `themes/`; the editor's
   in-shell import does too. Archives grow by the size of one previous package
   version after an update, until the copy is restored or replaced.
+- `exportToZip` gains `ExportToZipOptions.publicSite`; the default keeps
+  today's behaviour. `BuildCustomBlockMissingError` carries a `reason`
+  (`package-missing` or `data-newer`), because a Block saved by a newer
+  package is refused by the build exactly as the editor marks it unavailable.
 - `ValidationIssue.blocking` has two more cases; the comment on it lists
   them.
 - Namespaced type ids (with a slash) are Custom Blocks; a non-namespaced

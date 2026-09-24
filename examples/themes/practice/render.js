@@ -341,8 +341,23 @@ function partnerItem(input, partner) {
   return ["li", null, href !== null ? ["a", { class: "partners__link", href }, figure] : figure];
 }
 
+/** Does a rich-text value hold anything to show? An empty paragraph does not. */
+function hasProse(doc) {
+  if (!doc || typeof doc !== "object" || !Array.isArray(doc.content)) return false;
+  return doc.content.some(
+    (node) =>
+      node &&
+      typeof node === "object" &&
+      (node.type !== "paragraph" || (Array.isArray(node.content) && node.content.length > 0)),
+  );
+}
+
 function partnerGroup(input, group, showHeading) {
-  const partners = Array.isArray(group.partners) ? group.partners : [];
+  // Saved data reaches a design as it is: an entry that is not an object
+  // (validation reports it) is skipped rather than allowed to hide the Block.
+  const partners = (Array.isArray(group.partners) ? group.partners : []).filter(
+    (partner) => partner && typeof partner === "object",
+  );
   const heading = text(group.heading);
   return [
     "div",
@@ -364,7 +379,7 @@ function partners(input) {
   const heading = text(data.heading);
   const groups = Array.isArray(data.groups) ? data.groups : [];
   const showGroupHeadings = data.showGroupHeadings !== false;
-  const hasIntro = data.intro && typeof data.intro === "object";
+  const hasIntro = hasProse(data.intro);
   if (heading === null && !hasIntro && groups.length === 0) return null;
   const titleId = `${id}__title`;
   const variant = input.variant === "band" ? "band" : "grid";

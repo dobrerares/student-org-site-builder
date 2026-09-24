@@ -99,18 +99,18 @@ identifier (`heading`, `partnerName`) — it is the key in saved data and the
 property your design reads (`input.data.heading`). Names are unique within
 their group.
 
-| Kind       | Stores                                                                                                    | Rules                    | Default   | Control                                       |
-| ---------- | --------------------------------------------------------------------------------------------------------- | ------------------------ | --------- | --------------------------------------------- |
-| `text`     | a string                                                                                                  | `required`, `maxLength`  | —         | a text box (a textarea for long-text names)   |
-| `richText` | a Rich-text document (ADR 0048)                                                                           | `required`               | —         | the Rich-text editor                          |
-| `number`   | a number                                                                                                  | `required`, `min`, `max` | —         | a number input                                |
-| `boolean`  | `true` / `false`                                                                                          | —                        | `default` | a switch                                      |
-| `choice`   | one of `options[].value`                                                                                  | `required`               | `default` | a select, with `options[].label` translated   |
-| `link`     | a Link target: `{ kind: "page", pageId }`, `{ kind: "article", articleId }`, `{ kind: "external", href }` | `required`               | —         | the link picker                               |
-| `image`    | an `AssetRef` (`path`, `alt`, `width`, `height`, …)                                                       | `required`               | —         | the Asset picker plus a description box       |
-| `document` | a `DocumentAssetRef` (`path`, `mime`, `byteSize`, `originalName`, …)                                      | `required`               | —         | the Document picker                           |
-| `group`    | an object of `fields`                                                                                     | —                        | —         | a fieldset                                    |
-| `list`     | an array of groups (`item: { kind: "group", fields }`)                                                    | `minItems`, `maxItems`   | —         | add / remove / reorder; `itemLabel` names one |
+| Kind       | Stores                                                                                                    | Rules                    | Default   | Control                                                    |
+| ---------- | --------------------------------------------------------------------------------------------------------- | ------------------------ | --------- | ---------------------------------------------------------- |
+| `text`     | a string                                                                                                  | `required`, `maxLength`  | —         | a text box (a textarea for long-text names)                |
+| `richText` | a Rich-text document (ADR 0048)                                                                           | `required`               | —         | the Rich-text editor                                       |
+| `number`   | a number                                                                                                  | `required`, `min`, `max` | —         | a number input                                             |
+| `boolean`  | `true` / `false`                                                                                          | —                        | `default` | a switch                                                   |
+| `choice`   | one of `options[].value`                                                                                  | `required`               | `default` | a select, with `options[].label` translated                |
+| `link`     | a Link target: `{ kind: "page", pageId }`, `{ kind: "article", articleId }`, `{ kind: "external", href }` | `required`               | —         | the link picker (an address the site cannot link to warns) |
+| `image`    | an `AssetRef` (`path`, `alt`, `width`, `height`, …)                                                       | `required`               | —         | the Asset picker plus a description box                    |
+| `document` | a `DocumentAssetRef` (`path`, `mime`, `byteSize`, `originalName`, …)                                      | `required`               | —         | the Document picker                                        |
+| `group`    | an object of `fields`                                                                                     | —                        | —         | a fieldset                                                 |
+| `list`     | an array of groups (`item: { kind: "group", fields }`)                                                    | `minItems`, `maxItems`   | —         | add / remove / reorder; `itemLabel` names one              |
 
 Only switches and choices may carry a `default` — "Show heading: Yes". Text,
 images, links and lists start empty; a new list entry is empty apart from its
@@ -215,9 +215,10 @@ applies.
   package declares, or whose package needs a newer builder or would not load,
   or whose data was saved by a newer package than the installed one, the
   Block is marked _unavailable_: its content is kept exactly, it cannot be
-  edited, and the export is blocked with a message saying which package to
-  import or update. This is distinct from a Theme with no design for the
-  type, which is an acknowledgeable omission.
+  edited, and the website export is blocked with a message saying which
+  package to import or update — saving the project is never blocked. This is
+  distinct from a Theme with no design for the type, which is an
+  acknowledgeable omission.
 
 ---
 
@@ -232,13 +233,21 @@ a new one. When they do:
   is asked.
 - Removed fields, or a field whose kind changed → before anything is written
   the builder lists the content that would be removed — which Page, which
-  block, which field, what it says — and the author chooses to keep the
-  current version or to update.
+  block, which field, what it says, in the author's language and under your
+  translated labels — and the author chooses to keep the current version or
+  to update.
 
-Before an update that touches Blocks is applied, the builder keeps the
+Before an update that changes any Block is applied, the builder keeps the
 outgoing package and the affected Blocks under `themes-recovery/<id>/` in
 the Site archive. **Restore previous version** in the Theme packages panel
-puts both back. One copy per package; the next update replaces it.
+puts both back. One copy per package; the next update that changes a Block
+replaces it, and an appearance-only release leaves it alone.
+
+The first import of your package into a Site that already holds Blocks of
+the type (an archive whose package went missing) removes nothing and asks
+nothing: there is no outgoing version to keep a copy of. Saved data is kept
+as it is, a Block at a lower data version is moved up to yours, and one at a
+_higher_ data version stays unavailable until that newer package is imported.
 
 Bump `version` whenever saved data has to follow; the builder stamps every
 adapted envelope with it. A Block saved at a _higher_ version than the
