@@ -522,7 +522,10 @@ export async function installThemePackageIntoVfs(
       files: themeRecoveryFiles(recovery.previous, recovery.blocks),
     });
   }
-  await replaceVfsPrefixes(vfs, replacements, `themes-install-backup/${id}/`);
+  await replaceVfsPrefixes(vfs, replacements, `themes-install-backup/${id}/`, [
+    prefix,
+    `${THEME_RECOVERY_VFS_PREFIX}${id}/`,
+  ]);
   return [...files.keys()].map((path) => prefix + path);
 }
 

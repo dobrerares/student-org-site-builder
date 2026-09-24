@@ -538,6 +538,46 @@ describe("the recovery copy", () => {
     },
   );
 
+  test("a package-only repair finishes a failed combined rollback before installing", async () => {
+    const vfs = new MemoryDriver();
+    const v1 = loadThemePackage(pkg(MANIFEST, { "extra.txt": "v1" }));
+    const v2 = loadThemePackage(pkg({ ...MANIFEST, version: "2.0.0" }));
+    const v3 = loadThemePackage(pkg({ ...MANIFEST, version: "3.0.0" }));
+    await saveThemeRecoveryCopy(vfs, v1, [block]);
+    await installThemePackageIntoVfs(vfs, v2);
+    const before = await readThemeRecoveryCopy(vfs, THEME_ID);
+    let unavailable = false;
+    let recoveryWrites = 0;
+    const flaky = new Proxy(vfs, {
+      get(target, property, receiver) {
+        if (property === "write") {
+          return async (path: string, bytes: Uint8Array) => {
+            if (path.startsWith(`themes-recovery/${THEME_ID}/`) && ++recoveryWrites === 2) {
+              unavailable = true;
+            }
+            if (unavailable) throw new Error("disk unavailable");
+            return target.write(path, bytes);
+          };
+        }
+        return Reflect.get(target, property, receiver);
+      },
+    });
+    await expect(
+      installThemePackageIntoVfs(flaky, v3, {
+        previous: v2,
+        blocks: [{ ...block, version: 2 }],
+      }),
+    ).rejects.toThrow("previous files are retained");
+    expect(await vfs.has(`themes-install-backup/${THEME_ID}/.ready`)).toBe(true);
+
+    // A repair can be package-only (for example, Restore previous version).
+    // Its pending rollback still covers BOTH prefixes from the failed update.
+    await installThemePackageIntoVfs(vfs, v3);
+    expect(await readThemeRecoveryCopy(vfs, THEME_ID)).toEqual(before);
+    expect(await vfs.read(`themes/${THEME_ID}/theme.json`)).toEqual(v3.files.get("theme.json"));
+    expect(await vfs.list("themes-install-backup/")).toEqual([]);
+  });
+
   test("a blocks.json with malformed envelopes keeps only the well-formed ones", async () => {
     const vfs = new MemoryDriver();
     const enc = new TextEncoder();

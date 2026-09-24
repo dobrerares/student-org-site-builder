@@ -39,13 +39,16 @@ export async function replaceVfsPrefixes(
   vfs: Vfs,
   replacements: readonly Replacement[],
   backup: string,
+  rollbackPrefixes: readonly string[] = replacements.map(({ prefix }) => prefix),
 ): Promise<void> {
   const ready = backup + ".ready";
   if (await vfs.has(ready)) {
     // The manifest is internal, but a damaged persistent file must never
     // supply an arbitrary prefix to the restore operation.
     const prefixes: unknown = JSON.parse(new TextDecoder().decode(await vfs.read(ready)));
-    const allowed = new Set(replacements.map(({ prefix }) => prefix));
+    // Allowed scopes belong to the caller, not just this operation: a
+    // package-only retry may need to undo an earlier combined update.
+    const allowed = new Set(rollbackPrefixes);
     if (
       !Array.isArray(prefixes) ||
       prefixes.some((p) => typeof p !== "string" || !allowed.has(p))
