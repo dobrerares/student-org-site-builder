@@ -35,13 +35,14 @@
  * inside the unpacked dev tree.
  */
 
-import { app, BrowserWindow, dialog, ipcMain } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { buildBrowserWindowOptions } from "./browser-window-options.js";
 import { resolveEditorUrl } from "./editor-url.js";
+import { decideWindowOpen, isEditorNavigation } from "./window-open-policy.js";
 import { registerIpcHandlers } from "./register-ipc-handlers.js";
 import { registerAutoUpdateHandlers } from "./register-auto-update-handlers.js";
 import {
@@ -132,6 +133,19 @@ async function createMainWindow(): Promise<void> {
     isPackaged: app.isPackaged,
     rendererRoot: path.resolve(here, "..", "renderer"),
     ...(devServerUrl ? { devServerUrl } : {}),
+  });
+
+  // No child windows, ever, and no navigation away from the editor (see
+  // `window-open-policy.ts`): an external link the preview opens goes to the
+  // system browser instead of an Electron window that would inherit the
+  // preload bridge.
+  mainWindow.webContents.setWindowOpenHandler(({ url: requested }) => {
+    const decision = decideWindowOpen(requested);
+    if (decision.openExternal !== null) void shell.openExternal(decision.openExternal);
+    return { action: decision.action };
+  });
+  mainWindow.webContents.on("will-navigate", (event, target) => {
+    if (!isEditorNavigation(target, url)) event.preventDefault();
   });
 
   await mainWindow.loadURL(url);

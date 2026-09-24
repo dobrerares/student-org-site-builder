@@ -94,6 +94,11 @@ import { MEDIA_PICKER_RENDERERS } from "./media-picker-renderers.js";
 import { SpineForm, applyPatch } from "./spine-form.js";
 import { ThemeForm } from "./theme-form.js";
 import { iframeSrcdoc, iframeSrcdocForArticle } from "./iframe-srcdoc.js";
+import {
+  clearThemeDataUrls,
+  interactiveAssetUrlForPath,
+  prepareInteractiveAssetUrls,
+} from "./interactive-preview.js";
 import { resolvePreviewTarget } from "./preview-navigation.js";
 import type { PreviewTarget } from "./preview-navigation.js";
 // Side-effect import: registers the editor-app stylesheet on `document.head`
@@ -714,6 +719,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       // them here too so a clean unmount leaves no leaked object URLs.
       revokeFontBlobUrls();
       revokeThemeBlobUrls();
+      clearThemeDataUrls();
     };
   }, []);
 
@@ -770,6 +776,21 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     void reloadInstalledThemes();
   }, []);
 
+  /**
+   * Drop every preview URL minted for Theme files — the static `blob:` cache
+   * and the interactive `data:` cache. Called *before* a reload of the
+   * installed Themes so the memory goes early, and *after* it because a
+   * render that happens while the reload is pending (a keystroke, an upload
+   * finishing) rebuilds both caches from the outgoing bundle; re-importing
+   * the same id and version with new bytes would then keep serving the old
+   * bytes. Nothing minted after the reload can be stale: by then the
+   * installed list already holds the new bundles.
+   */
+  function dropThemePreviewUrls(): void {
+    revokeThemeBlobUrls();
+    clearThemeDataUrls();
+  }
+
   async function importThemePackage(file: File): Promise<void> {
     const bytes = new Uint8Array(await file.arrayBuffer());
     // Load (and therefore fully validate) before writing anything: a rejected
@@ -780,10 +801,11 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     // load's sandbox realm has done its job.
     loaded.bundle.render?.dispose();
     // Re-importing the same id and version with different bytes is the normal
-    // rhythm of authoring a Theme, so the blob cache (keyed on id + version)
-    // has to be dropped on every import rather than trusted to notice.
-    revokeThemeBlobUrls();
+    // rhythm of authoring a Theme, so the URL caches (keyed on id + version)
+    // have to be dropped on every import rather than trusted to notice.
+    dropThemePreviewUrls();
     await reloadInstalledThemes();
+    dropThemePreviewUrls();
   }
 
   async function exportThemePackageFile(themeId: string): Promise<void> {
@@ -796,12 +818,13 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
 
   async function removeThemePackage(themeId: string): Promise<void> {
     await uninstallThemePackageFromVfs(assetVfsRef.current!, themeId);
-    // Drop the preview blob URLs minted for this Theme. Without this, removing
-    // and re-importing an edited Theme at the same version would keep serving
-    // the old bytes from the blob cache, and the author would conclude their
-    // edits had not taken.
-    revokeThemeBlobUrls();
+    // Drop the preview URLs minted for this Theme. Without this, removing and
+    // re-importing an edited Theme at the same version would keep serving the
+    // old bytes from the caches, and the author would conclude their edits
+    // had not taken.
+    dropThemePreviewUrls();
     await reloadInstalledThemes();
+    dropThemePreviewUrls();
   }
 
   /**
@@ -861,6 +884,83 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
    */
   const [previewTarget, setPreviewTarget] = useState<PreviewTarget>({ kind: "page", index: 0 });
 
+  /**
+   * Interactive preview (ADR 0046, ADR 0056): the Theme's public-site script
+   * runs in the preview only while the author has this switched on. Shell
+   * state, per session — never part of the Site — and reset when another
+   * project is imported. Before the mode takes effect the uploads are
+   * re-encoded as `data:` URLs, because the interactive frame's opaque
+   * origin cannot load the editor's `blob:` URLs (`interactive-preview.ts`).
+   *
+   * The request is keyed to the Theme it was made for. ADR 0046 says a
+   * script runs only when *explicitly* enabled, and the status line is where
+   * the author reads a Theme's `network` hosts before anything is contacted;
+   * so selecting or importing a different Theme while the mode is on must
+   * not run that Theme's script on the spot. Derived during render rather
+   * than reset in an effect, so no document carrying the other Theme's
+   * script is ever committed. Re-importing the same Theme (same id) keeps
+   * the mode on — that is the authoring loop the mode exists for.
+   */
+  const [interactiveThemeId, setInteractiveThemeId] = useState<string | null>(null);
+  const activeThemeId = activeThemeBundle?.id;
+  const interactiveRequested = interactiveThemeId !== null && interactiveThemeId === activeThemeId;
+  const [interactiveError, setInteractiveError] = useState<string | null>(null);
+  function setInteractiveRequested(on: boolean): void {
+    setInteractiveError(null);
+    setInteractiveThemeId(on ? (activeThemeId ?? null) : null);
+  }
+  useEffect(() => {
+    // Switching Themes turns the mode off for good, not merely while the
+    // other Theme is active: coming back to the first Theme has to be an
+    // explicit choice again, and the encoded uploads are released meanwhile.
+    if (interactiveThemeId !== null && interactiveThemeId !== activeThemeId) {
+      setInteractiveThemeId(null);
+    }
+  }, [interactiveThemeId, activeThemeId]);
+  const interactiveUploadsRef = useRef<Map<string, string> | null>(null);
+  const [interactiveEpoch, setInteractiveEpoch] = useState(0);
+  const activePublicScript = activeThemeBundle?.publicScript;
+  useEffect(() => {
+    if (!interactiveRequested) {
+      // Free the encoded uploads as soon as the mode is off: a `data:` URL
+      // is a third larger than the bytes it carries.
+      interactiveUploadsRef.current = null;
+      return;
+    }
+    let cancelled = false;
+    prepareInteractiveAssetUrls(assetVfsRef.current!).then(
+      (urls) => {
+        if (cancelled) return;
+        interactiveUploadsRef.current = urls;
+        setInteractiveEpoch((n) => n + 1);
+      },
+      (error: unknown) => {
+        if (cancelled) return;
+        // The document must not boot with half its images missing (ADR 0056
+        // §3), and "Preparing…" forever would say nothing. Fall back to the
+        // static preview and let the status line say why.
+        setInteractiveError(error instanceof Error ? error.message : String(error));
+        setInteractiveThemeId(null);
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+    // `assetEpoch`: an upload made while the mode is on must reach the
+    // document, so the map is rebuilt from the VFS whenever the cache grows.
+  }, [interactiveRequested, assetEpoch]);
+  const interactiveMode: "off" | "preparing" | "on" =
+    !interactiveRequested || activePublicScript === undefined
+      ? "off"
+      : interactiveUploadsRef.current === null
+        ? "preparing"
+        : "on";
+  const interactiveOn = interactiveMode === "on";
+
+  function interactiveUrlForAssetPath(path: string): string | undefined {
+    return interactiveAssetUrlForPath(path, activeThemeBundle, interactiveUploadsRef.current);
+  }
+
   // Entering a workspace points the preview at the content being edited. A
   // site-wide destination (Theme, Site settings) leaves it where it was, so
   // changing a theme previews the page the author was last working on.
@@ -907,32 +1007,42 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
    * only produces the markup.
    */
   const previewHtml = useMemo(
-    () =>
+    () => {
+      // The interactive document is the same render with two differences:
+      // the Theme's public script is emitted (the seam ADR 0054 left), and
+      // every asset is delivered as a `data:` URL because the frame's opaque
+      // origin cannot load the editor's `blob:` URLs (ADR 0056).
+      const resolver = interactiveOn ? interactiveUrlForAssetPath : displayUrlForAssetPath;
+      const options = interactiveOn ? { includePublicScript: true } : undefined;
       // An Article preview goes through the same renderer call the export
       // makes, so what the author sees is what ships.
-      safePreviewTarget.kind === "article"
+      return safePreviewTarget.kind === "article"
         ? iframeSrcdocForArticle(
             snapshot,
             snapshot.theme.id,
             safePreviewTarget.index,
-            displayUrlForAssetPath,
+            resolver,
             activeThemeBundle,
+            options,
           )
         : iframeSrcdoc(
             snapshot,
             snapshot.theme.id,
             safePreviewTarget.index,
-            displayUrlForAssetPath,
+            resolver,
             activeThemeBundle,
-          ),
+            options,
+          );
+    },
     // `displayUrlForAssetPath` reads a ref-held cache rather than state, so it
     // is deliberately not a dependency; `assetEpoch` is what actually changes
-    // when that cache gains an entry.
+    // when that cache gains an entry — and `interactiveEpoch` plays the same
+    // role for the interactive resolver's upload map.
     //
     // `activeThemeBundle` *is* a dependency: importing or removing a Theme
     // package changes the bundle without touching the Site snapshot, and
     // without this the preview would keep rendering the previous design.
-    [snapshot, safePreviewTarget, assetEpoch, activeThemeBundle],
+    [snapshot, safePreviewTarget, assetEpoch, activeThemeBundle, interactiveOn, interactiveEpoch],
   );
 
   /**
@@ -1074,6 +1184,9 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       const bytes = await vfs.read(ref.path);
       const blob = new Blob([new Uint8Array(bytes)], { type: ref.mime });
       cache.set(ref.hash, URL.createObjectURL(blob));
+      // The epoch is what tells the interactive preview to re-encode the
+      // uploads (ADR 0056 §3); a document is an upload like any other.
+      setAssetEpoch((n) => n + 1);
     }
     // `@sosb/assets`'s runtime `DocumentRef` interface uses the closed
     // `SupportedDocumentMime` enum for `mime`; the schema's
@@ -1596,8 +1709,12 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       // The incoming archive's Theme packages are only *installed* once this
       // list is rebuilt; without it the Site would render as if its own Theme
       // were missing until the editor was reloaded.
-      revokeThemeBlobUrls();
+      dropThemePreviewUrls();
       await reloadInstalledThemes();
+      dropThemePreviewUrls();
+      // The interactive preview is a fact about this editing session, not
+      // about a project: another project starts static (ADR 0046).
+      setInteractiveThemeId(null);
       setAssetEpoch((n) => n + 1);
       historyRef.current = createHistoryStore<Site>({
         initial: structuredClone(imported.siteData),
@@ -1680,6 +1797,14 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       canReturnToTarget={!previewMatchesTarget}
       onReturnToTarget={handleReturnPreviewToTarget}
       onEditPreviewed={handleEditPreviewed}
+      interactive={interactiveMode}
+      interactiveError={interactiveError}
+      onInteractiveChange={setInteractiveRequested}
+      publicScript={
+        activePublicScript === undefined
+          ? undefined
+          : { network: activePublicScript.network, offline: activePublicScript.offline }
+      }
     />
   );
 

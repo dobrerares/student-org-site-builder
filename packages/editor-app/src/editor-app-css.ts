@@ -3012,8 +3012,33 @@ button[data-issue] [data-issue-path]::before {
 [data-preview-devices] {
   display: flex;
   flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: center;
+  gap: var(--sp-2) var(--sp-3);
   padding: var(--sp-2) var(--sp-2) 0;
+}
+/* Interactive preview (ADR 0056): the switch beside the device presets, and
+ * the status line that says what is running and what it may contact. */
+[data-preview-interactive] {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+[data-preview-interactive-status] {
+  flex: 0 0 auto;
+  margin: var(--sp-2) var(--sp-2) 0;
+  padding: var(--sp-1) var(--sp-2);
+  font-size: var(--step--2);
+  line-height: 1.4;
+  color: var(--ink-2);
+  background: var(--accent-soft);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+}
+[data-preview-interactive-status] strong {
+  color: var(--ink);
+  font-weight: 600;
 }
 
 /* --- Workspace outline and Inspector chrome ------------------------- */
