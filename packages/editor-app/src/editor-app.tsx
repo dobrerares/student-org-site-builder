@@ -173,7 +173,6 @@ import {
   loadThemePackageFromZip,
   readThemeRecoveryCopy,
   restoreRecoveredBlocks,
-  saveThemeRecoveryCopy,
   themeRecoveryIds,
   uninstallThemePackageFromVfs,
   type LoadedThemePackage,
@@ -880,12 +879,18 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       // written: the plan promises the previous version stays recoverable.
       const installedCopy = await loadThemePackageFromVfs(vfs, previous.id);
       try {
-        await saveThemeRecoveryCopy(vfs, installedCopy, affected);
+        // Commit the package and its recovery point together: a failed
+        // install must retain both the working package and any earlier copy.
+        await installThemePackageIntoVfs(vfs, loaded, {
+          previous: installedCopy,
+          blocks: affected,
+        });
       } finally {
         installedCopy.bundle.render?.dispose();
       }
+    } else {
+      await installThemePackageIntoVfs(vfs, loaded);
     }
-    await installThemePackageIntoVfs(vfs, loaded);
     // The reload below compiles the installed copy afresh; this validation
     // load's sandbox realm has done its job.
     loaded.bundle.render?.dispose();
@@ -926,9 +931,20 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     // package must leave the Site exactly as it found it.
     const loaded = await loadThemePackageFromZip(bytes);
     const previous = installedThemes.find((bundle) => bundle.id === loaded.bundle.id);
+    // A new winning package may take a type over from another installed
+    // provider. Its declaration is not an update of that provider: preserve
+    // the complete saved envelopes, including their versions, and let the
+    // new registry validate them. Otherwise a first-import version stamp
+    // would claim foreign data had been migrated, without a recovery path.
+    const declarations = providedDeclarations(loaded.bundle.id, loaded.bundle.customBlocks).filter(
+      (declaration) => {
+        const outgoing = customBlockRegistry.lookup(declaration.type);
+        return outgoing?.status !== "available" || outgoing.packageId === loaded.bundle.id;
+      },
+    );
     const { site: adapted, removed } = adaptSiteToDeclarations(
       snapshot,
-      providedDeclarations(loaded.bundle.id, loaded.bundle.customBlocks),
+      declarations,
       providedDeclarations(loaded.bundle.id, previous?.customBlocks),
     );
     if (removed.length > 0) {

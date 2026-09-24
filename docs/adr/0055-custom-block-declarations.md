@@ -214,7 +214,13 @@ is never touched: neither declaration describes it, so it keeps its version
 and stays unavailable (`data-newer`) until the package that wrote it arrives.
 When two installed packages declare the same type, only the provider the
 registry selects (the smaller package id) adapts anything; an import of the
-other package leaves those Blocks alone.
+other package leaves those Blocks alone. If importing a different package
+changes the selected provider, the handover also preserves every saved
+envelope, including its data version. The incoming declaration validates
+the unchanged data; it does not establish a migration from the other
+package or silently stamp that package's content as migrated. Subsequent
+updates of the selected package use its own outgoing declaration and the
+ordinary recovery flow.
 
 If the list is non-empty the editor shows it and asks: _keep the current
 version_ (nothing at all is written) or _update and remove this content_.
@@ -230,7 +236,14 @@ saved envelopes back where a Block with the same id still exists, and
 discards the copy. One copy per package id; the next update that changes a
 Block replaces it, and an update that changes none leaves it alone, so an
 appearance-only release cannot overwrite the copy the author may still want
-back. A failed import changes nothing, as before.
+back. Package installation and replacement of its recovery point form one
+recoverable operation: a rejected storage write restores both previous
+copies before reporting failure, while Block data is applied only after
+installation succeeds. If the storage also rejects rollback, the saved
+backup remains for the next attempt. This is recovery from I/O errors,
+not a crash-atomic transaction: the VFS has no transactional rename, and
+an interrupted process or persistent storage failure may require retrying
+from that backup.
 
 ### Saving is never refused; exporting the website is
 

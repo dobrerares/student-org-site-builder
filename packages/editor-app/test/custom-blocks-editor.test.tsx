@@ -10,12 +10,16 @@
  * export readiness gate, the author-controlled update with its confirmation,
  * and the recovery copy's restore.
  */
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import type { BlockEnvelope, Site } from "@sosb/schema";
 import { MemoryDriver } from "@sosb/vfs/memory";
 import { ZipDriver } from "@sosb/vfs/zip-driver";
-import { readThemeRecoveryCopy } from "@sosb/theme-package";
+import {
+  loadThemePackage,
+  readThemeRecoveryCopy,
+  saveThemeRecoveryCopy,
+} from "@sosb/theme-package";
 
 import minimal from "./fixtures/minimal-site.json" with { type: "json" };
 import {
@@ -438,6 +442,76 @@ describe("author-controlled package updates", () => {
     expect(container.querySelector('[data-testid="block-row-unavailable"]')).toBeNull();
     exportSite(container);
     expect(snapshots[0]!.pages[0]!.blocks[1]).toEqual(PARTNERS_BLOCK);
+  });
+
+  test.each([1, 2])(
+    "a new winning provider preserves foreign envelopes at data version %i",
+    async (dataVersion) => {
+      const site = siteWithPartners();
+      site.pages[0]!.blocks[1]!.version = dataVersion;
+      const snapshots: Site[] = [];
+      const { container } = render(
+        <EditorApp
+          initial={site}
+          initialAssetVfs={await vfsWithPartnersPackage()}
+          onExport={(s) => snapshots.push(s)}
+        />,
+      );
+      await packagesLoaded(container);
+      await importPackage(
+        container,
+        packageZip({
+          id: "org.a.decl",
+          version: "5.0.0",
+          declaration: { ...V2, version: 5 },
+        }),
+      );
+      await packagesLoaded(container, "org.a.decl");
+      expect(container.querySelector('[data-testid="package-update-dialog"]')).toBeNull();
+      fireEvent.click(q(container, 'button[data-action="save"]'));
+      expect(snapshots[0]!.pages[0]!.blocks[1]).toEqual(site.pages[0]!.blocks[1]);
+    },
+  );
+
+  test("a failed package installation retains the earlier recovery point and current data", async () => {
+    const vfs = await vfsWithPartnersPackage({ version: "2.0.0", declaration: V2 });
+    await saveThemeRecoveryCopy(vfs, loadThemePackage(partnersPackageFiles()), [PARTNERS_BLOCK]);
+    const site = siteWithPartners();
+    site.pages[0]!.blocks[1]!.version = 2;
+    delete site.pages[0]!.blocks[1]!.data["layout"];
+    const snapshots: Site[] = [];
+    const { container } = render(
+      <EditorApp initial={site} initialAssetVfs={vfs} onExport={(s) => snapshots.push(s)} />,
+    );
+    await packagesLoaded(container);
+    const write = vfs.write.bind(vfs);
+    let failed = false;
+    const fault = vi.spyOn(vfs, "write").mockImplementation(async (path, bytes) => {
+      if (!failed && path === `themes/${PARTNERS_PACKAGE_ID}/theme.json`) {
+        failed = true;
+        throw new Error("package write failed");
+      }
+      await write(path, bytes);
+    });
+    await importPackage(
+      container,
+      packageZip({ version: "3.0.0", declaration: { ...V2, version: 3 } }),
+    );
+    await waitFor(() => {
+      expect(q(container, '[data-testid="theme-import-error"]').textContent).toContain(
+        "package write failed",
+      );
+    });
+    fault.mockRestore();
+    const copy = await readThemeRecoveryCopy(vfs, PARTNERS_PACKAGE_ID);
+    expect(copy?.version).toBe("1.0.0");
+    expect(copy?.blocks.get(PARTNERS_BLOCK.id)).toEqual(PARTNERS_BLOCK);
+    const manifest = JSON.parse(
+      new TextDecoder().decode(await vfs.read(`themes/${PARTNERS_PACKAGE_ID}/theme.json`)),
+    );
+    expect(manifest.version).toBe("2.0.0");
+    fireEvent.click(q(container, 'button[data-action="save"]'));
+    expect(snapshots[0]!.pages[0]!.blocks[1]).toEqual(site.pages[0]!.blocks[1]);
   });
 
   test("an appearance-only update never asks and touches no Block", async () => {
