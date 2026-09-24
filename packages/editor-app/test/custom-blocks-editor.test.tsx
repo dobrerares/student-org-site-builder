@@ -342,7 +342,9 @@ describe("author-controlled package updates", () => {
     expect(dialog.querySelector("h2")?.textContent).toBe("Update “Declaring” to version 2.0.0?");
     const removed = dialog.querySelectorAll('[data-testid="package-update-removed"] li');
     expect(removed).toHaveLength(1);
-    expect(removed[0]!.textContent).toBe("Acasă, org.example/partners — Layout: roomy");
+    // The Block and the field are named by the outgoing declaration's labels,
+    // never by the type id.
+    expect(removed[0]!.textContent).toBe("Acasă, Partners — Layout: roomy");
 
     fireEvent.click(q(dialog, '[data-testid="package-update-cancel"]'));
     expect(container.querySelector('[data-testid="package-update-dialog"]')).toBeNull();

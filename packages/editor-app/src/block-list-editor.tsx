@@ -135,10 +135,12 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
           const blockTitle =
             typeof rawTitle === "string" && rawTitle.trim().length > 0 ? rawTitle : entry.label;
           const showLabelAsEyebrow = blockTitle !== entry.label;
+          // Until the shell has read `themes/` there is no registry and
+          // nothing is known either way; the badge waits rather than flash.
           const unavailable =
+            props.customBlocks !== undefined &&
             isCustomBlockType(block.type) &&
-            (props.customBlocks === undefined ||
-              customBlockAvailabilityFor(props.customBlocks, block)?.status !== "available");
+            customBlockAvailabilityFor(props.customBlocks, block)?.status !== "available";
           return (
             <li
               key={block.id}

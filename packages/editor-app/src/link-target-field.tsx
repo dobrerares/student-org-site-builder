@@ -53,9 +53,11 @@ const MISSING = "missing";
 export function LinkTargetField(props: LinkTargetFieldProps): JSX.Element {
   const t = useTranslator();
   const { context, value } = props;
+  const site = context?.site;
+  const lang = context?.lang;
   const options = useMemo(
-    () => (context === undefined ? [] : linkTargetsFor(context.site, context.lang)),
-    [context],
+    () => (site === undefined || lang === undefined ? [] : linkTargetsFor(site, lang)),
+    [site, lang],
   );
 
   // Without the shell's plumbing there is no catalogue to choose from: an

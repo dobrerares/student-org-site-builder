@@ -203,7 +203,7 @@ export function fieldsFromSchema(
     // renderer but a request to show a plain string field as a select over
     // the override's option labels (Custom Block choice fields, ADR 0055).
     if (override?.renderer === "choice" && current.def.type === "string") {
-      const options = Object.keys(override.optionLabels ?? {});
+      const options = override.options ?? Object.keys(override.optionLabels ?? {});
       return withMeta({ kind: "enum", name, path, optional, options }, override);
     }
     if (override?.renderer !== undefined && override.renderer !== "choice") {

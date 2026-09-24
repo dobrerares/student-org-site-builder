@@ -100,6 +100,7 @@ export function customBlockOverridesFor(
       label: string;
       hint?: string;
       renderer?: string;
+      options?: readonly string[];
       optionLabels?: Record<string, string>;
       itemLabel?: string;
     } = { path: path.join("."), label: localizedText(field.label, locale) };
@@ -107,6 +108,7 @@ export function customBlockOverridesFor(
     if (help.length > 0) override.hint = help;
     if (field.kind === "choice") {
       override.renderer = "choice";
+      override.options = field.options.map((option) => option.value);
       override.optionLabels = Object.fromEntries(
         field.options.map((option) => [option.value, localizedText(option.label, locale)]),
       );
@@ -127,25 +129,4 @@ export function customBlockNewItemFor(
   declaration: CustomBlockDeclaration,
 ): (arrayPath: readonly (string | number)[]) => unknown {
   return (arrayPath) => defaultCustomBlockListEntry(declaration, arrayPath);
-}
-
-/** The options a `choice` field offers, in declaration order. */
-export function customBlockChoiceOptions(
-  declaration: CustomBlockDeclaration,
-  path: readonly (string | number)[],
-): readonly string[] {
-  let fields: readonly CustomBlockField[] = declaration.fields;
-  let current: CustomBlockField | undefined;
-  for (const segment of path) {
-    if (typeof segment === "number") {
-      if (current?.kind !== "list") return [];
-      fields = current.item.fields;
-      current = undefined;
-      continue;
-    }
-    current = fields.find((f) => f.name === segment);
-    if (current === undefined) return [];
-    if (current.kind === "group") fields = current.fields;
-  }
-  return current?.kind === "choice" ? current.options.map((option) => option.value) : [];
 }

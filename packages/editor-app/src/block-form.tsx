@@ -66,6 +66,7 @@ import { fieldLabel, optionLabel } from "./field-labels.js";
 import { SCHEMA_FIELD_RENDERERS, MEDIA_PICKER_RENDERERS } from "./media-picker-renderers.js";
 import { RichTextField, type RichTextFieldContext } from "./rich-text/rich-text-field.js";
 import { LinkTargetField } from "./link-target-field.js";
+import { useTranslator } from "./i18n-context.js";
 import { pathToDotted } from "./issue-navigate.js";
 import { rebaseElement } from "./rebase-element.js";
 import { IconArrowDown, IconArrowUp, IconPlus, IconTrash } from "./icons.js";
@@ -297,6 +298,7 @@ function FieldRenderer({
   onPatchQuiet,
   issues,
 }: FieldRendererProps): JSX.Element | null {
+  const t = useTranslator();
   // Tier-based visibility filter (ADR 0043). Hidden fields are NEVER
   // rendered; advanced fields require the toggle to be on. Default-tier
   // fields fall through to the normal kind switch below.
@@ -341,7 +343,7 @@ function FieldRenderer({
       // Array items: render one fieldset per item with add/remove/reorder.
       const items = Array.isArray(value) ? (value as unknown[]) : [];
       const elementNode = node.element;
-      const itemLabel = node.itemLabel ?? "item";
+      const itemLabel = node.itemLabel ?? t("form.list.item");
 
       function move(from: number, to: number): void {
         if (to < 0 || to >= items.length) return;
@@ -395,7 +397,11 @@ function FieldRenderer({
                   <div
                     className="block-form__item-controls"
                     role="group"
-                    aria-label={`${label} ${itemLabel} ${idx + 1} actions`}
+                    aria-label={t("form.list.itemActions", {
+                      list: label,
+                      item: itemLabel,
+                      index: idx + 1,
+                    })}
                   >
                     <span className="block-form__item-index" aria-hidden="true">
                       {idx + 1} of {items.length}
@@ -441,7 +447,7 @@ function FieldRenderer({
           {items.length === 0 ? <p data-array-empty>Nothing here yet.</p> : null}
           <Button type="button" data-action="add" data-variant="secondary" onClick={add}>
             <IconPlus size={15} />
-            <span>Add {itemLabel}</span>
+            <span>{t("form.list.add", { item: itemLabel })}</span>
           </Button>
           <FieldIssues issues={issues} dottedPath={dottedPath} />
           <FieldHint hint={node.hint} />
@@ -629,7 +635,7 @@ function FieldRenderer({
             />
             {image !== undefined ? (
               <label data-field-label={altPath}>
-                <span>Image description (for screen readers)</span>
+                <span>{t("form.image.description")}</span>
                 <Input
                   type="text"
                   data-field={altPath}

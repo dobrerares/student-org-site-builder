@@ -30,20 +30,6 @@ import { EditorDialog } from "./editor-dialog.js";
 import { IconClose } from "./icons.js";
 import { Button, Input } from "@sosb/ui";
 
-const CATEGORY_LABELS: Record<string, string> = {
-  mandatory: "Essentials",
-  optional: "More sections",
-  advanced: "For experts",
-  custom: "From your Theme packages",
-};
-
-const CATEGORY_HINTS: Record<string, string> = {
-  mandatory: "Most pages need these.",
-  optional: "Pick what fits your page.",
-  advanced: "Only if someone technical is helping.",
-  custom: "Sections a developer added to this site.",
-};
-
 export interface AddBlockDialogProps {
   /** When `false`, the dialog renders nothing. */
   readonly open: boolean;
@@ -149,8 +135,8 @@ export function AddBlockDialog(props: AddBlockDialogProps): JSX.Element {
             {visibleGroups.map((group) => (
               <li key={group.category} data-testid="add-block-group" data-category={group.category}>
                 <h3>
-                  <span>{CATEGORY_LABELS[group.category] ?? group.category}</span>
-                  <small>{CATEGORY_HINTS[group.category] ?? ""}</small>
+                  <span>{t(`addBlock.category.${group.category}`)}</span>
+                  <small>{t(`addBlock.category.${group.category}.hint`)}</small>
                 </h3>
                 <ul>
                   {group.entries.map((entry) => (
