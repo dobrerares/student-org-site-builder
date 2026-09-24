@@ -12,7 +12,10 @@
 import { describe, expect, test } from "vitest";
 import { KnownBlockSchemas } from "@sosb/schema";
 
+import { buildCustomBlockRegistry, parseCustomBlockDeclaration } from "@sosb/schema";
+
 import { buildBlockCatalog } from "../src/block-catalog.js";
+import { PARTNERS_DECLARATION } from "./fixtures/partners-package.js";
 
 describe("buildBlockCatalog", () => {
   test("includes one entry per known block type in the schema registry", () => {
@@ -75,5 +78,47 @@ describe("buildBlockCatalog", () => {
 
   test("no exclude list leaves every registry type visible", () => {
     expect(buildBlockCatalog().entries.map((entry) => entry.type)).toContain("articleList");
+  });
+});
+
+describe("buildBlockCatalog — Custom Blocks (ADR 0055)", () => {
+  const parsed = parseCustomBlockDeclaration(PARTNERS_DECLARATION);
+  if (!parsed.ok) throw new Error(parsed.message);
+  const registry = buildCustomBlockRegistry([
+    {
+      packageId: "org.example.declaring",
+      packageVersion: "1.0.0",
+      declarations: [parsed.declaration],
+    },
+  ]);
+
+  test("an available type is listed under its label, in a custom group after the built-ins", () => {
+    const catalog = buildBlockCatalog({ customBlocks: registry, locale: "ro" });
+    expect(catalog.groups.map((g) => g.category)).toEqual([
+      "mandatory",
+      "optional",
+      "advanced",
+      "custom",
+    ]);
+    const entry = catalog.entries.find((e) => e.type === "org.example/partners");
+    expect(entry).toMatchObject({
+      category: "custom",
+      label: "Parteneri",
+      description: "Logo-uri de parteneri pe grupuri.",
+    });
+    // Fallback to the default label when the locale has none.
+    expect(
+      buildBlockCatalog({ customBlocks: registry, locale: "de" }).entryFor("org.example/partners")
+        .label,
+    ).toBe("Partners");
+  });
+
+  test("the custom group is absent when nothing is available, and entryFor still labels an unavailable type", () => {
+    const catalog = buildBlockCatalog();
+    expect(catalog.groups.map((g) => g.category)).toEqual(["mandatory", "optional", "advanced"]);
+    expect(catalog.entries.map((e) => e.type)).not.toContain("org.example/partners");
+    const entry = catalog.entryFor("org.example/partner-groups");
+    expect(entry.category).toBe("custom");
+    expect(entry.label).toBe("Partner groups");
   });
 });

@@ -4,9 +4,15 @@
  * accepts at validation time.
  */
 import { describe, expect, test } from "vitest";
-import { HERO_BLOCK_VERSION, KnownBlockSchemas } from "@sosb/schema";
+import {
+  HERO_BLOCK_VERSION,
+  KnownBlockSchemas,
+  buildCustomBlockRegistry,
+  parseCustomBlockDeclaration,
+} from "@sosb/schema";
 
 import { defaultBlockFor } from "../src/block-defaults.js";
+import { PARTNERS_DECLARATION } from "./fixtures/partners-package.js";
 
 describe("defaultBlockFor", () => {
   test("returns a block whose `type` matches the requested registry key", () => {
@@ -62,5 +68,29 @@ describe("defaultBlockFor", () => {
         expect(() => schema.parse(block)).not.toThrow();
       });
     }
+  });
+});
+
+describe("defaultBlockFor — Custom Blocks (ADR 0055)", () => {
+  const parsed = parseCustomBlockDeclaration(PARTNERS_DECLARATION);
+  if (!parsed.ok) throw new Error(parsed.message);
+  const registry = buildCustomBlockRegistry([
+    {
+      packageId: "org.example.declaring",
+      packageVersion: "1.0.0",
+      declarations: [parsed.declaration],
+    },
+  ]);
+
+  test("an available type starts at its declared data version with only switch and choice defaults", () => {
+    const block = defaultBlockFor("org.example/partners", registry);
+    expect(block.type).toBe("org.example/partners");
+    expect(block.version).toBe(1);
+    expect(block.data).toEqual({ showHeadings: true, layout: "tight" });
+    expect(block.id).toMatch(/^blk_[A-Za-z0-9_]+$/);
+  });
+
+  test("an unavailable type falls back to the generic envelope", () => {
+    expect(defaultBlockFor("org.example/partners")).toMatchObject({ version: 1, data: {} });
   });
 });

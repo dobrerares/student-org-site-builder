@@ -45,7 +45,13 @@
 import type { JSX } from "react";
 import { useState } from "react";
 import type { ZodType } from "zod";
-import type { AssetRefLike, DocumentAssetRef, RichTextDocument } from "@sosb/schema";
+import type {
+  AssetRefLike,
+  DocumentAssetRef,
+  RichTextDocument,
+  RichTextLinkTarget,
+  ValidationIssue,
+} from "@sosb/schema";
 
 import { expandAltSyncPatches, suggestedAltForAssetPath } from "./alt-sync.js";
 import { partitionByTier, tierSummaryLabels } from "./field-tiers.js";
@@ -59,6 +65,8 @@ import { DocumentPicker, type DocumentAssetRefLike } from "./document-picker.js"
 import { fieldLabel, optionLabel } from "./field-labels.js";
 import { SCHEMA_FIELD_RENDERERS, MEDIA_PICKER_RENDERERS } from "./media-picker-renderers.js";
 import { RichTextField, type RichTextFieldContext } from "./rich-text/rich-text-field.js";
+import { LinkTargetField } from "./link-target-field.js";
+import { pathToDotted } from "./issue-navigate.js";
 import { rebaseElement } from "./rebase-element.js";
 import { IconArrowDown, IconArrowUp, IconPlus, IconTrash } from "./icons.js";
 import type * as React from "react";
@@ -161,6 +169,13 @@ export interface BlockFormProps<TData> {
   readonly onPatchQuiet?:
     | ((path: readonly (string | number)[], value: unknown) => void)
     | undefined;
+  /**
+   * Validation findings for this Block, with paths relative to `data`, shown
+   * beside the field each one names (issue-106 plan: "the builder explains
+   * problems beside the affected fields"). Findings at a path no field
+   * renders are not lost — the export readiness panel lists them all.
+   */
+  readonly issues?: readonly ValidationIssue[] | undefined;
 }
 
 export function BlockForm<TData>(props: BlockFormProps<TData>): JSX.Element {
@@ -185,6 +200,7 @@ export function BlockForm<TData>(props: BlockFormProps<TData>): JSX.Element {
     displayUrlFor: props.displayUrlFor,
     richText: props.richText,
     onPatchQuiet: props.onPatchQuiet,
+    issues: props.issues ?? [],
   };
   return (
     <form data-testid="block-form" onSubmit={(event) => event.preventDefault()}>
@@ -236,6 +252,35 @@ interface FieldRendererProps {
   readonly showAdvanced: boolean;
   readonly richText: RichTextFieldContext | undefined;
   readonly onPatchQuiet: ((path: readonly (string | number)[], value: unknown) => void) | undefined;
+  readonly issues: readonly ValidationIssue[];
+}
+
+/**
+ * The findings that sit exactly at one field, as small print under it. The
+ * message is the schema's own wording, which is already written for the
+ * author (the same text the readiness panel shows), so the two never differ.
+ */
+function FieldIssues(props: {
+  readonly issues: readonly ValidationIssue[];
+  readonly dottedPath: string;
+}): JSX.Element | null {
+  const here = props.issues.filter((issue) => pathToDotted(issue.path) === props.dottedPath);
+  if (here.length === 0) return null;
+  return (
+    <>
+      {here.map((issue, index) => (
+        <p
+          key={`${issue.code}-${index}`}
+          data-field-issue
+          data-severity={issue.severity}
+          data-code={issue.code}
+          role="status"
+        >
+          {issue.message}
+        </p>
+      ))}
+    </>
+  );
 }
 
 function FieldRenderer({
@@ -250,6 +295,7 @@ function FieldRenderer({
   showAdvanced,
   richText,
   onPatchQuiet,
+  issues,
 }: FieldRendererProps): JSX.Element | null {
   // Tier-based visibility filter (ADR 0043). Hidden fields are NEVER
   // rendered; advanced fields require the toggle to be on. Default-tier
@@ -284,8 +330,10 @@ function FieldRenderer({
               showAdvanced={showAdvanced}
               richText={richText}
               onPatchQuiet={onPatchQuiet}
+              issues={issues}
             />
           ))}
+          <FieldIssues issues={issues} dottedPath={dottedPath} />
         </fieldset>
       );
 
@@ -293,6 +341,7 @@ function FieldRenderer({
       // Array items: render one fieldset per item with add/remove/reorder.
       const items = Array.isArray(value) ? (value as unknown[]) : [];
       const elementNode = node.element;
+      const itemLabel = node.itemLabel ?? "item";
 
       function move(from: number, to: number): void {
         if (to < 0 || to >= items.length) return;
@@ -341,11 +390,12 @@ function FieldRenderer({
                     showAdvanced={showAdvanced}
                     richText={richText}
                     onPatchQuiet={onPatchQuiet}
+                    issues={issues}
                   />
                   <div
                     className="block-form__item-controls"
                     role="group"
-                    aria-label={`${label} item ${idx + 1} actions`}
+                    aria-label={`${label} ${itemLabel} ${idx + 1} actions`}
                   >
                     <span className="block-form__item-index" aria-hidden="true">
                       {idx + 1} of {items.length}
@@ -391,8 +441,10 @@ function FieldRenderer({
           {items.length === 0 ? <p data-array-empty>Nothing here yet.</p> : null}
           <Button type="button" data-action="add" data-variant="secondary" onClick={add}>
             <IconPlus size={15} />
-            <span>Add item</span>
+            <span>Add {itemLabel}</span>
           </Button>
+          <FieldIssues issues={issues} dottedPath={dottedPath} />
+          <FieldHint hint={node.hint} />
         </fieldset>
       );
     }
@@ -427,6 +479,7 @@ function FieldRenderer({
               }}
             />
           )}
+          <FieldIssues issues={issues} dottedPath={dottedPath} />
           <FieldHint hint={node.hint} />
         </label>
       );
@@ -450,6 +503,8 @@ function FieldRenderer({
               }
             }}
           />
+          <FieldIssues issues={issues} dottedPath={dottedPath} />
+          <FieldHint hint={node.hint} />
         </label>
       );
 
@@ -465,30 +520,40 @@ function FieldRenderer({
             }}
           />
           <span>{label}</span>
+          <FieldHint hint={node.hint} />
         </label>
       );
 
-    case "enum":
+    case "enum": {
+      const current = typeof value === "string" ? value : "";
+      // A saved value the options no longer include is shown, not silently
+      // replaced by the first option: the author sees what is there and
+      // validation explains it.
+      const stale = current !== "" && !node.options.includes(current);
       return (
         <label data-field-label={dottedPath}>
           <span>{label}</span>
           <NativeSelect
             data-field={dottedPath}
-            value={typeof value === "string" ? value : ""}
+            value={current}
             onChange={(event: React.FormEvent<HTMLSelectElement>) => {
               const raw = event.currentTarget.value;
               onPatch(node.path, raw === "" ? undefined : raw);
             }}
           >
             {node.optional ? <option value="">(unset)</option> : null}
+            {stale ? <option value={current}>{current}</option> : null}
             {node.options.map((option) => (
               <option key={option} value={option}>
-                {optionLabel(option)}
+                {node.optionLabels?.[option] ?? optionLabel(option)}
               </option>
             ))}
           </NativeSelect>
+          <FieldIssues issues={issues} dottedPath={dottedPath} />
+          <FieldHint hint={node.hint} />
         </label>
       );
+    }
 
     case "custom":
       // Dispatch by renderer name. The form-generator emits `"custom"`
@@ -546,6 +611,57 @@ function FieldRenderer({
           </fieldset>
         );
       }
+      if (node.renderer === "image-with-description") {
+        // A Custom Block image (ADR 0055): the standard Asset picker plus the
+        // screen-reader description beside it, written straight onto the
+        // AssetRef's `alt` — there is no sibling field to keep in sync.
+        const image = value as AssetRefLike | undefined;
+        const altPath = `${dottedPath}.alt`;
+        return (
+          <fieldset data-field={dottedPath} data-kind="image-with-description">
+            <legend>{label}</legend>
+            <AssetPicker
+              value={image}
+              onChange={(next) => onPatch(node.path, next)}
+              onClear={() => onPatch(node.path, undefined)}
+              uploader={(file) => uploader(file, image?.alt)}
+              displayUrlFor={displayUrlFor}
+            />
+            {image !== undefined ? (
+              <label data-field-label={altPath}>
+                <span>Image description (for screen readers)</span>
+                <Input
+                  type="text"
+                  data-field={altPath}
+                  value={typeof image.alt === "string" ? image.alt : ""}
+                  onInput={(event: React.FormEvent<HTMLInputElement>) =>
+                    onPatch(node.path, { ...image, alt: event.currentTarget.value })
+                  }
+                />
+                <FieldIssues issues={issues} dottedPath={altPath} />
+              </label>
+            ) : null}
+            <FieldIssues issues={issues} dottedPath={dottedPath} />
+            <FieldHint hint={node.hint} />
+          </fieldset>
+        );
+      }
+      if (node.renderer === "link-target") {
+        // The same shell plumbing the rich-text link dialog uses: the Site,
+        // the language, and a way to commit a stamped Page id.
+        return (
+          <LinkTargetField
+            value={value as RichTextLinkTarget | undefined}
+            onChange={(next) => onPatch(node.path, next)}
+            context={richText}
+            dottedPath={dottedPath}
+            label={label}
+            hint={node.hint}
+          >
+            <FieldIssues issues={issues} dottedPath={dottedPath} />
+          </LinkTargetField>
+        );
+      }
       if (node.renderer === "asset-picker") {
         const suggestedAlt = suggestedAltForAssetPath(data, node.path);
         return (
@@ -574,15 +690,18 @@ function FieldRenderer({
       }
       if (node.renderer === "document-picker") {
         return (
-          <DocumentPicker
-            value={value as DocumentAssetRefLike | undefined}
-            onChange={(next) => {
-              for (const patch of expandDocumentAssetPatches(data, node.path, next)) {
-                onPatch(patch.path, patch.value);
-              }
-            }}
-            uploader={documentUploader}
-          />
+          <div data-field={dottedPath} data-kind="document-picker">
+            <DocumentPicker
+              value={value as DocumentAssetRefLike | undefined}
+              onChange={(next) => {
+                for (const patch of expandDocumentAssetPatches(data, node.path, next)) {
+                  onPatch(patch.path, patch.value);
+                }
+              }}
+              uploader={documentUploader}
+            />
+            <FieldIssues issues={issues} dottedPath={dottedPath} />
+          </div>
         );
       }
       if (node.renderer === "rich-text") {
@@ -594,11 +713,14 @@ function FieldRenderer({
           return <span data-field={dottedPath} data-kind="custom" data-renderer="rich-text" />;
         }
         return (
-          <RichTextField
-            value={value as RichTextDocument | undefined}
-            onChange={(next) => (onPatchQuiet ?? onPatch)(node.path, next)}
-            context={richText}
-          />
+          <div data-field={dottedPath} data-kind="rich-text">
+            <RichTextField
+              value={value as RichTextDocument | undefined}
+              onChange={(next) => (onPatchQuiet ?? onPatch)(node.path, next)}
+              context={richText}
+            />
+            <FieldIssues issues={issues} dottedPath={dottedPath} />
+          </div>
         );
       }
       return <span data-field={dottedPath} data-kind="custom" data-renderer={node.renderer} />;

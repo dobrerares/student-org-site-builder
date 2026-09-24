@@ -30,12 +30,13 @@
  */
 import type { JSX, ReactNode } from "react";
 import { useState } from "react";
-import type { BlockEnvelope, Site } from "@sosb/schema";
+import type { BlockEnvelope, CustomBlockRegistry, Site } from "@sosb/schema";
+import { customBlockAvailabilityFor, isCustomBlockType } from "@sosb/schema";
 
 import { buildBlockCatalog, type BlockCatalogEntry } from "./block-catalog.js";
 import { IconArrowDown, IconArrowUp, IconGrip, IconPlus, IconTrash } from "./icons.js";
 import type * as React from "react";
-import { Button } from "@sosb/ui";
+import { Badge, Button } from "@sosb/ui";
 import { useTranslator } from "./i18n-context.js";
 
 const DRAG_MIME = "application/x-sosb-block-index";
@@ -72,13 +73,15 @@ export interface BlockListEditorProps {
   readonly heading?: ReactNode;
   /** Optional hint under a custom heading. Omitted when `heading` is set and this is not. */
   readonly hint?: ReactNode;
+  /** The Site's Custom Block types (ADR 0055), for labels and the unavailable badge. */
+  readonly customBlocks?: CustomBlockRegistry | undefined;
 }
 
 export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
   const t = useTranslator();
   const page = props.site.pages.find((p) => p.slug === props.pageSlug);
   const blocks = props.blocks ?? page?.blocks ?? [];
-  const catalog = buildBlockCatalog();
+  const catalog = buildBlockCatalog({ customBlocks: props.customBlocks, locale: t.locale });
   // Index of the row currently hovered by a drag, for the drop indicator.
   const [dropIndex, setDropIndex] = useState<number | null>(null);
 
@@ -132,12 +135,17 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
           const blockTitle =
             typeof rawTitle === "string" && rawTitle.trim().length > 0 ? rawTitle : entry.label;
           const showLabelAsEyebrow = blockTitle !== entry.label;
+          const unavailable =
+            isCustomBlockType(block.type) &&
+            (props.customBlocks === undefined ||
+              customBlockAvailabilityFor(props.customBlocks, block)?.status !== "available");
           return (
             <li
               key={block.id}
               data-testid="block-row"
               data-block-id={block.id}
               data-block-index={index}
+              data-unavailable={unavailable ? "true" : undefined}
               data-block-type={block.type}
               data-drop-target={dropIndex === index}
               onDragOver={(event: React.DragEvent<HTMLLIElement>): void => {
@@ -220,14 +228,28 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
                   <span data-testid="block-row-label" data-eyebrow={showLabelAsEyebrow}>
                     {entry.label}
                   </span>
-                  <span data-testid="block-row-title">{blockTitle}</span>
+                  <span data-testid="block-row-title">
+                    {blockTitle}
+                    {unavailable ? (
+                      <Badge tone="error" data-testid="block-row-unavailable">
+                        {t("blocks.row.unavailable")}
+                      </Badge>
+                    ) : null}
+                  </span>
                 </Button>
               ) : (
                 <span data-block-row-text>
                   <span data-testid="block-row-label" data-eyebrow={showLabelAsEyebrow}>
                     {entry.label}
                   </span>
-                  <span data-testid="block-row-title">{blockTitle}</span>
+                  <span data-testid="block-row-title">
+                    {blockTitle}
+                    {unavailable ? (
+                      <Badge tone="error" data-testid="block-row-unavailable">
+                        {t("blocks.row.unavailable")}
+                      </Badge>
+                    ) : null}
+                  </span>
                 </span>
               )}
 

@@ -107,10 +107,17 @@ describe("adaptCustomBlockData", () => {
     expect("tagline" in data).toBe(false);
   });
 
-  test("new switch defaults apply only to fields the saved data lacked", () => {
+  test("switch defaults apply only to fields the update introduces", () => {
     const { data } = adaptCustomBlockData(v1, v2, SAVED);
     expect(data["compact"]).toBe(false);
     expect(data["showHeadings"]).toBe(false);
+    // A switch both versions declare that the author never set stays unset:
+    // an appearance-only update must write nothing.
+    const { heading, groups } = SAVED;
+    const untouched = adaptCustomBlockData(v1, v1, { heading, groups });
+    expect(untouched.data).toEqual({ heading, groups });
+    // With no previous declaration nothing counts as new.
+    expect("compact" in adaptCustomBlockData(undefined, v2, { heading }).data).toBe(false);
   });
 
   test("removed fields and kind changes are listed with their old label and a preview", () => {

@@ -188,6 +188,46 @@ export const ro: RomanianCatalog = {
   "builder.import.failed": "Fișierul nu a putut fi deschis ca proiect.",
   "builder.inspector.unknownType":
     "Acest bloc ({type}) nu are editor aici. Este păstrat exact așa cum este și se exportă în continuare.",
+  // Custom Blocks (ADR 0055)
+  "customBlock.unavailable.title": "Acest bloc nu poate fi editat aici",
+  "customBlock.unavailable.package-missing":
+    "Pachetul care oferă acest bloc nu este instalat. Conținutul tău rămâne exact cum este. Importă pachetul din Temă → Pachete de temă ca să îl editezi sau să exporți site-ul.",
+  "customBlock.unavailable.needs-newer-builder":
+    "Pachetul care oferă acest bloc ({packageId}) are nevoie de o versiune mai nouă a editorului. Conținutul tău rămâne exact cum este. Actualizează editorul ca să îl editezi sau să exporți site-ul.",
+  "customBlock.unavailable.package-damaged":
+    "Pachetul care oferă acest bloc ({packageId}) nu a putut fi încărcat. Conținutul tău rămâne exact cum este. Importă o versiune funcțională a pachetului ca să îl editezi sau să exporți site-ul.",
+  "customBlock.unavailable.data-newer":
+    "Acest bloc a fost salvat cu o versiune mai nouă a pachetului său ({packageId}). Conținutul tău rămâne exact cum este. Importă acea versiune ca să îl editezi sau să exporți site-ul.",
+  "customBlock.provided": "Adăugat de pachetul „{name}”.",
+  "customBlock.field.required": "Obligatoriu",
+  "blocks.row.unavailable": "Indisponibil",
+  "link.field.target": "Leagă către",
+  "link.field.none": "Fără legătură",
+  "link.field.external": "O adresă web",
+  "link.field.pages": "Pagini",
+  "link.field.articles": "Articole",
+  "link.field.address": "Adresă web",
+  "link.field.address.invalid":
+    "Introdu o adresă web completă (https://…), o adresă de e-mail (mailto:…) sau un număr de telefon (tel:…).",
+  "link.field.missing.option": "(lipsește)",
+  "link.field.missing.page":
+    "Pagină lipsă: pagina către care ducea legătura nu mai există. Alege altă pagină sau elimină legătura. Până atunci textul apare fără legătură.",
+  "link.field.missing.article":
+    "Articol lipsă: articolul către care ducea legătura nu mai există. Alege altul sau elimină legătura. Până atunci textul apare fără legătură.",
+  "link.field.draftOption": "{title} (ciornă)",
+  "link.field.draft": "Acest articol este o ciornă, așa că legătura apare ca text simplu până la publicare.",
+  "packages.update.title": "Actualizezi „{name}” la versiunea {version}?",
+  "packages.update.intro":
+    "Această versiune schimbă câmpurile blocurilor pe care le oferă. Conținutul de mai jos nu are loc în noua versiune și ar fi eliminat. Restul rămâne.",
+  "packages.update.keep":
+    "Se păstrează o copie a versiunii curente și a acestor blocuri, ca să o poți restaura din Pachete de temă.",
+  "packages.update.entry": "{document}, {block} — {label}: {preview}",
+  "packages.update.cancel": "Păstrează versiunea curentă",
+  "packages.update.confirm": "Actualizează și elimină acest conținut",
+  "packages.restore": "Restaurează versiunea anterioară ({version})",
+  "packages.restore.hint":
+    "Pune la loc versiunea pachetului și conținutul blocurilor salvate înainte de ultima actualizare.",
+  "packages.provides": "Oferă: {blocks}",
   "articles.info":
     "Articolele sunt texte cu dată: știri, relatări de la evenimente, anunțuri. Un articol nou începe ca ciornă, pe care o vezi doar tu. Nimic nu ajunge la vizitatori până nu îl publici, exporți site-ul și îl încarci din nou.",
   "theme.info":

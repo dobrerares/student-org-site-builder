@@ -174,6 +174,46 @@ export const en: EnglishCatalog = {
   "builder.import.failed": "That file could not be opened as a project.",
   "builder.inspector.unknownType":
     "This block ({type}) has no editor here. It is kept exactly as it is and still exports.",
+  // Custom Blocks (ADR 0055)
+  "customBlock.unavailable.title": "This block cannot be edited here",
+  "customBlock.unavailable.package-missing":
+    "The package that provides this block is not installed. Your content is kept exactly as it is. Import the package under Theme → Theme packages to edit it or export the website.",
+  "customBlock.unavailable.needs-newer-builder":
+    "The package that provides this block ({packageId}) needs a newer version of the builder. Your content is kept exactly as it is. Update the builder to edit it or export the website.",
+  "customBlock.unavailable.package-damaged":
+    "The package that provides this block ({packageId}) could not be loaded. Your content is kept exactly as it is. Import a working version of the package to edit it or export the website.",
+  "customBlock.unavailable.data-newer":
+    "This block was saved with a newer version of its package ({packageId}). Your content is kept exactly as it is. Import that newer version to edit it or export the website.",
+  "customBlock.provided": "Added by the package “{name}”.",
+  "customBlock.field.required": "Required",
+  "blocks.row.unavailable": "Unavailable",
+  "link.field.target": "Link to",
+  "link.field.none": "No link",
+  "link.field.external": "A web address",
+  "link.field.pages": "Pages",
+  "link.field.articles": "Articles",
+  "link.field.address": "Web address",
+  "link.field.address.invalid":
+    "Enter a full web address (https://…), an email address (mailto:…) or a phone number (tel:…).",
+  "link.field.missing.option": "(missing)",
+  "link.field.missing.page":
+    "Page missing: the page this linked to no longer exists. Choose another page or remove the link. Until then the text shows without a link.",
+  "link.field.missing.article":
+    "Article missing: the article this linked to no longer exists. Choose another one or remove the link. Until then the text shows without a link.",
+  "link.field.draftOption": "{title} (draft)",
+  "link.field.draft": "This article is a Draft, so the link shows as plain text until it is published.",
+  "packages.update.title": "Update “{name}” to version {version}?",
+  "packages.update.intro":
+    "This version changes the fields of the blocks it provides. The content below has no place in the new version and would be removed. Everything else is kept.",
+  "packages.update.keep":
+    "A copy of the current version and of these blocks is kept, so you can restore it from Theme packages.",
+  "packages.update.entry": "{document}, {block} — {label}: {preview}",
+  "packages.update.cancel": "Keep the current version",
+  "packages.update.confirm": "Update and remove this content",
+  "packages.restore": "Restore previous version ({version})",
+  "packages.restore.hint":
+    "Puts back the package version and the block content saved before the last update.",
+  "packages.provides": "Provides: {blocks}",
   "articles.info":
     "Articles are dated pieces of writing: news, event reports, announcements. A new article starts as a Draft that only you can see. Nothing reaches your visitors until you publish it, export the website and upload it again.",
   "theme.info":

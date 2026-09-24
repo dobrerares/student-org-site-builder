@@ -74,6 +74,7 @@ export type FieldNode =
       label?: string;
       tier?: FieldTier;
       hint?: string;
+      optionLabels?: Readonly<Record<string, string>>;
     }
   | {
       kind: "object";
@@ -94,6 +95,7 @@ export type FieldNode =
       label?: string;
       tier?: FieldTier;
       hint?: string;
+      itemLabel?: string;
     }
   | {
       kind: "custom";
@@ -197,8 +199,14 @@ export function fieldsFromSchema(
     }
 
     // Step 2 — path-keyed renderer dispatch. Label/tier from the same entry
-    // still attach to the resulting custom node.
-    if (override?.renderer !== undefined) {
+    // still attach to the resulting custom node. `choice` is not a custom
+    // renderer but a request to show a plain string field as a select over
+    // the override's option labels (Custom Block choice fields, ADR 0055).
+    if (override?.renderer === "choice" && current.def.type === "string") {
+      const options = Object.keys(override.optionLabels ?? {});
+      return withMeta({ kind: "enum", name, path, optional, options }, override);
+    }
+    if (override?.renderer !== undefined && override.renderer !== "choice") {
       return makeCustomNode(name, path, optional, override.renderer, override);
     }
 
@@ -300,6 +308,12 @@ function withMeta<TNode extends FieldNode>(
   }
   if (override.hint !== undefined) {
     node.hint = override.hint;
+  }
+  if (node.kind === "enum" && override.optionLabels !== undefined) {
+    node.optionLabels = override.optionLabels;
+  }
+  if (node.kind === "array" && override.itemLabel !== undefined) {
+    node.itemLabel = override.itemLabel;
   }
   return node;
 }

@@ -23,15 +23,27 @@ import type { JSX } from "react";
 import type {
   AssetRefLike,
   BlockEnvelope,
+  CustomBlockRegistry,
   CustomHtmlBlock,
   DocumentAssetRef,
   Site,
+  ValidationIssue,
 } from "@sosb/schema";
-import { KnownBlockSchemas } from "@sosb/schema";
+import {
+  KnownBlockSchemas,
+  customBlockAvailabilityFor,
+  isCustomBlockType,
+  localizedText,
+} from "@sosb/schema";
 import type { ThemeBundle } from "@sosb/renderer";
 import type { ZodType } from "zod";
 
 import { ArticleListInspector } from "./article-list-inspector.js";
+import {
+  customBlockNewItemFor,
+  customBlockOverridesFor,
+  customBlockSchemaFor,
+} from "./custom-block-form.js";
 import { BlockForm } from "./block-form.js";
 import { BlockVariantControl } from "./block-variant-control.js";
 import { CustomHtmlBlockForm } from "./custom-html-form.js";
@@ -76,11 +88,77 @@ export interface BlockInspectorProps {
   readonly onPatchDataQuiet?:
     | ((subpath: readonly (string | number)[], value: unknown) => void)
     | undefined;
+  /** The Site's Custom Block types (ADR 0055); without it every Custom Block is unavailable. */
+  readonly customBlocks?: CustomBlockRegistry | undefined;
+  /** Validation findings for this Block, paths relative to its `data`. */
+  readonly issues?: readonly ValidationIssue[] | undefined;
 }
 
 export function BlockInspector(props: BlockInspectorProps): JSX.Element {
   const t = useTranslator();
   const { block } = props;
+
+  // A Custom Block (ADR 0055): the form comes from its declaration, and an
+  // unavailable one — package missing, damaged, newer builder needed, data
+  // newer than the declaration — is shown as such and not editable. Its
+  // content is untouched; no raw-data editing is offered (ADR 0044).
+  if (isCustomBlockType(block.type)) {
+    const availability =
+      props.customBlocks === undefined
+        ? undefined
+        : customBlockAvailabilityFor(props.customBlocks, block);
+    if (availability === undefined || availability.status === "unavailable") {
+      const reason = availability?.reason ?? "package-missing";
+      return (
+        <div
+          data-testid="inspector-unavailable"
+          data-empty-state
+          data-reason={reason}
+          role="status"
+        >
+          <p>
+            <strong>{t("customBlock.unavailable.title")}</strong>
+          </p>
+          <p>
+            {t(`customBlock.unavailable.${reason}`, {
+              packageId: availability?.packageId ?? "",
+            })}
+          </p>
+        </div>
+      );
+    }
+    const { declaration } = availability;
+    return (
+      <>
+        <BlockVariantControl
+          block={block}
+          theme={props.theme}
+          onChange={(variant) => props.onSetVariant(variant)}
+        />
+        <BlockForm
+          schema={customBlockSchemaFor(declaration)}
+          data={block.data}
+          onPatch={props.onPatchData}
+          onArrayChange={props.onArrayChangeData}
+          uploader={props.uploader}
+          documentUploader={props.documentUploader}
+          {...(props.displayUrlFor === undefined ? {} : { displayUrlFor: props.displayUrlFor })}
+          richText={props.richText}
+          onPatchQuiet={props.onPatchDataQuiet}
+          newItem={customBlockNewItemFor(declaration)}
+          overrides={customBlockOverridesFor(declaration, t.locale)}
+          issues={props.issues}
+        />
+        <p data-testid="inspector-custom-provided" data-group-hint>
+          {t("customBlock.provided", {
+            name: localizedText(declaration.label, t.locale),
+          })}{" "}
+          <code>{availability.packageId}</code>
+        </p>
+      </>
+    );
+  }
+
   const envelope = KnownBlockSchemas[block.type as keyof typeof KnownBlockSchemas];
   // The envelope is `{ id, type, version, data: <DataSchema> }`. The generic
   // form generator wants the data schema directly so it walks only the

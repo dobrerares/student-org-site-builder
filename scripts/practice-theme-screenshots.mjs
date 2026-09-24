@@ -40,6 +40,59 @@ const runnerSource = `
     site.theme = { id: bundle.id, version: bundle.version, shellVariant: "standard" };
     const hero = site.pages[0]?.blocks[0];
     if (hero && hero.type === "hero") hero.variant = "spotlight";
+    // The Partners Custom Block (blocks/partners/block.json), placed on the
+    // about page in its Grid variant and on the home page as a Band, so both
+    // designs are in the pictures. The logos are the sample Site's own.
+    const logos = site.pages[0].blocks.find((b) => b.type === "partnerLogos");
+    const partnersOf = (from, to) =>
+      (logos ? logos.data.partners.slice(from, to) : []).map((p) => ({
+        name: p.name,
+        image: p.logo,
+        link: { kind: "external", href: p.url },
+      }));
+    site.pages[1].id = "page_about";
+    site.pages[1].blocks.splice(1, 0, {
+      id: "blk_about_partners",
+      type: "org.example/partners",
+      version: 1,
+      variant: "grid",
+      data: {
+        heading: "Partenerii noștri",
+        intro: {
+          version: 1,
+          content: [
+            {
+              type: "paragraph",
+              content: [
+                { type: "text", text: "Organizațiile care fac posibile proiectele noastre." },
+              ],
+            },
+          ],
+        },
+        showGroupHeadings: true,
+        groups: [
+          { heading: "Parteneri principali", partners: partnersOf(0, 2) },
+          {
+            heading: "Parteneri media",
+            partners: [
+              ...partnersOf(2, 3),
+              { name: "Radio Campus", link: { kind: "page", pageId: "page_about" } },
+            ],
+          },
+        ],
+      },
+    });
+    site.pages[0].blocks.push({
+      id: "blk_home_partners",
+      type: "org.example/partners",
+      version: 1,
+      variant: "band",
+      data: {
+        heading: "Cu sprijinul",
+        showGroupHeadings: false,
+        groups: [{ heading: "Parteneri", partners: partnersOf(0, 4) }],
+      },
+    });
     const dist = build(site, { themes: [bundle], skipValidation: true });
     bundle.render?.dispose();
     return dist;

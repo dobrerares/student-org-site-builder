@@ -13,10 +13,11 @@
  * a prop handed to the panel by the test.
  */
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import { cleanup, fireEvent, render } from "@testing-library/react";
+import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import type { Site } from "@sosb/schema";
 
 import minimal from "./fixtures/minimal-site.json" with { type: "json" };
+import { vfsWithPartnersPackage } from "./fixtures/partners-package.js";
 import { setViewportWidth } from "./helpers/nav.js";
 import { EditorApp } from "../src/editor-app.js";
 
@@ -33,14 +34,20 @@ function cleanSite(): Site {
   return site;
 }
 
-/** The same Site with a Custom Block type no built-in Theme can render. */
+/**
+ * The same Site with a Custom Block type no built-in Theme can render. The
+ * type *is* declared — by the package the tests install into the Site VFS
+ * (ADR 0055) — so it is an omission, not a missing extension: a declared type
+ * the active Theme does not design is acknowledged; an undeclared one blocks
+ * the export outright (see custom-blocks-editor.test.tsx).
+ */
 function siteWithCustomBlock(): Site {
   const site = cleanSite();
   site.pages[0]!.blocks.push({
     id: "blk_partners",
     type: "org.example/partners",
     version: 1,
-    data: { items: [{ name: "Alpha" }] },
+    data: { heading: "Alpha" },
   });
   return site;
 }
@@ -49,6 +56,17 @@ function openExport(container: HTMLElement): HTMLElement {
   fireEvent.click(container.querySelector<HTMLButtonElement>('button[data-action="export"]')!);
   const panel = container.querySelector<HTMLElement>('[data-testid="export-readiness"]');
   if (panel === null) throw new Error("the export readiness panel did not open");
+  return panel;
+}
+
+/** Open the panel once the shell has read `themes/` and the omission list is up. */
+async function openExportWithOmissions(container: HTMLElement): Promise<HTMLElement> {
+  const panel = openExport(container);
+  await waitFor(() => {
+    if (panel.querySelector('[data-testid="export-omitted-blocks"]') === null) {
+      throw new Error("omissions not listed yet");
+    }
+  });
   return panel;
 }
 
@@ -63,12 +81,16 @@ beforeEach(() => setViewportWidth(1200));
 describe("Export readiness — omitted Blocks (ADR 0045)", () => {
   afterEach(() => cleanup());
 
-  test("lists the Blocks the Theme cannot render and gates the export on the checkbox", () => {
+  test("lists the Blocks the Theme cannot render and gates the export on the checkbox", async () => {
     const exports: Site[] = [];
     const { container } = render(
-      <EditorApp initial={siteWithCustomBlock()} onExport={(s) => exports.push(s)} />,
+      <EditorApp
+        initial={siteWithCustomBlock()}
+        initialAssetVfs={await vfsWithPartnersPackage()}
+        onExport={(s) => exports.push(s)}
+      />,
     );
-    const panel = openExport(container);
+    const panel = await openExportWithOmissions(container);
 
     // A clean Site otherwise: the "ready" row shows, no phrase is asked for.
     expect(panel.querySelector('[data-testid="export-ready"]')).not.toBeNull();
@@ -97,9 +119,14 @@ describe("Export readiness — omitted Blocks (ADR 0045)", () => {
     expect(container.querySelector('[data-testid="export-readiness"]')).toBeNull();
   });
 
-  test("the acknowledgement starts over each time the panel opens", () => {
-    const { container } = render(<EditorApp initial={siteWithCustomBlock()} />);
-    let panel = openExport(container);
+  test("the acknowledgement starts over each time the panel opens", async () => {
+    const { container } = render(
+      <EditorApp
+        initial={siteWithCustomBlock()}
+        initialAssetVfs={await vfsWithPartnersPackage()}
+      />,
+    );
+    let panel = await openExportWithOmissions(container);
     fireEvent.click(panel.querySelector<HTMLInputElement>('[data-testid="export-omitted-ack"]')!);
     expect(confirmButton(panel).disabled).toBe(false);
 

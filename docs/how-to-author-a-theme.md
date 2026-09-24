@@ -9,8 +9,10 @@ Decisions behind the format live in
 [ADR 0050](adr/0050-theme-package-format.md) (package format),
 [ADR 0051](adr/0051-theme-package-lifecycle.md) (import, update, removal) and
 [ADR 0052](adr/0052-renderer-theme-seam.md) (how a Theme reaches the
-renderer) and [ADR 0054](adr/0054-executable-theme-rendering-and-sandbox.md)
-(executable designs, the sandbox and public-site scripts).
+renderer), [ADR 0054](adr/0054-executable-theme-rendering-and-sandbox.md)
+(executable designs, the sandbox and public-site scripts) and
+[ADR 0055](adr/0055-custom-block-declarations.md) (Custom Block
+declarations; see [How to author a Custom Block](how-to-author-a-custom-block.md)).
 [ADR 0046](adr/0046-trusted-executable-theme-and-block-extensions.md)
 sets the boundary of what a Theme may do at all.
 
@@ -76,6 +78,7 @@ my-theme/
   theme.css       # stylesheet — filename declared in the manifest
   render.js       # optional executable design (Block markup, page shell)
   public.js       # optional public-site script, declared with its dependencies
+  blocks/         # optional Custom Block declarations (<name>/block.json)
   fonts/          # packaged .woff2 files, each declared in the manifest
   assets/         # images your CSS references relatively; with a render.js,
                   # everything in here is published for input.asset()
@@ -264,6 +267,21 @@ rejects the package at import time with `render-invalid`. The full contract is
 self-contained" is something you say, not something the builder assumes. See
 [Public-site scripts](#public-site-scripts-publicjs).
 
+### `blocks` — Custom Block declarations
+
+```json
+"blocks": ["blocks/partners/block.json"]
+```
+
+Bundle-relative paths to `block.json` files, one per Custom Block type
+(ADR 0055). Each declares a permanent namespaced type id, a translated label
+and the fields the builder generates an editing form from; your `render.js`
+designs the type under `blocks["<type>"]`. Every listed file must exist and
+parse; a declaration this builder cannot honour refuses the package
+(`block-invalid`, `block-format-unsupported`) and the previously installed
+version keeps working. The whole format is in
+[How to author a Custom Block](how-to-author-a-custom-block.md).
+
 There is no `preview` block of swatches or sample words, and you do not need
 to supply a thumbnail. The Theme picker shows a **real miniature render** of
 your Theme — the sample site's home page, rendered by the same renderer that
@@ -391,7 +409,9 @@ export default {
 - A key that names a Custom Block type (`org.example/partners`) **renders** a
   type the builder has no component for. Without such a key that Block is
   left out of the Site and the author is asked to acknowledge it before
-  export.
+  export. The type's fields come from its declaration
+  ([How to author a Custom Block](how-to-author-a-custom-block.md)), in this
+  package or another one installed in the Site.
 - `shell` is optional. Without it the builder's own header, navigation and
   language switcher are used, as in phase one.
 
@@ -540,9 +560,10 @@ Every helper lives on `input`:
 | `input.asset(path)`    | The URL of a file in your package (`assets/x.svg`). Resolves to a real file in a build and a `blob:` URL in the preview; you never see the difference. Throws for anything that is not a package-relative path, and for a file the Theme does not publish: with a `render.js`, everything under `assets/` is published, plus the fonts and whatever the stylesheet references. |
 | `input.mediaUrl(ref)`  | The URL of a Site asset — an image reference out of Block data or `org.logo.path` — or `null` when the slot is empty. Also `null` for anything that is not a Site asset path (`assets/…`). Handle `null`.                                                                                                                                                                      |
 | `input.mediaAlt(ref)`  | The screen-reader description stored on that asset, or `""`.                                                                                                                                                                                                                                                                                                                   |
-| `input.pageUrl(id)`    | The href of the Page with id `"<lang>:<slug>"`, or `null`.                                                                                                                                                                                                                                                                                                                     |
+| `input.pageUrl(id)`    | The href of the Page with id `"<lang>:<slug>"` or with that permanent Page id, or `null`.                                                                                                                                                                                                                                                                                      |
 | `input.articleUrl(id)` | The href of an Article by its permanent id, or `null` — also `null` for a Draft, which the public Site does not have.                                                                                                                                                                                                                                                          |
-| `input.richText(doc)`  | Builder-rendered, sanitised prose for a rich-text value. Place the result in your tree like any child. It is an opaque token, not a string: there is no raw HTML from a design.                                                                                                                                                                                                |
+| `input.linkUrl(link)`  | The href of a stored Link target — what a Custom Block `link` field holds: `{ kind: "page", pageId }`, `{ kind: "article", articleId }` or `{ kind: "external", href }` — or `null` when it does not resolve (a deleted Page, a Draft, an address the builder refuses). Render `null` as unlinked text.                                                                        |
+| `input.richText(doc)`  | Builder-rendered, sanitised prose: a structured Rich-text document (what a Rich-text Block or a Custom Block `richText` field holds), rendered with the page's link and image resolution, or a Markdown string. Place the result in your tree like any child. It is an opaque token, not a string: there is no raw HTML from a design.                                         |
 | `input.t(key)`         | A visitor-facing word in the page's language. Unknown keys come back unchanged.                                                                                                                                                                                                                                                                                                |
 
 Keys `t()` answers: `menu`, `close`, `navigation`, `home`, `since`,
@@ -680,16 +701,18 @@ Then import the zip through **Theme settings → Theme packages → Import**.
 
 ### Rejection codes
 
-| Code                         | Meaning                                                                                                           |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `manifest-missing`           | No `theme.json` at the root, or it is not valid JSON.                                                             |
-| `manifest-invalid`           | A field fails the schema, or a variant id or font face is declared twice; the message names it.                   |
-| `format-version-unsupported` | The package needs a newer builder.                                                                                |
-| `file-missing`               | The manifest or CSS names a file the package lacks.                                                               |
-| `css-unsafe`                 | The CSS reaches for the network or an absolute path, uses `@import`, or hides a `url()` behind character escapes. |
-| `path-unsafe`                | An entry or `url()` escapes the package root.                                                                     |
-| `render-invalid`             | `render.js` does not compile: a syntax error, no `export default`, an `import`, or over the 512 KB size limit.    |
-| `package-too-large`          | Over 12 MB unpacked.                                                                                              |
+| Code                         | Meaning                                                                                                                         |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `manifest-missing`           | No `theme.json` at the root, or it is not valid JSON.                                                                           |
+| `manifest-invalid`           | A field fails the schema, or a variant id or font face is declared twice; the message names it.                                 |
+| `format-version-unsupported` | The package needs a newer builder.                                                                                              |
+| `file-missing`               | The manifest or CSS names a file the package lacks.                                                                             |
+| `css-unsafe`                 | The CSS reaches for the network or an absolute path, uses `@import`, or hides a `url()` behind character escapes.               |
+| `path-unsafe`                | An entry or `url()` escapes the package root.                                                                                   |
+| `render-invalid`             | `render.js` does not compile: a syntax error, no `export default`, an `import`, or over the 512 KB size limit.                  |
+| `block-invalid`              | A listed `block.json` is not JSON, declares an unsupported field kind, or repeats a type; the message names the file and field. |
+| `block-format-unsupported`   | A listed `block.json` uses a declaration format newer than this builder.                                                        |
+| `package-too-large`          | Over 12 MB unpacked.                                                                                                            |
 
 Import is all-or-nothing: a rejected package leaves the Site untouched.
 
@@ -716,12 +739,16 @@ it is resolved — a Site is never silently published in the wrong design.
 
 ## What comes next
 
-Still planned, without a format break:
+Shipped since this guide was first written, without a format break:
 
-- **Custom Blocks** with developer-declared editable fields, per the
-  [issue-106 contract](plans/issue-106-custom-block-contract.md) — the builder
-  generates the editing forms, and your `render.js` designs them through the
-  same `blocks` map described above.
+- **Custom Blocks** with developer-declared editable fields
+  ([ADR 0055](adr/0055-custom-block-declarations.md),
+  [How to author a Custom Block](how-to-author-a-custom-block.md)) — the
+  builder generates the editing forms, and your `render.js` designs them
+  through the same `blocks` map described above.
+
+Still planned:
+
 - **Interactive preview mode**, the editor toggle that turns
   `includePublicScript` on so `public.js` can be exercised without leaving
   the editor.

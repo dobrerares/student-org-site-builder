@@ -193,10 +193,16 @@ function adaptGroup(
     }
   }
 
-  // Switch and choice defaults apply only to fields the saved data does not
-  // have at all — new fields — never over saved content.
-  for (const [key, value] of Object.entries(defaultCustomBlockGroup(newFields))) {
-    if (!(key in out) && !(key in saved)) out[key] = value;
+  // Switch and choice defaults apply only to fields this update *introduces*
+  // — declared now, unknown to the previous declaration — and only when the
+  // saved data has nothing there. A field both versions declare keeps what
+  // the author left, including "unset"; an appearance-only update therefore
+  // writes nothing at all. Without a previous declaration nothing is new, so
+  // nothing is filled in.
+  if (oldFields !== undefined) {
+    for (const [key, value] of Object.entries(defaultCustomBlockGroup(newFields))) {
+      if (!oldByName.has(key) && !(key in out) && !(key in saved)) out[key] = value;
+    }
   }
   return out;
 }

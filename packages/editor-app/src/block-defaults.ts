@@ -34,7 +34,9 @@ import {
   SITE_FOOTER_BLOCK_VERSION,
   TEAM_GRID_BLOCK_VERSION,
   VALUE_LIST_BLOCK_VERSION,
+  defaultCustomBlockData,
   type BlockEnvelope,
+  type CustomBlockRegistry,
 } from "@sosb/schema";
 
 /** Make a short, URL-safe id without depending on `crypto.randomUUID`. */
@@ -251,11 +253,14 @@ const DEFAULT_BUILDERS: Record<string, DefaultBuilder> = {
 /**
  * Build a default block envelope for the given registry key.
  *
- * Unknown types fall through to a generic `{ version: 1, data: {} }`
- * envelope so the editor stays operable when schemas land ahead of editor
- * defaults.
+ * A Custom Block type available in `customBlocks` (ADR 0055) starts at its
+ * declaration's data version with empty content — only the declared switch
+ * and choice defaults are filled in (issue-106 plan, "defaults for new
+ * Custom Blocks"). Unknown types fall through to a generic
+ * `{ version: 1, data: {} }` envelope so the editor stays operable when
+ * schemas land ahead of editor defaults.
  */
-export function defaultBlockFor(type: string): BlockEnvelope {
+export function defaultBlockFor(type: string, customBlocks?: CustomBlockRegistry): BlockEnvelope {
   const builder = DEFAULT_BUILDERS[type];
   if (builder !== undefined) {
     return {
@@ -263,6 +268,16 @@ export function defaultBlockFor(type: string): BlockEnvelope {
       type,
       version: builder.version,
       data: builder.data(),
+    };
+  }
+  const custom = customBlocks?.lookup(type);
+  if (custom?.status === "available") {
+    return {
+      // Ids are URL- and selector-safe; the type's slash is not.
+      id: makeBlockId(type.replace(/[^A-Za-z0-9]+/g, "_")),
+      type,
+      version: custom.declaration.version,
+      data: defaultCustomBlockData(custom.declaration),
     };
   }
   return {

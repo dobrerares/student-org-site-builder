@@ -22,8 +22,10 @@
 import type { JSX } from "react";
 import type * as React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { CustomBlockRegistry } from "@sosb/schema";
 
 import { buildBlockCatalog, type BlockCatalogEntry } from "./block-catalog.js";
+import { useTranslator } from "./i18n-context.js";
 import { EditorDialog } from "./editor-dialog.js";
 import { IconClose } from "./icons.js";
 import { Button, Input } from "@sosb/ui";
@@ -32,12 +34,14 @@ const CATEGORY_LABELS: Record<string, string> = {
   mandatory: "Essentials",
   optional: "More sections",
   advanced: "For experts",
+  custom: "From your Theme packages",
 };
 
 const CATEGORY_HINTS: Record<string, string> = {
   mandatory: "Most pages need these.",
   optional: "Pick what fits your page.",
   advanced: "Only if someone technical is helping.",
+  custom: "Sections a developer added to this site.",
 };
 
 export interface AddBlockDialogProps {
@@ -52,13 +56,23 @@ export interface AddBlockDialogProps {
    * does not allow inside an Article's main content.
    */
   readonly excludeTypes?: readonly string[] | undefined;
+  /** The Site's Custom Block types (ADR 0055): available ones are offered under their labels. */
+  readonly customBlocks?: CustomBlockRegistry | undefined;
 }
 
 export function AddBlockDialog(props: AddBlockDialogProps): JSX.Element {
+  const t = useTranslator();
   const excludeKey = (props.excludeTypes ?? []).join(",");
+  const customBlocks = props.customBlocks;
+  const locale = t.locale;
   const catalog = useMemo(
-    () => buildBlockCatalog({ exclude: excludeKey === "" ? [] : excludeKey.split(",") }),
-    [excludeKey],
+    () =>
+      buildBlockCatalog({
+        exclude: excludeKey === "" ? [] : excludeKey.split(","),
+        customBlocks,
+        locale,
+      }),
+    [excludeKey, customBlocks, locale],
   );
   const [query, setQuery] = useState<string>("");
   const searchRef = useRef<HTMLInputElement | null>(null);
