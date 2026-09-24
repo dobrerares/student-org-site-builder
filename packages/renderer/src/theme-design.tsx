@@ -29,13 +29,14 @@
  * and no explanation.
  */
 
-import type { Article, BlockEnvelope, Page, Site } from "@sosb/schema";
-import { isKnownBlockType } from "@sosb/schema";
+import type { Article, BlockEnvelope, Page, RichTextDocument, Site } from "@sosb/schema";
+import { isAcceptableLinkUrl, isKnownBlockType, pageById } from "@sosb/schema";
 import { markdownToHtml } from "@sosb/markdown";
 import { articleCopy, languageFamily, type ArticleCopyKey } from "./article-text.js";
 import { assetRefAlt, assetRefPath } from "./asset-ref-path.js";
 import type { AssetUrlForPath } from "./asset-url.js";
 import { resolveAssetUrl } from "./asset-url.js";
+import { renderRichTextDocToHtml, type RichTextRenderContext } from "./rich-text-html.js";
 import { articlePath, pagePath } from "./routing.js";
 import type { ThemeBundle } from "./theme-bundle.js";
 import { themeAssetPrefix } from "./theme-bundle.js";
@@ -88,6 +89,13 @@ export interface DesignContext {
   readonly assetUrlForPath: AssetUrlForPath | undefined;
   readonly mode: "deploy" | "preview";
   readonly onIssue: ((issue: ThemeRenderIssue) => void) | undefined;
+  /**
+   * Asset and link resolution for structured Rich-text documents a design
+   * hands to `richText()` — the same context the Rich-text Block renders
+   * with, so prose in a Custom Block field links and shows images exactly as
+   * prose in a Rich-text Block does.
+   */
+  readonly richText?: RichTextRenderContext | undefined;
 }
 
 /** Does the active Theme supply a design for this Block type? */
@@ -251,9 +259,37 @@ class HelperScope {
       },
       mediaAlt: (ref: unknown): string => (typeof ref === "string" ? "" : assetRefAlt(ref)),
       pageUrl: (pageId: string): string | null => {
-        const page = site.pages.find((p) => `${p.lang}:${p.slug}` === pageId);
+        // Both spellings of a Page's identity: the `lang:slug` key the shell
+        // input uses, and the permanent `Page.id` a Link target stores.
+        const page =
+          site.pages.find((p) => `${p.lang}:${p.slug}` === pageId) ?? pageById(site, pageId);
         if (page === undefined) return null;
         return this.trust(pagePath(site, page));
+      },
+      linkUrl: (target: unknown): string | null => {
+        if (typeof target !== "object" || target === null) return null;
+        const record = target as {
+          kind?: unknown;
+          pageId?: unknown;
+          articleId?: unknown;
+          href?: unknown;
+        };
+        if (record.kind === "page" && typeof record.pageId === "string") {
+          const page = pageById(site, record.pageId);
+          return page === undefined ? null : this.trust(pagePath(site, page));
+        }
+        if (record.kind === "article" && typeof record.articleId === "string") {
+          const article = (site.articles ?? []).find((a) => a.id === record.articleId);
+          if (article === undefined || article.state === "draft") return null;
+          return this.trust(articlePath(site, article));
+        }
+        if (record.kind === "external" && typeof record.href === "string") {
+          // The author's own address, under the rule every link field in the
+          // schema applies; not trusted by identity, so the tree validator
+          // still sees it — an unacceptable address is `null`, never a hole.
+          return isAcceptableLinkUrl(record.href) ? record.href : null;
+        }
+        return null;
       },
       articleUrl: (articleId: string): string | null => {
         const article = (site.articles ?? []).find((a) => a.id === articleId);
@@ -264,7 +300,7 @@ class HelperScope {
       },
       richText: (doc: unknown): unknown => {
         const index = this.rich.length;
-        this.rich.push(renderRichText(doc));
+        this.rich.push(renderRichText(doc, this.ctx.richText));
         return richTextSentinel(index);
       },
       t: (key: string): string => renderCopy(lang, key),
@@ -286,10 +322,23 @@ class HelperScope {
  * Builder-rendered prose for `helpers.richText`.
  *
  * Deliberately the *same* pipeline the Rich-text Block uses, so prose placed by
- * a Theme and prose placed by the author escape identically and gain
- * structured rich text (ADR 0048) at the same moment.
+ * a Theme and prose placed by the author escape identically. A structured
+ * Rich-text document (ADR 0048) — what a Custom Block `richText` field holds —
+ * goes through the document serialiser with the page's asset and link
+ * resolution; a Markdown string keeps the Markdown renderer it always had.
  */
-function renderRichText(doc: unknown): preact.JSX.Element {
+function renderRichText(
+  doc: unknown,
+  context: RichTextRenderContext | undefined,
+): preact.JSX.Element {
+  if (
+    typeof doc === "object" &&
+    doc !== null &&
+    Array.isArray((doc as { content?: unknown }).content)
+  ) {
+    const html = renderRichTextDocToHtml(doc as RichTextDocument, context ?? {});
+    return <div class="rich-text" dangerouslySetInnerHTML={{ __html: html }} />;
+  }
   const source = typeof doc === "string" ? doc : "";
   return <div class="rich-text" dangerouslySetInnerHTML={{ __html: markdownToHtml(source) }} />;
 }
