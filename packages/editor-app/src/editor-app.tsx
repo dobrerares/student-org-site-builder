@@ -876,8 +876,30 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
    * project is imported. Before the mode takes effect the uploads are
    * re-encoded as `data:` URLs, because the interactive frame's opaque
    * origin cannot load the editor's `blob:` URLs (`interactive-preview.ts`).
+   *
+   * The request is keyed to the Theme it was made for. ADR 0046 says a
+   * script runs only when *explicitly* enabled, and the status line is where
+   * the author reads a Theme's `network` hosts before anything is contacted;
+   * so selecting or importing a different Theme while the mode is on must
+   * not run that Theme's script on the spot. Derived during render rather
+   * than reset in an effect, so no document carrying the other Theme's
+   * script is ever committed. Re-importing the same Theme (same id) keeps
+   * the mode on — that is the authoring loop the mode exists for.
    */
-  const [interactiveRequested, setInteractiveRequested] = useState(false);
+  const [interactiveThemeId, setInteractiveThemeId] = useState<string | null>(null);
+  const activeThemeId = activeThemeBundle?.id;
+  const interactiveRequested = interactiveThemeId !== null && interactiveThemeId === activeThemeId;
+  function setInteractiveRequested(on: boolean): void {
+    setInteractiveThemeId(on ? (activeThemeId ?? null) : null);
+  }
+  useEffect(() => {
+    // Switching Themes turns the mode off for good, not merely while the
+    // other Theme is active: coming back to the first Theme has to be an
+    // explicit choice again, and the encoded uploads are released meanwhile.
+    if (interactiveThemeId !== null && interactiveThemeId !== activeThemeId) {
+      setInteractiveThemeId(null);
+    }
+  }, [interactiveThemeId, activeThemeId]);
   const interactiveUploadsRef = useRef<Map<string, string> | null>(null);
   const [interactiveEpoch, setInteractiveEpoch] = useState(0);
   const activePublicScript = activeThemeBundle?.publicScript;
@@ -1135,6 +1157,9 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       const bytes = await vfs.read(ref.path);
       const blob = new Blob([new Uint8Array(bytes)], { type: ref.mime });
       cache.set(ref.hash, URL.createObjectURL(blob));
+      // The epoch is what tells the interactive preview to re-encode the
+      // uploads (ADR 0056 §3); a document is an upload like any other.
+      setAssetEpoch((n) => n + 1);
     }
     // `@sosb/assets`'s runtime `DocumentRef` interface uses the closed
     // `SupportedDocumentMime` enum for `mime`; the schema's
@@ -1662,7 +1687,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       await reloadInstalledThemes();
       // The interactive preview is a fact about this editing session, not
       // about a project: another project starts static (ADR 0046).
-      setInteractiveRequested(false);
+      setInteractiveThemeId(null);
       setAssetEpoch((n) => n + 1);
       historyRef.current = createHistoryStore<Site>({
         initial: structuredClone(imported.siteData),

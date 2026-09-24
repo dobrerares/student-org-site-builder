@@ -571,7 +571,9 @@ with every asset inlined as a `data:` URL, because that origin cannot
 load the editor's `blob:` URLs; the pane shows the manifest's `network`
 hosts and `offline` note. Switching it on or off is a document change (a
 full reload), and while it is on each edit reloads the document rather
-than morphing it. The static preview is unchanged.
+than morphing it. It is switched on for one Theme: selecting another
+Theme turns it off rather than running that Theme's script unasked. The
+static preview is unchanged.
 _Avoid_: live preview, script mode, unsandboxed preview.
 
 **Spine patch** vs **block patch**:

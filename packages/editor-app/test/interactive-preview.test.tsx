@@ -21,31 +21,39 @@ import { openSection } from "./helpers/nav.js";
 import { EditorApp } from "../src/editor-app.js";
 
 const THEME_ID = "org.example.interactive";
+const OTHER_THEME_ID = "org.example.other";
 const enc = new TextEncoder();
 
-/** A declarative package with a public script that contacts one host. */
-function packageFiles(): Map<string, Uint8Array> {
+interface PublicDeclaration {
+  readonly network: readonly string[];
+  readonly offline?: string;
+}
+
+/** A declarative package with a public script and the given declaration. */
+function packageFiles(
+  id = THEME_ID,
+  pub: PublicDeclaration = {
+    network: ["api.example.org"],
+    offline: "The events list does not refresh.",
+  },
+): Map<string, Uint8Array> {
   return new Map<string, Uint8Array>([
     [
       "theme.json",
       enc.encode(
         JSON.stringify({
           formatVersion: 1,
-          id: THEME_ID,
-          name: "Interactive",
+          id,
+          name: id === THEME_ID ? "Interactive" : "Other",
           version: "1.0.0",
           builder: { formatVersion: 1 },
           css: "theme.css",
-          public: {
-            file: "public.js",
-            network: ["api.example.org"],
-            offline: "The events list does not refresh.",
-          },
+          public: { file: "public.js", ...pub },
         }),
       ),
     ],
     ["theme.css", enc.encode("body{color:#123}")],
-    ["public.js", enc.encode("document.documentElement.dataset.ran = 'yes';")],
+    ["public.js", enc.encode(`document.documentElement.dataset.ran = '${id}';`)],
   ]);
 }
 
@@ -53,14 +61,18 @@ function wide(): void {
   Object.defineProperty(window, "innerWidth", { configurable: true, writable: true, value: 1200 });
 }
 
-async function mountWithPackage(): Promise<{
+async function mountWithPackage(
+  packages: readonly Map<string, Uint8Array>[] = [packageFiles()],
+): Promise<{
   container: HTMLElement;
   frame: () => HTMLIFrameElement;
   toggle: () => HTMLInputElement;
 }> {
   wide();
   const vfs = new MemoryDriver();
-  await installThemePackageIntoVfs(vfs, loadThemePackage(packageFiles()));
+  for (const files of packages) {
+    await installThemePackageIntoVfs(vfs, loadThemePackage(files));
+  }
   const site: Site = { ...(structuredClone(minimal) as unknown as Site), theme: { id: THEME_ID } };
   const { container } = render(<EditorApp initial={site} initialAssetVfs={vfs} />);
   openSection(container, "settings");
@@ -74,6 +86,16 @@ async function mountWithPackage(): Promise<{
     frame: () => container.querySelector<HTMLIFrameElement>('[data-testid="preview-pane"] iframe')!,
     toggle,
   };
+}
+
+/** Select an installed Theme through the Theme form, as an author would. */
+function selectTheme(container: HTMLElement, id: string): void {
+  openSection(container, "theme");
+  const radio = container.querySelector<HTMLInputElement>(
+    `[data-theme-option][data-theme-id="${id}"] input[type="radio"]`,
+  );
+  if (radio === null) throw new Error(`no Theme option for ${id}`);
+  fireEvent.click(radio);
 }
 
 function status(container: HTMLElement): HTMLElement | null {
@@ -125,7 +147,7 @@ describe("the interactive preview toggle", () => {
     expect(srcdoc).toContain("data-sosb-theme-script");
     expect(srcdoc).toContain(
       `<script defer src="data:text/javascript;base64,${btoa(
-        "document.documentElement.dataset.ran = 'yes';",
+        `document.documentElement.dataset.ran = '${THEME_ID}';`,
       )}" data-sosb-theme-script></script>`,
     );
     // Nothing in the document points at the editor's origin.
@@ -147,6 +169,57 @@ describe("the interactive preview toggle", () => {
     expect(strip.querySelector('[data-testid="preview-interactive-offline"]')?.textContent).toBe(
       "Without an internet connection: The events list does not refresh.",
     );
+  });
+
+  test("shows the offline note even when the script contacts no other websites", async () => {
+    // The loader only *requires* `offline` alongside declared hosts, but a
+    // note the author wrote for a self-contained script is shown verbatim
+    // all the same (ADR 0056 §1).
+    const { container, toggle } = await mountWithPackage([
+      packageFiles(THEME_ID, { network: [], offline: "Everything works offline." }),
+    ]);
+    await switchOn(container, toggle);
+    const strip = status(container)!;
+    expect(strip.querySelector('[data-testid="preview-interactive-network"]')?.textContent).toBe(
+      "It contacts no other websites.",
+    );
+    expect(strip.querySelector('[data-testid="preview-interactive-offline"]')?.textContent).toBe(
+      "Without an internet connection: Everything works offline.",
+    );
+  });
+
+  test("switching to another Theme turns the mode off instead of running its script", async () => {
+    // ADR 0046: a script runs only when explicitly enabled. The switch was
+    // made for one Theme; another Theme's script must wait for its own.
+    const { container, frame, toggle } = await mountWithPackage([
+      packageFiles(),
+      packageFiles(OTHER_THEME_ID, { network: ["cdn.other.example"], offline: "No map." }),
+    ]);
+    await switchOn(container, toggle);
+    expect(frame().getAttribute("srcdoc")).toContain(
+      btoa(`document.documentElement.dataset.ran = '${THEME_ID}';`),
+    );
+
+    selectTheme(container, OTHER_THEME_ID);
+    await waitFor(() => expect(status(container)).toBeNull());
+    // The other Theme has a script too, so the control is offered — off.
+    expect(toggle().checked).toBe(false);
+    expect(frame().getAttribute("data-preview-mode")).toBe("static");
+    expect(frame().getAttribute("sandbox")).toBe("allow-scripts allow-same-origin allow-popups");
+    expect(frame().getAttribute("srcdoc")).not.toContain("data-sosb-theme-script");
+
+    // Coming back is an explicit choice again, not a silent resumption.
+    selectTheme(container, THEME_ID);
+    await waitFor(() =>
+      expect(
+        container
+          .querySelector(`[data-theme-option][data-theme-id="${THEME_ID}"]`)
+          ?.getAttribute("data-active"),
+      ).toBe("true"),
+    );
+    expect(status(container)).toBeNull();
+    expect(toggle().checked).toBe(false);
+    expect(frame().getAttribute("data-preview-mode")).toBe("static");
   });
 
   test("while on, an edit reloads the document rather than morphing it", async () => {

@@ -58,6 +58,15 @@ Theme's script is running and lists the manifest's `network` hosts and its
 `offline` note, verbatim; ADR 0046 asked every extension to document those,
 and this is where the author reads them before anything is contacted.
 
+The switch is made for one Theme. It is keyed to the active Theme's id, so
+selecting or importing a _different_ Theme while it is on turns it off
+rather than running that Theme's script on the spot — its hosts have not
+been read, and ADR 0046 says "explicitly enabled". Coming back to the first
+Theme is an explicit choice again. Re-importing the same Theme (same id,
+new bytes) keeps the mode on: that is the authoring loop the mode exists
+for. The state is derived during render, so no document carrying another
+Theme's script is ever committed, not even for one frame.
+
 ### 2. Two sandboxes, one document builder
 
 The static preview is **unchanged**: `allow-scripts allow-same-origin
@@ -174,14 +183,20 @@ interactive mode. A switch that visibly does nothing teaches the wrong lesson.
 ## Consequences
 
 - `PreviewPane` gains `interactive`, `onInteractiveChange` and
-  `publicScript` props; `EditorApp` owns the session state and the upload
-  encoding; `interactive-preview.ts` holds the resolver, the caches and the
+  `publicScript` props; `EditorApp` owns the session state (keyed to the
+  Theme id it was switched on for) and the upload encoding; `interactive-preview.ts` holds the resolver, the caches and the
   two sandbox strings, which are asserted by unit tests and by the workflow
   e2e from inside the frame (`parent.document` throws, `location.origin` is
   `"null"`, storage throws, the popup opens, the internal link navigates).
-- An interactive document is larger than a static one by roughly a third of
-  the Site's asset bytes, and each edit re-parses it. The mode is opt-in and
-  its explanation says edits reload.
+- An interactive document carries every referenced asset inline, so it is
+  larger than a static one by roughly 4/3 of those assets' bytes (base64),
+  and each edit re-parses it. The mode is opt-in and its explanation says
+  edits reload.
+- A document link (a PDF a Block offers for download) is a `data:` URL in
+  the interactive document, and browsers refuse to open a `data:` URL as a
+  new top-level page, so such links do not open from the interactive
+  preview. They work in the static preview (`blob:`) and on the published
+  Site; the how-to says so.
 - Inside the interactive preview a script sees an opaque origin:
   `localStorage`, cookies and form submission fail, `img.src` is a `data:`
   URL. The how-to tells authors to guard those; on the published Site they

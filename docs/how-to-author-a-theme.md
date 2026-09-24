@@ -667,12 +667,17 @@ explains what it does. While it is on:
 - every asset is inlined, so `img.src` and `@font-face` URLs are `data:`
   URLs rather than paths — never parse them;
 - links behave as in the static preview: internal links move the preview,
-  external links open a new tab;
+  external links open a new tab. One exception: a document link (a PDF a
+  Block offers for download) is a `data:` URL here, which browsers refuse to
+  open as a new page; check those in the static preview, where they open;
 - every edit reloads the document, so your script starts over — exactly what
   a visitor's refresh does. Nothing is morphed into a document your script
   has changed.
 
-Switch it off and the static preview is back, unchanged. The workflow e2e
+Switch it off and the static preview is back, unchanged. The switch is made
+for one Theme: selecting another Theme turns it off (its script waits for
+its own switch), while re-importing your Theme under the same id keeps it
+on, so the edit → re-import → look loop stays short. The workflow e2e
 (`e2e/custom-extensions-workflow.spec.ts`) drives the example Theme through
 both previews; copy its assertions for your own script.
 
