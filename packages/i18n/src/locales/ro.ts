@@ -215,7 +215,8 @@ export const ro: RomanianCatalog = {
   "link.field.missing.article":
     "Articol lipsă: articolul către care ducea legătura nu mai există. Alege altul sau elimină legătura. Până atunci textul apare fără legătură.",
   "link.field.draftOption": "{title} (ciornă)",
-  "link.field.draft": "Acest articol este o ciornă, așa că legătura apare ca text simplu până la publicare.",
+  "link.field.draft":
+    "Acest articol este o ciornă, așa că legătura apare ca text simplu până la publicare.",
   "packages.update.title": "Actualizezi „{name}” la versiunea {version}?",
   "packages.update.intro":
     "Această versiune schimbă câmpurile blocurilor pe care le oferă. Conținutul de mai jos nu are loc în noua versiune și ar fi eliminat. Restul rămâne.",

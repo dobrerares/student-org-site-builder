@@ -122,7 +122,7 @@ describe("LinkTargetField", () => {
   });
 
   test("a web address is typed and checked as it is entered", () => {
-    const { container, select, changes } = mount(undefined);
+    const { select, changes } = mount(undefined);
     fireEvent.change(select, { target: { value: "external" } });
     expect(changes).toEqual([{ kind: "external", href: "" }]);
     cleanup();

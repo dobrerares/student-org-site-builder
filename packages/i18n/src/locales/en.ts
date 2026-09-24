@@ -201,7 +201,8 @@ export const en: EnglishCatalog = {
   "link.field.missing.article":
     "Article missing: the article this linked to no longer exists. Choose another one or remove the link. Until then the text shows without a link.",
   "link.field.draftOption": "{title} (draft)",
-  "link.field.draft": "This article is a Draft, so the link shows as plain text until it is published.",
+  "link.field.draft":
+    "This article is a Draft, so the link shows as plain text until it is published.",
   "packages.update.title": "Update “{name}” to version {version}?",
   "packages.update.intro":
     "This version changes the fields of the blocks it provides. The content below has no place in the new version and would be removed. Everything else is kept.",

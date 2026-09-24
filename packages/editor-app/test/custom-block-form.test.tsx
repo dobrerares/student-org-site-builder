@@ -108,7 +108,7 @@ describe("customBlockSchemaFor + fieldsFromSchema", () => {
     const groups = byName["groups"] as {
       element: { fields: { name: string; renderer?: string; kind: string }[] };
     };
-    const partners = groups.element.fields.find((f) => f.name === "partners") as {
+    const partners = groups.element.fields.find((f) => f.name === "partners") as unknown as {
       element: { fields: { name: string; renderer?: string }[] };
     };
     expect(partners.element.fields.map((f) => [f.name, f.renderer])).toEqual([
