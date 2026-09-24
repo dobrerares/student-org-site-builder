@@ -43,7 +43,21 @@ export {
   defaultCustomBlockGroup,
   defaultCustomBlockListEntry,
 } from "./defaults.js";
-export { checkCustomBlockData, customBlockFieldIsEmpty } from "./check-data.js";
+export {
+  checkCustomBlockData,
+  customBlockFieldHasShape,
+  customBlockFieldIsEmpty,
+} from "./check-data.js";
 export type { CustomBlockCheckContext } from "./check-data.js";
-export { adaptCustomBlockData, adaptSiteToDeclarations, previewCustomBlockValue } from "./adapt.js";
-export type { AdaptedCustomBlockData, AdaptedSite, RemovedCustomBlockContent } from "./adapt.js";
+export {
+  adaptCustomBlockData,
+  adaptSiteToDeclarations,
+  previewCustomBlockValue,
+  sameCustomBlockData,
+} from "./adapt.js";
+export type {
+  AdaptedCustomBlockData,
+  AdaptedSite,
+  CustomBlockValuePreview,
+  RemovedCustomBlockContent,
+} from "./adapt.js";

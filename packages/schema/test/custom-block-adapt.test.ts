@@ -8,7 +8,9 @@ import historipol from "./fixtures/historipol.json" with { type: "json" };
 import {
   adaptCustomBlockData,
   adaptSiteToDeclarations,
+  localizedText,
   parseCustomBlockDeclaration,
+  sameCustomBlockData,
   type CustomBlockDeclaration,
   type Site,
 } from "../src/index.js";
@@ -122,13 +124,56 @@ describe("adaptCustomBlockData", () => {
 
   test("removed fields and kind changes are listed with their old label and a preview", () => {
     const { data, removed } = adaptCustomBlockData(v1, v2, SAVED);
-    const summary = removed.map((r) => [r.path.join("."), r.label, r.preview]);
-    expect(summary).toContainEqual(["intro", "Intro", "formatted text"]);
-    expect(summary).toContainEqual(["layout", "Layout", "roomy"]);
-    expect(summary).toContainEqual(["count", "Count", "4"]);
+    const summary = removed.map((r) => [r.path.join("."), localizedText(r.label, "en"), r.preview]);
+    expect(summary).toContainEqual(["intro", "Intro", { kind: "richText" }]);
+    expect(summary).toContainEqual(["layout", "Layout", { kind: "text", text: "roomy" }]);
+    expect(summary).toContainEqual(["count", "Count", { kind: "text", text: "4" }]);
     expect("intro" in data).toBe(false);
     expect("layout" in data).toBe(false);
     expect("count" in data).toBe(false);
+    // The label keeps its translations for the editor to pick from.
+    expect(removed.find((r) => r.path.join(".") === "layout")?.label).toEqual(
+      v1.fields.find((f) => f.name === "layout")!.label,
+    );
+  });
+
+  test("a kind change between record-shaped kinds is listed and dropped, not smuggled through", () => {
+    // Old `link` → new `group`: the link's keys must not survive as "unknown
+    // keys" inside the new group.
+    const before = decl({
+      ...PARTNERS_DECLARATION,
+      fields: [{ name: "more", kind: "link", label: "More" }],
+    });
+    const after = decl({
+      ...PARTNERS_DECLARATION,
+      version: 2,
+      fields: [
+        {
+          name: "more",
+          kind: "group",
+          label: "More",
+          fields: [{ name: "kind", kind: "text", label: "Kind" }],
+        },
+      ],
+    });
+    const { data, removed } = adaptCustomBlockData(before, after, {
+      more: { kind: "external", href: "https://example.org" },
+    });
+    expect("more" in data).toBe(false);
+    expect(removed).toEqual([
+      { path: ["more"], label: "More", preview: { kind: "text", text: "https://example.org" } },
+    ]);
+  });
+
+  test("a value the old field could not hold is still listed, never dropped in silence", () => {
+    const { removed } = adaptCustomBlockData(v1, v2, { intro: "plain string, not a document" });
+    expect(removed).toEqual([
+      {
+        path: ["intro"],
+        label: { default: "Intro", ro: "Introducere" },
+        preview: { kind: "text", text: "plain string, not a document" },
+      },
+    ]);
   });
 
   test("keys neither declaration knows are preserved (ADR 0002)", () => {
@@ -148,11 +193,20 @@ describe("adaptCustomBlockData", () => {
     expect(removed).toEqual([]);
   });
 
-  test("without an old declaration nothing is removed except values the new kind cannot hold", () => {
+  test("without an old declaration nothing is removed and nothing is filled in", () => {
+    // A first import into a Site that already holds the type: there is no
+    // outgoing package to keep a recovery copy of, so no removal is offered.
+    // A value the new kind cannot show stays for validation to report.
     const { data, removed } = adaptCustomBlockData(undefined, v2, SAVED);
-    expect(data["intro"]).toEqual(SAVED.intro);
-    expect(data["layout"]).toBe("roomy");
-    expect(removed.map((r) => r.path.join("."))).toEqual(["count"]);
+    expect(data).toEqual(SAVED);
+    expect(removed).toEqual([]);
+  });
+
+  test("the same content in a different key order is not a change", () => {
+    const reordered = { groups: SAVED.groups, heading: SAVED.heading, showHeadings: false };
+    const { data } = adaptCustomBlockData(v1, v1, reordered);
+    expect(sameCustomBlockData(data, reordered)).toBe(true);
+    expect(sameCustomBlockData({ a: [1, { b: 2 }] }, { a: [1, { b: 3 }] })).toBe(false);
   });
 });
 
@@ -191,5 +245,34 @@ describe("adaptSiteToDeclarations", () => {
     const site = structuredClone(historipol) as unknown as Site;
     site.pages[0]!.blocks.push({ id: "b1", type: "org.example/partners", version: 1, data: SAVED });
     expect(adaptSiteToDeclarations(site, [v1], [v1]).site).toBe(site);
+    // Key order is not a change either: an appearance-only update writes nothing.
+    const { heading, groups, showHeadings } = SAVED;
+    site.pages[0]!.blocks.at(-1)!.data = { showHeadings, groups, heading };
+    expect(adaptSiteToDeclarations(site, [v1], [v1]).site).toBe(site);
+  });
+
+  test("names the Block by the outgoing declaration's label", () => {
+    const site = structuredClone(historipol) as unknown as Site;
+    site.pages[0]!.blocks.push({ id: "b1", type: "org.example/partners", version: 1, data: SAVED });
+    const { removed } = adaptSiteToDeclarations(site, [v2], [v1]);
+    expect(removed[0]?.blockLabel).toEqual(v1.label);
+  });
+
+  test("without a previous declaration the data version moves up, never down", () => {
+    const site = structuredClone(historipol) as unknown as Site;
+    site.pages[0]!.blocks.push(
+      { id: "old", type: "org.example/partners", version: 1, data: SAVED },
+      { id: "newer", type: "org.example/partners", version: 9, data: SAVED },
+    );
+    const result = adaptSiteToDeclarations(site, [v2]);
+    expect(result.removed).toEqual([]);
+    expect(result.changedBlocks).toBe(1);
+    const blocks = result.site.pages[0]!.blocks;
+    expect(blocks.find((b) => b.id === "old")).toEqual({
+      ...site.pages[0]!.blocks.at(-2),
+      version: 2,
+    });
+    // Saved by a newer package than the one imported: untouched, still `data-newer`.
+    expect(blocks.find((b) => b.id === "newer")).toBe(site.pages[0]!.blocks.at(-1));
   });
 });

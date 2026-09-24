@@ -23,6 +23,7 @@ import {
   type RichTextDocument,
   type RichTextLinkTarget,
 } from "../rich-text-doc.js";
+import { isAcceptableLinkUrl } from "../url.js";
 import {
   localizedText,
   type CustomBlockDeclaration,
@@ -55,8 +56,16 @@ function isAssetLike(value: unknown): value is { path: string; alt?: unknown } {
 
 function isLinkLike(value: unknown): value is RichTextLinkTarget {
   if (!isRecord(value)) return false;
-  const kind = value["kind"];
-  return kind === "page" || kind === "article" || kind === "external";
+  switch (value["kind"]) {
+    case "page":
+      return typeof value["pageId"] === "string";
+    case "article":
+      return typeof value["articleId"] === "string";
+    case "external":
+      return typeof value["href"] === "string";
+    default:
+      return false;
+  }
 }
 
 function isRichTextLike(value: unknown): value is RichTextDocument {
@@ -77,7 +86,8 @@ export function customBlockFieldIsEmpty(field: CustomBlockField, value: unknown)
     case "choice":
       return typeof value !== "string" || value.length === 0;
     case "link":
-      return !isLinkLike(value);
+      // "A web address" chosen but not typed yet is no link at all.
+      return !isLinkLike(value) || (value.kind === "external" && value.href.trim().length === 0);
     case "image":
     case "document":
       return !isAssetLike(value);
@@ -91,7 +101,7 @@ export function customBlockFieldIsEmpty(field: CustomBlockField, value: unknown)
 }
 
 /** Is the saved value the shape this field kind stores? Empty is always acceptable. */
-function hasExpectedShape(field: CustomBlockField, value: unknown): boolean {
+export function customBlockFieldHasShape(field: CustomBlockField, value: unknown): boolean {
   if (value === undefined || value === null) return true;
   switch (field.kind) {
     case "text":
@@ -142,7 +152,7 @@ function checkGroup(
     const path = [...base, field.name];
     const value = data[field.name];
 
-    if (!hasExpectedShape(field, value)) {
+    if (!customBlockFieldHasShape(field, value)) {
       // Content is preserved exactly as saved (ADR 0002); the form shows the
       // field as empty and a design should treat it that way too.
       issues.push({
@@ -217,6 +227,22 @@ function checkGroup(
         break;
       }
       case "link": {
+        if (
+          isLinkLike(value) &&
+          value.kind === "external" &&
+          value.href.trim().length > 0 &&
+          !isAcceptableLinkUrl(value.href.trim())
+        ) {
+          // Prose links refuse such an address at the schema; a Custom Block
+          // field keeps it (ADR 0002) and says so, and the design's
+          // `linkUrl()` answers null, so nothing unsafe is ever emitted.
+          issues.push({
+            severity: "warning",
+            path,
+            code: "block.custom.link.invalid",
+            message: `"${label(field)}" is not an address the site can link to. Use a full web address (https://…), an email address (mailto:…) or a phone number (tel:…). It will show without a link until then.`,
+          });
+        }
         if (isLinkLike(value) && value.kind !== "external" && context.resolveLinkTarget) {
           const state = context.resolveLinkTarget(value);
           if (state !== "ok") {

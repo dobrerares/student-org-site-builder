@@ -23,11 +23,13 @@ import {
 } from "../src/index.js";
 import { PARTNERS_DECLARATION } from "./fixtures/partners-declaration.js";
 
-const declaration = (() => {
-  const result = parseCustomBlockDeclaration(PARTNERS_DECLARATION);
+function decl(raw: unknown) {
+  const result = parseCustomBlockDeclaration(raw);
   if (!result.ok) throw new Error(result.message);
   return result.declaration;
-})();
+}
+
+const declaration = decl(PARTNERS_DECLARATION);
 
 const registry: CustomBlockRegistry = buildCustomBlockRegistry([
   { packageId: "org.example.practice", packageVersion: "1.2.0", declarations: [declaration] },
@@ -215,6 +217,27 @@ describe("validate() — content rules are warnings", () => {
     expect(codes(site)).not.toContain("block.custom.link.draft");
   });
 
+  test("a web address that is not typed yet is no link; one the site cannot link to warns", () => {
+    const required = decl({
+      ...PARTNERS_DECLARATION,
+      fields: [{ name: "link", kind: "link", label: "Link", required: true }],
+    });
+    const strict = buildCustomBlockRegistry([
+      { packageId: "org.example.practice", packageVersion: "1.2.0", declarations: [required] },
+    ]);
+    const blank = siteWith(partners({ link: { kind: "external", href: "" } }));
+    expect(codes(blank, { customBlocks: strict })).toContain("block.custom.field.required");
+    const bad = siteWith(partners({ link: { kind: "external", href: "javascript:alert(1)" } }));
+    const result = validate(bad, { customBlocks: strict });
+    const issue = result.warnings.find((i) => i.code === "block.custom.link.invalid");
+    expect(issue?.path.slice(4)).toEqual(["data", "link"]);
+    expect(result.errors).toEqual([]);
+    const good = siteWith(partners({ link: { kind: "external", href: "https://example.org" } }));
+    expect(
+      codes(good, { customBlocks: strict }).filter((code) => code.startsWith("block.custom")),
+    ).toEqual([]);
+  });
+
   test("an image without a description warns; missing bytes block", () => {
     const site = siteWith(
       partners({
@@ -245,6 +268,13 @@ describe("validate() — content rules are warnings", () => {
     expect(issue).toBeDefined();
     expect(issue?.blocking).toBe(true);
     expect(issue?.path.slice(4, 6)).toEqual(["data", "intro"]);
+  });
+
+  test("an optional rich-text field the author cleared is simply empty", () => {
+    const site = siteWith(
+      partners({ heading: "x", intro: { version: RICH_TEXT_DOC_VERSION, content: [] } }),
+    );
+    expect(codes(site).filter((code) => code.startsWith("block.custom.richText"))).toEqual([]);
   });
 
   test("an older data version warns and stays editable", () => {

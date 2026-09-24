@@ -554,12 +554,16 @@ function runCustomBlockRules(
       const child = emptyResult();
       runRichTextRules(doc, child, context);
       // `runRichTextRules` reports under `["data", "doc", …]`; rebase onto the
-      // field that holds this document.
-      return [...child.errors, ...child.warnings, ...child.info].map((issue) => ({
-        ...issue,
-        path: [...path, ...issue.path.slice(2)],
-        code: issue.code.replace("block.richText.", "block.custom.richText."),
-      }));
+      // field that holds this document. Its "empty section" nudge does not
+      // apply: a field's emptiness is the `required` rule's business, and an
+      // optional field the author cleared is simply empty.
+      return [...child.errors, ...child.warnings, ...child.info]
+        .filter((issue) => issue.code !== "block.richText.doc.empty")
+        .map((issue) => ({
+          ...issue,
+          path: [...path, ...issue.path.slice(2)],
+          code: issue.code.replace("block.richText.", "block.custom.richText."),
+        }));
     },
   });
   for (const issue of issues) {

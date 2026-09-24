@@ -79,6 +79,14 @@ export interface CustomBlockRegistry {
   lookup(type: string): CustomBlockAvailability | undefined;
 }
 
+/**
+ * Plain code-point order. `localeCompare` would make "which package wins"
+ * depend on the machine's locale, which ADR 0032 forbids.
+ */
+function byCodePoint(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
 /** Codes the package loader raises when a package is from the future. */
 const NEWER_BUILDER_CODES: ReadonlySet<string> = new Set([
   "format-version-unsupported",
@@ -100,7 +108,7 @@ export function buildCustomBlockRegistry(
   failed: readonly CustomBlockFailedPackageSource[] = [],
 ): CustomBlockRegistry {
   const table = new Map<string, CustomBlockAvailability>();
-  const sortedLoaded = [...loaded].sort((a, b) => a.packageId.localeCompare(b.packageId));
+  const sortedLoaded = [...loaded].sort((a, b) => byCodePoint(a.packageId, b.packageId));
   for (const pkg of sortedLoaded) {
     for (const declaration of pkg.declarations) {
       if (table.has(declaration.type)) continue;
@@ -112,7 +120,7 @@ export function buildCustomBlockRegistry(
       });
     }
   }
-  const sortedFailed = [...failed].sort((a, b) => a.packageId.localeCompare(b.packageId));
+  const sortedFailed = [...failed].sort((a, b) => byCodePoint(a.packageId, b.packageId));
   for (const pkg of sortedFailed) {
     for (const type of pkg.declaredTypes) {
       if (table.has(type)) continue;
@@ -131,7 +139,7 @@ export function buildCustomBlockRegistry(
   }
   const available = [...table.values()]
     .filter((entry): entry is CustomBlockAvailable => entry.status === "available")
-    .sort((a, b) => a.declaration.type.localeCompare(b.declaration.type));
+    .sort((a, b) => byCodePoint(a.declaration.type, b.declaration.type));
   return {
     available,
     lookup(type: string): CustomBlockAvailability | undefined {
