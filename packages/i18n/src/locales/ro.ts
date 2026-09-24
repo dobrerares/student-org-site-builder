@@ -303,6 +303,15 @@ export const ro: RomanianCatalog = {
   "preview.viewport.desktop": "Desktop",
   "preview.viewport.tablet": "Tabletă",
   "preview.viewport.phone": "Telefon",
+  // Previzualizare interactivă
+  "preview.interactive.label": "Previzualizare interactivă",
+  "preview.interactive.info":
+    "În mod normal previzualizarea este statică: scriptul propriu al Temei nu rulează, așa că editarea nu contactează niciodată alte site-uri. Pornește această opțiune ca să încerci scriptul Temei așa cum îl vor vedea vizitatorii. Rulează doar cât timp opțiunea este pornită, într-un cadru sigilat care nu poate ajunge la builder sau la acest computer, și poate contacta site-urile declarate de Temă. Cât timp este pornită, fiecare modificare reîncarcă previzualizarea.",
+  "preview.interactive.preparing": "Se pregătește previzualizarea interactivă…",
+  "preview.interactive.on": "Previzualizarea interactivă este pornită: scriptul Temei rulează.",
+  "preview.interactive.network": "Poate contacta: {hosts}.",
+  "preview.interactive.network.none": "Nu contactează alte site-uri.",
+  "preview.interactive.offline": "Fără conexiune la internet: {note}",
 
   // Export readiness panel
   "export.title": "Exportă site-ul",

@@ -94,6 +94,11 @@ import { MEDIA_PICKER_RENDERERS } from "./media-picker-renderers.js";
 import { SpineForm, applyPatch } from "./spine-form.js";
 import { ThemeForm } from "./theme-form.js";
 import { iframeSrcdoc, iframeSrcdocForArticle } from "./iframe-srcdoc.js";
+import {
+  clearThemeDataUrls,
+  interactiveAssetUrlForPath,
+  prepareInteractiveAssetUrls,
+} from "./interactive-preview.js";
 import { resolvePreviewTarget } from "./preview-navigation.js";
 import type { PreviewTarget } from "./preview-navigation.js";
 // Side-effect import: registers the editor-app stylesheet on `document.head`
@@ -714,6 +719,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       // them here too so a clean unmount leaves no leaked object URLs.
       revokeFontBlobUrls();
       revokeThemeBlobUrls();
+      clearThemeDataUrls();
     };
   }, []);
 
@@ -783,6 +789,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     // rhythm of authoring a Theme, so the blob cache (keyed on id + version)
     // has to be dropped on every import rather than trusted to notice.
     revokeThemeBlobUrls();
+    clearThemeDataUrls();
     await reloadInstalledThemes();
   }
 
@@ -801,6 +808,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     // the old bytes from the blob cache, and the author would conclude their
     // edits had not taken.
     revokeThemeBlobUrls();
+    clearThemeDataUrls();
     await reloadInstalledThemes();
   }
 
@@ -861,6 +869,49 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
    */
   const [previewTarget, setPreviewTarget] = useState<PreviewTarget>({ kind: "page", index: 0 });
 
+  /**
+   * Interactive preview (ADR 0046, ADR 0056): the Theme's public-site script
+   * runs in the preview only while the author has this switched on. Shell
+   * state, per session — never part of the Site — and reset when another
+   * project is imported. Before the mode takes effect the uploads are
+   * re-encoded as `data:` URLs, because the interactive frame's opaque
+   * origin cannot load the editor's `blob:` URLs (`interactive-preview.ts`).
+   */
+  const [interactiveRequested, setInteractiveRequested] = useState(false);
+  const interactiveUploadsRef = useRef<Map<string, string> | null>(null);
+  const [interactiveEpoch, setInteractiveEpoch] = useState(0);
+  const activePublicScript = activeThemeBundle?.publicScript;
+  useEffect(() => {
+    if (!interactiveRequested) {
+      // Free the encoded uploads as soon as the mode is off: a `data:` URL
+      // is a third larger than the bytes it carries.
+      interactiveUploadsRef.current = null;
+      return;
+    }
+    let cancelled = false;
+    void prepareInteractiveAssetUrls(assetVfsRef.current!).then((urls) => {
+      if (cancelled) return;
+      interactiveUploadsRef.current = urls;
+      setInteractiveEpoch((n) => n + 1);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // `assetEpoch`: an upload made while the mode is on must reach the
+    // document, so the map is rebuilt from the VFS whenever the cache grows.
+  }, [interactiveRequested, assetEpoch]);
+  const interactiveMode: "off" | "preparing" | "on" =
+    !interactiveRequested || activePublicScript === undefined
+      ? "off"
+      : interactiveUploadsRef.current === null
+        ? "preparing"
+        : "on";
+  const interactiveOn = interactiveMode === "on";
+
+  function interactiveUrlForAssetPath(path: string): string | undefined {
+    return interactiveAssetUrlForPath(path, activeThemeBundle, interactiveUploadsRef.current);
+  }
+
   // Entering a workspace points the preview at the content being edited. A
   // site-wide destination (Theme, Site settings) leaves it where it was, so
   // changing a theme previews the page the author was last working on.
@@ -907,32 +958,42 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
    * only produces the markup.
    */
   const previewHtml = useMemo(
-    () =>
+    () => {
+      // The interactive document is the same render with two differences:
+      // the Theme's public script is emitted (the seam ADR 0054 left), and
+      // every asset is delivered as a `data:` URL because the frame's opaque
+      // origin cannot load the editor's `blob:` URLs (ADR 0056).
+      const resolver = interactiveOn ? interactiveUrlForAssetPath : displayUrlForAssetPath;
+      const options = interactiveOn ? { includePublicScript: true } : undefined;
       // An Article preview goes through the same renderer call the export
       // makes, so what the author sees is what ships.
-      safePreviewTarget.kind === "article"
+      return safePreviewTarget.kind === "article"
         ? iframeSrcdocForArticle(
             snapshot,
             snapshot.theme.id,
             safePreviewTarget.index,
-            displayUrlForAssetPath,
+            resolver,
             activeThemeBundle,
+            options,
           )
         : iframeSrcdoc(
             snapshot,
             snapshot.theme.id,
             safePreviewTarget.index,
-            displayUrlForAssetPath,
+            resolver,
             activeThemeBundle,
-          ),
+            options,
+          );
+    },
     // `displayUrlForAssetPath` reads a ref-held cache rather than state, so it
     // is deliberately not a dependency; `assetEpoch` is what actually changes
-    // when that cache gains an entry.
+    // when that cache gains an entry — and `interactiveEpoch` plays the same
+    // role for the interactive resolver's upload map.
     //
     // `activeThemeBundle` *is* a dependency: importing or removing a Theme
     // package changes the bundle without touching the Site snapshot, and
     // without this the preview would keep rendering the previous design.
-    [snapshot, safePreviewTarget, assetEpoch, activeThemeBundle],
+    [snapshot, safePreviewTarget, assetEpoch, activeThemeBundle, interactiveOn, interactiveEpoch],
   );
 
   /**
@@ -1597,7 +1658,11 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       // list is rebuilt; without it the Site would render as if its own Theme
       // were missing until the editor was reloaded.
       revokeThemeBlobUrls();
+      clearThemeDataUrls();
       await reloadInstalledThemes();
+      // The interactive preview is a fact about this editing session, not
+      // about a project: another project starts static (ADR 0046).
+      setInteractiveRequested(false);
       setAssetEpoch((n) => n + 1);
       historyRef.current = createHistoryStore<Site>({
         initial: structuredClone(imported.siteData),
@@ -1680,6 +1745,13 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       canReturnToTarget={!previewMatchesTarget}
       onReturnToTarget={handleReturnPreviewToTarget}
       onEditPreviewed={handleEditPreviewed}
+      interactive={interactiveMode}
+      onInteractiveChange={setInteractiveRequested}
+      publicScript={
+        activePublicScript === undefined
+          ? undefined
+          : { network: activePublicScript.network, offline: activePublicScript.offline }
+      }
     />
   );
 

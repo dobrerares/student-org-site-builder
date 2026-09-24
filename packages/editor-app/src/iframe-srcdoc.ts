@@ -25,8 +25,10 @@ import { renderPreviewHtml } from "./preview-html.js";
  * `includePublicScript` emits the active Theme package's `public.js` into the
  * preview document. Off by default: ADR 0046 keeps ordinary editing static so
  * a Theme script's external calls never fire while an author types. The
- * interactive-preview toggle (issue #110) flips exactly this flag — nothing
- * else about the render changes, so what the toggle shows is what ships.
+ * interactive-preview toggle (issue #110, ADR 0056) flips exactly this flag —
+ * nothing else about the render changes, so what the toggle shows is what
+ * ships. The toggle also swaps the asset resolver for one that inlines
+ * `data:` URLs, but that goes through the ordinary `assetUrlForPath` seam.
  */
 export interface PreviewOptions {
   readonly includePublicScript?: boolean | undefined;
