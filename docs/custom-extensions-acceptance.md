@@ -12,9 +12,12 @@ Status words: **Evidenced** (a test or measured artefact proves it),
 **Partial** (proved for part of the scope, the gap named), **Not yet** (no
 evidence on `main`; the follow-up named).
 
-Every test named here runs in CI. The workflow e2e is
-`e2e/custom-extensions-workflow.spec.ts`; its recorded run and screenshots
-are in [screenshots/custom-extensions/](screenshots/custom-extensions/README.md).
+Every unit test named here runs in CI (`pnpm test`). The Playwright specs
+run locally with `pnpm test:e2e`; CI runs only `e2e/a11y.spec.ts` of them
+(see [CONTRIBUTING](../CONTRIBUTING.md), "Continuous integration"). The
+workflow e2e is `e2e/custom-extensions-workflow.spec.ts`; its recorded run
+and screenshots are in
+[screenshots/custom-extensions/](screenshots/custom-extensions/README.md).
 
 ## 1. Design fidelity against the published reference — Partial
 
@@ -206,7 +209,9 @@ set its terms.
 - Decision and measurements: [ADR 0056](adr/0056-interactive-preview-isolation.md).
 - The sandbox strings and the inline resolver:
   `packages/editor-app/test/interactive-preview-assets.test.ts`; the toggle,
-  the document switch and the reload-not-morph rule:
+  the document switch, the reload-not-morph rule and the rule that
+  selecting another Theme turns the mode off rather than running its script
+  ("switching to another Theme turns the mode off…"):
   `packages/editor-app/test/interactive-preview.test.tsx`.
 - From inside the frame in a real browser (workflow e2e step 4): the origin
   is opaque, `parent.document` and storage throw `SecurityError`, the script
@@ -259,5 +264,7 @@ Marked here so the follow-up is one edit rather than a search:
 - **Firefox and Safari.** The sandbox behaviour relied on (`allow-same-origin`
   absent ⇒ opaque origin ⇒ `blob:` refused, `data:` allowed) is
   specification behaviour; it was measured in Chromium only, in line with
-  the project's Playwright configuration. The manual QA checklist for the
-  archival build is the place to add a one-line interactive-preview check.
+  the project's Playwright configuration. There is no cross-browser suite
+  and no manual QA checklist in the repository today; a release check in
+  either browser should switch the mode on for the example Theme and confirm
+  the probe results the workflow e2e asserts (step 4).

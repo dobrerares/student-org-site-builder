@@ -306,7 +306,7 @@ export const ro: RomanianCatalog = {
   // Previzualizare interactivă
   "preview.interactive.label": "Previzualizare interactivă",
   "preview.interactive.info":
-    "În mod normal previzualizarea este statică: scriptul propriu al Temei nu rulează, așa că editarea nu contactează niciodată alte site-uri. Pornește această opțiune ca să încerci scriptul Temei așa cum îl vor vedea vizitatorii. Rulează doar cât timp opțiunea este pornită, într-un cadru sigilat care nu poate ajunge la builder sau la acest computer, și poate contacta site-urile declarate de Temă. Cât timp este pornită, fiecare modificare reîncarcă previzualizarea.",
+    "În mod normal previzualizarea este statică: scriptul propriu al Temei nu rulează, așa că editarea nu contactează niciodată alte site-uri. Pornește această opțiune ca să încerci scriptul Temei așa cum îl vor vedea vizitatorii. Rulează doar cât timp opțiunea este pornită, într-un cadru sigilat care nu poate ajunge la aplicație sau la acest computer, și poate contacta site-urile declarate de Temă. Cât timp este pornită, fiecare modificare reîncarcă previzualizarea.",
   "preview.interactive.preparing": "Se pregătește previzualizarea interactivă…",
   "preview.interactive.on": "Previzualizarea interactivă este pornită: scriptul Temei rulează.",
   "preview.interactive.network": "Poate contacta: {hosts}.",
