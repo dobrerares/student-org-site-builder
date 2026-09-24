@@ -216,12 +216,19 @@ export function PreviewPane(props: PreviewPaneProps): JSX.Element {
   // `srcDoc` equal to the latest render makes React reassign it, which is a
   // full reload — the same thing a visitor's refresh does, and the only way
   // to leave the Theme's script in charge of the live DOM. The posting
-  // effect below sees boot HTML equal to the render and posts nothing.
+  // effect below steps aside entirely while the mode is on.
   if (interactiveOn) bootHtmlRef.current = props.html;
 
   useEffect(() => {
     const iframe = iframeRef.current;
     if (iframe === null) return;
+    // The interactive document receives nothing from the host. Its script
+    // is the Theme's, and the Site snapshot below carries what the published
+    // Site never shows it — Draft Articles, editor-only settings — while an
+    // opaque origin stops the script reading the editor, not reading what
+    // the editor posts to it (ADR 0056 §5). Edits reload that document, so
+    // there is nothing to morph into it either.
+    if (interactiveOn) return;
     const host = createPreviewHost({ iframe });
     // The documented ADR 0005 extension point. Nothing renders from it today
     // (rendering stays host-side, so there is one renderer code path), but it
@@ -238,7 +245,7 @@ export function PreviewPane(props: PreviewPaneProps): JSX.Element {
       return;
     }
     host.postPreviewHtml(props.html);
-  }, [props.html, props.siteData, props.activePageIndex]);
+  }, [props.html, props.siteData, props.activePageIndex, interactiveOn]);
 
   // Inbound preview events. The renderer's preview-only nav script prevents
   // normal iframe navigation and posts `{ type: "navigate", path }`; the morph

@@ -132,6 +132,13 @@ The frame can still post `ready`, `error` and `navigate` envelopes. None of
 them reaches an editor control: `navigate` moves only the preview target
 (ADR 0053), and the host validates every payload before acting on it.
 
+The traffic is one-way. The host posts nothing into the interactive frame:
+not morph HTML (edits reload, §4) and not the ADR 0005 `siteData` envelope
+the static frame receives on every edit. That envelope is the whole Site
+snapshot — Draft Articles, editor-only settings — and the published Site
+never shows a script any of it. An opaque origin stops the script reading
+the editor; it does not stop it reading what the editor posts to it.
+
 ### 6. Electron: no child windows, no navigation away
 
 Electron's default for `window.open` creates a second `BrowserWindow` that

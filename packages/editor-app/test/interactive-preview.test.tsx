@@ -239,6 +239,29 @@ describe("the interactive preview toggle", () => {
     expect(frame().getAttribute("srcdoc")).toContain("data-sosb-theme-script");
   });
 
+  test("while on, the host posts nothing into the frame — not even the Site snapshot", async () => {
+    // The snapshot carries Draft Articles and editor-only settings the
+    // published Site never shows a script; an opaque origin does not stop
+    // the script reading what the host posts to it (ADR 0056 §5).
+    const { container, frame, toggle } = await mountWithPackage();
+    await switchOn(container, toggle);
+    const live = capturePreviewMessages(frame());
+    announcePreviewReady();
+    fireEvent.input(container.querySelector<HTMLInputElement>('[data-field="org.name"]')!, {
+      target: { value: "Nimic postat" },
+    });
+    expect(live.envelopes).toHaveLength(0);
+
+    // The static document gets the ADR 0005 envelope again.
+    fireEvent.click(toggle());
+    const still = capturePreviewMessages(frame());
+    announcePreviewReady();
+    fireEvent.input(container.querySelector<HTMLInputElement>('[data-field="org.name"]')!, {
+      target: { value: "Postat din nou" },
+    });
+    expect(still.payloadsOfType("siteData").length).toBeGreaterThan(0);
+  });
+
   test("switching off restores the static preview and the morph path", async () => {
     const { container, frame, toggle } = await mountWithPackage();
     await switchOn(container, toggle);
