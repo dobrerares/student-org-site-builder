@@ -19,6 +19,9 @@ import type {
 } from "@sosb/renderer";
 import { ZipDriver } from "@sosb/vfs/zip-driver";
 import type { Vfs } from "@sosb/vfs/vfs";
+import type { BlockEnvelope } from "@sosb/schema";
+import { THEME_RECOVERY_VFS_PREFIX, themeRecoveryFiles } from "./recovery.js";
+import { replaceVfsPrefixes } from "./replace-vfs-prefixes.js";
 import { ThemePackageError } from "./errors.js";
 import { declaredCustomBlockTypes, loadCustomBlockDeclarations } from "./blocks.js";
 import {
@@ -497,21 +500,30 @@ export async function loadThemePackageFromVfs(
 export async function installThemePackageIntoVfs(
   vfs: Vfs,
   loaded: LoadedThemePackage,
+  recovery?: {
+    readonly previous: LoadedThemePackage;
+    readonly blocks: readonly BlockEnvelope[];
+  },
 ): Promise<string[]> {
-  const prefix = `${THEME_VFS_PREFIX}${loaded.bundle.id}/`;
-  // Remove any previous install of the same id first, so upgrading to a
-  // version with fewer files cannot leave orphans behind that the next load
-  // would happily pick up.
-  for (const existing of await vfs.list(prefix)) {
-    await vfs.delete(existing);
+  const id = loaded.bundle.id;
+  const prefix = `${THEME_VFS_PREFIX}${id}/`;
+  const files = new Map([...loaded.files].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
+  const replacements: { prefix: string; files: ReadonlyMap<string, Uint8Array> }[] = [
+    { prefix, files },
+  ];
+  if (recovery !== undefined) {
+    if (recovery.previous.bundle.id !== id) {
+      throw new Error("A package update can only keep a recovery copy of the same package.");
+    }
+    // The recovery point and package are one update. A rejected package
+    // transfer must not consume the author's earlier restore point.
+    replacements.push({
+      prefix: `${THEME_RECOVERY_VFS_PREFIX}${id}/`,
+      files: themeRecoveryFiles(recovery.previous, recovery.blocks),
+    });
   }
-  const written: string[] = [];
-  for (const path of [...loaded.files.keys()].sort()) {
-    const full = prefix + path;
-    await vfs.write(full, loaded.files.get(path)!);
-    written.push(full);
-  }
-  return written;
+  await replaceVfsPrefixes(vfs, replacements, `themes-install-backup/${id}/`);
+  return [...files.keys()].map((path) => prefix + path);
 }
 
 /** Remove an installed Theme package from a Site's VFS. */

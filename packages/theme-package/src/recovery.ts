@@ -21,6 +21,7 @@ import { BlockEnvelopeSchema, type BlockEnvelope, type Site } from "@sosb/schema
 import type { Vfs } from "@sosb/vfs/vfs";
 import { THEME_ID_RE } from "./manifest.js";
 import type { LoadedThemePackage } from "./load.js";
+import { replaceVfsPrefixes, removeVfsPrefix, readVfsPrefix } from "./replace-vfs-prefixes.js";
 
 /** Where recovery copies live inside a Site's VFS. */
 export const THEME_RECOVERY_VFS_PREFIX = "themes-recovery/";
@@ -54,9 +55,12 @@ function prefixFor(id: string): string {
  * Keep `previous` and the given Block envelopes as the recovery copy for its
  * package id, replacing any earlier copy.
  *
- * The copy is written in full to a staging prefix first and only then swapped
- * in, so a write that fails half-way (a full disk, a closed tab) cannot leave
- * the author with a copy that is neither the old one nor a complete new one.
+ * Stage and read every byte before touching the live copy, then retain an
+ * on-disk backup until promotion finishes. A failed transfer restores the old
+ * bytes. If storage also refuses rollback, the backup remains for the next
+ * save to retry and the error names it. This is failure recovery, not an
+ * atomic swap: the VFS has no transaction/rename primitive, so a process crash
+ * or concurrent reader during promotion can still observe an incomplete copy.
  */
 export async function saveThemeRecoveryCopy(
   vfs: Vfs,
@@ -65,22 +69,37 @@ export async function saveThemeRecoveryCopy(
 ): Promise<void> {
   const id = previous.bundle.id;
   const staging = `${STAGING_PREFIX}${id}/`;
-  for (const leftover of await vfs.list(staging)) await vfs.delete(leftover);
+  await removeVfsPrefix(vfs, staging);
+  try {
+    for (const [path, bytes] of themeRecoveryFiles(previous, blocks)) {
+      await vfs.write(staging + path, bytes);
+    }
+    const files = await readVfsPrefix(vfs, staging);
+    await replaceVfsPrefixes(
+      vfs,
+      [{ prefix: prefixFor(id), files }],
+      `themes-recovery-backup/${id}/`,
+    );
+  } finally {
+    // Do not mask the original failure if storage also refuses cleanup.
+    await removeVfsPrefix(vfs, staging).catch(() => {});
+  }
+}
+
+/** The files of a recovery point, also used by a combined package update. */
+export function themeRecoveryFiles(
+  previous: LoadedThemePackage,
+  blocks: readonly BlockEnvelope[],
+): ReadonlyMap<string, Uint8Array> {
+  const files = new Map<string, Uint8Array>();
   for (const path of [...previous.files.keys()].sort()) {
-    await vfs.write(`${staging}${PACKAGE_DIR}${path}`, previous.files.get(path)!);
+    files.set(PACKAGE_DIR + path, previous.files.get(path)!);
   }
   const byId: Record<string, BlockEnvelope> = {};
   for (const block of blocks) byId[block.id] = block;
   const record = { version: previous.bundle.version, blocks: byId };
-  await vfs.write(`${staging}${BLOCKS_FILE}`, enc.encode(JSON.stringify(record, null, 2) + "\n"));
-
-  // Everything is staged: replace the earlier copy.
-  const prefix = prefixFor(id);
-  for (const existing of await vfs.list(prefix)) await vfs.delete(existing);
-  for (const path of await vfs.list(staging)) {
-    await vfs.write(`${prefix}${path.slice(staging.length)}`, await vfs.read(path));
-    await vfs.delete(path);
-  }
+  files.set(BLOCKS_FILE, enc.encode(JSON.stringify(record, null, 2) + "\n"));
+  return files;
 }
 
 /** The package ids that have a recovery copy, sorted. */

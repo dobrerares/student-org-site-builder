@@ -394,12 +394,149 @@ describe("the recovery copy", () => {
     expect(copy?.version).toBe("1.0.0");
     expect(copy?.blocks.get("blk_1")).toEqual(block);
     expect(copy?.files.size).toBe(v1.files.size);
-    // Nothing of the failed attempt is listed as a copy; the next save cleans it up.
+    // Failed staging is cleaned immediately, without another save.
+    expect(await vfs.list("themes-recovery-staging/")).toEqual([]);
     expect(await themeRecoveryIds(vfs)).toEqual([THEME_ID]);
     await saveThemeRecoveryCopy(vfs, v2, []);
     expect((await readThemeRecoveryCopy(vfs, THEME_ID))?.version).toBe("2.0.0");
     expect(await vfs.list("themes-recovery-staging/")).toEqual([]);
   });
+
+  test.each(["staged read", "backup write", "live write", "obsolete delete"])(
+    "%s failure retains every previous recovery byte and cleans staging",
+    async (failure) => {
+      const vfs = new MemoryDriver();
+      const v1 = loadThemePackage(pkg(MANIFEST, { "extra.txt": "old file" }));
+      const v2 = loadThemePackage(pkg({ ...MANIFEST, version: "2.0.0" }));
+      await saveThemeRecoveryCopy(vfs, v1, [block]);
+      const before = await readThemeRecoveryCopy(vfs, THEME_ID);
+      const live = `themes-recovery/${THEME_ID}/`;
+      let failed = false;
+      let liveWrites = 0;
+      const flaky = new Proxy(vfs, {
+        get(target, property, receiver) {
+          if (property === "read" || property === "write" || property === "delete") {
+            return async (path: string, bytes?: Uint8Array) => {
+              if (property === "write" && path.startsWith(live)) liveWrites += 1;
+              const matches =
+                (failure === "staged read" &&
+                  property === "read" &&
+                  path.startsWith("themes-recovery-staging/")) ||
+                (failure === "backup write" &&
+                  property === "write" &&
+                  path.startsWith("themes-recovery-backup/")) ||
+                (failure === "live write" &&
+                  property === "write" &&
+                  path.startsWith(live) &&
+                  liveWrites === 2) ||
+                (failure === "obsolete delete" &&
+                  property === "delete" &&
+                  path === live + "package/extra.txt");
+              if (!failed && matches) {
+                failed = true;
+                throw new Error("storage failed");
+              }
+              if (property === "write") return target.write(path, bytes!);
+              return target[property](path);
+            };
+          }
+          return Reflect.get(target, property, receiver);
+        },
+      });
+      await expect(saveThemeRecoveryCopy(flaky, v2, [])).rejects.toThrow("storage failed");
+      expect(failed).toBe(true);
+      expect(await readThemeRecoveryCopy(vfs, THEME_ID)).toEqual(before);
+      expect(await vfs.list("themes-recovery-staging/")).toEqual([]);
+      expect(await vfs.list("themes-recovery-backup/")).toEqual([]);
+    },
+  );
+
+  test("a failed rollback retains its backup, which the next save restores before retrying", async () => {
+    const vfs = new MemoryDriver();
+    const v1 = loadThemePackage(pkg(MANIFEST, { "extra.txt": "old file" }));
+    const v2 = loadThemePackage(pkg({ ...MANIFEST, version: "2.0.0" }));
+    await saveThemeRecoveryCopy(vfs, v1, [block]);
+    const live = `themes-recovery/${THEME_ID}/`;
+    let writes = 0;
+    const flaky = new Proxy(vfs, {
+      get(target, property, receiver) {
+        if (property === "write") {
+          return async (path: string, bytes: Uint8Array) => {
+            if (path.startsWith(live) && ++writes >= 2) throw new Error("disk unavailable");
+            return target.write(path, bytes);
+          };
+        }
+        return Reflect.get(target, property, receiver);
+      },
+    });
+    await expect(saveThemeRecoveryCopy(flaky, v2, [])).rejects.toThrow(
+      "previous files are retained",
+    );
+    const backup = `themes-recovery-backup/${THEME_ID}/`;
+    expect(await vfs.has(backup + ".ready")).toBe(true);
+    expect(await vfs.read(backup + live + "package/extra.txt")).toEqual(enc.encode("old file"));
+    expect(await vfs.list("themes-recovery-staging/")).toEqual([]);
+    // Fail the retry after it restores the pending backup, during the next
+    // outgoing snapshot read. The old point must now be fully readable.
+    let sawRestore = false;
+    const retry = new Proxy(vfs, {
+      get(target, property, receiver) {
+        if (property === "read") {
+          return async (path: string) => {
+            if (path.startsWith(live)) {
+              sawRestore = true;
+              throw new Error("retry read failed");
+            }
+            return target.read(path);
+          };
+        }
+        return Reflect.get(target, property, receiver);
+      },
+    });
+    await expect(saveThemeRecoveryCopy(retry, v2, [])).rejects.toThrow("retry read failed");
+    expect(sawRestore).toBe(true);
+    expect((await readThemeRecoveryCopy(vfs, THEME_ID))?.version).toBe("1.0.0");
+    expect((await readThemeRecoveryCopy(vfs, THEME_ID))?.blocks.get(block.id)).toEqual(block);
+    await saveThemeRecoveryCopy(vfs, v2, []);
+    expect((await readThemeRecoveryCopy(vfs, THEME_ID))?.version).toBe("2.0.0");
+    expect(await vfs.list("themes-recovery-backup/")).toEqual([]);
+  });
+
+  test.each(["package", "recovery"])(
+    "a failed %s transfer restores the installed package and earlier restore point together",
+    async (phase) => {
+      const vfs = new MemoryDriver();
+      const v1 = loadThemePackage(pkg(MANIFEST, { "extra.txt": "v1" }));
+      const v2 = loadThemePackage(pkg({ ...MANIFEST, version: "2.0.0" }, { "extra.txt": "v2" }));
+      const v3 = loadThemePackage(pkg({ ...MANIFEST, version: "3.0.0" }));
+      await saveThemeRecoveryCopy(vfs, v1, [block]);
+      await installThemePackageIntoVfs(vfs, v2);
+      const before = new Map<string, Uint8Array>();
+      for (const path of await vfs.list()) before.set(path, await vfs.read(path));
+      const live = phase === "package" ? `themes/${THEME_ID}/` : `themes-recovery/${THEME_ID}/`;
+      let writes = 0;
+      const flaky = new Proxy(vfs, {
+        get(target, property, receiver) {
+          if (property === "write") {
+            return async (path: string, bytes: Uint8Array) => {
+              if (path.startsWith(live) && ++writes === 2) throw new Error("transfer failed");
+              return target.write(path, bytes);
+            };
+          }
+          return Reflect.get(target, property, receiver);
+        },
+      });
+      await expect(
+        installThemePackageIntoVfs(flaky, v3, {
+          previous: v2,
+          blocks: [{ ...block, version: 2 }],
+        }),
+      ).rejects.toThrow("transfer failed");
+      const after = new Map<string, Uint8Array>();
+      for (const path of await vfs.list()) after.set(path, await vfs.read(path));
+      expect(after).toEqual(before);
+    },
+  );
 
   test("a blocks.json with malformed envelopes keeps only the well-formed ones", async () => {
     const vfs = new MemoryDriver();
