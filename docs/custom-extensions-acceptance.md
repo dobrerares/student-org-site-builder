@@ -43,34 +43,42 @@ navigation) in its [README](../examples/themes/practice/README.md).
   (static and interactive previews, the built output verified from bytes).
 
 **Gap.** The reference's team tabs, educational accordions and partner groups
-need Blocks with fields no built-in Block declares. They wait on Custom
-Blocks (§2). Fidelity is therefore proved for the shell, the hero, the card
+need Blocks with fields no built-in Block declares. The Partners declaration
+and editing workflow are now evidenced (§2), but these three components
+have not been compared against the reference for visual fidelity. Fidelity is
+therefore proved for the shell, the hero, the card
 grids, image/text sections, news/events, banners and forms, and not yet for
 those three components.
 
-## 2. Editable Custom Blocks — Not yet
+## 2. Editable Custom Blocks — Evidenced
 
-The contract is being settled on issue
-[#106](https://github.com/dobrerares/student-org-site-builder/issues/106)
-([plan](plans/issue-106-custom-block-contract.md)) and implemented on
-`feat/custom-blocks` with ADR 0055; neither had merged when this document
-was written. What `main` already provides for it:
+The declared-field contract from [#106](https://github.com/dobrerares/student-org-site-builder/issues/106)
+is implemented in [ADR 0055](adr/0055-custom-block-declarations.md) and the
+[Custom Block authoring guide](how-to-author-a-custom-block.md).
 
-- The rendering seam: a Theme design's `blocks` map renders a Custom Block
-  type ([ADR 0054](adr/0054-executable-theme-rendering-and-sandbox.md);
-  `packages/build/test/theme-render.test.ts` "a design for the type means
-  nothing is omitted").
-- The omission rule when no design exists
-  ([ADR 0045](adr/0045-custom-block-content-and-theme-compatibility.md);
-  `packages/editor-app/test/export-omitted-blocks.test.tsx`,
-  `packages/build/test/theme-render.test.ts` "omitted Blocks").
-
-**Follow-up (short).** Once #106 merges: add the Partners Custom Block leg
-to `e2e/custom-extensions-workflow.spec.ts` (add the Block, fill its heading
-and a partner with name, image and link through the generated form, see it
-rendered by the Theme's design in both previews and in `dist/`), and move
-this section to Evidenced. See also
-[Not yet covered](#not-yet-covered-by-the-workflow-run).
+- Builder controls and lifecycle: `packages/editor-app/test/custom-blocks-editor.test.tsx`
+  covers adding an empty Block at its declared version, generated editing
+  fields, validation, unavailable packages, and author-controlled updates.
+  `packages/editor-app/test/custom-block-form.test.tsx` covers nested lists,
+  image descriptions and link-picker wiring;
+  `packages/editor-app/test/link-target-field.test.tsx` covers Page identity.
+- The shipped Partners declaration and design:
+  `packages/theme-package/test/example-practice-partners.test.ts` covers the
+  registry, validation, Page links, rendering, golden files and determinism.
+- `e2e/custom-extensions-workflow.spec.ts` adds Partners through the Add Block
+  dialog and fills its heading, one group and one partner, uploads a logo
+  through the Asset picker, and selects a Page by identity. It checks the
+  heading, group, partner, decoded logo and link in static and interactive
+  previews, follows the partner link, and verifies the built markup and
+  saved Page identity from the exported bytes.
+- The same run exports the standalone package byte for byte, imports it into
+  a fresh Site, and adds an empty, editable Partners Block whose design
+  renders new content. Reopening the Site archive restores the authored
+  fields, logo and Page selection without another upload.
+- The omission rule when no design exists remains covered by
+  `packages/editor-app/test/export-omitted-blocks.test.tsx` and
+  `packages/build/test/theme-render.test.ts` ("omitted Blocks"), per
+  [ADR 0045](adr/0045-custom-block-content-and-theme-compatibility.md).
 
 ## 3. Standalone sharing — Evidenced
 
@@ -84,7 +92,7 @@ Site content structurally"; [ADR 0051](adr/0051-theme-package-lifecycle.md)
   a .sosb-theme.zip without loss".
 - Workflow e2e steps 6–7: the standalone download is byte-identical to what
   the developer zipped (every file compared), and it imports into a fresh
-  Site and renders its shell.
+  Site, renders its shell and offers an empty Partners Block with generated fields.
 
 ## 4. Site round trips — Evidenced
 
@@ -96,7 +104,8 @@ built website under `dist/` ([ADR 0051](adr/0051-theme-package-lifecycle.md)
   the archive carries its own Theme"; `packages/editor-app/test/round-trip.test.ts`
   (import → edit → export → re-import identity).
 - Workflow e2e steps 5 and 8: the archive holds `data.json` with the chosen
-  variant and edited title, the package, and a `dist/`; a fresh editor
+  variant, edited title, Partners data, Page-link identity and logo, the
+  package, and a `dist/`; a fresh editor
   importing it shows the design, the variant, the content and the installed
   package, and offers the interactive preview again.
 - Design choices survive Theme switches without touching content:
@@ -195,11 +204,13 @@ import changes nothing ([ADR 0050](adr/0050-theme-package-format.md)
 - Decisions: ADRs [0046](adr/0046-trusted-executable-theme-and-block-extensions.md),
   [0050](adr/0050-theme-package-format.md), [0051](adr/0051-theme-package-lifecycle.md),
   [0052](adr/0052-renderer-theme-seam.md), [0054](adr/0054-executable-theme-rendering-and-sandbox.md),
+  [0055](adr/0055-custom-block-declarations.md),
   [0056](adr/0056-interactive-preview-isolation.md); vocabulary in
   [CONTEXT.md](../CONTEXT.md) (Theme package, Theme design, Element tree,
   Render sandbox, Public-site script, Omitted Block, Interactive preview).
-- The Custom Block contract document ([plan](plans/issue-106-custom-block-contract.md))
-  and ADR 0055 arrive with #106.
+- The [Custom Block authoring guide](how-to-author-a-custom-block.md) and
+  [contract plan](plans/issue-106-custom-block-contract.md) explain declared
+  fields, generated controls, links and package updates.
 
 ## 10. Interactive preview isolation (ADR 0046) — Evidenced
 
@@ -241,11 +252,11 @@ Electron shell, so this could not be verified in the packaged app; ADR 0056
 2. Executable Theme rendering and the public script (ADR 0054) — shipped as
    phase two (#120).
 3. Interactive preview and this acceptance pass (#110, #111; ADR 0056) —
-   this change.
+   shipped as #121.
 4. Custom Block declarations, editor forms and lifecycle (#106; ADR 0055) —
-   in flight on `feat/custom-blocks`, rebased onto 1–3.
-5. The Partners leg of the workflow e2e and the three reference components
-   that need Custom Blocks (§1, §2) — the short follow-up after 4.
+   shipped as #122, integrated with 1–3.
+5. The Partners leg of the workflow e2e (§2) — this follow-up after 4.
+   Visual comparison of the three reference components (§1) remains open.
 
 Nothing in 4 or 5 changes a format: manifests are forward-compatible
 (ADR 0050 "Forward compatibility with phase two") and the Block envelope is
@@ -255,9 +266,10 @@ unchanged (ADR 0045).
 
 Marked here so the follow-up is one edit rather than a search:
 
-- **Custom Block with editable fields (Partners).** Not on `main` when the
-  run was recorded; the workflow spec says so in its header and this document
-  in §2. Add the leg once #106 merges.
+- **Human feedback and fidelity decision (#110).** The walkthrough proves
+  editing, rendering and sharing behaviour. It does not collect user
+  feedback or establish approval of the design against the reference;
+  the visual comparison gaps in §1 remain open.
 - **Electron packaged app.** The run is headless Chromium against the React
   editor; the Electron renderer bundle is staged (its README), so the CSP
   open point in §10 stands until it is wired.
