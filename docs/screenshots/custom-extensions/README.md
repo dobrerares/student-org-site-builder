@@ -1,7 +1,7 @@
 # Custom extensions — workflow run
 
 Screenshots recorded by `e2e/custom-extensions-workflow.spec.ts` (issue #110's
-prototype validation) on 2026-09-24 at commit `7db8dbc` on
+prototype validation) on 2026-09-24 at commit `8ce29f9` on
 `feat/interactive-preview`, in headless Chromium at 1400 × 950, with:
 
 ```sh
