@@ -378,15 +378,18 @@ export function PreviewPane(props: PreviewPaneProps): JSX.Element {
                       hosts: props.publicScript.network.join(", "),
                     })}
               </span>
-              {props.publicScript.offline !== undefined &&
-                props.publicScript.network.length > 0 && (
-                  <>
-                    {" "}
-                    <span data-testid="preview-interactive-offline">
-                      {t("preview.interactive.offline", { note: props.publicScript.offline })}
-                    </span>
-                  </>
-                )}
+              {/* Verbatim whenever the manifest carries it (ADR 0056 §1):
+               * the loader only *requires* a note when hosts are declared,
+               * but an author who wrote one for a self-contained script
+               * meant it to be read. */}
+              {props.publicScript.offline !== undefined && (
+                <>
+                  {" "}
+                  <span data-testid="preview-interactive-offline">
+                    {t("preview.interactive.offline", { note: props.publicScript.offline })}
+                  </span>
+                </>
+              )}
             </>
           )}
         </p>
