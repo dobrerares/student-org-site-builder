@@ -250,8 +250,7 @@ loaded realms and compare bytes. Two environment facts had to be settled:
   (ADR 0048, #119) into the same bundle took it to **3,406,797 bytes
   (3.25 MiB)**. The two are the largest dependencies the editor will carry
   for the foreseeable future and neither can be lazy-loaded from a
-  single-file archive, so the budget is **raised to 4 MiB** (about 600 KB of
-  headroom); `packages/browser-shell/test/archival-cli.test.ts` enforces it.
+  single-file archive, so the budget is **raised to 4 MiB** (787,507 bytes, about 770 KiB, of headroom); `packages/browser-shell/test/archival-cli.test.ts` enforces it.
 - **Electron.** WebAssembly compilation is refused under a bare `script-src
 'self'`. The packaged renderer's CSP gains `'wasm-unsafe-eval'`, which
   permits exactly that and nothing about JavaScript `eval`; the CSP test now
@@ -269,7 +268,7 @@ runs in. A separate engine makes the absence of `fetch` a fact about the
 realm rather than a property of a wrapper.
 
 **Why QuickJS specifically?** It is small enough to embed (871 KB in the
-bundle, against a 3 MB single-file budget), it is synchronous, its
+bundle, against a 4 MiB single-file budget), it is synchronous, its
 interrupt handler gives a deterministic budget for free, and its behaviour is
 the same in Node, Chromium and Electron because it is the same wasm bytes.
 SES was the documented fallback if the wasm could not be embedded; it could,
