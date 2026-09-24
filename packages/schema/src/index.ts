@@ -270,3 +270,6 @@ export type {
 // re-exported because the renderer's Theme-design tree validator has to apply
 // exactly this rule to a `href`/`src` a Theme produced (ADR 0054). Two
 // implementations of "is this link publishable?" is one too many.
+
+// Custom Block declarations, registry and data rules (ADR 0055)
+export * from "./custom-blocks/index.js";
