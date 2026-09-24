@@ -381,9 +381,6 @@ export function PreviewPane(props: PreviewPaneProps): JSX.Element {
       )}
 
       {props.publicScript !== undefined && interactiveMode !== "off" && (
-        // What is running and what it may reach, straight from the manifest
-        // (ADR 0046 asks every extension to document its dependencies; this
-        // is where the author reads them before anything is contacted).
         <p
           data-preview-interactive-status
           data-state={interactiveMode}
@@ -393,27 +390,29 @@ export function PreviewPane(props: PreviewPaneProps): JSX.Element {
           {interactiveMode === "preparing" ? (
             t("preview.interactive.preparing")
           ) : (
+            <strong>{t("preview.interactive.on")}</strong>
+          )}
+        </p>
+      )}
+
+      {props.publicScript !== undefined && (
+        // Disclose the manifest before opt-in, and keep it visible while
+        // preparing or running the script (ADR 0056 §1).
+        <p data-preview-interactive-status data-testid="preview-interactive-declaration">
+          <span data-testid="preview-interactive-network">
+            {props.publicScript.network.length === 0
+              ? t("preview.interactive.network.none")
+              : t("preview.interactive.network", {
+                  hosts: props.publicScript.network.join(", "),
+                })}
+          </span>
+          {/* Show optional offline notes even for self-contained scripts. */}
+          {props.publicScript.offline !== undefined && (
             <>
-              <strong>{t("preview.interactive.on")}</strong>{" "}
-              <span data-testid="preview-interactive-network">
-                {props.publicScript.network.length === 0
-                  ? t("preview.interactive.network.none")
-                  : t("preview.interactive.network", {
-                      hosts: props.publicScript.network.join(", "),
-                    })}
+              {" "}
+              <span data-testid="preview-interactive-offline">
+                {t("preview.interactive.offline", { note: props.publicScript.offline })}
               </span>
-              {/* Verbatim whenever the manifest carries it (ADR 0056 §1):
-               * the loader only *requires* a note when hosts are declared,
-               * but an author who wrote one for a self-contained script
-               * meant it to be read. */}
-              {props.publicScript.offline !== undefined && (
-                <>
-                  {" "}
-                  <span data-testid="preview-interactive-offline">
-                    {t("preview.interactive.offline", { note: props.publicScript.offline })}
-                  </span>
-                </>
-              )}
             </>
           )}
         </p>

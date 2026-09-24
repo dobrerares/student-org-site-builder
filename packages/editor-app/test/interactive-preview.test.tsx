@@ -118,6 +118,7 @@ describe("the interactive preview toggle", () => {
     openSection(container, "settings");
     expect(container.querySelector('[data-testid="preview-pane"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="preview-interactive"]')).toBeNull();
+    expect(container.querySelector('[data-testid="preview-interactive-declaration"]')).toBeNull();
   });
 
   test("starts off with the static document and the same-origin sandbox", async () => {
@@ -129,6 +130,35 @@ describe("the interactive preview toggle", () => {
     expect(frame().getAttribute("srcdoc")).not.toContain("data-sosb-theme-script");
     // The explanation is there for whoever wonders what the switch does.
     expect(container.querySelector('[data-testid="preview-interactive-info"]')).not.toBeNull();
+  });
+
+  test("discloses hosts and offline behaviour before opt-in and while preparing", async () => {
+    const vfs = new MemoryDriver();
+    const { container, frame, toggle } = await mountWithPackage([packageFiles()], vfs);
+    const declaration = (): string | null | undefined =>
+      container.querySelector('[data-testid="preview-interactive-declaration"]')?.textContent;
+    const expected =
+      "It may contact: api.example.org. Without an internet connection: The events list does not refresh.";
+    expect(declaration()).toBe(expected);
+    expect(frame().getAttribute("srcdoc")).not.toContain("data-sosb-theme-script");
+
+    // Hold asset preparation so the intermediate state is observable.
+    let finish!: (paths: string[]) => void;
+    vfs.list = () =>
+      new Promise<string[]>((resolve) => {
+        finish = resolve;
+      });
+    fireEvent.click(toggle());
+    await waitFor(() => expect(status(container)?.getAttribute("data-state")).toBe("preparing"));
+    expect(declaration()).toBe(expected);
+    expect(frame().getAttribute("srcdoc")).not.toContain("data-sosb-theme-script");
+    finish([]);
+    await waitFor(() => expect(status(container)?.getAttribute("data-state")).toBe("on"));
+    expect(declaration()).toBe(expected);
+
+    fireEvent.click(toggle());
+    expect(declaration()).toBe(expected);
+    expect(frame().getAttribute("srcdoc")).not.toContain("data-sosb-theme-script");
   });
 
   test("switching on boots an opaque-origin document carrying the script inline", async () => {
@@ -163,12 +193,12 @@ describe("the interactive preview toggle", () => {
     const strip = status(container)!;
     expect(strip.getAttribute("role")).toBe("status");
     expect(strip.textContent).toContain("Interactive preview is on");
-    expect(strip.querySelector('[data-testid="preview-interactive-network"]')?.textContent).toBe(
-      "It may contact: api.example.org.",
-    );
-    expect(strip.querySelector('[data-testid="preview-interactive-offline"]')?.textContent).toBe(
-      "Without an internet connection: The events list does not refresh.",
-    );
+    expect(
+      container.querySelector('[data-testid="preview-interactive-network"]')?.textContent,
+    ).toBe("It may contact: api.example.org.");
+    expect(
+      container.querySelector('[data-testid="preview-interactive-offline"]')?.textContent,
+    ).toBe("Without an internet connection: The events list does not refresh.");
   });
 
   test("shows the offline note even when the script contacts no other websites", async () => {
@@ -178,14 +208,13 @@ describe("the interactive preview toggle", () => {
     const { container, toggle } = await mountWithPackage([
       packageFiles(THEME_ID, { network: [], offline: "Everything works offline." }),
     ]);
-    await switchOn(container, toggle);
-    const strip = status(container)!;
-    expect(strip.querySelector('[data-testid="preview-interactive-network"]')?.textContent).toBe(
-      "It contacts no other websites.",
-    );
-    expect(strip.querySelector('[data-testid="preview-interactive-offline"]')?.textContent).toBe(
-      "Without an internet connection: Everything works offline.",
-    );
+    expect(toggle().checked).toBe(false);
+    expect(
+      container.querySelector('[data-testid="preview-interactive-network"]')?.textContent,
+    ).toBe("It contacts no other websites.");
+    expect(
+      container.querySelector('[data-testid="preview-interactive-offline"]')?.textContent,
+    ).toBe("Without an internet connection: Everything works offline.");
   });
 
   test("switching to another Theme turns the mode off instead of running its script", async () => {

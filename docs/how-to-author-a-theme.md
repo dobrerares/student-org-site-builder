@@ -654,11 +654,12 @@ Rules and facts:
 The preview pane offers an **Interactive preview** checkbox whenever the
 active Theme ships a `public.js` ([ADR 0056](adr/0056-interactive-preview-isolation.md)).
 It is off when the editor opens, it is never saved with the Site, and its (i)
-explains what it does. While it is on:
+explains what it does. The pane shows the `network` hosts and the `offline`
+note from your manifest before the author enables the switch, and keeps
+them visible while preparing or running the script. Write them for the
+author who reads that declaration. While it is on:
 
-- the preview document carries your script, and a status line shows the
-  `network` hosts and the `offline` note from your manifest — write them for
-  the author who reads that line, not for the loader;
+- the preview document carries your script, and a status line says it is running;
 - the document runs in a sealed frame: an opaque origin with no access to
   the editor's page, its storage or the computer. `localStorage`, cookies and
   `document.cookie` throw or are empty there and form submission is blocked;

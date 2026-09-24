@@ -53,10 +53,12 @@ explanation. It is off when the editor opens, it is shell state (never
 written to the Site, reset when another project is imported), and it is
 rendered only when the active Theme ships a public script — a disabled switch
 on every built-in Theme would be noise for the authors who will never need
-it. While it is on, a status line under the device presets says that the
-Theme's script is running and lists the manifest's `network` hosts and its
-`offline` note, verbatim; ADR 0046 asked every extension to document those,
-and this is where the author reads them before anything is contacted.
+it. Whenever the switch is offered, a declaration under the device presets
+lists the manifest's `network` hosts and its `offline` note, verbatim. It
+remains visible while the mode is off, preparing or on; ADR 0046 asked every
+extension to document those, and the author can read them before enabling
+any connections. A separate status line says when the Theme's script is
+running or its assets are being prepared.
 
 The switch is made for one Theme. It is keyed to the active Theme's id, so
 selecting or importing a _different_ Theme while it is on turns it off
