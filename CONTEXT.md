@@ -198,8 +198,8 @@ page of the **built** Site and never run during a render or in the
 ordinary (static) editor preview. Declared in the manifest with the hosts
 it may contact (`network`, required even when empty) and what stops
 working offline (`offline`). Exempt from the builder's script budget
-(ADR 0046). The `includePublicScript` preview option is the seam the
-interactive-preview mode will switch on.
+(ADR 0046). Runs in the editor only under the **Interactive preview**
+(ADR 0056), which flips the `includePublicScript` preview option.
 _Avoid_: theme JS, client bundle, plugin script.
 
 **Omitted Block**:
@@ -556,12 +556,23 @@ host-side, so there is exactly one Renderer code path).
 A full `srcdoc` reload is used, deliberately, when the previewed page,
 theme or language changes: those are different documents, and carrying
 state across them would be wrong.
-An interactive preview mode (ADR 0046) is still future work. Links
-inside the preview navigate it the way the public website would (ADR
-0053), but Blocks are not selected or edited by clicking them — editing
-goes through the forms. The seam for public-site scripts exists:
-`iframeSrcdoc`'s `includePublicScript` preview option emits the active
-Theme's public-site script, and nothing in the UI sets it yet.
+Links inside the preview navigate it the way the public website would
+(ADR 0053), but Blocks are not selected or edited by clicking them —
+editing goes through the forms. The Theme's public-site script runs only
+under the **Interactive preview**.
+
+**Interactive preview**:
+The preview pane's per-session switch (off by default, never saved with
+the Site, offered only when the active Theme ships a **public-site
+script**) that runs that script in the preview (ADR 0046, ADR 0056). Its
+document boots in an opaque-origin sandbox — no `allow-same-origin`, so
+the script cannot reach the editor, its storage or the Electron bridge —
+with every asset inlined as a `data:` URL, because that origin cannot
+load the editor's `blob:` URLs; the pane shows the manifest's `network`
+hosts and `offline` note. Switching it on or off is a document change (a
+full reload), and while it is on each edit reloads the document rather
+than morphing it. The static preview is unchanged.
+_Avoid_: live preview, script mode, unsandboxed preview.
 
 **Spine patch** vs **block patch**:
 A field edit in the SpineForm produces a "spine patch" with a path

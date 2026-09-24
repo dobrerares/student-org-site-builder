@@ -645,9 +645,36 @@ Rules and facts:
   README. Core content must still be readable HTML before it runs.
 - The script is not sandboxed — it is ordinary JavaScript on the visitor's
   page. The sandbox is for `render.js`.
-- In the editor, `iframeSrcdoc`'s `includePublicScript` preview option is the
-  seam the interactive-preview toggle flips. Until that toggle ships, test the
-  script in a built Site.
+- In the editor, the preview pane's **Interactive preview** switch runs your
+  script (next section). `iframeSrcdoc`'s `includePublicScript` preview option
+  is the seam it flips.
+
+### Trying it in the editor: interactive preview
+
+The preview pane offers an **Interactive preview** checkbox whenever the
+active Theme ships a `public.js` ([ADR 0056](adr/0056-interactive-preview-isolation.md)).
+It is off when the editor opens, it is never saved with the Site, and its (i)
+explains what it does. While it is on:
+
+- the preview document carries your script, and a status line shows the
+  `network` hosts and the `offline` note from your manifest — write them for
+  the author who reads that line, not for the loader;
+- the document runs in a sealed frame: an opaque origin with no access to
+  the editor's page, its storage or the computer. `localStorage`, cookies and
+  `document.cookie` throw or are empty there and form submission is blocked;
+  on the published Site they work normally, so guard them (`try`/`catch`, or
+  feature-test) rather than assume;
+- every asset is inlined, so `img.src` and `@font-face` URLs are `data:`
+  URLs rather than paths — never parse them;
+- links behave as in the static preview: internal links move the preview,
+  external links open a new tab;
+- every edit reloads the document, so your script starts over — exactly what
+  a visitor's refresh does. Nothing is morphed into a document your script
+  has changed.
+
+Switch it off and the static preview is back, unchanged. The workflow e2e
+(`e2e/custom-extensions-workflow.spec.ts`) drives the example Theme through
+both previews; copy its assertions for your own script.
 
 ---
 
@@ -722,9 +749,6 @@ Still planned, without a format break:
   [issue-106 contract](plans/issue-106-custom-block-contract.md) — the builder
   generates the editing forms, and your `render.js` designs them through the
   same `blocks` map described above.
-- **Interactive preview mode**, the editor toggle that turns
-  `includePublicScript` on so `public.js` can be exercised without leaving
-  the editor.
 
 Write your manifest normally. Unknown keys are preserved, `formatVersion`
 gates the format, and `builder.formatVersion` lets a future package state what
