@@ -64,11 +64,12 @@ describe("a well-formed package", () => {
     // ADR 0050's forward-compatibility rule: a package carrying keys this
     // builder has never heard of must load, not be rejected as malformed.
     // (`render` and `public` stopped being unknown in phase two — ADR 0054 —
-    // and are now validated; see render-modules.test.ts.)
+    // and `blocks` with Custom Blocks — ADR 0055; all three are validated now,
+    // see render-modules.test.ts and custom-blocks.test.ts.)
     const { manifest } = loadThemePackage(
-      pkg({ ...VALID_MANIFEST, blocks: [{ type: "x/y" }], preview: { swatches: [] } }),
+      pkg({ ...VALID_MANIFEST, widgets: [{ type: "x/y" }], preview: { swatches: [] } }),
     );
-    expect((manifest as unknown as { blocks?: unknown }).blocks).toEqual([{ type: "x/y" }]);
+    expect((manifest as unknown as { widgets?: unknown }).widgets).toEqual([{ type: "x/y" }]);
   });
 });
 

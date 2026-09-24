@@ -20,6 +20,7 @@ import type {
 import { ZipDriver } from "@sosb/vfs/zip-driver";
 import type { Vfs } from "@sosb/vfs/vfs";
 import { ThemePackageError } from "./errors.js";
+import { declaredCustomBlockTypes, loadCustomBlockDeclarations } from "./blocks.js";
 import {
   RENDER_MODULE_MAX_BYTES,
   ThemeSandboxNotReadyError,
@@ -275,6 +276,9 @@ export function loadThemePackage(files: ReadonlyMap<string, Uint8Array>): Loaded
   // created for a package that is then rejected would have no owner to
   // release it, and the wasm heap never shrinks (ADR 0054).
   const publicScript = loadPublicScript(manifest, files);
+  // Declarations before the design, for the same reason as the public script:
+  // a rejected declaration must not leave a compiled realm behind.
+  const customBlocks = loadCustomBlockDeclarations(manifest, files);
   const render = loadRenderModule(manifest, files);
 
   const bundle: ThemeBundle = {
@@ -299,6 +303,7 @@ export function loadThemePackage(files: ReadonlyMap<string, Uint8Array>): Loaded
     assets,
     render,
     publicScript,
+    customBlocks,
   };
 
   return { bundle, manifest, files: new Map(files) };
@@ -409,6 +414,59 @@ export async function loadThemePackageFromZip(zipBytes: Uint8Array): Promise<Loa
   return loadThemePackage(files);
 }
 
+/** Every file under `themes/<id>/`, keyed bundle-relative. */
+async function readInstalledFiles(vfs: Vfs, themeId: string): Promise<Map<string, Uint8Array>> {
+  const prefix = `${THEME_VFS_PREFIX}${themeId}/`;
+  const files = new Map<string, Uint8Array>();
+  for (const path of await vfs.list(prefix)) {
+    files.set(path.slice(prefix.length), await vfs.read(path));
+  }
+  return files;
+}
+
+/**
+ * What the editor learns about one installed package: the loaded package, or
+ * the reason it would not load plus the Custom Block types it points at, read
+ * leniently so the Blocks that depend on it can be labelled honestly
+ * (ADR 0055).
+ */
+export type InstalledThemePackageReport =
+  | { readonly id: string; readonly loaded: LoadedThemePackage; readonly error?: undefined }
+  | {
+      readonly id: string;
+      readonly loaded?: undefined;
+      readonly error: ThemePackageError;
+      readonly declaredBlockTypes: readonly string[];
+    };
+
+/**
+ * Load every package installed in a Site's VFS, reporting the ones that fail
+ * instead of skipping them. A damaged package must not stop a Site from
+ * opening (ADR 0051), but the editor has to know it is there: a Block whose
+ * type the damaged package declares is unavailable *because of that package*,
+ * and the message should say so.
+ */
+export async function loadInstalledThemePackages(vfs: Vfs): Promise<InstalledThemePackageReport[]> {
+  await initThemeSandbox();
+  const reports: InstalledThemePackageReport[] = [];
+  for (const id of await installedThemeIds(vfs)) {
+    const files = await readInstalledFiles(vfs, id);
+    try {
+      reports.push({ id, loaded: loadThemePackage(files) });
+    } catch (cause) {
+      const error =
+        cause instanceof ThemePackageError
+          ? cause
+          : new ThemePackageError(
+              "manifest-invalid",
+              cause instanceof Error ? cause.message : String(cause),
+            );
+      reports.push({ id, error, declaredBlockTypes: declaredCustomBlockTypes(files) });
+    }
+  }
+  return reports;
+}
+
 /**
  * Load a Theme package that lives under `themes/<id>/` in a Site's VFS. This
  * is the path used when reopening an editable Site archive — the Theme
@@ -421,17 +479,13 @@ export async function loadThemePackageFromVfs(
 ): Promise<LoadedThemePackage> {
   await initThemeSandbox();
   const prefix = `${THEME_VFS_PREFIX}${themeId}/`;
-  const paths = await vfs.list(prefix);
-  if (paths.length === 0) {
+  const files = await readInstalledFiles(vfs, themeId);
+  if (files.size === 0) {
     throw new ThemePackageError(
       "manifest-missing",
       `No Theme package is installed at ${prefix}.`,
       prefix,
     );
-  }
-  const files = new Map<string, Uint8Array>();
-  for (const path of paths) {
-    files.set(path.slice(prefix.length), await vfs.read(path));
   }
   return loadThemePackage(files);
 }
