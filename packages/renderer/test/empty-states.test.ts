@@ -86,12 +86,33 @@ const CASES: readonly Case[] = [
   {
     name: "richText",
     blockMarker: "richText",
-    empty: { id: "blk_empty", type: "richText", version: 1, data: { markdown: "   \n  " } },
+    // ADR 0048: "empty" is now a document with no visible content. A
+    // paragraph holding only whitespace is the structured equivalent of the
+    // whitespace-only Markdown this case used to carry.
+    empty: {
+      id: "blk_empty",
+      type: "richText",
+      version: 2,
+      data: {
+        doc: {
+          version: 1,
+          content: [{ type: "paragraph", content: [{ type: "text", text: "   " }] }],
+        },
+      },
+    },
     full: {
       id: "blk_full",
       type: "richText",
-      version: 1,
-      data: { markdown: "## Hello\n\nReal prose here." },
+      version: 2,
+      data: {
+        doc: {
+          version: 1,
+          content: [
+            { type: "heading", level: 2, content: [{ type: "text", text: "Hello" }] },
+            { type: "paragraph", content: [{ type: "text", text: "Real prose here." }] },
+          ],
+        },
+      },
     },
   },
   {
@@ -402,8 +423,13 @@ describe("empty-state suppression — surrounding blocks are unaffected", () => 
       {
         id: "blk_before",
         type: "richText",
-        version: 1,
-        data: { markdown: "Before." },
+        version: 2,
+        data: {
+          doc: {
+            version: 1,
+            content: [{ type: "paragraph", content: [{ type: "text", text: "Before." }] }],
+          },
+        },
       },
       {
         id: "blk_empty",
@@ -414,8 +440,13 @@ describe("empty-state suppression — surrounding blocks are unaffected", () => 
       {
         id: "blk_after",
         type: "richText",
-        version: 1,
-        data: { markdown: "After." },
+        version: 2,
+        data: {
+          doc: {
+            version: 1,
+            content: [{ type: "paragraph", content: [{ type: "text", text: "After." }] }],
+          },
+        },
       },
     ] as unknown as Site["pages"][number]["blocks"];
 

@@ -1,7 +1,7 @@
 /** @jsxImportSource react */
 import type { JSX } from "react";
 import { useEffect, useState } from "react";
-import { parseSite, type Site } from "@sosb/schema";
+import { migrateSite, parseSite, type Site } from "@sosb/schema";
 import type { Vfs } from "@sosb/vfs/vfs";
 import { loadAutosave, saveAutosave } from "@sosb/editor-state";
 import { EditorApp } from "@sosb/editor-app";
@@ -70,7 +70,12 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
 
         const rawSite = await loadAutosave(vfs);
         if (!cancelled && rawSite !== null) {
-          const site = parseSite(rawSite);
+          // The autosave is the one load path that does not go through
+          // `importFromZip`, so it runs the same migrations itself. A draft
+          // saved by an older editor — a Rich-text Block still holding
+          // Markdown, say — must open exactly as a zip of it would
+          // (ADR 0048: "opening older projects automatically converts").
+          const site = parseSite(migrateSite(rawSite).data);
           setDraft({ site, assetVfs: vfs, autosaveVfs: vfs });
         }
 

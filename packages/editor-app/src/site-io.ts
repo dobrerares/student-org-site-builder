@@ -141,3 +141,20 @@ export async function populateAssetDisplayUrls(
 
 /** Back-compat alias for tests/callers that only care about image thumbnails. */
 export const populateImageDisplayUrls = populateAssetDisplayUrls;
+
+/**
+ * The content hash embedded in a canonical `assets/<hash>.<ext>` path.
+ *
+ * The hash *is* the asset's identity — the display-URL cache above is keyed by
+ * it, and so is the pipeline's dedupe. That makes it the synchronous answer to
+ * "does this project still hold the bytes behind this reference?", which
+ * validation needs for ADR 0048's missing-image-bytes blocker.
+ *
+ * Paths that are not asset paths come back unchanged, which is harmless: they
+ * simply miss in every hash-keyed lookup.
+ */
+export function assetHashFromPath(path: string): string {
+  const filename = path.startsWith("assets/") ? path.slice("assets/".length) : path;
+  const dot = filename.lastIndexOf(".");
+  return dot >= 0 ? filename.slice(0, dot) : filename;
+}

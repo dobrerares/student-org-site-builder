@@ -17,6 +17,7 @@ import {
   CONTACT_CARD_BLOCK_VERSION,
   HERO_BLOCK_VERSION,
   RICH_TEXT_BLOCK_VERSION,
+  RICH_TEXT_DOC_VERSION,
   TEAM_GRID_BLOCK_VERSION,
   VALUE_LIST_BLOCK_VERSION,
   SITE_SCHEMA_VERSION,
@@ -138,7 +139,30 @@ function starterBlockFor(
         type,
         version: RICH_TEXT_BLOCK_VERSION,
         data: {
-          markdown: `## About ${context.orgName}\n\nWrite a short introduction for your organisation here.`,
+          // A structured document rather than Markdown (ADR 0048). Written
+          // out longhand rather than run through the Markdown converter: the
+          // wizard's starter content is authored here, and routing it via a
+          // migration path meant for *legacy* content would be a confusing
+          // way to say "this is what a new Block looks like".
+          doc: {
+            version: RICH_TEXT_DOC_VERSION,
+            content: [
+              {
+                type: "heading",
+                level: 2,
+                content: [{ type: "text", text: `About ${context.orgName}` }],
+              },
+              {
+                type: "paragraph",
+                content: [
+                  {
+                    type: "text",
+                    text: "Write a short introduction for your organisation here.",
+                  },
+                ],
+              },
+            ],
+          },
         },
       };
     case "valueList":

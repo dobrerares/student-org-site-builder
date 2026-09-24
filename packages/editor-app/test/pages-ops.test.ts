@@ -79,6 +79,16 @@ describe("clonePage", () => {
     const site = baseSite();
     expect(() => clonePage(site, 99, "x")).toThrow();
   });
+
+  test("clone does not inherit the source's permanent id", () => {
+    // `Page.id` (ADR 0048) is what prose links point at. Two Pages with the
+    // same id would make a link to either resolve to whichever comes first.
+    const site = baseSite();
+    site.pages[0]!.id = "page_1";
+    const next = clonePage(site, 0, "acasa-copy");
+    expect(next.pages[0]!.id).toBe("page_1");
+    expect("id" in next.pages[1]!).toBe(false);
+  });
 });
 
 describe("deletePage", () => {

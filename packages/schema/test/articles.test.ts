@@ -48,7 +48,19 @@ describe("article schema", () => {
       translationGroup: "g1",
       seo: { title: "Primul articol", description: "Descriere" },
       relatedArticles: { enabled: true, mode: "byTag", tags: ["t1"] },
-      blocks: [{ id: "b1", type: "richText", version: 1, data: { markdown: "Salut" } }],
+      blocks: [
+        {
+          id: "b1",
+          type: "richText",
+          version: 2,
+          data: {
+            doc: {
+              version: 1,
+              content: [{ type: "paragraph", content: [{ type: "text", text: "Salut" }] }],
+            },
+          },
+        },
+      ],
     });
     expect(parsed.success).toBe(true);
   });

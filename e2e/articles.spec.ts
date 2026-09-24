@@ -112,10 +112,22 @@ test("create, write, publish, and export an article", async ({ page }) => {
   await expect(slug).toHaveValue("gala-de-final");
   await page.getByTestId("drill-back").click();
 
-  // 2. Write — drill into the seeded Rich-text Block and type.
+  // 2. Write — drill into the seeded Rich-text Block and type. The Block
+  //    carries a structured document (ADR 0048), so the words go through the
+  //    same toolbar editor a Page uses, not a Markdown textarea.
   await page.getByTestId("block-row-select").first().click();
-  const markdown = page.locator('[data-testid="inspector"] textarea').first();
-  await markdown.fill("Gala a adunat peste **200 de studenți**.");
+  const surface = page.getByTestId("rich-text-surface");
+  await expect(surface).toBeVisible();
+  await surface.click();
+  await page.keyboard.type("Gala a adunat peste 200 de studenți.");
+  // Select "200 de studenți" (leaving the full stop) and bold it from the
+  // toolbar, which must not steal the selection.
+  await page.keyboard.press("ArrowLeft");
+  for (let i = 0; i < "200 de studenți".length; i += 1) {
+    await page.keyboard.press("Shift+ArrowLeft");
+  }
+  await page.getByTestId("rich-text-bold").click();
+  await expect(surface.locator("strong")).toHaveText("200 de studenți");
   await page.getByTestId("drill-back").click();
 
   // A Draft previews in the editor but must not reach the exported site.

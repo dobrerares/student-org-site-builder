@@ -518,6 +518,45 @@ main { display: block; }
   padding: 0 var(--space-xs);
   border-radius: var(--radius-sm);
 }
+[data-block="richText"] .rich-text :is(ul, ol) {
+  padding-left: var(--space-lg);
+}
+[data-block="richText"] .rich-text li > p {
+  margin: 0 0 var(--space-xs) 0;
+}
+[data-block="richText"] .rich-text li > p:last-child {
+  margin-bottom: 0;
+}
+[data-block="richText"] .rich-text s {
+  text-decoration-color: var(--color-muted);
+}
+[data-block="richText"] .rich-text-figure {
+  margin: 0 0 var(--space-md) 0;
+}
+[data-block="richText"] .rich-text-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+}
+[data-block="richText"] .rich-text-figure figcaption {
+  margin-top: var(--space-xs);
+  color: var(--color-muted);
+  font-size: 0.9em;
+}
+/*
+ * Unsupported content is an empty element: the Renderer will not invent a
+ * rendering for content it cannot read, and ADR 0048 forbids simplifying it
+ * away. It also never reaches a built site — it is a non-overridable export
+ * blocker — so these rules only ever apply in the editor preview, where the
+ * author needs to see that something is there.
+ */
+[data-block="richText"] .rich-text-unsupported {
+  min-height: var(--space-lg);
+  margin: 0 0 var(--space-md) 0;
+  border: 1px dashed var(--color-muted);
+  border-radius: var(--radius-sm);
+}
 [data-block="quote"] {
   margin: 0;
   padding: var(--space-lg) var(--space-md);

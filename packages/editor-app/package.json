@@ -23,12 +23,17 @@
     "@sosb/ui": "workspace:*",
     "@sosb/vfs": "workspace:*",
     "@sosb/zip": "workspace:*",
+    "@tiptap/core": "3.31.3",
+    "@tiptap/pm": "3.31.3",
+    "@tiptap/react": "3.31.3",
+    "@tiptap/starter-kit": "3.31.3",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@sosb/build": "workspace:*",
+    "@sosb/markdown": "workspace:*",
     "@testing-library/dom": "10.4.1",
     "@testing-library/react": "16.3.3",
     "@types/jsdom": "^21.1.7",

@@ -199,6 +199,45 @@ describe("WelcomeShell", () => {
     expect(container.querySelector('[data-testid="editor-app"]')).not.toBeNull();
   });
 
+  test("Continue draft converts a legacy Rich-text Block on the way in", async () => {
+    // The autosave is the one load path that bypasses the zip import, so it
+    // has to run the Block migrations itself. A draft written by an editor
+    // from before ADR 0048 still holds Markdown; opening it must yield the
+    // structured document the current editor and Renderer understand, and
+    // the re-saved draft must carry the converted shape.
+    const draftVfs = new MemoryDriver();
+    const draft = structuredClone(blankSite) as unknown as {
+      pages: { blocks: unknown[] }[];
+    };
+    draft.pages[0]!.blocks = [
+      {
+        id: "blk_legacy",
+        type: "richText",
+        version: 1,
+        data: { markdown: "## Salut\n\nText **gros**." },
+      },
+    ];
+    await saveAutosave(draftVfs, draft as unknown as Site);
+
+    const container = mount(<WelcomeShell blankSite={blankSite} draftVfs={draftVfs} />);
+    const continueButton = await waitForElement<HTMLButtonElement>(
+      container,
+      '[data-testid="welcome-action-continue"]',
+    );
+    await act(async () => {
+      continueButton!.click();
+      await Promise.resolve();
+    });
+    await waitForEffects();
+
+    expect(container.querySelector('[data-testid="editor-app"]')).not.toBeNull();
+    const saved = await loadAutosave(draftVfs);
+    const block = saved!.pages[0]!.blocks[0] as { version: number; data: Record<string, unknown> };
+    expect(block.version).toBe(2);
+    expect(block.data["markdown"]).toBeUndefined();
+    expect(block.data["doc"]).toMatchObject({ version: 1 });
+  });
+
   test("wizard can be launched and cancelled back to welcome", async () => {
     const container = mount(<WelcomeShell blankSite={blankSite} />);
 

@@ -96,9 +96,36 @@ editable across Theme switches.
 _Avoid_: component, widget, custom section.
 
 **Rich-text Block**:
-A Block of formatted prose. Its planned toolbar-based editing experience
-is shared by Pages and Articles; other Block types retain their dedicated controls.
+A Block of formatted prose, carrying a Rich-text document. Its toolbar-based
+editing experience is shared by Pages and Articles; other Block types retain
+their dedicated controls.
 _Avoid_: Article editor (when referring only to this Block).
+
+**Rich-text document**:
+The versioned, structured content of a Rich-text Block (ADR 0048): a tree of
+paragraphs, headings, lists, quotes and images, with bold/italic/underline/
+strikethrough/code/link marks on its text. Deliberately independent of the
+editing library — Tiptap edits it, but does not define it. Replaces the
+Markdown string Rich-text Blocks stored before; other Blocks' Markdown fields
+are unaffected.
+_Avoid_: rich text (as a mass noun, when you mean the stored value), ProseMirror
+document, HTML.
+
+**Link target**:
+What a prose link points at, stored as identity rather than address: a Page id,
+an Article id, or an external address. The Renderer resolves it to a URL at
+render time, so renaming a slug moves every link that pointed at it. A target
+that no longer resolves keeps its reference for repair, warns in Site Health,
+and renders as unlinked text.
+_Avoid_: href, URL, link (when you mean specifically the target).
+
+**Unsupported content**:
+Nodes or marks in a Rich-text document that this version of the editor does not
+recognise, usually because a newer version wrote them. Preserved exactly,
+shown read-only, and never simplified. It blocks public export without an
+override — one of only three such blockers, with a missing Rich-text image
+file and a broken explicit Article-list selection.
+_Avoid_: invalid content, corrupt content, unknown block.
 
 **Block envelope**:
 The outer shape every block shares: `{ id, type, version, data }`. The
@@ -214,9 +241,12 @@ A validation `error` carrying `blocking: true`, which the export
 readiness panel will not let the author override — its export button is
 disabled outright (ADR 0053). ADR 0016's "never hard-block"
 rule still governs every other error; this is the narrow ADR 0048 carve-out
-for public content that cannot be produced correctly at all — today, an
-active explicit Article-list selection pointing at a Draft or deleted
-Article. Saving the editable archive is never gated by it.
+for public content that cannot be produced correctly at all. There are
+exactly three: an active explicit Article-list selection pointing at a Draft
+or deleted Article, **Unsupported content** in a Rich-text document, and a
+Rich-text image whose file is missing from the project. Problems confined to
+Draft Articles are never blocking. Saving the editable archive is never gated
+by it.
 _Avoid_: fatal error, hard error.
 
 **Site spine**:

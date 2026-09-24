@@ -7,7 +7,12 @@
  * slug edit becomes redirect history, and what deleting a tag has to clean up.
  */
 import type { Article, ArticleTag, BlockEnvelope, Site } from "@sosb/schema";
-import { RICH_TEXT_BLOCK_VERSION, isValidSlug, normalizeTagLabel } from "@sosb/schema";
+import {
+  RICH_TEXT_BLOCK_VERSION,
+  emptyRichTextDocument,
+  isValidSlug,
+  normalizeTagLabel,
+} from "@sosb/schema";
 
 /** Romanian diacritics folded to ASCII, matching the slug rules in `@sosb/schema`. */
 const DIACRITIC_FOLD: Record<string, string> = {
@@ -161,7 +166,10 @@ export function createArticle(
     id: `blk_${id}_body`,
     type: "richText",
     version: RICH_TEXT_BLOCK_VERSION,
-    data: { markdown: "" },
+    // An empty structured document (ADR 0048), not a Markdown string: the
+    // Block is created at the current version, so no migration will ever
+    // run over it to convert a legacy shape.
+    data: { doc: emptyRichTextDocument() },
   };
   const article: Article = {
     id,

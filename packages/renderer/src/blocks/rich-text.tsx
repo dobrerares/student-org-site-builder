@@ -1,44 +1,33 @@
 /** @jsxImportSource preact */
-import type { RichTextBlock } from "@sosb/schema";
-import { markdownToHtml } from "@sosb/markdown";
+import type { RichTextBlock, RichTextDocument } from "@sosb/schema";
+import { isEmptyRichTextDocument } from "@sosb/schema";
+import type preact from "preact";
+import { renderRichTextDocToHtml, type RichTextRenderContext } from "../rich-text-html.js";
 
 /**
- * RichText block — markdown-prose section rendered structurally.
+ * RichText block — structured prose (ADR 0048).
  *
- * The component owns the semantic and accessibility shape of the block
- * (a `<section>` with the `rich-text` content container) and delegates the
- * actual prose-to-HTML translation to `@sosb/markdown`. Theme-specific
- * styling lives in the theme's CSS.
- *
- * Forward-compat: data is consumed tolerantly. Unknown extra fields on
- * `data` are ignored without throwing — the schema's preserve-unknown-keys
- * carries them through to round-trip persistence; the renderer simply
- * doesn't surface them. Empty markdown is allowed (placeholder block) and
- * renders an empty container.
- *
- * SECURITY NOTE: the markdown rendered here is XSS-safe by construction.
- * `markdownToHtml` returns HTML built from a typed AST — raw HTML in the
- * input is escaped, dangerous URL schemes are dropped, and only the
- * whitelisted set of elements (p, strong, em, code, a, ul, ol, li, h2, h3,
- * h4, blockquote) ever appears in the output. The component sets the
- * container's innerHTML from that already-safe string, NOT from user-
- * controlled markup. The XSS corpus in `@sosb/markdown` exercises this
- * contract; the renderer's `richtext-block.test.ts` re-asserts it at the
- * page level.
+ * The document is serialised to a string by `renderRichTextDocToHtml` and
+ * handed to `dangerouslySetInnerHTML`, as the Markdown version always did.
+ * The string is built tag by tag with every text and attribute escaped, so
+ * "dangerously" names the API, not the risk.
  */
 export function RichText(props: {
   block: RichTextBlock;
   variant?: string | undefined;
+  context?: RichTextRenderContext | undefined;
 }): preact.JSX.Element | null {
   const { id, data } = props.block;
-  const markdownSource = typeof data.markdown === "string" ? data.markdown : "";
+  const doc = data.doc as RichTextDocument | undefined;
 
-  // Empty-state suppression: a richText with no meaningful prose renders
-  // nothing rather than an empty styled container. Whitespace-only markdown
-  // counts as empty.
-  if (markdownSource.trim().length === 0) return null;
+  // Empty-state suppression: a richText with no meaningful content renders
+  // nothing rather than an empty styled container. Unchanged behaviour from
+  // the Markdown version, where whitespace-only source counted as empty.
+  if (isEmptyRichTextDocument(doc)) return null;
 
-  const html = markdownToHtml(markdownSource);
+  const html = renderRichTextDocToHtml(doc, props.context ?? {});
+  if (html === "") return null;
+
   const titleAlign = readAlignment(data.titleAlign);
   const paragraphAlign = readAlignment(data.paragraphAlign);
 

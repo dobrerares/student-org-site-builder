@@ -112,7 +112,7 @@ main > [data-block] {
   width: min(100%, var(--site-readable-width));
   margin-inline: auto;
 }
-[data-block="richText"] .rich-text > :is(p, ul, ol, blockquote, h2, h3, h4) {
+[data-block="richText"] .rich-text > :is(p, ul, ol, blockquote, h2, h3, h4, figure) {
   max-width: none;
 }
 [data-block="richText"][data-title-align="left"] .rich-text :is(h2, h3, h4),
@@ -129,6 +129,29 @@ main > [data-block] {
 }
 [data-block="richText"][data-title-align="justify"] .rich-text :is(h2, h3, h4),
 [data-block="richText"][data-paragraph-align="justify"] .rich-text :is(p, ul, ol, blockquote) {
+  text-align: justify;
+  text-align-last: left;
+}
+/*
+ * Per-node alignment (ADR 0048): a paragraph or heading carrying its own
+ * align attribute overrides the Block-level data-title-align /
+ * data-paragraph-align defaults above.
+ *
+ * The element list is not decoration - it is what makes these rules win.
+ * The Block-level selectors score (0,3,1); a bare
+ * .rich-text [data-align="left"] would score (0,3,0) and silently lose.
+ * Naming the element as well takes these to (0,4,1).
+ */
+[data-block="richText"] .rich-text :is(p, h2, h3, h4, ul, ol, blockquote)[data-align="left"] {
+  text-align: left;
+}
+[data-block="richText"] .rich-text :is(p, h2, h3, h4, ul, ol, blockquote)[data-align="center"] {
+  text-align: center;
+}
+[data-block="richText"] .rich-text :is(p, h2, h3, h4, ul, ol, blockquote)[data-align="right"] {
+  text-align: right;
+}
+[data-block="richText"] .rich-text :is(p, h2, h3, h4, ul, ol, blockquote)[data-align="justify"] {
   text-align: justify;
   text-align-last: left;
 }
