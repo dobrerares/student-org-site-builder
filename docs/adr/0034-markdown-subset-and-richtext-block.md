@@ -4,15 +4,17 @@
 - **Date:** 2026-05-05
 - **Issue:** #9
 
-## Planned amendment from issue #100
+## Amendment from issue #100 (implemented)
 
 [ADR 0048](0048-structured-rich-text-block-content.md) and the
 [rich-text contract](../plans/issue-100-rich-text-contract.md) replace Markdown
 storage and textarea-only editing for Rich-text Blocks with a structured document
 and shared toolbar editing on Pages and Articles. The contract includes images
 through the asset pipeline and additional supported formatting. Legacy conversion
-preserves the current renderer's displayed meaning. Other Blocks' Markdown fields
-retain this ADR's contract. This amendment describes planned behavior.
+preserves the current renderer's displayed meaning: `markdownToRichTextDoc` in
+`@sosb/markdown` mirrors this ADR's grammar rule for rule, and the `richText`
+Block v1 → v2 migration runs it on load. Other Blocks' Markdown fields (FAQ
+answers, quotes) retain this ADR's contract unchanged. Landed in PR #119.
 
 ## Context
 

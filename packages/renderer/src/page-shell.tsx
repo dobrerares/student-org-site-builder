@@ -74,6 +74,8 @@ import {
   themeDesignsBlockType,
   themeErrorBox,
 } from "./theme-design.js";
+import type { RichTextRenderContext } from "./rich-text-html.js";
+import { makeRichTextLinkResolver } from "./rich-text-links.js";
 
 /**
  * The design variant to hand a block component, or `undefined`.
@@ -188,6 +190,12 @@ interface BlockRenderContext {
   readonly design?: DesignContext | undefined;
   /** Active page-shell variant, handed to designs as part of Theme settings. */
   readonly shellVariant?: string | undefined;
+  /**
+   * Asset and link resolution for Rich-text documents (ADR 0048). Built once
+   * per rendered document rather than per Block: the link resolver indexes
+   * the Site's Pages and Articles.
+   */
+  readonly richText?: RichTextRenderContext | undefined;
 }
 
 function renderBlock(block: BlockEnvelope, ctx: BlockRenderContext): preact.JSX.Element | null {
@@ -230,7 +238,13 @@ function renderBlock(block: BlockEnvelope, ctx: BlockRenderContext): preact.JSX.
     );
   }
   if (block.type === "richText") {
-    return <RichText block={block as unknown as RichTextBlock} variant={variant} />;
+    return (
+      <RichText
+        block={block as unknown as RichTextBlock}
+        variant={variant}
+        context={ctx.richText}
+      />
+    );
   }
   if (block.type === "quote") {
     return (
@@ -455,6 +469,9 @@ export function PageShell(props: {
     theme,
     design,
     shellVariant,
+    // Built once per document: the link resolver indexes the Site's Pages and
+    // Articles, which would be wasteful to rebuild per Block.
+    richText: { assetUrlForPath, resolveLink: makeRichTextLinkResolver(site) },
   };
 
   const target: ShellTarget = {
@@ -670,6 +687,10 @@ export function ArticleShell(props: {
     containerArticleId: article.id,
     design,
     shellVariant,
+    // Article bodies start with a Rich-text Block, so this is not optional
+    // decoration: without it every prose link inside an Article would render
+    // as unlinked text.
+    richText: { assetUrlForPath, resolveLink: makeRichTextLinkResolver(site) },
   };
 
   // Articles have no site-footer Block of their own; they inherit one from

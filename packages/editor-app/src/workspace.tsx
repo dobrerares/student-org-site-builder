@@ -82,6 +82,21 @@ export interface WorkspaceProps {
     next: readonly unknown[],
   ) => void;
   readonly onReplaceBlockData: (blockIndex: number, data: unknown) => void;
+  /**
+   * Patch Block data *without* a Site-history entry — the rich-text editor's
+   * per-visit history contract (issue #100). Same shape as
+   * `onPatchBlockData`; the shell decides which one pushes history.
+   */
+  readonly onPatchBlockDataQuiet?:
+    | ((blockIndex: number, subpath: readonly (string | number)[], value: unknown) => void)
+    | undefined;
+  /**
+   * End a rich-text editing visit: one Site-history entry for the whole
+   * visit. Without it the Rich-text Block renders read-only, so the shell
+   * always supplies it; it is optional only for hosts that mount the
+   * workspace without prose editing (tests).
+   */
+  readonly onCommitRichTextVisit?: (() => void) | undefined;
 
   /** Per-page spine fields, already rebased onto this page's index. */
   readonly pageSettingsFields: FieldNode[];
@@ -219,6 +234,26 @@ export function Workspace(props: WorkspaceProps): JSX.Element {
           {...(article === undefined ? {} : { containerArticleId: article.id })}
           onSetVariant={(variant) => props.onSetBlockVariant(activeBlock.id, variant)}
           onPatchData={(subpath, value) => props.onPatchBlockData(activeBlockIndex, subpath, value)}
+          onPatchDataQuiet={
+            props.onPatchBlockDataQuiet === undefined
+              ? undefined
+              : (subpath, value) => props.onPatchBlockDataQuiet?.(activeBlockIndex, subpath, value)
+          }
+          // The rich-text editor (ADR 0048) is shared by Pages and Articles;
+          // `lang` is the container's, so the link picker lists what a
+          // reader of *this* text could be sent to.
+          richText={
+            props.onCommitRichTextVisit === undefined
+              ? undefined
+              : {
+                  site: props.site,
+                  lang,
+                  onApplySite: (next) => props.onApplySite(() => next),
+                  uploader: props.uploader,
+                  displayUrlFor: props.displayUrlFor,
+                  onCommitVisit: props.onCommitRichTextVisit,
+                }
+          }
           onArrayChangeData={(subpath, next) =>
             props.onArrayChangeBlockData(activeBlockIndex, subpath, next)
           }

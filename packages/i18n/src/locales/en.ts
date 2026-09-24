@@ -325,6 +325,63 @@ export const en: EnglishCatalog = {
   "wizard.action.skip": "Skip for now",
   "wizard.action.finish": "Finish",
 
+  // Rich-text editor (ADR 0048)
+  "richText.editor.label": "Text content",
+  "richText.editor.help":
+    "Use the buttons above to add headings, lists, quotes, links and images. Ctrl+Z undoes your last change while you are typing here.",
+  "richText.toolbar.label": "Text formatting",
+  "richText.toolbar.bold": "Bold",
+  "richText.toolbar.italic": "Italic",
+  "richText.toolbar.underline": "Underline",
+  "richText.toolbar.strike": "Strikethrough",
+  "richText.toolbar.code": "Inline code",
+  "richText.toolbar.paragraph": "Normal text",
+  "richText.toolbar.heading2": "Heading",
+  "richText.toolbar.heading3": "Subheading",
+  "richText.toolbar.heading4": "Small heading",
+  "richText.toolbar.bulletList": "Bulleted list",
+  "richText.toolbar.orderedList": "Numbered list",
+  "richText.toolbar.blockquote": "Quote",
+  "richText.toolbar.link": "Add link",
+  "richText.toolbar.unlink": "Remove link",
+  "richText.toolbar.image": "Add image",
+  "richText.toolbar.undo": "Undo (Ctrl+Z)",
+  "richText.toolbar.redo": "Redo (Ctrl+Shift+Z)",
+  "richText.link.title": "Link",
+  "richText.link.description":
+    "Link to one of your own pages or articles, or to an address on the web.",
+  "richText.link.tab.internal": "This site",
+  "richText.link.tab.external": "Web address",
+  "richText.link.search.label": "Search pages and articles",
+  "richText.link.search.placeholder": "Type a title…",
+  "richText.link.search.empty": "Nothing matches that search.",
+  "richText.link.kind.page": "Page",
+  "richText.link.kind.article": "Article",
+  "richText.link.draftWarning":
+    "This is a Draft. Visitors cannot open it, so the link will show as plain text until you publish it.",
+  "richText.link.external.label": "Web, email or phone address",
+  "richText.link.external.placeholder": "https://example.org",
+  "richText.link.external.help":
+    "Web addresses start with https://, email addresses with mailto:, phone numbers with tel:.",
+  "richText.link.external.invalid": "That does not look like a web, email or phone address.",
+  "richText.link.action.apply": "Add link",
+  "richText.link.action.remove": "Remove link",
+  "richText.link.action.cancel": "Cancel",
+  "richText.link.selectionRequired": "Select the words you want to turn into a link first.",
+  "richText.image.title": "Image",
+  "richText.image.description":
+    "The image is stored with your project, so it stays available when you reopen it.",
+  "richText.image.alt.label": "Image description",
+  "richText.image.alt.help":
+    "One short sentence describing what the image shows, for people using screen readers.",
+  "richText.image.caption.label": "Caption (optional)",
+  "richText.image.caption.help": "Shown under the image on the published page.",
+  "richText.image.action.insert": "Add image",
+  "richText.image.action.cancel": "Cancel",
+  "richText.unsupported.title": "This text cannot be edited here",
+  "richText.unsupported.body":
+    "It was made with a newer version of the editor. Your content is kept exactly as it was, and nothing has been changed or removed. Update the editor to edit it, or remove this section.",
+
   // Welcome screen
   "welcome.title": "Build your organisation's website",
   "welcome.subtitle": "Make a clean site, keep your files, and download a copy when you are ready.",

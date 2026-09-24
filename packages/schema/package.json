@@ -12,6 +12,7 @@
     "build": "tsc --build"
   },
   "dependencies": {
+    "@sosb/markdown": "workspace:*",
     "zod": "^4.4.3"
   }
 }

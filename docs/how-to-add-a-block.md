@@ -388,6 +388,42 @@ safety affordances) and `article-list-inspector.tsx` (its data is
 identifiers, see "Blocks whose data is references" above). Default to
 the auto-generated form unless your block meets that bar.
 
+### Overriding one field (ADR 0043)
+
+When a single field needs its own widget rather than the whole form,
+register the widget against the field's **schema instance** in
+`packages/editor-app/src/media-picker-renderers.ts`
+(`SCHEMA_FIELD_RENDERERS`) and add an arm to `FieldRenderer`'s
+`case "custom":` switch in `block-form.tsx`.
+
+The key is matched by reference equality, not by shape. That is why
+`@sosb/schema` exports one canonical `AssetRefSchema` and every
+image-bearing Block imports it: a structurally identical local copy
+falls through to the generated object form, silently. The same rule
+applies to `RichTextDocumentSchema`.
+
+Prefer schema identity over the path-keyed `renderer` in
+`field-metadata.ts`. A type that is recognisable on sight — an asset
+reference, a rich-text document — should be recognised wherever it
+appears, with no per-Block path metadata to keep in sync.
+
+### Prose fields
+
+Two different contracts, and picking the wrong one is a migration:
+
+- **A Rich-text Block** carries a `RichTextDocument` (ADR 0048) and gets
+  the Tiptap editor. Use this when the author writes _prose_: paragraphs,
+  headings, lists, links, images.
+- **A Markdown field on some other Block** — an FAQ answer, a quote —
+  keeps ADR 0034's strict whitelist subset and a plain `<textarea>`.
+  Use this for a short, constrained piece of text inside a structured
+  Block.
+
+Do not add a second Rich-text-document field to a Block. If a Block needs
+prose alongside its own fields, the prose belongs in its own Rich-text
+Block next to it; that is what keeps the document format's editing,
+validation, and export rules in one place.
+
 ## Step 6 — Tests
 
 Three layers of tests, all required.

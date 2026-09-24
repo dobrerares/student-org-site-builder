@@ -10,6 +10,7 @@ import { build } from "../packages/build/src/index.ts";
 import type { Site } from "../packages/schema/src/site.ts";
 import { validate } from "../packages/schema/src/validate.ts";
 import { MemoryDriver } from "../packages/vfs/src/memory.ts";
+import { markdownToRichTextDoc } from "../packages/markdown/src/to-doc.ts";
 import { exportToZip } from "../packages/zip/src/export.ts";
 
 Object.assign(globalThis, { React: { createElement: h, Fragment } });
@@ -382,12 +383,18 @@ async function main(): Promise<void> {
           {
             id: "blk_about_intro",
             type: "richText",
-            version: 1,
+            version: 2,
             data: {
               titleAlign: "left",
               paragraphAlign: "justify",
-              markdown:
+              // Authored as Markdown and converted here, rather than written
+              // out as a document literal: this is demo prose, and the
+              // converter is the same one the load-time migration uses, so
+              // what it produces is exactly what a real migrated project
+              // carries (ADR 0048).
+              doc: markdownToRichTextDoc(
                 "## Despre noi\n\nAsociația Studențească HISTORIPOL este o organizație non-guvernamentală, apolitică și non-profit, fondată în 2024 de studenți ai Facultății de Istorie și Științe Politice din cadrul Universității „Ovidius” din Constanța. Asociația a luat naștere din dorința de a dezvolta o comunitate academică unită, în care studenții și absolvenții pasionați de istorie, relații internaționale, studii europene și științe politice să se poată dezvolta personal, profesional și civic.\n\n## Misiunea noastră\n\nNe propunem să reprezentăm interesele, nevoile și drepturile studenților FISP și să contribuim la dezvoltarea lor prin proiecte educaționale și culturale. Prin activitățile noastre, promovăm responsabilitatea civică, valorile democratice și implicarea activă în comunitate.\n\n## Viziunea noastră\n\nCredem într-o comunitate academică constănțeană puternică, conectată la instituțiile de profil. Ne dorim ca HISTORIPOL să devină un spațiu de formare pentru tineri care înțeleg rolul istoriei, politicii și culturii în dezvoltarea societății.",
+              ),
             },
           },
           {

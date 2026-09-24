@@ -39,6 +39,7 @@ import { defaultArrayItemForBlock } from "./block-array-defaults.js";
 import { BLOCK_FIELD_METADATA } from "./field-metadata.js";
 import type { ApplySiteChange } from "./article-settings-form.js";
 import { useTranslator } from "./i18n-context.js";
+import type { RichTextFieldContext } from "./rich-text/rich-text-field.js";
 
 export interface BlockInspectorProps {
   readonly site: Site;
@@ -61,6 +62,20 @@ export interface BlockInspectorProps {
   readonly uploader: (file: File) => Promise<AssetRefLike>;
   readonly documentUploader: (file: File) => Promise<DocumentAssetRef>;
   readonly displayUrlFor?: ((ref: AssetRefLike) => string | undefined) | undefined;
+  /**
+   * Site-aware plumbing for the Rich-text Block's editor (ADR 0048). Without
+   * it the field renders as an inert marker, so the container must supply it
+   * for any Block list that can hold prose — which is every one.
+   */
+  readonly richText?: RichTextFieldContext | undefined;
+  /**
+   * Patch `data` *without* a Site-history entry. The rich-text editor's
+   * contract (issue #100) is one history entry per editing visit, not one per
+   * keystroke, while every change still reaches preview and export at once.
+   */
+  readonly onPatchDataQuiet?:
+    | ((subpath: readonly (string | number)[], value: unknown) => void)
+    | undefined;
 }
 
 export function BlockInspector(props: BlockInspectorProps): JSX.Element {
@@ -113,6 +128,8 @@ export function BlockInspector(props: BlockInspectorProps): JSX.Element {
           uploader={props.uploader}
           documentUploader={props.documentUploader}
           {...(props.displayUrlFor === undefined ? {} : { displayUrlFor: props.displayUrlFor })}
+          richText={props.richText}
+          onPatchQuiet={props.onPatchDataQuiet}
           newItem={(subpath) => defaultArrayItemForBlock(block.type, subpath)}
           overrides={BLOCK_FIELD_METADATA[block.type as keyof typeof BLOCK_FIELD_METADATA] ?? []}
         />

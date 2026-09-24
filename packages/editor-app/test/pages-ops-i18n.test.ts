@@ -76,6 +76,18 @@ describe("addLanguageVersion", () => {
     expect(newPage.localizedAs?.ro).toBe(sourceAfter.slug);
   });
 
+  test("the counterpart does not inherit the source's permanent id", () => {
+    // A language version is a different Page; a prose link to it must be
+    // able to receive its own id rather than answer to the source's.
+    const site = bilingualSite();
+    site.pages[1]!.id = "page_despre";
+    const next = addLanguageVersion(site, 1, "en");
+    const counterpart = next.pages[next.pages.length - 1]!;
+    expect(counterpart.lang).toBe("en");
+    expect("id" in counterpart).toBe(false);
+    expect(next.pages[1]!.id).toBe("page_despre");
+  });
+
   test("copies the source page's complete block content and structure", () => {
     const site = bilingualSite();
     site.pages[1]!.seo = {

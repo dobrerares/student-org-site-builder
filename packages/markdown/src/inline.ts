@@ -91,7 +91,7 @@ export function renderInline(text: string): string {
  * skipping over inline-code spans (where markdown markers are literal).
  * Returns -1 if no closing marker is found before end-of-line.
  */
-function findClosing(text: string, from: number, marker: string): number {
+export function findClosing(text: string, from: number, marker: string): number {
   let i = from;
   while (i < text.length) {
     // Skip inline-code spans entirely.
@@ -113,7 +113,7 @@ function findClosing(text: string, from: number, marker: string): number {
  * `*a **b** c*`, the closing `*` for the outer italic is the trailing `*`
  * after `c`, not the `**` markers around `b`.
  */
-function findClosingItalic(text: string, from: number, marker: string): number {
+export function findClosingItalic(text: string, from: number, marker: string): number {
   let i = from;
   while (i < text.length) {
     // Skip inline-code spans entirely.
@@ -143,7 +143,10 @@ function findClosingItalic(text: string, from: number, marker: string): number {
  *
  * Supports balanced brackets inside the link text — `[text [nested]]`.
  */
-function parseLink(text: string, start: number): { text: string; url: string; end: number } | null {
+export function parseLink(
+  text: string,
+  start: number,
+): { text: string; url: string; end: number } | null {
   if (text[start] !== "[") return null;
 
   // Find the matching `]` allowing one level of bracket nesting.

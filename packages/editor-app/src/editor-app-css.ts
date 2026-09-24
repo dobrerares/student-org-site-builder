@@ -1073,6 +1073,123 @@ body {
   line-height: 1.45;
 }
 
+/* --- Rich-text editor (ADR 0048/0049) ------------------------------------
+ *
+ * Chrome for the Tiptap surface. Deliberately NOT a preview of the public
+ * site: the Theme owns how prose looks when published, and dressing the
+ * editing surface up as the finished page would promise a fidelity the
+ * builder does not have. What it does promise is legible structure —
+ * headings look like headings, lists like lists — so the author can see what
+ * they are marking up.
+ */
+[data-testid="editor-pane"] [data-testid="rich-text-field"] {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+[data-testid="editor-pane"] .rich-text-toolbar {
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-md) var(--r-md) 0 0;
+  border-bottom: 0;
+  background: var(--paper-sunken);
+}
+[data-testid="editor-pane"] .rich-text-editing {
+  min-height: 12rem;
+  padding: 10px 12px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 0 0 var(--r-md) var(--r-md);
+  background: var(--paper-raised);
+  overflow-wrap: anywhere;
+}
+[data-testid="editor-pane"] .rich-text-editing:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+[data-testid="editor-pane"] .rich-text-editing > * {
+  margin: 0 0 0.65em 0;
+}
+[data-testid="editor-pane"] .rich-text-editing > *:last-child {
+  margin-bottom: 0;
+}
+[data-testid="editor-pane"] .rich-text-editing :is(h2, h3, h4) {
+  font-weight: 650;
+  line-height: 1.25;
+}
+[data-testid="editor-pane"] .rich-text-editing h2 {
+  font-size: var(--step-1);
+}
+[data-testid="editor-pane"] .rich-text-editing h3 {
+  font-size: var(--step-0);
+}
+[data-testid="editor-pane"] .rich-text-editing h4 {
+  font-size: var(--step--1);
+}
+[data-testid="editor-pane"] .rich-text-editing :is(ul, ol) {
+  padding-left: 1.4em;
+}
+[data-testid="editor-pane"] .rich-text-editing blockquote {
+  padding-left: 0.8em;
+  border-left: 3px solid var(--rule-strong);
+  color: var(--ink-2);
+}
+[data-testid="editor-pane"] .rich-text-editing code {
+  padding: 0 0.25em;
+  border-radius: var(--r-sm);
+  background: var(--paper-sunken);
+}
+/* An internal link has no meaningful href while editing (the Renderer
+ * resolves it), so the cue that it *is* a link has to come from styling. */
+[data-testid="editor-pane"] .rich-text-editing a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+[data-testid="editor-pane"] .rich-text-editing a[data-link-kind="page"],
+[data-testid="editor-pane"] .rich-text-editing a[data-link-kind="article"] {
+  text-decoration-style: dashed;
+}
+[data-testid="editor-pane"] .rich-text-editing figure {
+  margin: 0 0 0.65em 0;
+}
+[data-testid="editor-pane"] .rich-text-editing figure img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--r-sm);
+}
+[data-testid="editor-pane"] .rich-text-editing figcaption {
+  margin-top: 4px;
+  font-size: var(--step--2);
+  color: var(--ink-3);
+}
+/* An image whose bytes are not in the project: a labelled placeholder, not a
+ * broken-image icon (issue #100). Site Health carries the matching finding. */
+[data-testid="editor-pane"] .rich-text-editing .rich-text-figure__missing {
+  display: grid;
+  place-items: center;
+  min-height: 6rem;
+  padding: 12px;
+  border: 1px dashed var(--rule-strong);
+  border-radius: var(--r-sm);
+  background: var(--paper-sunken);
+  color: var(--ink-3);
+  font-size: var(--step--1);
+  text-align: center;
+}
+[data-testid="editor-pane"] .rich-text-editing .ProseMirror-selectednode {
+  outline: 2px solid var(--accent);
+}
+[data-testid="editor-pane"] [data-testid="rich-text-unsupported"] {
+  padding: 12px;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-md);
+  background: var(--paper-sunken);
+}
+[data-testid="editor-pane"] [data-testid="rich-text-unsupported-types"] {
+  font-family: ui-monospace, monospace;
+  font-size: var(--step--2);
+  color: var(--ink-3);
+}
+
 [data-testid="editor-pane"] input[type="text"],
 [data-testid="editor-pane"] input[type="number"],
 [data-testid="editor-pane"] input[type="search"],
@@ -1643,8 +1760,7 @@ body {
  * compose, so the dialog would be offset twice and land off-screen.
  * Only the z-index needs stating, so the popup clears the backdrop's
  * unlayered z-index above.
- */
-/*
+ *
  * Keyed on the popup's own ARIA contract rather than on a list of test ids.
  * The id list was a trap: a new dialog that forgot to join it rendered in
  * document flow *behind* the fixed backdrop, which then swallowed every

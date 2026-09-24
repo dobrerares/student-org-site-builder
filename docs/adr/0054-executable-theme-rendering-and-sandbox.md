@@ -245,8 +245,13 @@ loaded realms and compare bytes. Two environment facts had to be settled:
   871 KB** of its JavaScript (the wasm plus its Emscripten glue; the sandbox
   itself is 6 KB). Before this change the bundle was about 2.02 MB of
   JavaScript. After rebasing onto the builder redesign (#118) the whole
-  `builder.html` is **2,955,539 bytes (2.82 MiB)**; the archival 3 MiB
-  acceptance budget still holds, with roughly 190 KB to spare.
+  `builder.html` was **2,955,539 bytes (2.82 MiB)**, inside the archival 3 MiB
+  acceptance budget with roughly 190 KB to spare. Merging the Tiptap editor
+  (ADR 0048, #119) into the same bundle took it to **3,406,797 bytes
+  (3.25 MiB)**. The two are the largest dependencies the editor will carry
+  for the foreseeable future and neither can be lazy-loaded from a
+  single-file archive, so the budget is **raised to 4 MiB** (about 600 KB of
+  headroom); `packages/browser-shell/test/archival-cli.test.ts` enforces it.
 - **Electron.** WebAssembly compilation is refused under a bare `script-src
 'self'`. The packaged renderer's CSP gains `'wasm-unsafe-eval'`, which
   permits exactly that and nothing about JavaScript `eval`; the CSP test now
@@ -298,8 +303,10 @@ keeps the rest of the Theme rendering; re-import is one action away.
 - Themes can now produce their own page shell and Block markup, and Custom
   Blocks have a rendering mechanism waiting for them (issue-106 plan).
 - Every consumer of the editor bundle carries ~871 KB more JavaScript. The
-  single-file archival build is at ~2.82 MiB against a 3 MiB budget; the next
-  large dependency in any branch will have to revisit that number.
+  single-file archival build is at ~3.25 MiB against a budget raised here from
+  3 MiB to 4 MiB; the next large dependency will have to earn its bytes (the
+  bundle already inlines ~616 KB of woff2 fonts as base64, the obvious first
+  place to look).
 - A Theme with a `render.js` holds a sandbox realm while installed; the
   editor, the zip export and the package export release them. The wasm heap
   never shrinks, so a design that blows its memory ceiling leaves the process
