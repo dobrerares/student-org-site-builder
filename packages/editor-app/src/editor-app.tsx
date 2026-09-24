@@ -59,12 +59,22 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   AssetRefLike,
   BlockEnvelope,
+  CustomBlockDeclaration,
+  CustomBlockFailedPackageSource,
+  CustomBlockPackageSource,
   DocumentAssetRef,
+  RemovedCustomBlockContent,
   Site,
   ValidationIssue,
   ValidationResult,
 } from "@sosb/schema";
-import { SiteSchema, validate } from "@sosb/schema";
+import {
+  SiteSchema,
+  adaptSiteToDeclarations,
+  buildCustomBlockRegistry,
+  customBlockAvailabilityFor,
+  validate,
+} from "@sosb/schema";
 // Import browser-safe subpaths directly. `@sosb/assets`'s package
 // `index.ts` re-exports `createSharpImageProcessor` (a Node-only,
 // sharp-backed processor) which transitively reaches `node:fs`,
@@ -129,6 +139,8 @@ import { OverviewScreen } from "./overview-screen.js";
 import { PagesScreen } from "./pages-screen.js";
 import { PreviewPane } from "./preview-pane.js";
 import { ExportReadinessPanel } from "./export-readiness.js";
+import { PackageUpdateDialog } from "./package-update-dialog.js";
+import type { ThemeRecoveryEntry } from "./theme-packages-panel.js";
 import { Workspace, type WorkspaceTarget } from "./workspace.js";
 import {
   INITIAL_DESTINATION,
@@ -156,12 +168,19 @@ import { fontBlobUrlForPath, revokeFontBlobUrls } from "./font-blobs.js";
 import { revokeThemeBlobUrls, themeBlobUrlForPath } from "./theme-blobs.js";
 import { setBlockVariant } from "./theme-switch.js";
 import {
+  discardThemeRecoveryCopy,
   exportInstalledThemePackage,
+  initThemeSandbox,
   installThemePackageIntoVfs,
-  installedThemeIds,
+  loadInstalledThemePackages,
+  loadThemePackage,
   loadThemePackageFromVfs,
   loadThemePackageFromZip,
+  readThemeRecoveryCopy,
+  restoreRecoveredBlocks,
+  themeRecoveryIds,
   uninstallThemePackageFromVfs,
+  type LoadedThemePackage,
 } from "@sosb/theme-package";
 import { omittedBlocksFor, resolveThemeBundle, type ThemeBundle } from "@sosb/renderer";
 import { Button } from "@sosb/ui";
@@ -679,6 +698,39 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     displayUrlCacheRef.current = new Map();
   }
 
+  // Theme packages installed in this Site, loaded from the same VFS the zip
+  // round trip carries (`themes/<id>/...`). Holding them in editor state — not
+  // re-reading the VFS per render — keeps `renderSite` synchronous, which the
+  // srcdoc preview depends on.
+  const [installedThemes, setInstalledThemes] = useState<readonly ThemeBundle[]>([]);
+  // Packages under `themes/` that would not load, with the Custom Block types
+  // they point at (ADR 0055): a Block of one of those types is unavailable
+  // *because of that package*, and the message should say so.
+  const [packageFailures, setPackageFailures] = useState<readonly CustomBlockFailedPackageSource[]>(
+    [],
+  );
+  // Packages whose previous version the last update kept back (ADR 0055).
+  const [recoveries, setRecoveries] = useState<readonly ThemeRecoveryEntry[]>([]);
+  // Until the first read of `themes/` completes, nothing is known about the
+  // Site's packages; treating every Custom Block as missing for that moment
+  // would flash a blocking error on open. Custom Block rules wait for it.
+  const [packagesReady, setPackagesReady] = useState<boolean>(false);
+
+  /**
+   * The Custom Block types this Site can use (ADR 0055): the union of what
+   * the installed packages declare, plus what the failed ones point at.
+   * Handed to validation, the Add Block dialog, the Inspector and the export
+   * readiness panel, so the four cannot disagree about which types exist.
+   */
+  const customBlockRegistry = useMemo(() => {
+    const loaded: CustomBlockPackageSource[] = installedThemes.map((bundle) => ({
+      packageId: bundle.id,
+      packageVersion: bundle.version,
+      declarations: bundle.customBlocks ?? [],
+    }));
+    return buildCustomBlockRegistry(loaded, packageFailures);
+  }, [installedThemes, packageFailures]);
+
   // Validation result is recomputed on every snapshot change. `validate()`
   // is pure / cheap — running it inline keeps the panel and footer
   // perfectly in sync without a separate event channel.
@@ -698,8 +750,9 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     () =>
       validate(snapshot, {
         assetPathExists: (path) => displayUrlCacheRef.current?.has(assetHashFromPath(path)) ?? true,
+        ...(packagesReady ? { customBlocks: customBlockRegistry } : {}),
       }),
-    [snapshot, assetEpoch],
+    [snapshot, assetEpoch, customBlockRegistry, packagesReady],
   );
   // Revoke all minted blob URLs on unmount so we don't leak object-URL
   // entries past the editor's lifetime. `URL.revokeObjectURL` is a
@@ -729,12 +782,6 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     });
   }, []);
 
-  // Theme packages installed in this Site, loaded from the same VFS the zip
-  // round trip carries (`themes/<id>/...`). Holding them in editor state — not
-  // re-reading the VFS per render — keeps `renderSite` synchronous, which the
-  // srcdoc preview depends on.
-  const [installedThemes, setInstalledThemes] = useState<readonly ThemeBundle[]>([]);
-
   // A Theme package with a `render.js` holds a sandbox realm (ADR 0054).
   // Release the realms of bundles that have left the installed list — after
   // commit, so nothing still rendering through the old bundle sees a disposed
@@ -756,17 +803,32 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   async function reloadInstalledThemes(): Promise<void> {
     const vfs = assetVfsRef.current!;
     const bundles: ThemeBundle[] = [];
-    for (const id of await installedThemeIds(vfs)) {
-      try {
-        bundles.push((await loadThemePackageFromVfs(vfs, id)).bundle);
-      } catch {
-        // A damaged package must not stop the Site from opening (ADR 0051).
-        // It simply does not appear as installed, so `themeReferenceIssue`
-        // reports it and the Theme form offers the repair.
+    const failures: CustomBlockFailedPackageSource[] = [];
+    for (const report of await loadInstalledThemePackages(vfs)) {
+      if (report.loaded !== undefined) {
+        bundles.push(report.loaded.bundle);
         continue;
       }
+      // A damaged package must not stop the Site from opening (ADR 0051).
+      // It does not appear as installed, so `themeReferenceIssue` reports it
+      // and the Theme form offers the repair — and the Custom Block types it
+      // points at are unavailable with its reason attached (ADR 0055).
+      failures.push({
+        packageId: report.id,
+        errorCode: report.error.code,
+        message: report.error.message,
+        declaredTypes: report.declaredBlockTypes,
+      });
+    }
+    const kept: ThemeRecoveryEntry[] = [];
+    for (const id of await themeRecoveryIds(vfs)) {
+      const copy = await readThemeRecoveryCopy(vfs, id);
+      if (copy !== undefined) kept.push({ id, version: copy.version });
     }
     setInstalledThemes(bundles);
+    setPackageFailures(failures);
+    setRecoveries(kept);
+    setPackagesReady(true);
   }
 
   // Mount-only: the Site's installed Themes are read once from the VFS, and
@@ -775,6 +837,100 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   useEffect(() => {
     void reloadInstalledThemes();
   }, []);
+
+  /**
+   * An update waiting for the author's decision (ADR 0055): the incoming
+   * package, the Site adapted to its declarations, and the content that
+   * adaptation would remove. Nothing has been written yet.
+   */
+  const [pendingUpdate, setPendingUpdate] = useState<
+    | {
+        readonly loaded: LoadedThemePackage;
+        readonly adapted: Site;
+        readonly removed: readonly RemovedCustomBlockContent[];
+      }
+    | undefined
+  >(undefined);
+
+  /**
+   * Write an imported package into the Site.
+   *
+   * When the same id is already installed, the saved data has been adapted to
+   * the incoming declarations (`adaptSiteToDeclarations`) by the caller; if
+   * that changed any Block — data or version — the outgoing package and the
+   * affected Block envelopes are kept as the recovery copy before anything is
+   * written. An update that changes no Block (an appearance-only release,
+   * even of a package that declares Blocks) keeps whatever copy an earlier
+   * update left, which may still be the one the author wants back. Only the
+   * `adapted` Site the caller already reviewed is applied.
+   */
+  async function installPackage(loaded: LoadedThemePackage, adapted: Site): Promise<void> {
+    const vfs = assetVfsRef.current!;
+    const previous = installedThemes.find((bundle) => bundle.id === loaded.bundle.id);
+    if (previous !== undefined && adapted !== snapshot) {
+      const types = new Set([
+        ...providedDeclarations(previous.id, previous.customBlocks).map((d) => d.type),
+        ...providedDeclarations(loaded.bundle.id, loaded.bundle.customBlocks).map((d) => d.type),
+      ]);
+      const affected: BlockEnvelope[] = [];
+      for (const page of snapshot.pages) {
+        for (const block of page.blocks) if (types.has(block.type)) affected.push(block);
+      }
+      for (const article of snapshot.articles ?? []) {
+        for (const block of article.blocks) if (types.has(block.type)) affected.push(block);
+      }
+      // The recovery copy is the *installed* files, re-read from the VFS, so
+      // it is exactly what the archive carried — not a re-serialisation. If
+      // they cannot be loaded the update stops here, before anything is
+      // written: the plan promises the previous version stays recoverable.
+      const installedCopy = await loadThemePackageFromVfs(vfs, previous.id);
+      try {
+        // Commit the package and its recovery point together: a failed
+        // install must retain both the working package and any earlier copy.
+        await installThemePackageIntoVfs(vfs, loaded, {
+          previous: installedCopy,
+          blocks: affected,
+        });
+      } finally {
+        installedCopy.bundle.render?.dispose();
+      }
+    } else {
+      await installThemePackageIntoVfs(vfs, loaded);
+    }
+    // The reload below compiles the installed copy afresh; this validation
+    // load's sandbox realm has done its job.
+    loaded.bundle.render?.dispose();
+    if (adapted !== snapshot) applySite(adapted);
+    // Re-importing the same id and version with different bytes is the normal
+    // rhythm of authoring a Theme, so both URL caches (keyed on id + version)
+    // have to be dropped before and after the installed bundles reload.
+    dropThemePreviewUrls();
+    await reloadInstalledThemes();
+    dropThemePreviewUrls();
+  }
+
+  /**
+   * The declarations of a package that the registry would actually consult
+   * once it is installed. When another installed package with a smaller id
+   * declares the same type, that one stays the provider (the deterministic
+   * rule of `buildCustomBlockRegistry`), and adapting Blocks to a declaration
+   * nobody consults would only stamp them with a foreign data version — and
+   * make them `data-newer` under the declaration that does govern them.
+   */
+  function providedDeclarations(
+    packageId: string,
+    declarations: readonly CustomBlockDeclaration[] | undefined,
+  ): CustomBlockDeclaration[] {
+    const others = installedThemes.filter((bundle) => bundle.id !== packageId);
+    return (declarations ?? []).filter(
+      (declaration) =>
+        !others.some(
+          (bundle) =>
+            bundle.id < packageId &&
+            (bundle.customBlocks ?? []).some((other) => other.type === declaration.type),
+        ),
+    );
+  }
 
   /**
    * Drop every preview URL minted for Theme files — the static `blob:` cache
@@ -796,13 +952,60 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     // Load (and therefore fully validate) before writing anything: a rejected
     // package must leave the Site exactly as it found it.
     const loaded = await loadThemePackageFromZip(bytes);
-    await installThemePackageIntoVfs(assetVfsRef.current!, loaded);
-    // The reload below compiles the installed copy afresh; this validation
-    // load's sandbox realm has done its job.
+    const previous = installedThemes.find((bundle) => bundle.id === loaded.bundle.id);
+    // A new winning package may take a type over from another installed
+    // provider. Its declaration is not an update of that provider: preserve
+    // the complete saved envelopes, including their versions, and let the
+    // new registry validate them. Otherwise a first-import version stamp
+    // would claim foreign data had been migrated, without a recovery path.
+    const declarations = providedDeclarations(loaded.bundle.id, loaded.bundle.customBlocks).filter(
+      (declaration) => {
+        const outgoing = customBlockRegistry.lookup(declaration.type);
+        return outgoing?.status !== "available" || outgoing.packageId === loaded.bundle.id;
+      },
+    );
+    const { site: adapted, removed } = adaptSiteToDeclarations(
+      snapshot,
+      declarations,
+      providedDeclarations(loaded.bundle.id, previous?.customBlocks),
+    );
+    if (removed.length > 0) {
+      // Content would be removed: the author sees it and decides (issue-106
+      // plan). The dialog's cancel releases the realm and changes nothing.
+      setPendingUpdate({ loaded, adapted, removed });
+      return;
+    }
+    await installPackage(loaded, adapted);
+  }
+
+  async function confirmPendingUpdate(): Promise<void> {
+    const pending = pendingUpdate;
+    if (pending === undefined) return;
+    setPendingUpdate(undefined);
+    await installPackage(pending.loaded, pending.adapted);
+  }
+
+  function cancelPendingUpdate(): void {
+    pendingUpdate?.loaded.bundle.render?.dispose();
+    setPendingUpdate(undefined);
+  }
+
+  /**
+   * Put a package's previous version back, with the Block content saved
+   * alongside it (ADR 0055). The copy is validated by loading it before
+   * anything is written, exactly like an import.
+   */
+  async function restoreThemePackage(themeId: string): Promise<void> {
+    const vfs = assetVfsRef.current!;
+    const copy = await readThemeRecoveryCopy(vfs, themeId);
+    if (copy === undefined) return;
+    await initThemeSandbox();
+    const loaded = loadThemePackage(copy.files);
+    await installThemePackageIntoVfs(vfs, loaded);
     loaded.bundle.render?.dispose();
-    // Re-importing the same id and version with different bytes is the normal
-    // rhythm of authoring a Theme, so the URL caches (keyed on id + version)
-    // have to be dropped on every import rather than trusted to notice.
+    const restored = restoreRecoveredBlocks(snapshot, copy);
+    if (restored !== snapshot) applySite(restored);
+    await discardThemeRecoveryCopy(vfs, themeId);
     dropThemePreviewUrls();
     await reloadInstalledThemes();
     dropThemePreviewUrls();
@@ -845,10 +1048,37 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   // published Site, and the author acknowledges the list before exporting.
   // Computed statically from the same predicate `build()` renders with, so
   // the readiness panel and the export cannot disagree (ADR 0054).
-  const omittedBlocks = useMemo(
-    () => omittedBlocksFor(snapshot, activeThemeBundle),
-    [snapshot, activeThemeBundle],
-  );
+  //
+  // An *unavailable* Custom Block is not an omission (ADR 0055): its package
+  // is missing, or its data is newer than the installed declaration, so
+  // validation blocks the export outright and the panel lists it among the
+  // blockers — listing it here too would ask the author to acknowledge
+  // something they cannot acknowledge away. Availability is per envelope
+  // (the data version counts), so each omitted Block is looked up in place.
+  const omittedBlocks = useMemo(() => {
+    const omitted = omittedBlocksFor(snapshot, activeThemeBundle);
+    if (omitted.length === 0) return omitted;
+    const envelopes = new Map<string, BlockEnvelope>();
+    for (const page of snapshot.pages) {
+      for (const block of page.blocks)
+        envelopes.set(`page:${page.lang}:${page.slug}:${block.id}`, block);
+    }
+    for (const article of snapshot.articles ?? []) {
+      for (const block of article.blocks) envelopes.set(`article:${article.id}:${block.id}`, block);
+    }
+    return omitted.filter((entry) => {
+      const key =
+        entry.document.kind === "page"
+          ? `page:${entry.document.id}:${entry.blockId}`
+          : `article:${entry.document.id}:${entry.blockId}`;
+      const block = envelopes.get(key);
+      const availability =
+        block === undefined
+          ? customBlockRegistry.lookup(entry.blockType)
+          : customBlockAvailabilityFor(customBlockRegistry, block);
+      return availability?.status !== "unavailable";
+    });
+  }, [snapshot, activeThemeBundle, customBlockRegistry]);
 
   function displayUrlForAsset(ref: AssetRefLike): string | undefined {
     return displayUrlCacheRef.current!.get(ref.hash);
@@ -1211,7 +1441,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
 
   function onPickBlockType(type: string): void {
     if (editingArticle) {
-      const block = defaultBlockFor(type);
+      const block = defaultBlockFor(type, customBlockRegistry);
       applyArticleChange((site) => {
         const articles = (site.articles ?? []).slice();
         const article = articles[articleIndex];
@@ -1223,7 +1453,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       return;
     }
     if (activePageSlug === "") return;
-    const block = defaultBlockFor(type);
+    const block = defaultBlockFor(type, customBlockRegistry);
     const next = addBlockToPage(snapshot, activePageSlug, block);
     applySite(next);
     setPickerOpen(false);
@@ -1619,13 +1849,21 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     }
   });
 
-  async function performExport(): Promise<void> {
+  /**
+   * `publicSite` is `"required"` for Export website and `"when-buildable"`
+   * for Save project: a missing Theme package or Custom Block package stops
+   * a website export (the readiness panel already said so) but must never
+   * stop an author from keeping their work (issue-106 plan, ADR 0051).
+   */
+  async function performExport(
+    publicSite: "required" | "when-buildable" = "required",
+  ): Promise<void> {
     if (props.onExport !== undefined) {
       props.onExport(snapshot);
       return;
     }
     try {
-      const blob = await exportToZip(snapshot, assetVfsRef.current!);
+      const blob = await exportToZip(snapshot, assetVfsRef.current!, { publicSite });
       const basename = exportZipBasename(snapshot.org.name);
       downloadBlob(blob, `${basename}.zip`);
     } catch (err) {
@@ -1671,9 +1909,10 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       // No host persistence (the archival single-file build, an embedded
       // editor): the only way to keep the work is the downloaded archive, and
       // that must never be gated by validation, so it skips the readiness
-      // panel entirely.
+      // panel entirely — and is written even when the public Site inside it
+      // cannot be built.
       setDownloadedAt(nowLabel());
-      void performExport();
+      void performExport("when-buildable");
       return;
     }
     const seq = ++saveStatusSeqRef.current;
@@ -1826,6 +2065,8 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
         onDrillChange={setDrill}
         isNarrow={isNarrow}
         theme={activeThemeBundle}
+        customBlocks={packagesReady ? customBlockRegistry : undefined}
+        validation={validationResult}
         onBack={() => go(backDestination(reconciled))}
         onTitleChange={onWorkspaceTitleChange}
         onAddBlock={() => setPickerOpen(true)}
@@ -1920,6 +2161,8 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
                 onImportTheme={importThemePackage}
                 onExportTheme={exportThemePackageFile}
                 onRemoveTheme={removeThemePackage}
+                recoveries={recoveries}
+                onRestoreTheme={restoreThemePackage}
               />
             </div>
           </div>
@@ -2050,6 +2293,16 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
         onPick={onPickBlockType}
         onClose={() => setPickerOpen(false)}
         excludeTypes={editingArticle ? ARTICLE_BODY_EXCLUDED_BLOCKS : undefined}
+        customBlocks={customBlockRegistry}
+      />
+
+      <PackageUpdateDialog
+        open={pendingUpdate !== undefined}
+        packageName={pendingUpdate?.loaded.bundle.name ?? ""}
+        version={pendingUpdate?.loaded.bundle.version ?? ""}
+        removed={pendingUpdate?.removed ?? []}
+        onCancel={cancelPendingUpdate}
+        onConfirm={() => void confirmPendingUpdate()}
       />
     </div>
   );

@@ -22,23 +22,13 @@
 import type { JSX } from "react";
 import type * as React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { CustomBlockRegistry } from "@sosb/schema";
 
 import { buildBlockCatalog, type BlockCatalogEntry } from "./block-catalog.js";
+import { useTranslator } from "./i18n-context.js";
 import { EditorDialog } from "./editor-dialog.js";
 import { IconClose } from "./icons.js";
 import { Button, Input } from "@sosb/ui";
-
-const CATEGORY_LABELS: Record<string, string> = {
-  mandatory: "Essentials",
-  optional: "More sections",
-  advanced: "For experts",
-};
-
-const CATEGORY_HINTS: Record<string, string> = {
-  mandatory: "Most pages need these.",
-  optional: "Pick what fits your page.",
-  advanced: "Only if someone technical is helping.",
-};
 
 export interface AddBlockDialogProps {
   /** When `false`, the dialog renders nothing. */
@@ -52,13 +42,23 @@ export interface AddBlockDialogProps {
    * does not allow inside an Article's main content.
    */
   readonly excludeTypes?: readonly string[] | undefined;
+  /** The Site's Custom Block types (ADR 0055): available ones are offered under their labels. */
+  readonly customBlocks?: CustomBlockRegistry | undefined;
 }
 
 export function AddBlockDialog(props: AddBlockDialogProps): JSX.Element {
+  const t = useTranslator();
   const excludeKey = (props.excludeTypes ?? []).join(",");
+  const customBlocks = props.customBlocks;
+  const locale = t.locale;
   const catalog = useMemo(
-    () => buildBlockCatalog({ exclude: excludeKey === "" ? [] : excludeKey.split(",") }),
-    [excludeKey],
+    () =>
+      buildBlockCatalog({
+        exclude: excludeKey === "" ? [] : excludeKey.split(","),
+        customBlocks,
+        locale,
+      }),
+    [excludeKey, customBlocks, locale],
   );
   const [query, setQuery] = useState<string>("");
   const searchRef = useRef<HTMLInputElement | null>(null);
@@ -135,8 +135,8 @@ export function AddBlockDialog(props: AddBlockDialogProps): JSX.Element {
             {visibleGroups.map((group) => (
               <li key={group.category} data-testid="add-block-group" data-category={group.category}>
                 <h3>
-                  <span>{CATEGORY_LABELS[group.category] ?? group.category}</span>
-                  <small>{CATEGORY_HINTS[group.category] ?? ""}</small>
+                  <span>{t(`addBlock.category.${group.category}`)}</span>
+                  <small>{t(`addBlock.category.${group.category}.hint`)}</small>
                 </h3>
                 <ul>
                   {group.entries.map((entry) => (

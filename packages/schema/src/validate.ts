@@ -20,6 +20,9 @@ import {
   type RichTextDocument,
   type RichTextLinkTarget,
 } from "./rich-text-doc.js";
+import { isCustomBlockType } from "./custom-blocks/declaration.js";
+import { checkCustomBlockData } from "./custom-blocks/check-data.js";
+import { customBlockAvailabilityFor, type CustomBlockRegistry } from "./custom-blocks/registry.js";
 
 /**
  * Canonical theme IDs the renderer ships. Per ADR 0044 Corollary 3 the
@@ -87,12 +90,16 @@ export interface ValidationIssue {
    *
    * ADR 0016's rule is "blocking-on-confirmation, never hard-block". ADR 0048
    * carves out a narrow exception for public output that would be silently
-   * wrong rather than merely imperfect. There are exactly three cases:
+   * wrong rather than merely imperfect. The cases:
    *
    * - an active explicit Article-list selection pointing at a Draft or
    *   deleted Article (issue #97);
    * - rich-text content this editor cannot render (issue #100);
-   * - a rich-text image whose bytes are gone (issue #100).
+   * - a rich-text image whose bytes are gone (issue #100);
+   * - a Custom Block whose package is missing, damaged or needs a newer
+   *   builder, or whose data was saved by a newer package (ADR 0055) — the
+   *   issue-106 plan's "export stops until the extension is restored";
+   * - a Custom Block image or document whose bytes are gone (ADR 0055).
    *
    * Forcing any of them through would publish a page missing the author's
    * work. Saving the editable project archive stays available in every case —
@@ -130,6 +137,16 @@ export interface ValidateOptions {
    * ADR 0048 makes a non-overridable public-export blocker.
    */
   readonly assetPathExists?: (path: string) => boolean;
+  /**
+   * The Custom Block types this Site's installed packages provide (ADR 0055).
+   * When supplied, every Block with a namespaced type is checked: an
+   * available type's data is checked against its declaration (warnings only,
+   * per the issue-106 plan), an unavailable one is a blocking error that
+   * preserves the content and stops the export. Without it — `validate(site)`
+   * from the zip importer or the build — Custom Blocks are treated like any
+   * unknown type: envelope only.
+   */
+  readonly customBlocks?: CustomBlockRegistry;
 }
 
 /**
@@ -145,6 +162,8 @@ interface BlockRuleContext {
   readonly assetPathExists?: ((path: string) => boolean) | undefined;
   /** Resolves a rich-text link target, or `null` when it no longer exists. */
   readonly resolveLinkTarget?: ((target: RichTextLinkTarget) => LinkTargetState) | undefined;
+  /** Installed Custom Block types, when the host knows them (ADR 0055). */
+  readonly customBlocks?: CustomBlockRegistry | undefined;
 }
 
 /** What a stored link target currently points at. */
@@ -384,6 +403,7 @@ function runSiteRules(
     publicContent: true,
     assetPathExists: options.assetPathExists,
     resolveLinkTarget: makeLinkTargetResolver(site),
+    customBlocks: options.customBlocks,
   };
 
   site.pages.forEach((page, pageIdx) => {
@@ -448,7 +468,12 @@ function runBlocksDeep(
   context: BlockRuleContext = PUBLIC_BLOCK_CONTEXT,
 ): void {
   blocks.forEach((block, blockIdx) => {
-    if (!isKnownBlockType(block.type)) return;
+    if (!isKnownBlockType(block.type)) {
+      if (context.customBlocks !== undefined && isCustomBlockType(block.type)) {
+        runCustomBlockRules(block, [...basePath, blockIdx], result, context);
+      }
+      return;
+    }
     const knownSchema = KnownBlockSchemas[block.type] as unknown as z.ZodType;
     const known = knownSchema.safeParse(block);
     if (!known.success) {
@@ -471,6 +496,82 @@ function runBlocksDeep(
       else result.info.push(rebased);
     }
   });
+}
+
+// ---------------------------------------------------------------------------
+// Custom Block rules (ADR 0055; docs/plans/issue-106-custom-block-contract.md).
+// ---------------------------------------------------------------------------
+
+/**
+ * Check one Custom Block against the registry.
+ *
+ * An unavailable type — package missing, damaged, needing a newer builder, or
+ * data saved by a newer package — is a blocking error at the Block itself:
+ * the content is preserved, the Inspector shows it as unavailable, and the
+ * export stops until the package is restored. The path ends in `data` so the
+ * readiness panel's "Fix" opens the Block Inspector, where the reason is
+ * explained, rather than the Page settings.
+ *
+ * An available type's data is checked against its declaration by
+ * `checkCustomBlockData`; every content rule there is a warning.
+ */
+function runCustomBlockRules(
+  block: z.infer<typeof BlockEnvelopeSchema>,
+  blockPath: (string | number)[],
+  result: ValidationResult,
+  context: BlockRuleContext,
+): void {
+  const registry = context.customBlocks;
+  if (registry === undefined) return;
+  const availability = customBlockAvailabilityFor(registry, block);
+  if (availability === undefined) return;
+  if (availability.status === "unavailable") {
+    result.errors.push({
+      severity: "error",
+      path: [...blockPath, "data"],
+      code: `block.custom.unavailable.${availability.reason}`,
+      message: availability.message,
+      ...(context.publicContent ? { blocking: true } : {}),
+    });
+    return;
+  }
+  const { declaration } = availability;
+  if (block.version < declaration.version) {
+    result.warnings.push({
+      severity: "warning",
+      path: [...blockPath, "data"],
+      code: "block.custom.version.outdated",
+      message:
+        `This block was saved with an older version of its package (data version ${block.version}, ` +
+        `installed version ${declaration.version}). Your content is kept; fields the newer version added start empty.`,
+    });
+  }
+  const issues = checkCustomBlockData(declaration, block.data, {
+    publicContent: context.publicContent,
+    assetPathExists: context.assetPathExists,
+    resolveLinkTarget: context.resolveLinkTarget,
+    checkRichText: (doc, path) => {
+      const child = emptyResult();
+      runRichTextRules(doc, child, context);
+      // `runRichTextRules` reports under `["data", "doc", …]`; rebase onto the
+      // field that holds this document. Its "empty section" nudge does not
+      // apply: a field's emptiness is the `required` rule's business, and an
+      // optional field the author cleared is simply empty.
+      return [...child.errors, ...child.warnings, ...child.info]
+        .filter((issue) => issue.code !== "block.richText.doc.empty")
+        .map((issue) => ({
+          ...issue,
+          path: [...path, ...issue.path.slice(2)],
+          code: issue.code.replace("block.richText.", "block.custom.richText."),
+        }));
+    },
+  });
+  for (const issue of issues) {
+    const rebased: ValidationIssue = { ...issue, path: [...blockPath, "data", ...issue.path] };
+    if (issue.severity === "error") result.errors.push(rebased);
+    else if (issue.severity === "warning") result.warnings.push(rebased);
+    else result.info.push(rebased);
+  }
 }
 
 // ---------------------------------------------------------------------------

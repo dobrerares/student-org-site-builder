@@ -84,10 +84,12 @@ describe("examples/themes/practice", () => {
     expect([...bundle.assets.keys()]).toContain("assets/grid.svg");
   });
 
-  test("compiles its render.js into a design with a shell and a hero override", () => {
+  test("compiles its render.js into a design with a shell, a hero override and the Partners Block", () => {
     expect(bundle.render).toBeDefined();
     expect(bundle.render?.hasShell).toBe(true);
-    expect(bundle.render?.blockTypes).toEqual(["hero"]);
+    expect(bundle.render?.blockTypes).toEqual(["hero", "org.example/partners"]);
+    // The Custom Block it designs is also the one it declares (ADR 0055).
+    expect(bundle.customBlocks?.map((d) => d.type)).toEqual(["org.example/partners"]);
   });
 
   test("declares its public script with an honest, empty network list", () => {

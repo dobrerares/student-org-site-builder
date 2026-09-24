@@ -19,6 +19,7 @@
  * See ADR 0054.
  */
 
+import type { CustomBlockDeclaration } from "@sosb/schema";
 import type { ThemePublicScript, ThemeRenderModule } from "./theme-render.js";
 import { STUB_THEME_CSS, STUB_THEME_ID } from "./themes/stub.js";
 import { PRODUCTION_SITE_BASE_CSS } from "./themes/production-base.js";
@@ -152,6 +153,14 @@ export interface ThemeBundle {
    * dependencies. Emitted into the built Site; never run during a render.
    */
   readonly publicScript?: ThemePublicScript | undefined;
+  /**
+   * The Custom Block types this package declares (`blocks/<name>/block.json`,
+   * ADR 0055). A declaration gives a type its editing form; whether *this*
+   * Theme also designs it is a separate question answered by `render`. The
+   * editor's Custom Block registry is the union of these across the Site's
+   * installed packages.
+   */
+  readonly customBlocks?: readonly CustomBlockDeclaration[] | undefined;
 }
 
 /**

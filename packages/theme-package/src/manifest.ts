@@ -195,6 +195,14 @@ export const ThemeManifestSchema = z.looseObject({
   render: ThemePathSchema.optional(),
   /** The public-site script and its declared external dependencies. */
   public: PublicScriptSchema.optional(),
+  /**
+   * Custom Block declarations (ADR 0055), each a bundle-relative path to a
+   * `block.json` — conventionally `blocks/<name>/block.json`. Every listed
+   * file must exist and parse; a declaration this builder cannot honour
+   * rejects the whole package, because an author must never see a broken
+   * form (issue-106 plan, "unsupported field definitions").
+   */
+  blocks: z.array(ThemePathSchema).default([]),
   // There is deliberately no `preview` block of swatches and sample words.
   // The pickers render a real miniature of the Theme instead, so a
   // hand-written palette here would be a second copy of what `theme.css`

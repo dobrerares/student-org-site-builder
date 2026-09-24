@@ -25,7 +25,14 @@
  * preview-bridge business entirely.
  */
 import type { JSX, ReactNode } from "react";
-import type { AssetRefLike, BlockEnvelope, DocumentAssetRef, Site } from "@sosb/schema";
+import type {
+  AssetRefLike,
+  BlockEnvelope,
+  CustomBlockRegistry,
+  DocumentAssetRef,
+  Site,
+  ValidationResult,
+} from "@sosb/schema";
 import { ARTICLE_STATES } from "@sosb/schema";
 import type { ThemeBundle } from "@sosb/renderer";
 import { Badge, Button, Input, Label, Segmented } from "@sosb/ui";
@@ -62,6 +69,10 @@ export interface WorkspaceProps {
   /** Phone layout: editing and preview are shown one at a time. */
   readonly isNarrow: boolean;
   readonly theme?: ThemeBundle | undefined;
+  /** The Site's Custom Block types (ADR 0055). */
+  readonly customBlocks?: CustomBlockRegistry | undefined;
+  /** The current validation result, for findings beside a Block's fields. */
+  readonly validation?: ValidationResult | undefined;
 
   /** Back to the list this content came from. */
   readonly onBack: () => void;
@@ -152,7 +163,7 @@ export function Workspace(props: WorkspaceProps): JSX.Element {
     );
   }
 
-  const catalog = buildBlockCatalog();
+  const catalog = buildBlockCatalog({ customBlocks: props.customBlocks, locale: t.locale });
   const drill = props.drill;
   const activeBlockIndex =
     drill.kind === "block" ? blocks.findIndex((b) => b.id === drill.blockId) : -1;
@@ -210,6 +221,19 @@ export function Workspace(props: WorkspaceProps): JSX.Element {
 
   if (drill.kind === "block" && activeBlock !== undefined) {
     const entry = catalog.entryFor(activeBlock.type);
+    // The findings that belong to this Block, re-rooted onto its `data` so
+    // the form can place each beside the field it names.
+    const blockPrefix: (string | number)[] =
+      target.kind === "page"
+        ? ["pages", target.pageIndex, "blocks", activeBlockIndex, "data"]
+        : ["articles", articleIndex, "blocks", activeBlockIndex, "data"];
+    const blockIssues = [...(props.validation?.errors ?? []), ...(props.validation?.warnings ?? [])]
+      .filter(
+        (issue) =>
+          issue.path.length > blockPrefix.length &&
+          blockPrefix.every((segment, index) => issue.path[index] === segment),
+      )
+      .map((issue) => ({ ...issue, path: issue.path.slice(blockPrefix.length) }));
     const rawBlockTitle = (activeBlock.data as { title?: unknown })?.title;
     const blockTitle =
       typeof rawBlockTitle === "string" && rawBlockTitle.trim() !== ""
@@ -230,6 +254,8 @@ export function Workspace(props: WorkspaceProps): JSX.Element {
           site={props.site}
           block={activeBlock}
           theme={props.theme}
+          customBlocks={props.customBlocks}
+          issues={blockIssues}
           containerLang={lang}
           {...(article === undefined ? {} : { containerArticleId: article.id })}
           onSetVariant={(variant) => props.onSetBlockVariant(activeBlock.id, variant)}
@@ -407,6 +433,7 @@ export function Workspace(props: WorkspaceProps): JSX.Element {
             site={props.site}
             pageSlug={page?.slug ?? article?.slug ?? ""}
             blocks={blocks}
+            customBlocks={props.customBlocks}
             heading={
               <>
                 {t("workspace.blocks")}

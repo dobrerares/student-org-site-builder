@@ -242,10 +242,41 @@ export default {
 };
 `;
 
+/** A minimal declaration for a Custom Block type (ADR 0055), so the type is *available*. */
+function declaration(type: string): string {
+  return JSON.stringify({
+    formatVersion: 1,
+    type,
+    version: 1,
+    label: type.slice(type.indexOf("/") + 1),
+    fields: [
+      {
+        name: "items",
+        kind: "list",
+        label: "Items",
+        item: { kind: "group", fields: [{ name: "name", kind: "text", label: "Name" }] },
+      },
+    ],
+  });
+}
+
 function execPackage(): Map<string, Uint8Array> {
+  // Both Custom Block types the tests place are declared, so an undesigned
+  // one is an *omission* (ADR 0045) rather than a missing declaration, which
+  // build() refuses outright (ADR 0055).
   return pkg(
-    { ...MANIFEST, render: "render.js", public: { file: "public.js", network: [] } },
-    { "render.js": DESIGN, "public.js": "(function(){})();" },
+    {
+      ...MANIFEST,
+      render: "render.js",
+      public: { file: "public.js", network: [] },
+      blocks: ["blocks/partners/block.json", "blocks/unknown/block.json"],
+    },
+    {
+      "render.js": DESIGN,
+      "public.js": "(function(){})();",
+      "blocks/partners/block.json": declaration("org.example/partners"),
+      "blocks/unknown/block.json": declaration("org.example/unknown"),
+    },
   );
 }
 

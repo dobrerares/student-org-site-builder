@@ -10,8 +10,12 @@ compose end to end.
 
 Copy this directory as the starting point for a real Theme. Since 1.1.0 it
 ships a `render.js` (an executable page shell and a hero override) and a
-`public.js` (a phone navigation toggle and a sticky-header shrink). Delete
-both and it is still a complete, declarative Theme.
+`public.js` (a phone navigation toggle and a sticky-header shrink). Since
+1.2.0 it also declares a **Partners Custom Block** in
+`blocks/partners/block.json` and designs it in `render.js`
+([ADR 0055](../../../docs/adr/0055-custom-block-declarations.md),
+[how to author a Custom Block](../../../docs/how-to-author-a-custom-block.md)).
+Delete all three and it is still a complete, declarative Theme.
 
 ## The design
 
@@ -66,16 +70,54 @@ at export would be wrong by the time anyone noticed.
 `public.js` is ~1.5 KB, declares `network: []`, and is exempt from the
 builder's script budget by rule rather than by size.
 
+## The Partners Custom Block
+
+`blocks/partners/block.json` declares the type `org.example/partners`
+(permanent; the label "Partners" / "Parteneri" is what authors see and may be
+renamed freely) at data version 1, with these fields:
+
+- **Heading** — short text, required, at most 80 characters.
+- **Intro** — rich text, optional.
+- **Show group headings** — a switch, on by default.
+- **Groups** — a list of at most six groups, each with a required **Group
+  heading** and a list of **Partners**, each with a required **Name**, a
+  **Logo** (an image with its screen-reader description) and a **Link** (the
+  partner's website, or a Page or Article on this site, stored by identity).
+
+The builder generates the whole editing form from that file: the text boxes,
+the rich-text editor, the switch, the Asset picker, the link picker and the
+add/remove/reorder controls are all the builder's own. Labels and help text
+are translated for the editor's language and fall back to the default.
+Validation rules (required, length, list size) are warnings the author can
+acknowledge; nothing is ever truncated.
+
+`render.js` designs the Block in two variants, offered in the Block
+Inspector's **Design** control:
+
+- **Grid** — each group as an even grid of framed logos with the name
+  beneath. A partner without a logo shows its initials in the frame.
+- **Band** — each group as one quiet row of small logos on the lighter panel,
+  names available to screen readers only.
+
+Both read `input.data` exactly as saved and handle every field being empty; a
+Block with nothing in it renders nothing. A partner's link goes through
+`input.linkUrl()`, which answers `null` for a Page that was since deleted, so
+the partner shows without a link rather than with a dead one. Another Theme
+that declares no design for the type leaves the Block out of the published
+Site and the author acknowledges the omission before exporting (ADR 0045);
+the content is never touched.
+
 ## Contents
 
 ```
-theme.json   manifest: tokens, fonts, variants, shell variants, render, public
-theme.css    the stylesheet (~18 KB)
-render.js    the executable design: page shell + hero override (~7 KB)
+theme.json   manifest: tokens, fonts, variants, shell variants, render, public, blocks
+theme.css    the stylesheet (~21 KB)
+render.js    the executable design: page shell, hero override, Partners Block (~10 KB)
 public.js    the public-site script: nav toggle, sticky-header shrink (~1.5 KB)
+blocks/      partners/block.json — the Partners Custom Block declaration
 fonts/       Archivo 400/700/900 and Inter 400/600, latin + latin-ext
 assets/      grid.svg — the decorative background texture
-screenshots/ desktop and phone captures of the sample Site
+screenshots/ desktop and phone captures of the sample Site, Partners included
 ```
 
 `latin-ext` is shipped for both families on purpose: Romanian needs `ș`, `ț`,
@@ -99,6 +141,9 @@ organisation's own name in a fallback font.
 - **An executable page shell and a Block override** in `render.js`, and a
   **public-site script** that degrades without JavaScript, declared with
   `network: []`.
+- **A Custom Block with declared fields** — `blocks/partners/block.json` —
+  edited with the builder's own controls and designed by `render.js` in two
+  variants (ADR 0055).
 
 ## Using it
 
@@ -131,6 +176,11 @@ Covered by `packages/theme-package/test/`:
 - `example-practice-golden.test.ts` — pins the home page (Standard shell,
   Spotlight hero, script on) and the about page (Compact shell, script off)
   to golden files.
+- `example-practice-partners.test.ts` — loads the Partners declaration,
+  checks the builder's registry and validation over it, renders the Block in
+  both variants with logos, initials, Page links and a missing Page, pins the
+  output to golden files, and asserts two separately loaded realms produce
+  identical bytes.
 - `example-practice-a11y.test.ts` — runs axe over every page and every shell
   variant, asserting this Theme introduces no violation a built-in Theme does
   not already produce on the same content.

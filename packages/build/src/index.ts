@@ -16,7 +16,12 @@
  */
 
 import type { Article, Page, Site, ValidationIssue } from "@sosb/schema";
-import { validate } from "@sosb/schema";
+import {
+  buildCustomBlockRegistry,
+  customBlockAvailabilityFor,
+  isCustomBlockType,
+  validate,
+} from "@sosb/schema";
 import type { OmittedBlock, ThemeBundle, ThemeRenderIssue } from "@sosb/renderer";
 import {
   articleCopy,
@@ -79,6 +84,39 @@ export class BuildThemeMissingError extends Error {
         `Pass it through options.themes, or switch the Site to a built-in Theme.`,
     );
     this.themeId = themeId;
+  }
+}
+
+/**
+ * Thrown when a Page or a public Article holds a Custom Block that no supplied
+ * Theme package can honour (ADR 0055): no package declares its type
+ * (`package-missing`), or the Block was saved by a newer version of the
+ * package than the one supplied (`data-newer`).
+ *
+ * The issue-106 plan's "missing required extension": the Site opens and saves
+ * with the Block's data intact, but public export stops until the package is
+ * restored. This is deliberately *not* the omission path (ADR 0045) — that is
+ * for a declared type the active Theme happens not to design, which the author
+ * may acknowledge. A missing declaration is a damaged archive, and the author
+ * cannot know what the published page would be missing.
+ */
+export class BuildCustomBlockMissingError extends Error {
+  public override readonly name = "BuildCustomBlockMissingError";
+  public readonly blockType: string;
+  public readonly blockId: string;
+  public readonly reason: "package-missing" | "data-newer";
+
+  constructor(blockType: string, blockId: string, reason: "package-missing" | "data-newer") {
+    super(
+      reason === "data-newer"
+        ? `build: block ${blockId} of type "${blockType}" was saved by a newer version of its ` +
+            `Theme package than the one supplied. Import that newer package before exporting.`
+        : `build: block ${blockId} is a Custom Block of type "${blockType}", and no supplied ` +
+            `Theme package declares that type. Import the package that provides it before exporting.`,
+    );
+    this.blockType = blockType;
+    this.blockId = blockId;
+    this.reason = reason;
   }
 }
 
@@ -218,6 +256,37 @@ export function build(site: Site, options: BuildOptions = {}): DistFolder {
 
   if (site.pages.length === 0) {
     throw new Error("build: site has no pages");
+  }
+
+  // Every Custom Block on a public page must be honoured by *some* supplied
+  // package — not necessarily the active Theme: its type declared, and its
+  // data no newer than that declaration. The same registry the editor
+  // derives, built from the same bundles, so the two cannot disagree.
+  // Whether the active Theme designs it is the separate, acknowledgeable
+  // omission question.
+  const registry = buildCustomBlockRegistry(
+    (options.themes ?? []).map((bundle) => ({
+      packageId: bundle.id,
+      packageVersion: bundle.version,
+      declarations: bundle.customBlocks ?? [],
+    })),
+  );
+  const requireDeclared = (blocks: readonly Site["pages"][number]["blocks"][number][]): void => {
+    for (const block of blocks) {
+      if (!isCustomBlockType(block.type)) continue;
+      const availability = customBlockAvailabilityFor(registry, block);
+      if (availability?.status === "unavailable") {
+        throw new BuildCustomBlockMissingError(
+          block.type,
+          block.id,
+          availability.reason === "data-newer" ? "data-newer" : "package-missing",
+        );
+      }
+    }
+  };
+  for (const page of site.pages) requireDeclared(page.blocks);
+  for (const article of site.articles ?? []) {
+    if (article.state !== "draft") requireDeclared(article.blocks);
   }
 
   const dist: DistFolder = new Map();

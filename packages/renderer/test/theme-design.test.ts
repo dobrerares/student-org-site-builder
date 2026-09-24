@@ -468,6 +468,172 @@ describe("what a tree may not contain", () => {
   });
 });
 
+describe("Custom Block field values (ADR 0055)", () => {
+  /** A Site with a second Page that has a permanent id, and one Article each way. */
+  function linkSite(): Site {
+    return siteFor((s) => {
+      s.pages[0]!.id = "page_home";
+      s.pages.push({
+        ...structuredClone(s.pages[0]!),
+        id: "page_about",
+        slug: "despre",
+        navLabel: "Despre",
+        navOrder: 1,
+        blocks: [],
+      });
+      s.articles = [
+        {
+          id: "art_pub",
+          lang: "ro",
+          slug: "salut",
+          title: "Salut",
+          state: "published",
+          publishedAt: "2026-01-01",
+          blocks: [],
+        },
+        {
+          id: "art_draft",
+          lang: "ro",
+          slug: "ciorna",
+          title: "Ciornă",
+          state: "draft",
+          publishedAt: "2026-01-01",
+          blocks: [],
+        },
+      ] as unknown as Site["articles"];
+    });
+  }
+
+  test("linkUrl() resolves a Link target by identity and answers null when it does not resolve", () => {
+    const bundle = bundleWith({
+      blocks: {
+        hero: (_i, h) => [
+          "ul",
+          null,
+          ["li", null, String(h.linkUrl({ kind: "page", pageId: "page_about" }))],
+          ["li", null, String(h.linkUrl({ kind: "page", pageId: "page_gone" }))],
+          ["li", null, String(h.linkUrl({ kind: "article", articleId: "art_pub" }))],
+          ["li", null, String(h.linkUrl({ kind: "article", articleId: "art_draft" }))],
+          ["li", null, String(h.linkUrl({ kind: "external", href: "https://example.org/x" }))],
+          ["li", null, String(h.linkUrl({ kind: "external", href: "javascript:alert(1)" }))],
+          ["li", null, String(h.linkUrl("https://example.org"))],
+          ["li", null, String(h.linkUrl(undefined))],
+        ],
+      },
+    });
+    const html = render(linkSite(), bundle);
+    expect(html).toContain(
+      "<li>/despre/</li><li>null</li><li>/articles/salut/</li><li>null</li>" +
+        "<li>https://example.org/x</li><li>null</li><li>null</li><li>null</li>",
+    );
+  });
+
+  test("a Page link resolved by linkUrl() is accepted as an href, and a missing one renders unlinked", () => {
+    const bundle = bundleWith({
+      blocks: {
+        "org.example/partners": (i, h) => [
+          "ul",
+          null,
+          ...i.data.items.map((item: { name: string; link?: unknown }) => {
+            const href = h.linkUrl(item.link);
+            return ["li", null, href === null ? item.name : ["a", { href }, item.name]];
+          }),
+        ],
+      },
+    });
+    const site = linkSite();
+    site.pages[0]!.blocks.push({
+      ...structuredClone(CUSTOM_BLOCK),
+      data: {
+        items: [
+          { name: "Alpha", link: { kind: "page", pageId: "page_about" } },
+          { name: "Beta", link: { kind: "page", pageId: "page_gone" } },
+        ],
+      },
+    });
+    expect(render(site, bundle)).toContain('<li><a href="/despre/">Alpha</a></li><li>Beta</li>');
+  });
+
+  test("pageUrl() accepts a permanent Page id as well as the lang:slug key", () => {
+    const bundle = bundleWith({
+      blocks: {
+        hero: (_i, h) => [
+          "p",
+          null,
+          String(h.pageUrl("page_about")),
+          "|",
+          String(h.pageUrl("ro:despre")),
+        ],
+      },
+    });
+    expect(render(linkSite(), bundle)).toContain(">/despre/|/despre/</p>");
+  });
+
+  test("richText() renders a structured document with the page's link and image resolution", () => {
+    const doc = {
+      version: 1,
+      content: [
+        {
+          type: "paragraph",
+          content: [
+            {
+              type: "text",
+              text: "About",
+              marks: [{ type: "link", target: { kind: "page", pageId: "page_about" } }],
+            },
+            { type: "text", text: " and " },
+            {
+              type: "text",
+              text: "gone",
+              marks: [{ type: "link", target: { kind: "page", pageId: "page_gone" } }],
+            },
+          ],
+        },
+        {
+          type: "image",
+          asset: {
+            hash: "h",
+            path: "assets/h.png",
+            metadataPath: "assets/h.json",
+            mime: "image/png",
+            width: 1,
+            height: 1,
+            alt: "A picture",
+          },
+        },
+      ],
+    };
+    const bundle = bundleWith({
+      blocks: { hero: (_i, h) => ["div", { class: "prose" }, h.richText(doc)] },
+    });
+    const html = render(linkSite(), bundle, { resolver: (p) => `blob:${p}` });
+    expect(html).toContain('<a href="/despre/">About</a>');
+    expect(html).toContain(" and gone");
+    expect(html).not.toContain("page_gone");
+    expect(html).toContain('src="blob:assets/h.png"');
+    expect(html).toContain('alt="A picture"');
+  });
+
+  test("a declared Custom Block type without a design is still omitted, and one with a design is not", () => {
+    const declaration = {
+      formatVersion: 1 as const,
+      type: "org.example/partners",
+      version: 1,
+      label: "Partners",
+      fields: [{ name: "heading", kind: "text" as const, label: "Heading" }],
+    };
+    const undesigned = bundleWith({ blocks: {} }, { customBlocks: [declaration] });
+    const site = siteFor((s) => s.pages[0]!.blocks.push(structuredClone(CUSTOM_BLOCK)));
+    expect(omittedBlocksFor(site, undesigned).map((o) => o.blockId)).toEqual(["blk_partners"]);
+    expect(blockHasDesign(undesigned, "org.example/partners")).toBe(false);
+    const designed = bundleWith(
+      { blocks: { "org.example/partners": () => ["p", null, "x"] } },
+      { customBlocks: [declaration] },
+    );
+    expect(omittedBlocksFor(site, designed)).toEqual([]);
+  });
+});
+
 describe("failure surfaces per mode", () => {
   const throwing = bundleWith({
     blocks: {

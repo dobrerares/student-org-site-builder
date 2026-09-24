@@ -1,7 +1,7 @@
 import { MemoryDriver } from "@sosb/vfs/memory";
 import { ZipDriver } from "@sosb/vfs/zip-driver";
 import type { Vfs } from "@sosb/vfs/vfs";
-import { build } from "@sosb/build";
+import { BuildCustomBlockMissingError, BuildThemeMissingError, build } from "@sosb/build";
 import type { Site } from "@sosb/schema";
 import type { ThemeBundle } from "@sosb/renderer";
 import { installedThemeIds, loadThemePackageFromVfs } from "@sosb/theme-package";
@@ -27,6 +27,30 @@ export function serializeSiteData(siteData: unknown): Uint8Array {
   return enc.encode(json);
 }
 
+export interface ExportToZipOptions {
+  /**
+   * Whether the archive must carry the built public Site under `dist/`.
+   *
+   * `"required"` (the default) lets a public Site that cannot be produced
+   * reject the whole export — a Theme package that is not installed
+   * (ADR 0051) or a Custom Block no supplied package honours (ADR 0055) —
+   * which is what *Export website* wants: never a download that looks like a
+   * site and is not one.
+   *
+   * `"when-buildable"` is for *Save project*: the editable archive is written
+   * in every case (issue-106 plan: the Site "can still be opened and saved
+   * without losing its Block data or files"), and in exactly those two cases
+   * `dist/` and `DEPLOY.md` are left out rather than written with a hole.
+   * Every other build failure still rejects.
+   */
+  readonly publicSite?: "required" | "when-buildable";
+}
+
+/** The two build refusals that mean "damaged archive", not "bad Site". */
+function isDamagedArchiveBuildError(error: unknown): boolean {
+  return error instanceof BuildThemeMissingError || error instanceof BuildCustomBlockMissingError;
+}
+
 /**
  * Export a site to a zip `Blob`.
  *
@@ -36,15 +60,18 @@ export function serializeSiteData(siteData: unknown): Uint8Array {
  * data.json              # canonical site data
  * assets/<hash>.<ext>    # content-addressed assets, copied from `vfs`
  * assets/...metadata     # whatever the asset VFS holds — copied verbatim
+ * themes/<id>/...        # installed Theme packages (ADR 0051)
+ * themes-recovery/<id>/  # the copy a package update kept back (ADR 0055)
  * dist/                  # built static site ready for Cloudflare Pages
  * dist/assets/<hash>...  # deployable copies of referenced user assets
  *                        # (minus files only Draft articles use)
  * DEPLOY.md              # generated Cloudflare Pages guide
  * ```
  *
- * Only `assets/...` paths are copied from `vfs`. Anything else in the
- * input VFS (debugging scratch files, editor state) is intentionally
- * dropped — the exported zip is for end users, not editor internals.
+ * Only those prefixes are copied from `vfs`. Anything else in the input
+ * VFS (debugging scratch files, editor state) is intentionally dropped —
+ * the exported zip is for end users, not editor internals. `dist/` and
+ * `DEPLOY.md` are absent only when `options.publicSite` allows it.
  *
  * The export is deterministic: same `siteData` + same `vfs` contents →
  * byte-identical zip. This is the contract the round-trip identity
@@ -54,7 +81,11 @@ export function serializeSiteData(siteData: unknown): Uint8Array {
  * re-parsed first. This preserves any unknown keys the caller's
  * runtime had already preserved (per ADR-0002 / ADR-0003).
  */
-export async function exportToZip(siteData: unknown, vfs: Vfs): Promise<Blob> {
+export async function exportToZip(
+  siteData: unknown,
+  vfs: Vfs,
+  options: ExportToZipOptions = {},
+): Promise<Blob> {
   const driver = new ZipDriver();
 
   // 1. Canonical site data.
@@ -84,6 +115,12 @@ export async function exportToZip(siteData: unknown, vfs: Vfs): Promise<Blob> {
   for (const path of await vfs.list("themes/")) {
     await driver.write(path, await vfs.read(path));
   }
+  // The recovery copy an author-controlled package update leaves behind
+  // (ADR 0055) travels too, so "restore the previous version" works after a
+  // save and on another machine. Never mirrored into `dist/`.
+  for (const path of await vfs.list("themes-recovery/")) {
+    await driver.write(path, await vfs.read(path));
+  }
 
   // 3. Built static site. The editor's export-confirm flow already showed
   // validation issues; `skipValidation` lets the user's explicit download
@@ -93,14 +130,23 @@ export async function exportToZip(siteData: unknown, vfs: Vfs): Promise<Blob> {
   // state: the archive and the built site must agree about which Theme this
   // is, and the VFS is the thing being archived.
   const themes = await installedThemeBundles(vfs);
-  let dist: ReturnType<typeof build>;
+  let dist: ReturnType<typeof build> | undefined;
   try {
     dist = build(siteData as Site, { skipValidation: true, themes });
+  } catch (error) {
+    if (options.publicSite !== "when-buildable" || !isDamagedArchiveBuildError(error)) throw error;
+    // The editable archive is complete without `dist/`: the Site, its assets
+    // and its packages are all here, and the editor has already told the
+    // author what is missing. What cannot be produced is left out entirely.
+    dist = undefined;
   } finally {
     // Each loaded package compiled its `render.js` into a sandbox realm of
     // its own; the export is the only thing that will ever render through
     // these bundles, so release them here (ADR 0054).
     for (const bundle of themes) bundle.render?.dispose();
+  }
+  if (dist === undefined) {
+    return new Blob([driver.toZipBytes()], { type: "application/zip" });
   }
   for (const [path, value] of dist) {
     // The dist Map carries text artefacts (HTML/XML/JSON) as `string` and

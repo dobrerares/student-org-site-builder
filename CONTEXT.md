@@ -89,11 +89,53 @@ authors also needs theme CSS and `@sosb/i18n` strings. `docs/how-to-add-a-block.
 has the full checklist.
 _Avoid_: section, component, widget.
 
-**Custom Block** (planned):
-A developer-authored Block type with its own editable fields, supplied
-through an importable builder-specific package. Its content remains
-editable across Theme switches.
-_Avoid_: component, widget, custom section.
+**Custom Block**:
+A developer-authored Block type with its own editable fields, declared in a
+Theme package's `blocks/<name>/block.json` (ADR 0055) and designed by the
+active Theme's `render.js`. Its type id is permanent and namespaced
+(`org.example/partners` — the slash is what marks it); its label is what
+authors see. The builder generates its editing form from the declaration
+with its own controls; the content is ordinary Block data, kept across Theme
+switches and package updates.
+_Avoid_: component, widget, custom section, extension (when you mean the
+Block type rather than the package).
+
+**Custom Block declaration**:
+The `block.json` that defines a Custom Block type: `type`, data `version`,
+translated `label`/`description`, and `fields` from the fixed vocabulary
+(text, richText, number, boolean, choice, link, image, document, group,
+list) with their labels, help and validation rules (`required`, `maxLength`,
+`min`/`max`, `minItems`/`maxItems`). Only switches and choices carry
+defaults. Parsed at package import; an unsupported field kind refuses the
+package.
+_Avoid_: schema (that is the builder's Zod), field config.
+
+**Custom Block registry**:
+What a Site can use: the Custom Block types its installed packages declare,
+derived in the editor from `themes/` and handed to validation, the Add Block
+dialog, the Inspector and the export readiness panel alike. A type is
+_available_ (declared by a loaded package) or _unavailable_.
+_Avoid_: block library (that is the catalog of everything addable).
+
+**Unavailable Block**:
+A Custom Block whose declaration cannot be used: its package is missing
+from the archive, needs a newer builder, would not load, or the saved data
+is newer than the installed declaration. Content is kept exactly, the
+Inspector shows a notice instead of a form, and the export is blocked until
+the package is imported or updated. Deliberately distinct from an **omitted
+Block**, which is available but undesigned by the active Theme and can be
+acknowledged.
+_Avoid_: broken block, unknown block (that is a non-namespaced type from a
+newer builder, which still exports).
+
+**Package update** / **recovery copy**:
+Re-importing an installed package id. Saved Block data is adapted to the
+new declarations — remaining fields keep their content, new ones start
+empty, removed ones are _listed_ before anything is written and the author
+may keep the current version instead. The outgoing package and the affected
+Blocks are kept under `themes-recovery/<id>/` (one copy per package, in the
+archive) and can be put back with _Restore previous version_.
+_Avoid_: migration (that is the builder's own schema versioning), rollback.
 
 **Rich-text Block**:
 A Block of formatted prose, carrying a Rich-text document. Its toolbar-based
@@ -201,6 +243,9 @@ working offline (`offline`). Exempt from the builder's script budget
 (ADR 0046). Runs in the editor only under the **Interactive preview**
 (ADR 0056), which flips the `includePublicScript` preview option.
 _Avoid_: theme JS, client bundle, plugin script.
+
+**Link target** (in a Custom Block): the same shape prose links use — see
+above. A `link` field stores one; `input.linkUrl()` resolves it.
 
 **Omitted Block**:
 A Block whose type has neither a built-in component nor a design in the

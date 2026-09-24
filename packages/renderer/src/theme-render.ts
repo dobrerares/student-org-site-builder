@@ -135,6 +135,15 @@ export interface ThemeRenderHelpers {
   /** An Article's permanent id → the builder-computed href. */
   articleUrl(articleId: string): string | null;
   /**
+   * A stored **Link target** — what a Custom Block `link` field or a prose
+   * link holds (`{ kind: "page", pageId }`, `{ kind: "article", articleId }`,
+   * `{ kind: "external", href }`) — to its href, or `null` when it does not
+   * resolve: a deleted Page, a Draft Article, an address the builder would
+   * refuse. A design renders `null` as unlinked text (issue-106 plan, "Page
+   * missing").
+   */
+  linkUrl(target: unknown): string | null;
+  /**
    * Builder-rendered, sanitised prose.
    *
    * Returns an opaque sentinel, not an HTML string. The design places the

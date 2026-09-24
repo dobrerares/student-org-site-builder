@@ -149,6 +149,9 @@ const GUEST_BOOTSTRAP = `
     input.mediaAlt = function (r) { return __sosb_mediaAlt(JSON.stringify(r === undefined ? null : r)); };
     input.pageUrl = function (id) { return JSON.parse(__sosb_pageUrl(String(id))); };
     input.articleUrl = function (id) { return JSON.parse(__sosb_articleUrl(String(id))); };
+    input.linkUrl = function (target) {
+      return JSON.parse(__sosb_linkUrl(JSON.stringify(target === undefined ? null : target)));
+    };
     input.richText = function (doc) {
       return JSON.parse(__sosb_richText(JSON.stringify(doc === undefined ? null : doc)));
     };
@@ -411,6 +414,7 @@ export function compileThemeRenderModule(themeId: string, source: string): Theme
   hostFn("__sosb_mediaAlt", (json) => requireActive().mediaAlt(safeParse(json)));
   hostFn("__sosb_pageUrl", (id) => JSON.stringify(requireActive().pageUrl(id)));
   hostFn("__sosb_articleUrl", (id) => JSON.stringify(requireActive().articleUrl(id)));
+  hostFn("__sosb_linkUrl", (json) => JSON.stringify(requireActive().linkUrl(safeParse(json))));
   hostFn("__sosb_richText", (json) => JSON.stringify(requireActive().richText(safeParse(json))));
   hostFn("__sosb_t", (key) => requireActive().t(key));
 

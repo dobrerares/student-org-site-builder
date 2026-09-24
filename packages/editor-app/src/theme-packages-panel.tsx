@@ -17,10 +17,18 @@
  */
 import { useId, useRef, useState, type JSX } from "react";
 import type { Site } from "@sosb/schema";
+import { localizedText } from "@sosb/schema";
 import type { ThemeBundle } from "@sosb/renderer";
 import { Button, Hint } from "@sosb/ui";
 
+import { useTranslator } from "./i18n-context.js";
 import { themeRemovalBlockedReason } from "./theme-switch.js";
+
+/** A package version kept back by the last update, restorable by id (ADR 0055). */
+export interface ThemeRecoveryEntry {
+  readonly id: string;
+  readonly version: string;
+}
 
 export interface InstalledTheme {
   readonly bundle: ThemeBundle;
@@ -34,9 +42,14 @@ export interface ThemePackagesPanelProps {
   /** Download an installed package as a standalone `.sosb-theme.zip`. */
   readonly onExport: (themeId: string) => Promise<void>;
   readonly onRemove: (themeId: string) => Promise<void>;
+  /** Packages with a recovery copy from their last update. */
+  readonly recoveries?: readonly ThemeRecoveryEntry[] | undefined;
+  /** Put a package's previous version and the Blocks saved with it back. */
+  readonly onRestore?: ((themeId: string) => Promise<void>) | undefined;
 }
 
 export function ThemePackagesPanel(props: ThemePackagesPanelProps): JSX.Element {
+  const t = useTranslator();
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [error, setError] = useState<string | undefined>(undefined);
@@ -105,11 +118,20 @@ export function ThemePackagesPanel(props: ThemePackagesPanelProps): JSX.Element 
         <ul data-theme-packages-list data-testid="theme-packages-list">
           {props.installed.map((bundle) => {
             const blockedReason = themeRemovalBlockedReason(props.site, bundle.id);
+            const recovery = (props.recoveries ?? []).find((entry) => entry.id === bundle.id);
+            const provides = (bundle.customBlocks ?? []).map((declaration) =>
+              localizedText(declaration.label, t.locale),
+            );
             return (
               <li key={bundle.id} data-theme-package data-theme-id={bundle.id}>
                 <span data-theme-package-name>{bundle.name}</span>{" "}
                 <span data-theme-package-version>v{bundle.version}</span>
                 <span data-theme-package-id>{bundle.id}</span>
+                {provides.length > 0 && (
+                  <span data-theme-package-provides data-testid="theme-package-provides">
+                    {t("packages.provides", { blocks: provides.join(", ") })}
+                  </span>
+                )}
                 <span data-theme-package-actions>
                   <Button
                     type="button"
@@ -134,6 +156,31 @@ export function ThemePackagesPanel(props: ThemePackagesPanelProps): JSX.Element 
                     <Hint className="field-hint" id={`${bundle.id}-remove-why`}>
                       {blockedReason}
                     </Hint>
+                  )}
+                  {recovery !== undefined && props.onRestore !== undefined && (
+                    <>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={busy}
+                        data-testid="theme-package-restore"
+                        aria-describedby={`${bundle.id}-restore-hint`}
+                        onClick={() => {
+                          setBusy(true);
+                          setError(undefined);
+                          void props.onRestore!(bundle.id)
+                            .catch((cause: unknown) =>
+                              setError(cause instanceof Error ? cause.message : String(cause)),
+                            )
+                            .finally(() => setBusy(false));
+                        }}
+                      >
+                        {t("packages.restore", { version: recovery.version })}
+                      </Button>
+                      <Hint className="field-hint" id={`${bundle.id}-restore-hint`}>
+                        {t("packages.restore.hint")}
+                      </Hint>
+                    </>
                   )}
                 </span>
               </li>

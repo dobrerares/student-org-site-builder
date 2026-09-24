@@ -931,6 +931,61 @@ body {
   color: var(--warn);
   font-size: var(--step--1);
 }
+/* An unavailable Custom Block (ADR 0055): the notice takes the form's place. */
+[data-testid="inspector-unavailable"] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border-radius: var(--r-md);
+  background: var(--warn-soft);
+  color: var(--warn);
+  font-size: var(--step--1);
+  line-height: 1.5;
+}
+[data-testid="inspector-unavailable"] p {
+  margin: 0;
+}
+[data-testid="inspector-custom-provided"] {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--step--1);
+  color: var(--ink-3);
+}
+[data-testid="inspector-custom-provided"] code {
+  font-size: 0.9em;
+}
+/* A validation finding beside its field (ADR 0055): small print, coloured by
+ * severity, never a red border on the input — the content is kept as typed. */
+[data-testid="editor-pane"] [data-field-issue] {
+  margin: var(--sp-1) 0 0;
+  font-size: var(--step--1);
+  line-height: 1.45;
+  color: var(--warn);
+}
+[data-testid="editor-pane"] [data-field-issue][data-severity="error"] {
+  color: var(--error);
+}
+[data-testid="editor-pane"] [data-kind="link-target"] > label + label {
+  margin-top: var(--sp-1);
+}
+[data-testid="block-row"][data-unavailable="true"] [data-testid="block-row-title"] {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+[data-theme-package-provides] {
+  display: block;
+  font-size: var(--step--1);
+  color: var(--ink-3);
+}
+[data-package-update-removed] {
+  margin: var(--sp-2) 0;
+  padding-left: var(--sp-4);
+  font-size: var(--step--1);
+  line-height: 1.5;
+  max-height: 40vh;
+  overflow: auto;
+}
 
 /* ============================================================
  * 12. Forms — fieldsets, labels, inputs

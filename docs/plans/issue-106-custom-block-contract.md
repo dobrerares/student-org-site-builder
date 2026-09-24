@@ -229,11 +229,31 @@ same `ThemeRenderModule` seam (a module whose `blockTypes` include the type),
 in the same sandbox, and the active Theme's design wins over it — resolution
 order is the one open rendering decision.
 
-## Still to resolve
+## Resolved (ADR 0055)
 
-- Behavior when the extension cannot read the saved Block data version.
-- Standard document controls and asset representation.
-- Final review of the complete contract and architectural record.
+The contract above is implemented and recorded in
+[ADR 0055](../adr/0055-custom-block-declarations.md); the developer-facing
+format is in [how-to-author-a-custom-block.md](../how-to-author-a-custom-block.md).
+The items that were still open:
+
+- **The extension cannot read the saved Block data version.** A Block whose
+  envelope `version` is greater than the installed declaration's is
+  _unavailable_: kept, not editable, not exportable, until that newer
+  package is imported. Data older than the declaration stays editable (the
+  update flow adapts it; until then new fields read as empty) with a
+  warning.
+- **Standard document controls and asset representation.** A `document`
+  field stores a `DocumentAssetRef` and uses the Document picker; an `image`
+  field stores the canonical `AssetRef` with its `alt` as the description,
+  edited beside the Asset picker.
+- **Link shape.** A `link` field stores a Link target exactly as prose links
+  do (`{ kind: "page", pageId }`, `{ kind: "article", articleId }`,
+  `{ kind: "external", href }`), superseding the `{ kind: "url", url }`
+  sketch above; `input.linkUrl()` resolves it and answers `null` for a
+  missing Page.
+- **Resolution order for a package-supplied default design** is deferred:
+  only the active Theme's design is consulted; an undesigned type is
+  omitted (ADR 0045).
 
 Existing Block envelope and content ownership rules remain constraints
 on this discussion. ADRs 0045 and 0046 define the existing Theme design

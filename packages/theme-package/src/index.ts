@@ -49,11 +49,24 @@ export {
   THEME_VFS_PREFIX,
   installThemePackageIntoVfs,
   installedThemeIds,
+  loadInstalledThemePackages,
   loadThemePackage,
   loadThemePackageFromVfs,
   loadThemePackageFromZip,
   uninstallThemePackageFromVfs,
 } from "./load.js";
-export type { LoadedThemePackage } from "./load.js";
+export type { InstalledThemePackageReport, LoadedThemePackage } from "./load.js";
+
+export { declaredCustomBlockTypes, loadCustomBlockDeclarations } from "./blocks.js";
+
+export {
+  THEME_RECOVERY_VFS_PREFIX,
+  discardThemeRecoveryCopy,
+  readThemeRecoveryCopy,
+  restoreRecoveredBlocks,
+  saveThemeRecoveryCopy,
+  themeRecoveryIds,
+} from "./recovery.js";
+export type { ThemeRecoveryCopy } from "./recovery.js";
 
 export { exportInstalledThemePackage, exportThemePackage, themePackageFilename } from "./export.js";

@@ -170,7 +170,7 @@ test("a developer's Theme package goes through import, editing, both previews, e
   await mount(page, bundle, workflowSite());
 
   // --- 1. The author imports the package and switches the Site to it. ---
-  await importTheme(page, `${THEME_ID}-1.1.0.sosb-theme.zip`, developerZip);
+  await importTheme(page, `${THEME_ID}-1.2.0.sosb-theme.zip`, developerZip);
   const option = page.locator(`[data-theme-option][data-theme-id="${THEME_ID}"]`);
   await option.locator('input[type="radio"]').check();
   await expect(option).toHaveAttribute("data-active", "true");
@@ -347,7 +347,7 @@ test("a developer's Theme package goes through import, editing, both previews, e
       .getByRole("button", { name: "Export" })
       .click(),
   ]);
-  expect(themeDownload.suggestedFilename()).toBe(`${THEME_ID}-1.1.0.sosb-theme.zip`);
+  expect(themeDownload.suggestedFilename()).toBe(`${THEME_ID}-1.2.0.sosb-theme.zip`);
   const standalone = await unzip(themeDownload);
   expect((await standalone.list()).sort()).toEqual([...files.keys()].sort());
   for (const [file, bytes] of files) {

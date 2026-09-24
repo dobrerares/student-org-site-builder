@@ -1,0 +1,109 @@
+{
+  "formatVersion": 1,
+  "type": "org.example/partners",
+  "version": 1,
+  "label": { "default": "Partners", "ro": "Parteneri", "en": "Partners" },
+  "description": {
+    "default": "A heading, an optional intro, and groups of partners with a logo and a link each.",
+    "ro": "Un titlu, o introducere opțională și grupuri de parteneri, fiecare cu logo și legătură.",
+    "en": "A heading, an optional intro, and groups of partners with a logo and a link each."
+  },
+  "builder": { "formatVersion": 1 },
+  "fields": [
+    {
+      "name": "heading",
+      "kind": "text",
+      "label": { "default": "Heading", "ro": "Titlu", "en": "Heading" },
+      "help": {
+        "default": "Shown above every group. Keep it short.",
+        "ro": "Apare deasupra tuturor grupurilor. Păstrează-l scurt.",
+        "en": "Shown above every group. Keep it short."
+      },
+      "required": true,
+      "maxLength": 80
+    },
+    {
+      "name": "intro",
+      "kind": "richText",
+      "label": { "default": "Intro", "ro": "Introducere", "en": "Intro" },
+      "help": {
+        "default": "A sentence or two under the heading. Optional.",
+        "ro": "O propoziție sau două sub titlu. Opțional.",
+        "en": "A sentence or two under the heading. Optional."
+      }
+    },
+    {
+      "name": "showGroupHeadings",
+      "kind": "boolean",
+      "label": {
+        "default": "Show group headings",
+        "ro": "Arată titlurile grupurilor",
+        "en": "Show group headings"
+      },
+      "default": true
+    },
+    {
+      "name": "groups",
+      "kind": "list",
+      "label": { "default": "Groups", "ro": "Grupuri", "en": "Groups" },
+      "itemLabel": { "default": "group", "ro": "grup", "en": "group" },
+      "help": {
+        "default": "For example Gold, Silver and Bronze partners, or Institutions and Companies.",
+        "ro": "De exemplu parteneri Gold, Silver și Bronze, sau Instituții și Companii.",
+        "en": "For example Gold, Silver and Bronze partners, or Institutions and Companies."
+      },
+      "maxItems": 6,
+      "item": {
+        "kind": "group",
+        "fields": [
+          {
+            "name": "heading",
+            "kind": "text",
+            "label": { "default": "Group heading", "ro": "Titlul grupului", "en": "Group heading" },
+            "required": true,
+            "maxLength": 60
+          },
+          {
+            "name": "partners",
+            "kind": "list",
+            "label": { "default": "Partners", "ro": "Parteneri", "en": "Partners" },
+            "itemLabel": { "default": "partner", "ro": "partener", "en": "partner" },
+            "minItems": 1,
+            "item": {
+              "kind": "group",
+              "fields": [
+                {
+                  "name": "name",
+                  "kind": "text",
+                  "label": { "default": "Name", "ro": "Nume", "en": "Name" },
+                  "required": true,
+                  "maxLength": 60
+                },
+                {
+                  "name": "image",
+                  "kind": "image",
+                  "label": { "default": "Logo", "ro": "Logo", "en": "Logo" },
+                  "help": {
+                    "default": "Wide logos work best. Leave the description empty if the name says it all.",
+                    "ro": "Logo-urile late arată cel mai bine. Lasă descrierea goală dacă numele spune tot.",
+                    "en": "Wide logos work best. Leave the description empty if the name says it all."
+                  }
+                },
+                {
+                  "name": "link",
+                  "kind": "link",
+                  "label": { "default": "Link", "ro": "Legătură", "en": "Link" },
+                  "help": {
+                    "default": "The partner's website, or a page on this site.",
+                    "ro": "Site-ul partenerului sau o pagină de pe acest site.",
+                    "en": "The partner's website, or a page on this site."
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

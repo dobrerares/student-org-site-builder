@@ -41,7 +41,7 @@ import { ColorPicker } from "./color-picker.js";
 import { FontPicker } from "./font-picker.js";
 import { NamedValueSelect } from "./named-value-select.js";
 import { ThemePicker } from "./theme-picker.js";
-import { ThemePackagesPanel } from "./theme-packages-panel.js";
+import { ThemePackagesPanel, type ThemeRecoveryEntry } from "./theme-packages-panel.js";
 import { applyThemeSwitch, setShellVariant } from "./theme-switch.js";
 
 /**
@@ -99,6 +99,9 @@ export interface ThemeFormProps {
   readonly onImportTheme?: (file: File) => Promise<void>;
   readonly onExportTheme?: (themeId: string) => Promise<void>;
   readonly onRemoveTheme?: (themeId: string) => Promise<void>;
+  /** Packages whose previous version can be restored (ADR 0055). */
+  readonly recoveries?: readonly ThemeRecoveryEntry[] | undefined;
+  readonly onRestoreTheme?: ((themeId: string) => Promise<void>) | undefined;
 }
 
 /** The built-in look we offer as the one-click repair for a missing Theme. */
@@ -206,6 +209,8 @@ export function ThemeForm(props: ThemeFormProps): JSX.Element {
             onImport={props.onImportTheme}
             onExport={props.onExportTheme}
             onRemove={props.onRemoveTheme}
+            recoveries={props.recoveries}
+            onRestore={props.onRestoreTheme}
           />
         )}
 

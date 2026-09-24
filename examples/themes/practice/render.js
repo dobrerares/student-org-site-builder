@@ -17,6 +17,11 @@
  *    variant gains a decorative ring motif and stepped title; every other
  *    variant reproduces the built-in markup so `theme.css`'s existing rules
  *    keep working unchanged.
+ *  - `blocks["org.example/partners"](input)` — the design for the Partners
+ *    Custom Block this package declares in `blocks/partners/block.json`
+ *    (ADR 0055). The builder generates the editing form from that
+ *    declaration; this function only reads the saved data. "grid" and
+ *    "band" are its two variants.
  *
  * Everything visible comes from `input`: Site content the author edits, the
  * builder's computed navigation and URLs, and the Theme's own settings. This
@@ -291,9 +296,111 @@ function hero(input) {
   return heroBody(input, null, null);
 }
 
+/* --------------------------------------------------------------- partners */
+
+/**
+ * One partner: a framed logo (or, without one, the name's initials in the
+ * frame) with the name beneath, wrapped in a link when the author chose one.
+ *
+ * `input.linkUrl()` resolves the stored Link target — a Page by its permanent
+ * id, an Article, or a web address — and answers `null` for a Page that no
+ * longer exists, in which case the partner shows without a link, exactly as
+ * the issue-106 contract says. The logo's `alt` is the stored description;
+ * an empty one is deliberate, because the visible name already says who it
+ * is and reading it twice helps nobody.
+ */
+function partnerItem(input, partner) {
+  const name = text(partner.name) ?? "";
+  const src = input.mediaUrl(partner.image);
+  const image = partner.image && typeof partner.image === "object" ? partner.image : null;
+  const initials = name
+    .split(/\s+/)
+    .filter((word) => word.length > 0)
+    .slice(0, 2)
+    .map((word) => word[0].toUpperCase())
+    .join("");
+  const figure = [
+    "figure",
+    { class: "partners__item" },
+    src !== null
+      ? [
+          "img",
+          {
+            class: "partners__logo",
+            src,
+            alt: input.mediaAlt(partner.image),
+            loading: "lazy",
+            width: image && image.width > 0 ? image.width : null,
+            height: image && image.height > 0 ? image.height : null,
+          },
+        ]
+      : ["span", { class: "partners__placeholder", "aria-hidden": "true" }, initials],
+    ["figcaption", { class: "partners__name" }, name],
+  ];
+  const href = input.linkUrl(partner.link);
+  return ["li", null, href !== null ? ["a", { class: "partners__link", href }, figure] : figure];
+}
+
+/** Does a rich-text value hold anything to show? An empty paragraph does not. */
+function hasProse(doc) {
+  if (!doc || typeof doc !== "object" || !Array.isArray(doc.content)) return false;
+  return doc.content.some(
+    (node) =>
+      node &&
+      typeof node === "object" &&
+      (node.type !== "paragraph" || (Array.isArray(node.content) && node.content.length > 0)),
+  );
+}
+
+function partnerGroup(input, group, showHeading) {
+  // Saved data reaches a design as it is: an entry that is not an object
+  // (validation reports it) is skipped rather than allowed to hide the Block.
+  const partners = (Array.isArray(group.partners) ? group.partners : []).filter(
+    (partner) => partner && typeof partner === "object",
+  );
+  const heading = text(group.heading);
+  return [
+    "div",
+    { class: "partners__group" },
+    showHeading && heading !== null ? ["h3", { class: "partners__group-title" }, heading] : null,
+    partners.length > 0
+      ? ["ul", { class: "partners__list" }, ...partners.map((p) => partnerItem(input, p))]
+      : null,
+  ];
+}
+
+/**
+ * The Partners Custom Block. Every field may be empty — authors save
+ * unfinished work — so each part is optional, and a Block with nothing in it
+ * renders nothing at all.
+ */
+function partners(input) {
+  const { data, id } = input;
+  const heading = text(data.heading);
+  const groups = Array.isArray(data.groups) ? data.groups : [];
+  const showGroupHeadings = data.showGroupHeadings !== false;
+  const hasIntro = hasProse(data.intro);
+  if (heading === null && !hasIntro && groups.length === 0) return null;
+  const titleId = `${id}__title`;
+  const variant = input.variant === "band" ? "band" : "grid";
+  return [
+    "section",
+    {
+      class: classes("partners", `partners--${variant}`),
+      "aria-labelledby": heading !== null ? titleId : null,
+    },
+    heading !== null ? ["h2", { id: titleId, class: "partners__title" }, heading] : null,
+    hasIntro ? ["div", { class: "partners__intro" }, input.richText(data.intro)] : null,
+    ...groups.map((group) =>
+      group && typeof group === "object" ? partnerGroup(input, group, showGroupHeadings) : null,
+    ),
+  ];
+}
+
 export default {
   shell,
   blocks: {
     hero,
+    "org.example/partners": partners,
   },
 };

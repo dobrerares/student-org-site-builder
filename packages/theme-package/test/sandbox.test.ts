@@ -31,6 +31,7 @@ const helpers: ThemeRenderHelpers = {
   mediaAlt: () => "",
   pageUrl: (id) => `/${id}`,
   articleUrl: (id) => `/articles/${id}`,
+  linkUrl: (target) => (typeof target === "object" && target !== null ? "/linked/" : null),
   richText: () => ({ $sosbRichText: 0 }),
   t: (key) => `t:${key}`,
 };
@@ -115,6 +116,23 @@ describe("what a design can reach", () => {
         "p",
         { "data-m": "null", "data-p": "/x", "data-a": "/articles/y" },
         "assets/a.jpg",
+      ]);
+    } finally {
+      module.dispose();
+    }
+  });
+
+  test("linkUrl() crosses the boundary as JSON and answers null honestly", () => {
+    const module = design(
+      `export default { blocks: { probe: (i) => ["p", null, String(i.linkUrl({ kind: "page", pageId: "x" })), "|", String(i.linkUrl(undefined))] } }`,
+    );
+    try {
+      expect(module.renderBlock("probe", {}, helpers)).toEqual([
+        "p",
+        null,
+        "/linked/",
+        "|",
+        "null",
       ]);
     } finally {
       module.dispose();
@@ -346,7 +364,7 @@ describe("determinism", () => {
       expect(tree).toEqual([
         "p",
         null,
-        "articleUrl,asset,data,id,mediaAlt,mediaUrl,pageUrl,richText,t,type",
+        "articleUrl,asset,data,id,linkUrl,mediaAlt,mediaUrl,pageUrl,richText,t,type",
       ]);
     } finally {
       module.dispose();

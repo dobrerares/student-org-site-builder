@@ -31,6 +31,16 @@ export type ThemePackageErrorCode =
    * throws on every page is not a Theme the author should be able to select.
    */
   | "render-invalid"
+  /**
+   * A `block.json` the manifest lists is missing, malformed, declares a
+   * field kind outside the supported vocabulary, or repeats a type another
+   * declaration in the package already claims (ADR 0055). The message names
+   * the file and the field; the whole package is refused so the previously
+   * installed version keeps working.
+   */
+  | "block-invalid"
+  /** A `block.json` uses a declaration format newer than this builder. */
+  | "block-format-unsupported"
   /** The package is structurally fine but too large to be reasonable. */
   | "package-too-large";
 

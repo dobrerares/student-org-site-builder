@@ -37,6 +37,24 @@ export interface FieldOverride {
    * or counts characters.
    */
   readonly hint?: string;
+  /**
+   * Labels for an enum/choice field's option values, keyed by value. Custom
+   * Block declarations carry their own translated option labels (ADR 0055);
+   * built-in Blocks keep using the shared value-label table.
+   */
+  readonly optionLabels?: Readonly<Record<string, string>>;
+  /**
+   * The option values of a `choice` field, in declaration order. Kept apart
+   * from `optionLabels` because object keys that look like integers are
+   * enumerated first, whatever order they were written in.
+   */
+  readonly options?: readonly string[];
+  /**
+   * What one entry of an array is called ("Partner"), for the add button
+   * and the per-entry controls. Custom Block lists declare it; built-in
+   * Blocks fall back to "item".
+   */
+  readonly itemLabel?: string;
 }
 
 export const SPINE_FIELD_METADATA: readonly FieldOverride[] = [

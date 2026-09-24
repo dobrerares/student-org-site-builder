@@ -14,9 +14,19 @@
  * (mandatory / optional / advanced) and searchable.
  */
 
-import { KnownBlockSchemas } from "@sosb/schema";
+import {
+  KnownBlockSchemas,
+  isCustomBlockType,
+  localizedText,
+  type CustomBlockRegistry,
+} from "@sosb/schema";
 
-export type BlockCategory = "mandatory" | "optional" | "advanced";
+/**
+ * `custom` holds the Custom Block types the Site's installed packages
+ * provide (ADR 0055), under their friendly labels. Listed after the
+ * built-in sections and only when there are any.
+ */
+export type BlockCategory = "mandatory" | "optional" | "advanced" | "custom";
 
 export interface BlockCatalogEntry {
   /** The schema-registry key (e.g. `"hero"`). */
@@ -50,6 +60,15 @@ export interface BlockCatalogOptions {
    * still needs a label.
    */
   readonly exclude?: readonly string[] | undefined;
+  /**
+   * The Site's Custom Block types (ADR 0055). Available ones are listed for
+   * adding, under the label their declaration gives them in `locale`;
+   * `entryFor` also labels an unavailable type, so a Block whose package is
+   * missing still has a readable row in the outline.
+   */
+  readonly customBlocks?: CustomBlockRegistry | undefined;
+  /** Editor locale for declaration labels; falls back to the declaration's default. */
+  readonly locale?: string | undefined;
 }
 
 export interface BlockCatalog {
@@ -165,7 +184,7 @@ const BLOCK_METADATA: Record<
   },
 };
 
-const CATEGORY_ORDER: readonly BlockCategory[] = ["mandatory", "optional", "advanced"];
+const CATEGORY_ORDER: readonly BlockCategory[] = ["mandatory", "optional", "advanced", "custom"];
 
 /**
  * Render an unknown camel/Pascal-case block type as a humanised label.
@@ -184,10 +203,37 @@ function humanise(type: string): string {
   return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }
 
-function entryForType(type: string): BlockCatalogEntry {
+/** `org.example/partner-groups` → `Partner groups`, for a type no declaration labels. */
+function humaniseCustomType(type: string): string {
+  const name = type.slice(type.lastIndexOf("/") + 1).replace(/-/g, " ");
+  return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
+function entryForType(
+  type: string,
+  registry: CustomBlockRegistry | undefined,
+  locale: string,
+): BlockCatalogEntry {
   const meta = BLOCK_METADATA[type];
   if (meta !== undefined) {
     return { type, ...meta };
+  }
+  if (isCustomBlockType(type)) {
+    const entry = registry?.lookup(type);
+    if (entry?.status === "available") {
+      return {
+        type,
+        category: "custom",
+        label: localizedText(entry.declaration.label, locale),
+        description: localizedText(entry.declaration.description, locale),
+      };
+    }
+    return {
+      type,
+      category: "custom",
+      label: humaniseCustomType(type),
+      description: entry?.message ?? `Block type "${type}".`,
+    };
   }
   return {
     type,
@@ -203,21 +249,30 @@ function entryForType(type: string): BlockCatalogEntry {
  */
 export function buildBlockCatalog(options: BlockCatalogOptions = {}): BlockCatalog {
   const excluded = new Set(options.exclude ?? []);
-  const types = Object.keys(KnownBlockSchemas).filter((type) => !excluded.has(type));
-  const entries = types.map(entryForType).sort((a, b) => {
-    const byCategory = CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category);
-    if (byCategory !== 0) return byCategory;
-    return a.label.localeCompare(b.label);
-  });
+  const registry = options.customBlocks;
+  const locale = options.locale ?? "en";
+  const types = [
+    ...Object.keys(KnownBlockSchemas),
+    ...(registry?.available ?? []).map((entry) => entry.declaration.type),
+  ].filter((type) => !excluded.has(type));
+  const entries = types
+    .map((type) => entryForType(type, registry, locale))
+    .sort((a, b) => {
+      const byCategory = CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category);
+      if (byCategory !== 0) return byCategory;
+      return a.label.localeCompare(b.label);
+    });
 
+  // The three built-in groups are always present, in fixed order; the
+  // `custom` group exists only when a package provides something to add.
   const groups: BlockCatalogGroup[] = CATEGORY_ORDER.map((category) => ({
     category,
     entries: entries.filter((entry) => entry.category === category),
-  }));
+  })).filter((group) => group.category !== "custom" || group.entries.length > 0);
 
   return {
     entries,
     groups,
-    entryFor: entryForType,
+    entryFor: (type) => entryForType(type, registry, locale),
   };
 }

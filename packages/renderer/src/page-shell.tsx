@@ -454,6 +454,11 @@ export function PageShell(props: {
   } = props;
   const contentBlocks = page.blocks.filter((block) => block.type !== "siteFooter");
   const footerBlocks = page.blocks.filter((block) => block.type === "siteFooter");
+  // Built once per document: the link resolver indexes the Site's Pages and
+  // Articles, which would be wasteful to rebuild per Block. Shared with the
+  // Theme design context so `richText()` in a design resolves exactly as the
+  // Rich-text Block does.
+  const richText = { assetUrlForPath, resolveLink: makeRichTextLinkResolver(site) };
   const design = designContextFor(
     site,
     theme,
@@ -461,6 +466,7 @@ export function PageShell(props: {
     assetUrlForPath,
     mode,
     onIssue,
+    richText,
   );
   const ctx: BlockRenderContext = {
     site,
@@ -469,9 +475,7 @@ export function PageShell(props: {
     theme,
     design,
     shellVariant,
-    // Built once per document: the link resolver indexes the Site's Pages and
-    // Articles, which would be wasteful to rebuild per Block.
-    richText: { assetUrlForPath, resolveLink: makeRichTextLinkResolver(site) },
+    richText,
   };
 
   const target: ShellTarget = {
@@ -669,6 +673,10 @@ export function ArticleShell(props: {
     includePublicScript = false,
   } = props;
   const contentBlocks = article.blocks.filter((block) => block.type !== "siteFooter");
+  // Article bodies start with a Rich-text Block, so this is not optional
+  // decoration: without it every prose link inside an Article would render
+  // as unlinked text.
+  const richText = { assetUrlForPath, resolveLink: makeRichTextLinkResolver(site) };
   const design = designContextFor(
     site,
     theme,
@@ -676,6 +684,7 @@ export function ArticleShell(props: {
     assetUrlForPath,
     mode,
     onIssue,
+    richText,
   );
   // An Article's Blocks get the same variant treatment a Page's do: the
   // Theme seam knows nothing about which kind of document a Block sits in.
@@ -687,10 +696,7 @@ export function ArticleShell(props: {
     containerArticleId: article.id,
     design,
     shellVariant,
-    // Article bodies start with a Rich-text Block, so this is not optional
-    // decoration: without it every prose link inside an Article would render
-    // as unlinked text.
-    richText: { assetUrlForPath, resolveLink: makeRichTextLinkResolver(site) },
+    richText,
   };
 
   // Articles have no site-footer Block of their own; they inherit one from
@@ -774,10 +780,20 @@ function designContextFor(
   assetUrlForPath: AssetUrlForPath | undefined,
   mode: "deploy" | "preview",
   onIssue: ((issue: ThemeRenderIssue) => void) | undefined,
+  richText: RichTextRenderContext,
 ): DesignContext | undefined {
   if (theme === undefined) return undefined;
   if (theme.render === undefined && onIssue === undefined) return undefined;
-  return { site, bundle: theme, lang: docRef.lang, docRef, assetUrlForPath, mode, onIssue };
+  return {
+    site,
+    bundle: theme,
+    lang: docRef.lang,
+    docRef,
+    assetUrlForPath,
+    mode,
+    onIssue,
+    richText,
+  };
 }
 
 function DocumentShell(props: {

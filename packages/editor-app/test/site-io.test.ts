@@ -47,7 +47,7 @@ describe("mergeAssetVfs", () => {
     // The editor clears these before merging an import. If a new subtree is
     // added to the archive without being added here, importing one project
     // over another would leave the previous Site's files behind.
-    expect([...SITE_VFS_PREFIXES]).toEqual(["assets/", "themes/"]);
+    expect([...SITE_VFS_PREFIXES]).toEqual(["assets/", "themes/", "themes-recovery/"]);
   });
 });
 

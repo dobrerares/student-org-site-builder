@@ -101,11 +101,11 @@ export function exportZipBasename(orgName: string): string {
  * authored with. Copying only `assets/` on import silently dropped the Theme
  * and the reopened Site reported its own design as missing.
  */
-export const SITE_VFS_PREFIXES: readonly string[] = ["assets/", "themes/"];
+export const SITE_VFS_PREFIXES: readonly string[] = ["assets/", "themes/", "themes-recovery/"];
 
 /**
- * Copy every `assets/...` and `themes/...` entry from `source` into `target`,
- * overwriting paths that already exist in `target`.
+ * Copy every `assets/...`, `themes/...` and `themes-recovery/...` entry from
+ * `source` into `target`, overwriting paths that already exist in `target`.
  */
 export async function mergeAssetVfs(source: Vfs, target: Vfs): Promise<void> {
   for (const prefix of SITE_VFS_PREFIXES) {
