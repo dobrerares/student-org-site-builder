@@ -71,6 +71,7 @@ import {
   SiteSchema,
   adaptSiteToDeclarations,
   buildCustomBlockRegistry,
+  customBlockAvailabilityFor,
   validate,
 } from "@sosb/schema";
 // Import browser-safe subpaths directly. `@sosb/assets`'s package
@@ -163,9 +164,11 @@ import { setBlockVariant } from "./theme-switch.js";
 import {
   discardThemeRecoveryCopy,
   exportInstalledThemePackage,
+  initThemeSandbox,
   installThemePackageIntoVfs,
   loadInstalledThemePackages,
   loadThemePackage,
+  loadThemePackageFromVfs,
   loadThemePackageFromZip,
   readThemeRecoveryCopy,
   restoreRecoveredBlocks,
@@ -846,18 +849,19 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   /**
    * Write an imported package into the Site.
    *
-   * When the same id is already installed and either version declares Custom
-   * Blocks, the saved data is adapted to the incoming declarations
-   * (`adaptSiteToDeclarations`) and — before anything changes — the outgoing
-   * package and the affected Block envelopes are kept as the recovery copy.
-   * Only the `adapted` Site the caller already reviewed is applied.
+   * When the same id is already installed, the saved data has been adapted to
+   * the incoming declarations (`adaptSiteToDeclarations`) by the caller; if
+   * that changed any Block — data or version — the outgoing package and the
+   * affected Block envelopes are kept as the recovery copy before anything is
+   * written. An update that changes no Block (an appearance-only release,
+   * even of a package that declares Blocks) keeps whatever copy an earlier
+   * update left, which may still be the one the author wants back. Only the
+   * `adapted` Site the caller already reviewed is applied.
    */
   async function installPackage(loaded: LoadedThemePackage, adapted: Site): Promise<void> {
     const vfs = assetVfsRef.current!;
     const previous = installedThemes.find((bundle) => bundle.id === loaded.bundle.id);
-    const touchesBlocks =
-      (previous?.customBlocks?.length ?? 0) > 0 || (loaded.bundle.customBlocks?.length ?? 0) > 0;
-    if (previous !== undefined && touchesBlocks) {
+    if (previous !== undefined && adapted !== snapshot) {
       const types = new Set([
         ...(previous.customBlocks ?? []).map((d) => d.type),
         ...(loaded.bundle.customBlocks ?? []).map((d) => d.type),
@@ -870,15 +874,14 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
         for (const block of article.blocks) if (types.has(block.type)) affected.push(block);
       }
       // The recovery copy is the *installed* files, re-read from the VFS, so
-      // it is exactly what the archive carried — not a re-serialisation.
-      const reports = await loadInstalledThemePackages(vfs);
-      const installedCopy = reports.find((r) => r.id === previous.id)?.loaded;
-      if (installedCopy !== undefined) {
+      // it is exactly what the archive carried — not a re-serialisation. If
+      // they cannot be loaded the update stops here, before anything is
+      // written: the plan promises the previous version stays recoverable.
+      const installedCopy = await loadThemePackageFromVfs(vfs, previous.id);
+      try {
         await saveThemeRecoveryCopy(vfs, installedCopy, affected);
+      } finally {
         installedCopy.bundle.render?.dispose();
-      }
-      for (const report of reports) {
-        if (report.loaded !== installedCopy) report.loaded?.bundle.render?.dispose();
       }
     }
     await installThemePackageIntoVfs(vfs, loaded);
@@ -934,6 +937,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     const vfs = assetVfsRef.current!;
     const copy = await readThemeRecoveryCopy(vfs, themeId);
     if (copy === undefined) return;
+    await initThemeSandbox();
     const loaded = loadThemePackage(copy.files);
     await installThemePackageIntoVfs(vfs, loaded);
     loaded.bundle.render?.dispose();
@@ -982,16 +986,35 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   // the readiness panel and the export cannot disagree (ADR 0054).
   //
   // An *unavailable* Custom Block is not an omission (ADR 0055): its package
-  // is missing, so validation blocks the export outright and the panel lists
-  // it among the blockers — listing it here too would ask the author to
-  // acknowledge something they cannot acknowledge away.
-  const omittedBlocks = useMemo(
-    () =>
-      omittedBlocksFor(snapshot, activeThemeBundle).filter(
-        (omitted) => customBlockRegistry.lookup(omitted.blockType)?.status !== "unavailable",
-      ),
-    [snapshot, activeThemeBundle, customBlockRegistry],
-  );
+  // is missing, or its data is newer than the installed declaration, so
+  // validation blocks the export outright and the panel lists it among the
+  // blockers — listing it here too would ask the author to acknowledge
+  // something they cannot acknowledge away. Availability is per envelope
+  // (the data version counts), so each omitted Block is looked up in place.
+  const omittedBlocks = useMemo(() => {
+    const omitted = omittedBlocksFor(snapshot, activeThemeBundle);
+    if (omitted.length === 0) return omitted;
+    const envelopes = new Map<string, BlockEnvelope>();
+    for (const page of snapshot.pages) {
+      for (const block of page.blocks)
+        envelopes.set(`page:${page.lang}:${page.slug}:${block.id}`, block);
+    }
+    for (const article of snapshot.articles ?? []) {
+      for (const block of article.blocks) envelopes.set(`article:${article.id}:${block.id}`, block);
+    }
+    return omitted.filter((entry) => {
+      const key =
+        entry.document.kind === "page"
+          ? `page:${entry.document.id}:${entry.blockId}`
+          : `article:${entry.document.id}:${entry.blockId}`;
+      const block = envelopes.get(key);
+      const availability =
+        block === undefined
+          ? customBlockRegistry.lookup(entry.blockType)
+          : customBlockAvailabilityFor(customBlockRegistry, block);
+      return availability?.status !== "unavailable";
+    });
+  }, [snapshot, activeThemeBundle, customBlockRegistry]);
 
   function displayUrlForAsset(ref: AssetRefLike): string | undefined {
     return displayUrlCacheRef.current!.get(ref.hash);
@@ -1672,13 +1695,21 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     }
   });
 
-  async function performExport(): Promise<void> {
+  /**
+   * `publicSite` is `"required"` for Export website and `"when-buildable"`
+   * for Save project: a missing Theme package or Custom Block package stops
+   * a website export (the readiness panel already said so) but must never
+   * stop an author from keeping their work (issue-106 plan, ADR 0051).
+   */
+  async function performExport(
+    publicSite: "required" | "when-buildable" = "required",
+  ): Promise<void> {
     if (props.onExport !== undefined) {
       props.onExport(snapshot);
       return;
     }
     try {
-      const blob = await exportToZip(snapshot, assetVfsRef.current!);
+      const blob = await exportToZip(snapshot, assetVfsRef.current!, { publicSite });
       const basename = exportZipBasename(snapshot.org.name);
       downloadBlob(blob, `${basename}.zip`);
     } catch (err) {
@@ -1724,9 +1755,10 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
       // No host persistence (the archival single-file build, an embedded
       // editor): the only way to keep the work is the downloaded archive, and
       // that must never be gated by validation, so it skips the readiness
-      // panel entirely.
+      // panel entirely — and is written even when the public Site inside it
+      // cannot be built.
       setDownloadedAt(nowLabel());
-      void performExport();
+      void performExport("when-buildable");
       return;
     }
     const seq = ++saveStatusSeqRef.current;

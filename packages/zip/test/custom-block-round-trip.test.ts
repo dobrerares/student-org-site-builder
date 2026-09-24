@@ -6,8 +6,9 @@
  *
  * The public export inside the archive is a different matter — `build()`
  * refuses a Custom Block no supplied package declares — so this file also
- * pins that an archive save with such a Block is refused loudly rather than
- * written with a hole in it.
+ * pins the two readings of that: *Export website* is refused loudly rather
+ * than written with a hole in it, and *Save project* (`publicSite:
+ * "when-buildable"`) still writes the editable archive, without `dist/`.
  */
 import { describe, expect, test } from "vitest";
 import { MemoryDriver, ZipDriver } from "@sosb/vfs";
@@ -69,10 +70,32 @@ async function siteVfs(): Promise<MemoryDriver> {
 }
 
 describe("Custom Blocks in the editable archive", () => {
-  test("an archive save with a Custom Block nobody declares is refused, not written with a hole", async () => {
+  test("a website export with a Custom Block nobody declares is refused, not written with a hole", async () => {
     await expect(exportToZip(siteWithBlock(), await siteVfs())).rejects.toBeInstanceOf(
       BuildCustomBlockMissingError,
     );
+  });
+
+  test("saving the project still writes the editable archive, without a public Site", async () => {
+    const blob = await exportToZip(siteWithBlock(), await siteVfs(), {
+      publicSite: "when-buildable",
+    });
+    const inspector = ZipDriver.fromZipBytes(new Uint8Array(await blob.arrayBuffer()));
+    const paths = await inspector.list();
+    expect(paths).toContain("data.json");
+    expect(paths).toContain("assets/8e3a7f.png");
+    expect(paths).toContain("themes-recovery/org.example.practice/blocks.json");
+    expect(paths.some((p) => p.startsWith("dist/"))).toBe(false);
+    expect(paths).not.toContain("DEPLOY.md");
+    // And it reopens with the Block exactly as it was.
+    const imported = await importFromZip(blob);
+    expect(imported.siteData.pages[0]!.blocks.at(-1)).toEqual(PARTNERS_BLOCK);
+    // Any other build failure still rejects: a Site with no pages is not a
+    // damaged archive, it is a bad Site.
+    const broken = { ...siteWithBlock(), pages: [] };
+    await expect(
+      exportToZip(broken, await siteVfs(), { publicSite: "when-buildable" }),
+    ).rejects.toThrow(/no pages/);
   });
 
   test("the editor's validation names the Block as unavailable and blocking, data untouched", () => {
@@ -101,11 +124,15 @@ describe("Custom Blocks in the editable archive", () => {
     expect(recovery?.version).toBe("1.0.0");
     expect(recovery?.blocks.get("blk_partners")).toEqual(PARTNERS_BLOCK);
 
-    // Saving again, with the Block still unavailable, is still refused; the
-    // data itself is untouched by the attempt.
+    // Exporting the website with the Block still unavailable is refused;
+    // saving the project is not, and neither touches the data.
     await expect(exportToZip(imported.siteData, imported.vfs)).rejects.toBeInstanceOf(
       BuildCustomBlockMissingError,
     );
+    const saved = await importFromZip(
+      await exportToZip(imported.siteData, imported.vfs, { publicSite: "when-buildable" }),
+    );
+    expect(saved.siteData.pages[0]!.blocks.at(-1)).toEqual(PARTNERS_BLOCK);
     expect(imported.siteData.pages[0]!.blocks.at(-1)).toEqual(PARTNERS_BLOCK);
   });
 

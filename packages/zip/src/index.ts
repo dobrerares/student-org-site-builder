@@ -17,6 +17,7 @@
  */
 
 export { exportToZip, serializeSiteData, copyAssets, DATA_JSON_INDENT } from "./export.js";
+export type { ExportToZipOptions } from "./export.js";
 export { importFromZip } from "./import.js";
 export type { ImportResult } from "./import.js";
 export { ZipImportError } from "./errors.js";
