@@ -56,8 +56,26 @@ describe("build with Custom Blocks", () => {
       const missing = error as BuildCustomBlockMissingError;
       expect(missing.blockType).toBe("org.example/partners");
       expect(missing.blockId).toBe("blk_partners");
+      expect(missing.reason).toBe("package-missing");
       expect(missing.message).toContain("org.example/partners");
     }
+  });
+
+  test("a Block saved by a newer package than the one supplied is refused too", () => {
+    const site = siteWithPartners();
+    site.pages[0]!.blocks.at(-1)!.version = 2;
+    let caught: unknown;
+    try {
+      build(site, { skipValidation: true, themes: [declaring] });
+    } catch (error) {
+      caught = error;
+    }
+    expect(caught).toBeInstanceOf(BuildCustomBlockMissingError);
+    expect((caught as BuildCustomBlockMissingError).reason).toBe("data-newer");
+    expect((caught as BuildCustomBlockMissingError).message).toContain("newer version");
+    // Older data is fine: the editor's update flow adapts it, the build renders it.
+    site.pages[0]!.blocks.at(-1)!.version = 0;
+    expect(() => build(site, { skipValidation: true, themes: [declaring] })).not.toThrow();
   });
 
   test("a declared but undesigned type is omitted with a report, not refused", () => {

@@ -32,6 +32,10 @@ function readJson(bytes: Uint8Array): unknown {
   }
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 /**
  * Parse every declaration the manifest lists. Throws `ThemePackageError`
  * naming the file and the problem; a format-version mismatch gets its own
@@ -86,17 +90,19 @@ export function loadCustomBlockDeclarations(
 export function declaredCustomBlockTypes(files: ReadonlyMap<string, Uint8Array>): string[] {
   const manifestBytes = files.get("theme.json");
   if (manifestBytes === undefined) return [];
-  const manifest = readJson(manifestBytes) as { blocks?: unknown } | undefined;
-  if (manifest === undefined || !Array.isArray(manifest.blocks)) return [];
+  // `null` is valid JSON too: every read is guarded as an object, because
+  // this runs while reporting a package that already failed to load and must
+  // not fail itself (ADR 0051: a damaged package never stops a Site opening).
+  const manifest = readJson(manifestBytes);
+  if (!isRecord(manifest) || !Array.isArray(manifest["blocks"])) return [];
   const types = new Set<string>();
-  for (const entry of manifest.blocks) {
+  for (const entry of manifest["blocks"] as unknown[]) {
     if (typeof entry !== "string") continue;
     const bytes = files.get(entry);
     if (bytes === undefined) continue;
-    const raw = readJson(bytes) as { type?: unknown } | undefined;
-    if (raw !== undefined && typeof raw.type === "string" && isCustomBlockType(raw.type)) {
-      types.add(raw.type);
-    }
+    const raw = readJson(bytes);
+    const type = isRecord(raw) ? raw["type"] : undefined;
+    if (typeof type === "string" && isCustomBlockType(type)) types.add(type);
   }
   return [...types].sort();
 }

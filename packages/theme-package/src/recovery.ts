@@ -17,7 +17,7 @@
  * data is kept and validation reports it).
  */
 
-import type { BlockEnvelope, Site } from "@sosb/schema";
+import { BlockEnvelopeSchema, type BlockEnvelope, type Site } from "@sosb/schema";
 import type { Vfs } from "@sosb/vfs/vfs";
 import { THEME_ID_RE } from "./manifest.js";
 import type { LoadedThemePackage } from "./load.js";
@@ -93,13 +93,18 @@ export async function readThemeRecoveryCopy(
     const rest = path.slice(prefix.length);
     if (rest === BLOCKS_FILE) {
       try {
-        const record = JSON.parse(dec.decode(await vfs.read(path))) as {
-          version?: unknown;
-          blocks?: Record<string, BlockEnvelope>;
-        };
-        if (typeof record.version === "string") version = record.version;
-        for (const [blockId, envelope] of Object.entries(record.blocks ?? {})) {
-          blocks.set(blockId, envelope);
+        // The file travelled in an archive and is read as untrusted: only
+        // envelopes the schema accepts are kept, so a restore can never write
+        // a Block without a `version` or `data` into the Site.
+        const record: unknown = JSON.parse(dec.decode(await vfs.read(path)));
+        if (typeof record !== "object" || record === null) continue;
+        const { version: v, blocks: saved } = record as { version?: unknown; blocks?: unknown };
+        if (typeof v === "string") version = v;
+        if (typeof saved === "object" && saved !== null && !Array.isArray(saved)) {
+          for (const [blockId, envelope] of Object.entries(saved)) {
+            const parsed = BlockEnvelopeSchema.safeParse(envelope);
+            if (parsed.success) blocks.set(blockId, parsed.data as BlockEnvelope);
+          }
         }
       } catch {
         // A damaged blocks.json still leaves the package files restorable.

@@ -250,6 +250,14 @@ describe("declaredCustomBlockTypes — the lenient read", () => {
         ),
       ),
     ).toEqual([]);
+    // `null` parses as JSON and is not an object: neither file may throw.
+    const enc = new TextEncoder();
+    expect(declaredCustomBlockTypes(new Map([["theme.json", enc.encode("null")]]))).toEqual([]);
+    expect(
+      declaredCustomBlockTypes(
+        pkg({ ...MANIFEST, blocks: ["blocks/p/block.json"] }, { "blocks/p/block.json": "null" }),
+      ),
+    ).toEqual([]);
   });
 });
 
@@ -346,6 +354,25 @@ describe("the recovery copy", () => {
     const copy = await readThemeRecoveryCopy(vfs, THEME_ID);
     expect(copy?.version).toBe("2.0.0");
     expect(copy?.files.has("extra.txt")).toBe(false);
+  });
+
+  test("a blocks.json with malformed envelopes keeps only the well-formed ones", async () => {
+    const vfs = new MemoryDriver();
+    const enc = new TextEncoder();
+    await vfs.write(
+      `themes-recovery/${THEME_ID}/blocks.json`,
+      enc.encode(
+        JSON.stringify({
+          version: "1.0.0",
+          blocks: { blk_1: block, blk_null: null, blk_bare: { id: "blk_bare", type: "x" } },
+        }),
+      ),
+    );
+    const copy = await readThemeRecoveryCopy(vfs, THEME_ID);
+    expect([...copy!.blocks.keys()]).toEqual(["blk_1"]);
+    // And a file that is not an object at all leaves the copy readable.
+    await vfs.write(`themes-recovery/${THEME_ID}/blocks.json`, enc.encode("null"));
+    expect((await readThemeRecoveryCopy(vfs, THEME_ID))?.blocks.size).toBe(0);
   });
 
   test("restoring with no matching Block returns the same Site", () => {
