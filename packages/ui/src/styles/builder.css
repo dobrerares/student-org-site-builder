@@ -82,9 +82,9 @@
   --color-card-foreground: #10161f;
   --color-popover: #ffffff;
   --color-popover-foreground: #10161f;
-  --color-primary: #0f766e;
+  --color-primary: #1c1f26;
   --color-primary-foreground: #ffffff;
-  --color-primary-soft: #e6f2f0;
+  --color-primary-soft: #eceef2;
   --color-secondary: #eef0f3;
   --color-secondary-foreground: #10161f;
   --color-muted: #eef0f3;
@@ -95,7 +95,7 @@
   --color-destructive-foreground: #ffffff;
   --color-border: #e4e7eb;
   --color-input: #ccd2da;
-  --color-ring: #0f766e;
+  --color-ring: #1c1f26;
 
   /* Severity fills, for state badges and the findings list. */
   --color-severity-error: #b42318;

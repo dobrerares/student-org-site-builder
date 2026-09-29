@@ -44,7 +44,7 @@ export const TabsTab = forwardRef<HTMLButtonElement, TabsTabProps>(function Tabs
       ref={ref}
       data-sosb-ui=""
       className={cn(
-        "rounded-(--radius-sosb-sm) px-3 py-1.5 text-sm font-medium text-muted-foreground data-[selected]:bg-card data-[selected]:text-foreground data-[selected]:shadow-sm",
+        "rounded-(--radius-sosb-sm) px-3 py-1.5 text-sm font-medium text-muted-foreground data-[selected]:bg-card data-[selected]:text-foreground data-[selected]:shadow-[0_0_0_1px_var(--color-border)]",
         className,
       )}
       {...rest}

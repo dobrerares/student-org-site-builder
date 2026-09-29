@@ -43,6 +43,9 @@ export function MoreOptions({ open, onToggle, labels, children }: MoreOptionsPro
     <section data-testid="more-options" data-more-options data-open={open}>
       <Button
         type="button"
+        variant="plain"
+        size="block"
+        className="items-start"
         data-testid="advanced-toggle"
         data-more-options-toggle
         aria-expanded={open}

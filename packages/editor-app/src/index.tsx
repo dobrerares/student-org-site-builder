@@ -41,6 +41,9 @@
  */
 
 export { EditorApp, type EditorAppProps } from "./editor-app.js";
+// The builder's icon set, so the welcome and wizard shells draw the same
+// marks as the editor they hand off to.
+export { IconFile, IconFolder, IconLayout, IconPages, IconSparkle } from "./icons.js";
 export { SpineForm, applyPatch } from "./spine-form.js";
 export { fieldsFromSchema, type FieldNode } from "./form-generator.js";
 export { renderPreviewHtml } from "./preview-html.js";

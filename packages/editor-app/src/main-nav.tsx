@@ -24,6 +24,16 @@ import { Badge, Button, NativeSelect } from "@sosb/ui";
 
 import { useTranslator } from "./i18n-context.js";
 import { NAV_SECTIONS, type NavSection } from "./builder-navigation.js";
+import {
+  IconArticle,
+  IconFolder,
+  IconHome,
+  IconPages,
+  IconPalette,
+  IconPlus,
+  IconRotate,
+  IconSettings,
+} from "./icons.js";
 
 const SECTION_LABEL_KEY = {
   overview: "builder.nav.overview",
@@ -32,6 +42,14 @@ const SECTION_LABEL_KEY = {
   theme: "builder.nav.theme",
   settings: "builder.nav.settings",
 } as const satisfies Record<NavSection, string>;
+
+const SECTION_ICON = {
+  overview: IconHome,
+  pages: IconPages,
+  articles: IconArticle,
+  theme: IconPalette,
+  settings: IconSettings,
+} as const satisfies Record<NavSection, (props: { size?: number }) => JSX.Element>;
 
 export interface MainNavProps {
   readonly active: NavSection;
@@ -136,6 +154,7 @@ export function MainNav(props: MainNavProps): JSX.Element {
         <span data-nav-group-label>{t("builder.nav.group.site")}</span>
         {NAV_SECTIONS.map((section) => {
           const count = countFor(section);
+          const Icon = SECTION_ICON[section];
           return (
             <button
               key={section}
@@ -146,7 +165,8 @@ export function MainNav(props: MainNavProps): JSX.Element {
               aria-current={props.active === section ? "page" : undefined}
               onClick={() => props.onNavigate(section)}
             >
-              <span>{t(SECTION_LABEL_KEY[section])}</span>
+              <Icon size={17} />
+              <span data-nav-label>{t(SECTION_LABEL_KEY[section])}</span>
               {count !== undefined && (
                 <Badge tone="neutral" data-testid={`nav-count-${section}`}>
                   {count}
@@ -161,17 +181,21 @@ export function MainNav(props: MainNavProps): JSX.Element {
           type="button"
           data-testid="nav-create-page"
           data-nav-item
+          data-nav-create
           onClick={props.onCreatePage}
         >
-          <span>{t("builder.action.createPage")}</span>
+          <IconPlus size={17} />
+          <span data-nav-label>{t("builder.action.createPage")}</span>
         </button>
         <button
           type="button"
           data-testid="nav-create-article"
           data-nav-item
+          data-nav-create
           onClick={props.onCreateArticle}
         >
-          <span>{t("builder.action.createArticle")}</span>
+          <IconPlus size={17} />
+          <span data-nav-label>{t("builder.action.createArticle")}</span>
         </button>
 
         {props.projectActions !== undefined && (
@@ -183,7 +207,8 @@ export function MainNav(props: MainNavProps): JSX.Element {
               data-nav-item
               onClick={props.projectActions.onImport}
             >
-              <span>{t("topbar.import")}</span>
+              <IconFolder size={17} />
+              <span data-nav-label>{t("topbar.import")}</span>
             </button>
             <button
               type="button"
@@ -191,7 +216,8 @@ export function MainNav(props: MainNavProps): JSX.Element {
               data-nav-item
               onClick={props.projectActions.onReset}
             >
-              <span>{t("topbar.reset")}</span>
+              <IconRotate size={17} />
+              <span data-nav-label>{t("topbar.reset")}</span>
             </button>
           </>
         )}

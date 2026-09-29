@@ -75,12 +75,21 @@ function SegmentedInner<T extends string>(
             onClick={() => onValueChange(option.value)}
             className={cn(
               "inline-flex flex-col items-center justify-center rounded-(--radius-sosb-sm) font-medium transition-colors",
-              size === "sm" ? "h-6 px-2" : "h-8 px-3",
+              // A two-line option (label + detail) grows instead of squeezing
+              // both lines into the single-line height.
+              option.detail === undefined
+                ? size === "sm"
+                  ? "h-6 px-2.5"
+                  : "h-8 px-3"
+                : size === "sm"
+                  ? "min-h-6 px-2.5 py-0.5"
+                  : "min-h-8 px-3 py-1",
               option.detail === undefined
                 ? "text-(length:--sosb-text-sm)"
                 : "gap-0 text-(length:--sosb-text-sm) leading-tight",
+              "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
               selected
-                ? "bg-card text-foreground shadow-sm"
+                ? "bg-card text-foreground shadow-[0_0_0_1px_var(--color-border)]"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >

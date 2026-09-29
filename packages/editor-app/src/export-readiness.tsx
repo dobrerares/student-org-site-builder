@@ -43,6 +43,7 @@ import { EditorDialog } from "./editor-dialog.js";
 import { FindingList } from "./findings-list.js";
 import { InfoHint } from "./info-hint.js";
 import { useTranslator } from "./i18n-context.js";
+import { IconCheck } from "./icons.js";
 
 const CONFIRM_PHRASE = "DOWNLOAD";
 
@@ -117,7 +118,9 @@ export function ExportReadinessPanel(props: ExportReadinessPanelProps): JSX.Elem
           </section>
         ) : (
           <div data-finding data-severity="ok" data-testid="export-ready">
-            <span data-finding-icon aria-hidden="true" />
+            <span data-finding-icon aria-hidden="true">
+              <IconCheck size={14} />
+            </span>
             <div data-finding-body>
               <strong>{t("export.ready")}</strong>
               <span data-finding-meta>{t("export.ready.detail")}</span>

@@ -313,6 +313,22 @@ export function PreviewPane(props: PreviewPaneProps): JSX.Element {
           {props.previewedTitle}
         </span>
         <span data-pane-spacer />
+        <span data-preview-viewports>
+          <Segmented
+            ariaLabel={t("preview.viewport.label")}
+            size="sm"
+            value={viewport}
+            onValueChange={setViewport}
+            data-testid="viewport-preview-controls"
+            options={PREVIEW_VIEWPORT_OPTIONS.map((o) => ({
+              value: o.id,
+              label: viewportLabel[o.id],
+              detail: previewViewportSizeLabel(o),
+              testId: "viewport-preview-option",
+              data: { "data-viewport": o.id },
+            }))}
+          />
+        </span>
         {props.canReturnToTarget && (
           <Button
             type="button"
@@ -326,7 +342,6 @@ export function PreviewPane(props: PreviewPaneProps): JSX.Element {
         <Button
           type="button"
           size="sm"
-          variant="primary"
           data-testid="preview-edit-this"
           onClick={props.onEditPreviewed}
         >
@@ -334,22 +349,8 @@ export function PreviewPane(props: PreviewPaneProps): JSX.Element {
         </Button>
       </div>
 
-      <div data-preview-devices>
-        <Segmented
-          ariaLabel={t("preview.viewport.label")}
-          size="sm"
-          value={viewport}
-          onValueChange={setViewport}
-          data-testid="viewport-preview-controls"
-          options={PREVIEW_VIEWPORT_OPTIONS.map((o) => ({
-            value: o.id,
-            label: viewportLabel[o.id],
-            detail: previewViewportSizeLabel(o),
-            testId: "viewport-preview-option",
-            data: { "data-viewport": o.id },
-          }))}
-        />
-        {props.publicScript !== undefined && (
+      {props.publicScript !== undefined && (
+        <div data-preview-devices>
           <span data-preview-interactive data-testid="preview-interactive">
             <label data-toggle>
               <input
@@ -366,8 +367,8 @@ export function PreviewPane(props: PreviewPaneProps): JSX.Element {
               testId="preview-interactive-info"
             />
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
       {props.publicScript !== undefined && interactiveMode === "off" && props.interactiveError && (
         <p

@@ -115,7 +115,16 @@ import type { PreviewTarget } from "./preview-navigation.js";
 // once, before any component renders. Guarded for SSR / non-DOM tooling.
 import "./editor-app-css.js";
 import { rebaseElement } from "./rebase-element.js";
-import { IconClose, IconLayout, IconMenu, IconRedo, IconUndo } from "./icons.js";
+import {
+  IconClose,
+  IconFolder,
+  IconLayout,
+  IconSparkle,
+  IconMenu,
+  IconRedo,
+  IconRotate,
+  IconUndo,
+} from "./icons.js";
 import { InfoHint } from "./info-hint.js";
 import { addLanguageVersion, addPage, clonePage, deletePage, movePage } from "./pages-ops.js";
 import { AddBlockDialog } from "./add-block-dialog.js";
@@ -186,6 +195,13 @@ import { omittedBlocksFor, resolveThemeBundle, type ThemeBundle } from "@sosb/re
 import { Button } from "@sosb/ui";
 
 const MOBILE_BREAKPOINT_PX = 768;
+/**
+ * Below this width the navigation rail stays, but editing and preview take
+ * turns like on a phone, and the rare project actions move into the rail.
+ * Side by side at tablet width left the preview a 180px sliver and the top
+ * bar overlapping itself.
+ */
+const COMPACT_BREAKPOINT_PX = 1024;
 
 export interface EditorAppProps {
   /** Initial site loaded into the editor. */
@@ -480,6 +496,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
   }, []);
 
   const isNarrow = viewportWidth < MOBILE_BREAKPOINT_PX;
+  const isCompact = viewportWidth < COMPACT_BREAKPOINT_PX;
   // Phone layout: editing and preview are shown one at a time inside a
   // workspace, and the main navigation collapses into a drawer.
   const [workspacePane, setWorkspacePane] = useState<SplitPane>("edit");
@@ -2063,7 +2080,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
         target={workspaceTarget}
         drill={reconciledDrill}
         onDrillChange={setDrill}
-        isNarrow={isNarrow}
+        isNarrow={isCompact}
         theme={activeThemeBundle}
         customBlocks={packagesReady ? customBlockRegistry : undefined}
         validation={validationResult}
@@ -2137,7 +2154,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     main = (
       <SplitView
         testId="theme-screen"
-        isNarrow={isNarrow}
+        isNarrow={isCompact}
         pane={workspacePane}
         onPaneChange={setWorkspacePane}
         editor={
@@ -2174,7 +2191,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
     main = (
       <SplitView
         testId="settings-screen"
-        isNarrow={isNarrow}
+        isNarrow={isCompact}
         pane={workspacePane}
         onPaneChange={setWorkspacePane}
         editor={
@@ -2239,7 +2256,7 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
           drawerOpen={drawerOpen}
           onCloseDrawer={() => setDrawerOpen(false)}
           projectActions={
-            isNarrow
+            isCompact
               ? {
                   onImport: () => {
                     setDrawerOpen(false);
@@ -2253,31 +2270,32 @@ function EditorAppInner(props: EditorAppProps): JSX.Element {
               : undefined
           }
         />
-        <main data-builder-main>{main}</main>
+        <main data-builder-main>
+          {!tipDismissed && reconciled.kind === "overview" ? (
+            <aside data-testid="getting-started-tip" data-tip>
+              <span data-tip-icon>
+                <IconSparkle size={18} />
+              </span>
+              <div data-tip-body>
+                <strong>{t("builder.tip.title")}</strong>
+                <p>{t("builder.tip.body", { action: t("builder.action.export") })}</p>
+              </div>
+              <Button
+                type="button"
+                size="icon-sm"
+                variant="ghost"
+                data-testid="getting-started-dismiss"
+                aria-label={t("builder.tip.dismiss")}
+                title={t("builder.tip.dismiss")}
+                onClick={dismissTip}
+              >
+                <IconClose size={16} />
+              </Button>
+            </aside>
+          ) : null}
+          {main}
+        </main>
       </div>
-
-      {!tipDismissed && reconciled.kind === "overview" ? (
-        <aside data-testid="getting-started-tip" data-tip>
-          <span data-tip-icon>
-            <IconLayout size={18} />
-          </span>
-          <div data-tip-body>
-            <strong>{t("builder.tip.title")}</strong>
-            <p>{t("builder.tip.body", { action: t("builder.action.export") })}</p>
-          </div>
-          <Button
-            type="button"
-            size="icon-sm"
-            variant="ghost"
-            data-testid="getting-started-dismiss"
-            aria-label={t("builder.tip.dismiss")}
-            title={t("builder.tip.dismiss")}
-            onClick={dismissTip}
-          >
-            <IconClose size={16} />
-          </Button>
-        </aside>
-      ) : null}
 
       <ExportReadinessPanel
         open={exportOpen}
@@ -2391,6 +2409,7 @@ function TopBar(props: TopBarProps): JSX.Element {
           <Button
             type="button"
             size="icon"
+            variant="ghost"
             className="max-md:h-8 max-md:w-8"
             data-testid="undo-button"
             data-action="undo"
@@ -2405,6 +2424,7 @@ function TopBar(props: TopBarProps): JSX.Element {
           <Button
             type="button"
             size="icon"
+            variant="ghost"
             className="max-md:h-8 max-md:w-8"
             data-testid="redo-button"
             data-action="redo"
@@ -2420,22 +2440,27 @@ function TopBar(props: TopBarProps): JSX.Element {
         {/* On phones these two move into the navigation drawer. */}
         <Button
           type="button"
-          className="max-md:hidden"
+          variant="ghost"
+          className="text-muted-foreground max-[1023px]:hidden"
           data-action="import"
           title={t("builder.import.title")}
           onClick={props.onImport}
         >
+          <IconFolder size={16} />
           {t("topbar.import")}
         </Button>
         <Button
           type="button"
-          className="max-md:hidden"
+          variant="ghost"
+          className="text-muted-foreground max-[1023px]:hidden"
           data-action="reset"
           title={t("builder.reset.title")}
           onClick={props.onReset}
         >
+          <IconRotate size={16} />
           {t("topbar.reset")}
         </Button>
+        <span data-topbar-divider aria-hidden="true" />
         <Button
           type="button"
           className="max-md:h-8 max-md:px-2.5 max-md:text-(length:--sosb-text-sm)"

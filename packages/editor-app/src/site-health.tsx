@@ -106,6 +106,9 @@ function IssueRow({ severity, issue, onJump }: IssueRowProps): JSX.Element {
   return (
     <Button
       type="button"
+      variant="plain"
+      size="block"
+      className="flex-col items-start gap-0.5"
       data-issue
       data-severity={severity}
       data-path={dotted}

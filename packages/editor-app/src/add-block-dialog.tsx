@@ -27,7 +27,7 @@ import type { CustomBlockRegistry } from "@sosb/schema";
 import { buildBlockCatalog, type BlockCatalogEntry } from "./block-catalog.js";
 import { useTranslator } from "./i18n-context.js";
 import { EditorDialog } from "./editor-dialog.js";
-import { IconClose } from "./icons.js";
+import { IconBlockType, IconClose } from "./icons.js";
 import { Button, Input } from "@sosb/ui";
 
 export interface AddBlockDialogProps {
@@ -104,6 +104,8 @@ export function AddBlockDialog(props: AddBlockDialogProps): JSX.Element {
           </div>
           <Button
             type="button"
+            variant="ghost"
+            size="icon"
             data-testid="add-block-close"
             data-icon-button
             aria-label="Close add-section dialog"
@@ -143,12 +145,20 @@ export function AddBlockDialog(props: AddBlockDialogProps): JSX.Element {
                     <li key={entry.type}>
                       <Button
                         type="button"
+                        variant="plain"
+                        size="block"
+                        className="items-start gap-3"
                         data-testid="add-block-entry"
                         data-block-type={entry.type}
                         onClick={() => props.onPick(entry.type)}
                       >
-                        <span data-testid="add-block-entry-label">{entry.label}</span>
-                        <span data-testid="add-block-entry-description">{entry.description}</span>
+                        <span data-add-block-glyph aria-hidden="true">
+                          <IconBlockType type={entry.type} size={18} />
+                        </span>
+                        <span data-add-block-text>
+                          <span data-testid="add-block-entry-label">{entry.label}</span>
+                          <span data-testid="add-block-entry-description">{entry.description}</span>
+                        </span>
                       </Button>
                     </li>
                   ))}

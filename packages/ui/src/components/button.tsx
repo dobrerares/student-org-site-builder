@@ -21,7 +21,8 @@ import { cn } from "../lib/cn.js";
 export const buttonVariants = cva(
   [
     "inline-flex items-center justify-center gap-2 rounded-(--radius-sosb-md)",
-    "font-medium whitespace-nowrap transition-colors",
+    "font-medium whitespace-nowrap transition-[color,background-color,border-color,box-shadow,transform] duration-150",
+    "active:translate-y-px",
     "disabled:pointer-events-none disabled:opacity-55",
     // `data-tone="danger"` is how the editor marks destructive row actions
     // (remove a Block, delete a Page). It used to be styled by the editor's
@@ -29,7 +30,8 @@ export const buttonVariants = cva(
     // the tone has to be expressed here or the red would simply be lost.
     // The attribute selector also out-specifies the variant's own colour,
     // which is what lets one attribute re-tone any variant.
-    "data-[tone=danger]:text-destructive",
+    // Calm at rest, red on intent: a column of red bins in every row reads
+    // as an alarm, not as an affordance.
     "data-[tone=danger]:hover:bg-destructive/10",
     "data-[tone=danger]:hover:text-destructive",
     "data-[tone=accent]:text-primary",
@@ -39,11 +41,16 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: "bg-primary text-primary-foreground hover:bg-primary/90",
+        primary: "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary",
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        outline: "border border-input bg-card text-foreground hover:bg-secondary",
+        outline:
+          "border border-input bg-card text-foreground hover:border-muted-foreground/40 hover:bg-secondary",
         ghost: "text-foreground hover:bg-secondary",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        // No chrome at all: the owning stylesheet draws the surface. For
+        // card-like buttons (a start option, a block to add) whose look is
+        // part of a larger composition rather than the control system.
+        plain: "",
       },
       size: {
         // One control system (issue #102): 36px standard, 28px compact.
@@ -52,6 +59,10 @@ export const buttonVariants = cva(
         lg: "h-11 px-5 text-(length:--sosb-text-lg)",
         icon: "h-9 w-9 p-0",
         "icon-sm": "h-7 w-7 p-0",
+        // Multi-line content: grows with its text and wraps instead of
+        // spilling out of a fixed 36px box. No padding, so the owning
+        // stylesheet's padding applies.
+        block: "h-auto min-h-9 justify-start text-left whitespace-normal",
       },
     },
     // The prototype's resting button is a white card with a hairline border,
