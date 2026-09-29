@@ -19,6 +19,7 @@
  *     `theme-mini-preview.tsx`).
  */
 import { renderSite, type ThemeBundle } from "@sosb/renderer";
+import type { Site } from "@sosb/schema";
 
 import { asociatiaStudenteascaDemoData } from "./templates/index.js";
 
@@ -48,6 +49,29 @@ function previewAssetUrl(path: string): string | undefined {
   if (path.endsWith(".woff2")) return undefined;
   return PLACEHOLDER_IMAGE;
 }
+
+/**
+ * The sample site with its Page header photos taken out.
+ *
+ * At thumbnail scale a full-bleed photo is most of the picture, and every
+ * theme lays the same grey placeholder under the same dark scrim, so the
+ * miniatures came out identical at exactly the size where the difference
+ * should jump out. Without the photo the header shows what actually sets the
+ * themes apart: ground colour, display type and accent.
+ */
+const MINIATURE_SITE: Site = {
+  ...asociatiaStudenteascaDemoData,
+  pages: asociatiaStudenteascaDemoData.pages.map((page) => ({
+    ...page,
+    blocks: page.blocks.map((block) => {
+      if (block.type !== "hero") return block;
+      const data = { ...(block.data as Record<string, unknown>) };
+      delete data["backgroundImage"];
+      delete data["backgroundAlt"];
+      return { ...block, data } as typeof block;
+    }),
+  })),
+};
 
 const htmlCache = new Map<string, string>();
 
@@ -84,7 +108,7 @@ export function themePreviewHtml(themeId: string, bundle?: ThemeBundle): string 
   const key = cacheKey(themeId, bundle);
   const cached = htmlCache.get(key);
   if (cached !== undefined) return cached;
-  const html = renderSite(asociatiaStudenteascaDemoData, themeId, {
+  const html = renderSite(MINIATURE_SITE, themeId, {
     pageIndex: 0,
     assetUrlForPath: previewAssetUrl,
     ...(bundle === undefined ? {} : { theme: bundle }),

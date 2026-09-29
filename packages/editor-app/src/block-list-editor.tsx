@@ -34,7 +34,14 @@ import type { BlockEnvelope, CustomBlockRegistry, Site } from "@sosb/schema";
 import { customBlockAvailabilityFor, isCustomBlockType } from "@sosb/schema";
 
 import { buildBlockCatalog, type BlockCatalogEntry } from "./block-catalog.js";
-import { IconArrowDown, IconArrowUp, IconGrip, IconPlus, IconTrash } from "./icons.js";
+import {
+  IconArrowDown,
+  IconArrowUp,
+  IconBlockType,
+  IconGrip,
+  IconPlus,
+  IconTrash,
+} from "./icons.js";
 import type * as React from "react";
 import { Badge, Button } from "@sosb/ui";
 import { useTranslator } from "./i18n-context.js";
@@ -212,15 +219,16 @@ export function BlockListEditor(props: BlockListEditorProps): JSX.Element {
                 <IconGrip size={16} />
               </span>
 
-              <span data-block-position aria-hidden="true">
-                {index + 1}
+              <span data-block-glyph data-block-position={index + 1} aria-hidden="true">
+                <IconBlockType type={block.type} size={16} />
               </span>
 
               {props.onSelect !== undefined ? (
                 <Button
                   type="button"
                   variant="ghost"
-                  className="h-auto min-h-9 flex-col items-start justify-center gap-0 px-1.5 py-1 text-left whitespace-normal"
+                  size="block"
+                  className="flex-col items-start justify-center gap-0.5 px-1.5 py-1 hover:bg-transparent"
                   data-testid="block-row-select"
                   data-action="select"
                   aria-label={t("blocks.row.edit", { label: entry.label })}

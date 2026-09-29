@@ -22,7 +22,7 @@ function base(size: number | undefined): React.SVGProps<SVGSVGElement> {
     viewBox: "0 0 24 24",
     fill: "none",
     stroke: "currentColor",
-    strokeWidth: "2",
+    strokeWidth: "1.75",
     strokeLinecap: "round",
     strokeLinejoin: "round",
     "aria-hidden": "true",
@@ -268,4 +268,205 @@ export function IconGlobe(props: IconProps): JSX.Element {
       <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
     </svg>
   );
+}
+
+/* ------------------------------------------------------------------
+ * Navigation destinations (issue #102 main nav)
+ * ------------------------------------------------------------------ */
+
+export function IconHome(props: IconProps): JSX.Element {
+  return (
+    <svg {...base(props.size)}>
+      <path d="M3 10.5 12 3l9 7.5" />
+      <path d="M5 9v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9" />
+      <path d="M10 21v-6h4v6" />
+    </svg>
+  );
+}
+
+export function IconPages(props: IconProps): JSX.Element {
+  return (
+    <svg {...base(props.size)}>
+      <path d="M15 3H8a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V7z" />
+      <path d="M15 3v4h4" />
+      <path d="M3 7v13a2 2 0 0 0 2 2h10" />
+    </svg>
+  );
+}
+
+export function IconArticle(props: IconProps): JSX.Element {
+  return (
+    <svg {...base(props.size)}>
+      <path d="M4 4h13a1 1 0 0 1 1 1v14a2 2 0 0 0 2 2H6a2 2 0 0 1-2-2z" />
+      <path d="M18 8h2a1 1 0 0 1 1 1v10a2 2 0 0 1-2 2" />
+      <path d="M8 8h6" />
+      <path d="M8 12h6" />
+      <path d="M8 16h3" />
+    </svg>
+  );
+}
+
+export function IconUpload(props: IconProps): JSX.Element {
+  return (
+    <svg {...base(props.size)}>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <path d="m17 8-5-5-5 5" />
+      <path d="M12 3v12" />
+    </svg>
+  );
+}
+
+export function IconRotate(props: IconProps): JSX.Element {
+  return (
+    <svg {...base(props.size)}>
+      <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+      <path d="M3 3v5h5" />
+    </svg>
+  );
+}
+
+/* ------------------------------------------------------------------
+ * Block types — one glyph per Block, shared by the Add-block dialog and
+ * the Block outline so a section is recognisable in both places.
+ * ------------------------------------------------------------------ */
+
+const BLOCK_GLYPHS: Record<string, JSX.Element> = {
+  hero: (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M7 10h10" />
+      <path d="M7 14h6" />
+    </>
+  ),
+  richText: (
+    <>
+      <path d="M4 6h16" />
+      <path d="M4 10h16" />
+      <path d="M4 14h16" />
+      <path d="M4 18h10" />
+    </>
+  ),
+  valueList: (
+    <>
+      <path d="m3 6 1.5 1.5L7 5" />
+      <path d="m3 12 1.5 1.5L7 11" />
+      <path d="m3 18 1.5 1.5L7 17" />
+      <path d="M11 6h10" />
+      <path d="M11 12h10" />
+      <path d="M11 18h10" />
+    </>
+  ),
+  activitiesList: (
+    <>
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      <rect x="14" y="14" width="7" height="7" rx="1.5" />
+    </>
+  ),
+  contactCard: (
+    <>
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <path d="m2 7 10 6 10-6" />
+    </>
+  ),
+  ctaBanner: (
+    <>
+      <path d="M3 11v3a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z" />
+      <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+      <path d="M18.5 5.5a9 9 0 0 1 0 13" />
+    </>
+  ),
+  customHTML: (
+    <>
+      <path d="m16 18 6-6-6-6" />
+      <path d="m8 6-6 6 6 6" />
+    </>
+  ),
+  documentDownloads: (
+    <>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <path d="M14 2v6h6" />
+      <path d="M12 12v6" />
+      <path d="m9 15 3 3 3-3" />
+    </>
+  ),
+  embed: (
+    <>
+      <rect x="2" y="4" width="20" height="16" rx="3" />
+      <path d="m10 9 5 3-5 3z" />
+    </>
+  ),
+  eventList: (
+    <>
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M16 2v4" />
+      <path d="M8 2v4" />
+      <path d="M3 10h18" />
+      <path d="M8 14h.01" />
+      <path d="M12 14h.01" />
+      <path d="M8 18h.01" />
+    </>
+  ),
+  faq: (
+    <>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3" />
+      <path d="M12 17h.01" />
+    </>
+  ),
+  imageGallery: (
+    <>
+      <rect x="6" y="2" width="16" height="16" rx="2" />
+      <path d="M2 6v14a2 2 0 0 0 2 2h14" />
+      <circle cx="12" cy="8" r="1.5" />
+      <path d="m22 13-3.5-3.5L10 18" />
+    </>
+  ),
+  partnerLogos: (
+    <>
+      <circle cx="12" cy="9" r="6" />
+      <path d="M8.2 13.6 7 22l5-3 5 3-1.2-8.4" />
+    </>
+  ),
+  quote: (
+    <>
+      <path d="M3 21c3 0 7-1 7-8V5c0-1.2-.8-2-2-2H4c-1.2 0-2 .8-2 2v6c0 1.2.8 2 2 2h3c0 4-2 6-4 6z" />
+      <path d="M15 21c3 0 7-1 7-8V5c0-1.2-.8-2-2-2h-4c-1.2 0-2 .8-2 2v6c0 1.2.8 2 2 2h3c0 4-2 6-4 6z" />
+    </>
+  ),
+  articleList: (
+    <>
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <path d="M14 4h7" />
+      <path d="M14 8h5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      <path d="M14 15h7" />
+      <path d="M14 19h5" />
+    </>
+  ),
+  siteFooter: (
+    <>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M3 15h18" />
+      <path d="M7 18h4" />
+    </>
+  ),
+  teamGrid: (
+    <>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.9" />
+      <path d="M16 3.1a4 4 0 0 1 0 7.8" />
+    </>
+  ),
+};
+
+/** Custom Blocks (ADR 0045) and anything not in the table: a puzzle piece. */
+const CUSTOM_BLOCK_GLYPH = (
+  <path d="M19.4 12.6a2.4 2.4 0 0 0 0-3.4L17 7h-3.1a2.5 2.5 0 1 0-4.8 0H6a2 2 0 0 0-2 2v3.1a2.5 2.5 0 1 1 0 4.8V20a2 2 0 0 0 2 2h3.1a2.5 2.5 0 1 1 4.8 0H17a2 2 0 0 0 2-2v-3.1a2.5 2.5 0 1 0 .4-4.3z" />
+);
+
+export function IconBlockType(props: IconProps & { readonly type: string }): JSX.Element {
+  return <svg {...base(props.size)}>{BLOCK_GLYPHS[props.type] ?? CUSTOM_BLOCK_GLYPH}</svg>;
 }

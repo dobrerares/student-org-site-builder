@@ -17,6 +17,15 @@ import type { Site, ValidationIssue, ValidationResult } from "@sosb/schema";
 import { Badge, Button } from "@sosb/ui";
 
 import { FindingList } from "./findings-list.js";
+import {
+  IconArticle,
+  IconChevronRight,
+  IconPages,
+  IconPalette,
+  IconPlus,
+  IconSettings,
+} from "./icons.js";
+import { buildThemeCatalog } from "./theme-catalog.js";
 import { InfoHint } from "./info-hint.js";
 import { useTranslator } from "./i18n-context.js";
 import type { NavSection } from "./builder-navigation.js";
@@ -55,6 +64,16 @@ export function OverviewScreen(props: OverviewScreenProps): JSX.Element {
     return articles.filter((a) => a.state === state).length;
   }
 
+  // The author picked "Scholarly", not "academic": show the name they chose
+  // from. An imported Theme package is not in the built-in catalog and keeps
+  // its id, which is also what its own picker shows.
+  const themeLabel =
+    buildThemeCatalog().entries.find((entry) => entry.id === props.site.theme.id)?.label ??
+    props.site.theme.id;
+  const stateCounts = (["published", "draft", "unlisted"] as const)
+    .map((state) => ({ state, count: stateCount(state) }))
+    .filter((entry) => entry.count > 0);
+
   const recentArticles = [...articles]
     .sort((a, b) => (b.publishedAt ?? "").localeCompare(a.publishedAt ?? ""))
     .slice(0, SUMMARY_LIMIT);
@@ -63,13 +82,16 @@ export function OverviewScreen(props: OverviewScreenProps): JSX.Element {
     <div data-testid="overview" data-screen aria-label={t("overview.title")}>
       <header data-screen-head>
         <h1 data-display>{props.site.org.name}</h1>
-        <p data-muted>{t("overview.theme", { theme: props.site.theme.id })}</p>
+        <p data-muted>{t("overview.theme", { theme: themeLabel })}</p>
       </header>
 
       <div data-overview-grid>
         <section data-card data-testid="overview-pages">
           <div data-row-between>
             <h2>
+              <span data-card-icon aria-hidden="true">
+                <IconPages size={16} />
+              </span>
               {t("overview.pages.title")}
               <InfoHint
                 label={t("overview.pages.title")}
@@ -81,7 +103,9 @@ export function OverviewScreen(props: OverviewScreenProps): JSX.Element {
           </div>
 
           {props.site.pages.length === 0 ? (
-            <p data-muted>{t("overview.pages.empty")}</p>
+            <p data-muted data-card-empty>
+              {t("overview.pages.empty")}
+            </p>
           ) : (
             <ul data-summary-list>
               {props.site.pages.slice(0, SUMMARY_LIMIT).map((page, index) => (
@@ -114,6 +138,7 @@ export function OverviewScreen(props: OverviewScreenProps): JSX.Element {
               data-testid="overview-create-page"
               onClick={props.onCreatePage}
             >
+              <IconPlus size={16} />
               {t("builder.action.createPage")}
             </Button>
             <Button type="button" onClick={() => props.onNavigate("pages")}>
@@ -124,24 +149,31 @@ export function OverviewScreen(props: OverviewScreenProps): JSX.Element {
 
         <section data-card data-testid="overview-articles">
           <div data-row-between>
-            <h2>{t("overview.articles.title")}</h2>
+            <h2>
+              <span data-card-icon aria-hidden="true">
+                <IconArticle size={16} />
+              </span>
+              {t("overview.articles.title")}
+            </h2>
             <Badge tone="neutral">{articles.length}</Badge>
           </div>
 
-          <div data-row>
-            <Badge tone={STATE_TONE.published} data-testid="overview-count-published">
-              {`${stateCount("published")} ${t("articles.state.published")}`}
-            </Badge>
-            <Badge tone={STATE_TONE.draft} data-testid="overview-count-draft">
-              {`${stateCount("draft")} ${t("articles.state.draft")}`}
-            </Badge>
-            <Badge tone={STATE_TONE.unlisted} data-testid="overview-count-unlisted">
-              {`${stateCount("unlisted")} ${t("articles.state.unlisted")}`}
-            </Badge>
-          </div>
+          {/* Only the states that have articles: a row of zeros is noise, and
+              an empty project already says so below. */}
+          {stateCounts.length > 0 && (
+            <div data-row>
+              {stateCounts.map(({ state, count }) => (
+                <Badge key={state} tone={STATE_TONE[state]} data-testid={`overview-count-${state}`}>
+                  {`${count} ${t(`articles.state.${state}`)}`}
+                </Badge>
+              ))}
+            </div>
+          )}
 
           {articles.length === 0 ? (
-            <p data-muted>{t("overview.articles.empty")}</p>
+            <p data-muted data-card-empty>
+              {t("overview.articles.empty")}
+            </p>
           ) : (
             <ul data-summary-list>
               {recentArticles.map((article) => (
@@ -175,6 +207,7 @@ export function OverviewScreen(props: OverviewScreenProps): JSX.Element {
               data-testid="overview-create-article"
               onClick={props.onCreateArticle}
             >
+              <IconPlus size={16} />
               {t("builder.action.createArticle")}
             </Button>
             <Button type="button" onClick={() => props.onNavigate("articles")}>
@@ -195,7 +228,7 @@ export function OverviewScreen(props: OverviewScreenProps): JSX.Element {
             />
           </h2>
           <Badge
-            tone={errors.length > 0 ? "draft" : "published"}
+            tone={errors.length > 0 ? "error" : warnings.length > 0 ? "draft" : "published"}
             data-testid="overview-health-summary"
           >
             {findings.length === 0
@@ -214,22 +247,42 @@ export function OverviewScreen(props: OverviewScreenProps): JSX.Element {
         />
       </section>
 
-      <div data-row>
-        <Button
-          type="button"
-          data-testid="overview-theme"
-          onClick={() => props.onNavigate("theme")}
-        >
-          {t("builder.nav.theme")}
-        </Button>
-        <Button
-          type="button"
-          data-testid="overview-settings"
-          onClick={() => props.onNavigate("settings")}
-        >
-          {t("builder.nav.settings")}
-        </Button>
-      </div>
+      <ul data-summary-list data-overview-links>
+        <li>
+          <button
+            type="button"
+            data-summary-row
+            data-testid="overview-theme"
+            onClick={() => props.onNavigate("theme")}
+          >
+            <span data-card-icon aria-hidden="true">
+              <IconPalette size={16} />
+            </span>
+            <span data-summary-main>
+              <span data-summary-title>{t("builder.nav.theme")}</span>
+              <span data-summary-meta>{themeLabel}</span>
+            </span>
+            <IconChevronRight size={16} />
+          </button>
+        </li>
+        <li>
+          <button
+            type="button"
+            data-summary-row
+            data-testid="overview-settings"
+            onClick={() => props.onNavigate("settings")}
+          >
+            <span data-card-icon aria-hidden="true">
+              <IconSettings size={16} />
+            </span>
+            <span data-summary-main>
+              <span data-summary-title>{t("builder.nav.settings")}</span>
+              <span data-summary-meta>{props.site.org.name}</span>
+            </span>
+            <IconChevronRight size={16} />
+          </button>
+        </li>
+      </ul>
     </div>
   );
 }

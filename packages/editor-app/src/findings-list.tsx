@@ -21,6 +21,7 @@ import { Button } from "@sosb/ui";
 import { issuePathLabel } from "./field-labels.js";
 import { pathToDotted } from "./issue-navigate.js";
 import { InfoHint } from "./info-hint.js";
+import { IconAlert, IconInfo } from "./icons.js";
 import { useTranslator } from "./i18n-context.js";
 
 export interface FindingListProps {
@@ -58,7 +59,9 @@ export function FindingList(props: FindingListProps): JSX.Element {
             data-code={issue.code}
             data-path={dotted}
           >
-            <span data-finding-icon aria-hidden="true" />
+            <span data-finding-icon aria-hidden="true">
+              {issue.severity === "info" ? <IconInfo size={14} /> : <IconAlert size={14} />}
+            </span>
             <div data-finding-body>
               <span data-finding-message>
                 <strong>{issue.message}</strong>

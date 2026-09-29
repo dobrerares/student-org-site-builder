@@ -4,7 +4,14 @@ import { useEffect, useState } from "react";
 import { migrateSite, parseSite, type Site } from "@sosb/schema";
 import type { Vfs } from "@sosb/vfs/vfs";
 import { loadAutosave, saveAutosave } from "@sosb/editor-state";
-import { EditorApp } from "@sosb/editor-app";
+import {
+  EditorApp,
+  IconFile,
+  IconFolder,
+  IconLayout,
+  IconPages,
+  IconSparkle,
+} from "@sosb/editor-app";
 import { TEMPLATES } from "@sosb/themes";
 import {
   clearWizardProgress,
@@ -219,7 +226,9 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
     >
       <header>
         <p data-welcome-kicker>
-          <span data-welcome-mark aria-hidden="true" />
+          <span data-welcome-mark aria-hidden="true">
+            <IconLayout size={16} />
+          </span>
           Site Builder
         </p>
         <h1>Build your organisation&apos;s website</h1>
@@ -244,6 +253,8 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
         {draft !== null ? (
           <Button
             type="button"
+            variant="plain"
+            size="block"
             data-testid="welcome-action-continue"
             onClick={() => {
               void openEditor({
@@ -253,15 +264,23 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
               });
             }}
           >
+            <span data-action-icon aria-hidden="true">
+              <IconPages size={20} />
+            </span>
             <span data-action-title>Continue where you left off</span>
             <span data-action-detail>Your draft is saved in this browser</span>
           </Button>
         ) : null}
         <Button
           type="button"
+          variant="plain"
+          size="block"
           data-testid="welcome-action-wizard"
           onClick={() => setMode({ kind: "wizard" })}
         >
+          <span data-action-icon aria-hidden="true">
+            <IconSparkle size={20} />
+          </span>
           <span data-action-title>
             {wizardProgress === null ? "Answer a few questions" : "Continue setup"}
           </span>
@@ -273,6 +292,8 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
         </Button>
         <Button
           type="button"
+          variant="plain"
+          size="block"
           data-testid="welcome-action-template"
           disabled={primaryTemplate === undefined}
           onClick={() => {
@@ -281,17 +302,25 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
             }
           }}
         >
+          <span data-action-icon aria-hidden="true">
+            <IconLayout size={20} />
+          </span>
           <span data-action-title>Start from an example site</span>
           <span data-action-detail>A full demo site you replace with your own content</span>
         </Button>
         <Button
           type="button"
+          variant="plain"
+          size="block"
           data-testid="welcome-action-import"
           disabled={props.onImportSite === undefined}
           onClick={() => {
             void importSite();
           }}
         >
+          <span data-action-icon aria-hidden="true">
+            <IconFolder size={20} />
+          </span>
           <span data-action-title>Open a saved site</span>
           <span data-action-detail>
             {props.onImportSite === undefined
@@ -301,11 +330,16 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
         </Button>
         <Button
           type="button"
+          variant="plain"
+          size="block"
           data-testid="welcome-action-blank"
           onClick={() => {
             void openEditor(structuredClone(props.blankSite));
           }}
         >
+          <span data-action-icon aria-hidden="true">
+            <IconFile size={20} />
+          </span>
           <span data-action-title>Start from scratch</span>
           <span data-action-detail>One empty page, you add the rest</span>
         </Button>

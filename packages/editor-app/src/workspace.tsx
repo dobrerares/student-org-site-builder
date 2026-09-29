@@ -45,7 +45,7 @@ import { buildBlockCatalog } from "./block-catalog.js";
 import { SpineForm } from "./spine-form.js";
 import { SplitView, type SplitPane } from "./split-view.js";
 import type { FieldNode } from "./form-generator.js";
-import { IconArrowLeft, IconChevronRight } from "./icons.js";
+import { IconArrowLeft, IconBlockType, IconChevronRight } from "./icons.js";
 import { InfoHint } from "./info-hint.js";
 import { addArticleTranslation, updateArticle } from "./articles-ops.js";
 import { useTranslator } from "./i18n-context.js";
@@ -247,8 +247,11 @@ export function Workspace(props: WorkspaceProps): JSX.Element {
         data-block-type={activeBlock.type}
       >
         <header data-testid="inspector-header">
-          <span data-testid="inspector-eyebrow">{entry.label}</span>
           <h2>{blockTitle}</h2>
+          <span data-testid="inspector-eyebrow" data-inspector-kind>
+            <IconBlockType type={activeBlock.type} size={14} />
+            {entry.label}
+          </span>
         </header>
         <BlockInspector
           site={props.site}
@@ -299,10 +302,10 @@ export function Workspace(props: WorkspaceProps): JSX.Element {
         {...(props.target.kind === "page" ? { "data-page-index": props.target.pageIndex } : {})}
       >
         <header data-testid="inspector-header">
-          <span data-testid="inspector-eyebrow">
+          <h2>{contentTitle}</h2>
+          <span data-testid="inspector-eyebrow" data-inspector-kind>
             {isArticle ? t("workspace.settings.article") : t("workspace.settings.page")}
           </span>
-          <h2>{contentTitle}</h2>
         </header>
         {article !== undefined && articleIndex >= 0 ? (
           <ArticleSettingsForm
@@ -329,8 +332,10 @@ export function Workspace(props: WorkspaceProps): JSX.Element {
     body = (
       <div data-testid="inspector" data-inspector-mode="related">
         <header data-testid="inspector-header">
-          <span data-testid="inspector-eyebrow">{t("articles.settings.related")}</span>
           <h2>{contentTitle}</h2>
+          <span data-testid="inspector-eyebrow" data-inspector-kind>
+            {t("articles.settings.related")}
+          </span>
         </header>
         <ArticleListInspector
           site={props.site}

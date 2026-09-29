@@ -10,7 +10,7 @@
  * Visual direction: a calm, friendly workspace for people who are not
  * designers. One sans-serif family (Inter, self-hosted from the renderer's
  * bundled bytes — see `editor-fonts.ts`), soft corners, white cards on a
- * cool-grey ground, a single teal action colour, and severity colours that
+ * cool-grey ground, a single near-black ink action colour, and severity colours that
  * read at a glance. Selectors hang off the data attributes the components
  * already emit for testing, so no class names need to be threaded through
  * the React tree.
@@ -86,11 +86,13 @@ export const EDITOR_APP_CSS = String.raw`
   --rule-soft:  #eff1f4;
   --rule-strong: #ccd2da;
 
-  /* Accent (teal) */
-  --accent:        #0f766e;
-  --accent-strong: #0b5f59;
-  --accent-soft:   #e6f2f0;
-  --accent-ring:   rgba(15, 118, 110, 0.22);
+  /* Accent (ink). Monochrome on purpose: the builder is a writing tool, and
+   * the only colour on screen should be the author's site and the status
+   * of their work. */
+  --accent:        #1c1f26;
+  --accent-strong: #0b0d11;
+  --accent-soft:   #eceef2;
+  --accent-ring:   rgba(28, 31, 38, 0.16);
 
   /* Severity */
   --error:      #b42318;
@@ -134,16 +136,26 @@ export const EDITOR_APP_CSS = String.raw`
   --r-md: 8px;   /* control radius */
   --r-lg: 12px;  /* card radius */
   --r-pill: 999px;
-  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05);
-  --shadow-md: 0 2px 8px rgba(16, 24, 40, 0.07);
-  --shadow-lg: 0 24px 56px rgba(16, 24, 40, 0.24);
-  --shadow-pop: 0 8px 24px rgba(16, 24, 40, 0.12);
+  /* Flat by rule: anything resting on the page is drawn by its border.
+   * Depth is reserved for what genuinely floats above it (dialogs, the phone
+   * drawer, popovers), so a shadow always means "this is on top". */
+  --shadow-sm: none;
+  --shadow-card: none;
+  --shadow-md: none;
+  --shadow-lg: 0 20px 48px -12px rgba(16, 24, 40, 0.28), 0 2px 6px rgba(16, 24, 40, 0.06);
+  --shadow-pop: 0 8px 24px -6px rgba(16, 24, 40, 0.18);
+  /* Focus and selection: a crisp second pixel of border, not a glow. */
+  --ring-focus: 0 0 0 1px var(--accent);
   --topbar-h: 56px;
   --panebar-h: 44px;
   --footer-h: 44px;
-  --nav-w: 216px;
+  --nav-w: 224px;
+  /* The second neutral layer: navigation sits a half-step off the canvas. */
+  --paper-nav:     #fbfbfc;
   --edit-w: 420px;
-  --transition: 140ms ease;
+  /* Exponential ease-out: quick to respond, soft to settle. */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --transition: 160ms var(--ease-out);
   --control-h: 36px;
   --control-h-sm: 28px;
 }
@@ -165,6 +177,14 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  font-feature-settings: "cv11", "ss01";
+}
+[data-testid="editor-app"] {
+  caret-color: var(--accent);
+  scrollbar-color: var(--rule-strong) transparent;
+}
+[data-testid="editor-app"] * {
+  scrollbar-width: thin;
 }
 [data-testid="editor-app"] *,
 [data-testid="editor-app"] *::before,
@@ -256,7 +276,7 @@ body {
   box-shadow: none;
 }
 
-/* Primary — the one teal action in a given area */
+/* Primary — the one ink action in a given area */
 [data-testid="editor-app"] button[data-variant="primary"] {
   background: var(--accent);
   border-color: var(--accent);
@@ -280,7 +300,7 @@ body {
   box-shadow: none;
 }
 [data-testid="editor-app"] button[data-variant="secondary"]:hover:not(:disabled) {
-  background: #d3ebe6;
+  background: var(--paper-deep);
   border-color: transparent;
   color: var(--accent-strong);
 }
@@ -366,6 +386,13 @@ body {
   color: var(--ink);
   white-space: nowrap;
 }
+[data-topbar-divider] {
+  align-self: center;
+  width: 1px;
+  height: 20px;
+  margin: 0 var(--sp-0);
+  background: var(--rule);
+}
 [data-testid="save-status"] {
   display: flex;
   flex-direction: column;
@@ -380,8 +407,42 @@ body {
   white-space: nowrap;
 }
 [data-save-status-text] {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-weight: 600;
   color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+/* A status light: green when the browser copy is current, blue and breathing
+ * while a save is in flight. The colour is the status at a glance; the words
+ * beside it are for when you look. */
+[data-save-status-text]::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--r-pill);
+  background: var(--ok);
+  box-shadow: 0 0 0 3px var(--ok-soft);
+  transition: background var(--transition), box-shadow var(--transition);
+}
+[data-testid="save-status"][data-status="saving"] [data-save-status-text]::before {
+  background: var(--info);
+  box-shadow: 0 0 0 3px var(--info-soft);
+  animation: sosb-breathe 1.2s var(--ease-out) infinite alternate;
+}
+[data-testid="save-status"][data-status="localOnly"] [data-save-status-text]::before {
+  background: var(--warn);
+  box-shadow: 0 0 0 3px var(--warn-soft);
+}
+[data-testid="save-status"][data-status="error"] [data-save-status-text]::before {
+  background: var(--error);
+  box-shadow: 0 0 0 3px var(--error-soft);
+}
+@keyframes sosb-breathe {
+  from { opacity: 1; }
+  to { opacity: 0.35; }
 }
 [data-testid="save-status"][data-status="saving"] [data-save-status-text] {
   color: var(--info);
@@ -427,9 +488,7 @@ body {
   flex-direction: column;
   gap: 0;
   padding: 0;
-  background:
-    radial-gradient(circle at 1px 1px, var(--paper-deep) 1px, transparent 1.5px) 0 0 / 18px 18px,
-    var(--paper-sunken);
+  background: var(--paper-sunken);
 }
 [data-testid="preview-canvas"] {
   flex: 1 1 auto;
@@ -462,10 +521,10 @@ body {
   height: 100%;
   min-height: 0;
   background: white;
-  border: 1px solid var(--rule-strong);
+  border: 1px solid var(--rule);
   border-radius: var(--r-md);
   overflow: hidden;
-  box-shadow: var(--shadow-md);
+  box-shadow: none;
   transform-origin: top left;
 }
 [data-testid="preview-frame-shell"][data-preview-viewport="phone"] {
@@ -516,11 +575,19 @@ body {
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: var(--sp-2);
   align-items: start;
+  /* Sits in the Overview's column, above the screen, at the screen's measure. */
+  width: calc(100% - 2 * var(--sp-5));
+  max-width: calc(1080px - 2 * var(--sp-5));
+  margin: var(--sp-5) var(--sp-5) calc(-1 * var(--sp-2));
   padding: var(--sp-3);
-  border-radius: var(--r-md);
-  background: var(--accent-soft);
-  border: 1px solid #c9e6e0;
+  border-radius: var(--r-lg);
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  box-shadow: var(--shadow-card);
   color: var(--ink-2);
+}
+[data-testid="getting-started-tip"] [data-tip-body] p {
+  max-width: 72ch;
 }
 [data-testid="getting-started-tip"] [data-tip-icon] {
   display: inline-flex;
@@ -529,7 +596,7 @@ body {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--paper-sunken);
   color: var(--accent);
 }
 [data-testid="getting-started-tip"] [data-tip-body] {
@@ -596,17 +663,7 @@ body {
 }
 [data-testid="pages-list-item"][data-active="true"] {
   background: var(--accent-soft);
-  border-color: #b9ddd6;
-}
-[data-testid="pages-list-item"][data-active="true"]::before {
-  content: "";
-  position: absolute;
-  left: -1px;
-  top: 8px;
-  bottom: 8px;
-  width: 3px;
-  border-radius: 3px;
-  background: var(--accent);
+  border-color: var(--rule-strong);
 }
 [data-testid="editor-app"] [data-testid="pages-list-item"] > button[data-action="select"] {
   flex: 1 1 140px;
@@ -751,7 +808,8 @@ body {
   grid-template-columns: auto auto minmax(0, 1fr) auto;
   column-gap: 6px;
   align-items: center;
-  padding: 6px 8px 6px 6px;
+  min-height: 56px;
+  padding: 6px 8px 6px 4px;
   background: var(--paper-raised);
   border: 1px solid var(--rule);
   border-radius: var(--r-md);
@@ -761,9 +819,26 @@ body {
   border-color: var(--rule-strong);
   box-shadow: var(--shadow-sm);
 }
+[data-testid="block-row"]:hover [data-block-glyph] {
+  background: var(--accent);
+  color: #ffffff;
+}
+/* Move and remove wait until the row is pointed at or focused, on devices
+ * that can point. The outline reads as a list of sections, not as a toolbar
+ * repeated nine times. Touch keeps them visible: there is no hover to wait for. */
+@media (hover: hover) and (pointer: fine) {
+  [data-testid="block-row"] [data-row-actions] {
+    opacity: 0;
+    transition: opacity var(--transition);
+  }
+  [data-testid="block-row"]:hover [data-row-actions],
+  [data-testid="block-row"]:focus-within [data-row-actions] {
+    opacity: 1;
+  }
+}
 [data-testid="block-row"][data-drop-target="true"] {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-ring);
+  box-shadow: var(--ring-focus);
 }
 [data-testid="block-drag-handle"] {
   display: inline-flex;
@@ -774,8 +849,11 @@ body {
   border-radius: var(--r-sm);
   cursor: grab;
   user-select: none;
-  color: var(--ink-4);
+  color: var(--rule-strong);
   transition: color var(--transition), background var(--transition);
+}
+[data-testid="block-row"]:hover [data-testid="block-drag-handle"] {
+  color: var(--ink-4);
 }
 [data-testid="block-drag-handle"]:hover,
 [data-testid="block-drag-handle"]:focus-visible {
@@ -786,19 +864,16 @@ body {
   cursor: grabbing;
   color: var(--accent);
 }
-[data-testid="block-row"] [data-block-position] {
+[data-testid="block-row"] [data-block-glyph] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 6px;
-  border-radius: 999px;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-md);
   background: var(--paper-sunken);
-  color: var(--ink-3);
-  font-size: 11px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+  transition: background var(--transition), color var(--transition);
 }
 [data-testid="editor-app"] [data-testid="block-row"] > [data-testid="block-row-select"],
 [data-testid="block-row"] > [data-block-row-text] {
@@ -831,12 +906,13 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* When the Block has its own title, the type drops beneath it as a quiet
+ * second line: the author scans by what the section says, not by its kind. */
 [data-testid="block-row-label"][data-eyebrow="true"] {
-  font-size: 11px;
-  font-weight: 600;
+  order: 2;
+  font-size: var(--step--2);
+  font-weight: 500;
   color: var(--ink-3);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
 }
 [data-testid="block-row-title"] {
   font-size: var(--step-0);
@@ -880,6 +956,14 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
+  animation: sosb-drill-in 220ms var(--ease-out);
+}
+/* The one authored motion in the builder: drilling into a Block slides the
+ * Inspector in from the side it came from, so the back button's direction is
+ * something you have already seen. */
+@keyframes sosb-drill-in {
+  from { opacity: 0; transform: translateX(14px); }
+  to { opacity: 1; transform: none; }
 }
 [data-testid="editor-app"] [data-testid="drill-back"] {
   align-self: flex-start;
@@ -907,11 +991,15 @@ body {
   border-bottom: 1px solid var(--rule);
 }
 [data-testid="editor-pane"] [data-testid="inspector-eyebrow"] {
-  font-size: 11px;
-  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--step--1);
+  font-weight: 500;
+  color: var(--ink-3);
+}
+[data-testid="editor-pane"] [data-testid="inspector-eyebrow"] .icon {
   color: var(--accent);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
 }
 [data-testid="editor-pane"] [data-testid="inspector-header"] h2 {
   font-size: var(--step-3);
@@ -1283,7 +1371,7 @@ body {
 [data-testid="editor-pane"] select:focus {
   outline: 0;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-ring);
+  box-shadow: var(--ring-focus);
 }
 [data-testid="editor-pane"] input::placeholder,
 [data-testid="editor-pane"] textarea::placeholder {
@@ -1644,7 +1732,7 @@ body {
 [data-testid="editor-pane"] [data-theme-option][data-active="true"] {
   border-color: var(--accent);
   background: var(--paper-raised);
-  box-shadow: 0 0 0 3px var(--accent-ring);
+  box-shadow: var(--ring-focus);
 }
 [data-testid="editor-pane"] [data-theme-option] > input[type="radio"] {
   margin-top: 3px;
@@ -1894,7 +1982,7 @@ body {
   outline: 0;
   border-color: var(--accent);
   background: #fff;
-  box-shadow: 0 0 0 3px var(--accent-ring);
+  box-shadow: var(--ring-focus);
 }
 [data-testid="add-block-groups"] {
   list-style: none;
@@ -1907,19 +1995,16 @@ body {
 [data-testid="add-block-group"] > h3 {
   display: flex;
   align-items: baseline;
-  gap: var(--sp-2);
-  font-size: var(--step--1);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--ink-2);
+  flex-wrap: wrap;
+  gap: 2px var(--sp-2);
+  font-size: var(--step-0);
+  font-weight: 650;
+  color: var(--ink);
   margin: 0 0 var(--sp-2);
 }
 [data-testid="add-block-group"] > h3 > small {
-  font-size: var(--step--2);
+  font-size: var(--step--1);
   font-weight: 400;
-  text-transform: none;
-  letter-spacing: 0;
   color: var(--ink-3);
 }
 [data-testid="add-block-group"][data-category="advanced"] > h3 {
@@ -1930,32 +2015,49 @@ body {
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(232px, 100%), 1fr));
   gap: var(--sp-2);
 }
-[data-testid="editor-app"] [data-testid="add-block-entry"] {
+[data-testid="add-block-entry"] {
+  width: 100%;
+  height: 100%;
+  padding: var(--sp-2) var(--sp-3) var(--sp-2) var(--sp-2);
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  color: var(--ink);
+  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+}
+[data-testid="add-block-entry"]:hover {
+  border-color: var(--accent);
+  box-shadow: var(--ring-focus);
+}
+[data-add-block-glyph] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-md);
+  background: var(--paper-sunken);
+  color: var(--ink-2);
+  transition: background var(--transition), color var(--transition);
+}
+[data-testid="add-block-entry"]:hover [data-add-block-glyph],
+[data-testid="add-block-entry"]:focus-visible [data-add-block-glyph] {
+  background: var(--accent);
+  color: #ffffff;
+}
+[data-add-block-text] {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  width: 100%;
-  min-height: 84px;
-  padding: var(--sp-2) var(--sp-3);
-  background: var(--paper);
-  border: 1px solid var(--rule);
-  border-radius: var(--r-md);
-  box-shadow: none;
-  text-align: left;
-  white-space: normal;
-}
-[data-testid="editor-app"] [data-testid="add-block-entry"]:hover {
-  background: var(--paper-raised);
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-ring);
+  gap: 2px;
+  min-width: 0;
 }
 [data-testid="add-block-entry-label"] {
   font-size: var(--step-0);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--ink);
 }
 [data-testid="add-block-entry-description"] {
@@ -2061,7 +2163,7 @@ body {
 [data-testid="export-confirm-input"]:focus {
   outline: 0;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-ring);
+  box-shadow: var(--ring-focus);
 }
 [data-testid="export-confirm-actions"] {
   display: flex;
@@ -2188,8 +2290,7 @@ body {
   padding: var(--sp-2) var(--sp-3);
   background: var(--paper);
   border: 1px solid var(--rule);
-  border-left-width: 4px;
-  border-radius: var(--r-sm);
+  border-radius: var(--r-md);
   box-shadow: none;
   text-align: left;
   white-space: normal;
@@ -2198,9 +2299,6 @@ body {
   background: var(--paper-raised);
   border-color: var(--rule-strong);
 }
-[data-testid="editor-app"] button[data-issue][data-severity="error"]   { border-left-color: var(--error); }
-[data-testid="editor-app"] button[data-issue][data-severity="warning"] { border-left-color: var(--warn); }
-[data-testid="editor-app"] button[data-issue][data-severity="info"]    { border-left-color: var(--info); }
 button[data-issue] [data-issue-message] {
   font-size: var(--step--1);
   font-weight: 500;
@@ -2319,7 +2417,7 @@ button[data-issue] [data-issue-path]::before {
  * 20. Selection + focus polish
  * ============================================================ */
 [data-testid="editor-app"] ::selection {
-  background: var(--accent-soft);
+  background: #d7dbe3;
   color: var(--ink);
 }
 [data-testid="editor-app"] :focus-visible {
@@ -2351,7 +2449,10 @@ button[data-issue] [data-issue-path]::before {
     padding: 0 var(--sp-2);
     gap: var(--sp-1);
   }
-  [data-testid="top-bar"] [data-brand-name] {
+  /* The phone bar is for the four things a thumb needs; the brand and the
+   * rare project actions live in the drawer. */
+  [data-testid="top-bar"] [data-brand],
+  [data-topbar-divider] {
     display: none;
   }
   [data-testid="top-bar"] [data-topbar-actions] {
@@ -2657,8 +2758,8 @@ button[data-issue] [data-issue-path]::before {
   flex-direction: column;
   gap: 2px;
   min-height: 0;
-  padding: var(--sp-2) var(--sp-1);
-  background: var(--paper-raised);
+  padding: var(--sp-2) var(--sp-2);
+  background: var(--paper-nav);
   border-right: 1px solid var(--rule);
   overflow-y: auto;
 }
@@ -2667,10 +2768,13 @@ button[data-issue] [data-issue-path]::before {
   display: none;
 }
 [data-nav-group-label] {
-  padding: var(--sp-3) var(--sp-1) var(--sp-0);
+  padding: var(--sp-4) 10px var(--sp-0);
   font-size: var(--step--2);
   font-weight: 600;
-  color: var(--ink-4);
+  color: var(--ink-3);
+}
+[data-testid="main-nav"] > [data-nav-group-label]:first-of-type {
+  padding-top: var(--sp-1);
 }
 [data-nav-drawer-head] + [data-nav-group-label] {
   padding-top: var(--sp-0);
@@ -2678,11 +2782,11 @@ button[data-issue] [data-issue-path]::before {
 [data-testid="editor-app"] button[data-nav-item] {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-1);
+  justify-content: flex-start;
+  gap: 10px;
   width: 100%;
-  min-height: 34px;
-  padding: 0 var(--sp-1);
+  min-height: 36px;
+  padding: 0 8px 0 10px;
   border: 0;
   border-radius: var(--r-md);
   background: transparent;
@@ -2693,16 +2797,42 @@ button[data-issue] [data-issue-path]::before {
   text-align: left;
   white-space: nowrap;
 }
+[data-testid="editor-app"] button[data-nav-item] > .icon {
+  color: var(--ink-3);
+  transition: color var(--transition);
+}
+[data-nav-label] {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 [data-testid="editor-app"] button[data-nav-item]:hover:not(:disabled) {
   background: var(--paper-sunken);
   border-color: transparent;
   color: var(--ink);
 }
+[data-testid="editor-app"] button[data-nav-item]:hover:not(:disabled) > .icon {
+  color: var(--ink-2);
+}
 [data-testid="editor-app"] button[data-nav-item][data-active="true"],
 [data-testid="editor-app"] button[data-nav-item][data-active="true"]:hover:not(:disabled) {
-  background: var(--accent-soft);
-  color: var(--accent-strong);
+  background: var(--paper-raised);
+  color: var(--ink);
   font-weight: 600;
+  box-shadow: 0 0 0 1px var(--rule);
+}
+[data-testid="editor-app"] button[data-nav-item][data-active="true"] > .icon {
+  color: var(--accent);
+}
+/* Create actions are verbs, not places: lighter, so the destinations above
+ * read as the map and these as shortcuts. */
+[data-testid="editor-app"] button[data-nav-item][data-nav-create] {
+  color: var(--ink-3);
+  font-size: var(--step--1);
+}
+[data-testid="editor-app"] button[data-nav-item][data-nav-create] > .icon {
+  color: var(--accent);
 }
 [data-nav-language] {
   padding: 0 var(--sp-1);
@@ -2715,7 +2845,7 @@ button[data-issue] [data-issue-path]::before {
   gap: var(--sp-4);
   width: 100%;
   max-width: 1080px;
-  padding: var(--sp-4);
+  padding: var(--sp-5);
 }
 [data-screen-head] {
   display: flex;
@@ -2766,12 +2896,41 @@ button[data-issue] [data-issue-path]::before {
 [data-card] {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-2);
-  padding: var(--sp-3);
+  gap: var(--sp-3);
+  padding: var(--sp-4);
   background: var(--paper-raised);
   border: 1px solid var(--rule);
   border-radius: var(--r-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-card);
+}
+[data-card-icon] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  margin-right: 4px;
+  border-radius: var(--r-md);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+[data-testid="editor-app"] p[data-card-empty] {
+  padding: var(--sp-3) 0;
+  font-size: var(--step--1);
+}
+[data-overview-links] {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+[data-overview-links] > li + li {
+  border-left: 1px solid var(--rule-soft);
+}
+@media (max-width: 767px) {
+  [data-overview-links] > li + li {
+    border-left: 0;
+    border-top: 1px solid var(--rule-soft);
+  }
 }
 [data-card] h2,
 [data-card] h3 {
@@ -2849,7 +3008,7 @@ button[data-issue] [data-issue-path]::before {
   border-bottom: 0;
 }
 [data-summary-list] > li[data-active="true"] {
-  box-shadow: inset 3px 0 0 var(--accent);
+  background: var(--accent-soft);
 }
 [data-summary-list] > li > button[data-sosb-ui] {
   flex: 0 0 auto;
@@ -2862,8 +3021,8 @@ button[data-issue] [data-issue-path]::before {
   flex: 1 1 auto;
   width: 100%;
   min-width: 0;
-  min-height: 52px;
-  padding: var(--sp-2);
+  min-height: 56px;
+  padding: var(--sp-2) var(--sp-3);
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -2885,6 +3044,11 @@ button[data-issue] [data-issue-path]::before {
 }
 [data-testid="editor-app"] button[data-summary-row] > .icon:last-child {
   color: var(--ink-4);
+  transition: transform var(--transition), color var(--transition);
+}
+[data-testid="editor-app"] button[data-summary-row]:hover > .icon:last-child {
+  color: var(--ink-2);
+  transform: translateX(2px);
 }
 /* A summary row standing alone (the workspace's settings link) is a card. */
 [data-workspace-outline] > button[data-summary-row] {
@@ -2930,36 +3094,27 @@ button[data-issue] [data-issue-path]::before {
   display: flex;
   align-items: flex-start;
   gap: var(--sp-2);
-  padding: var(--sp-2);
+  padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-3);
   border: 1px solid var(--rule);
-  border-left-width: 3px;
   border-radius: var(--r-md);
   background: var(--paper-raised);
 }
-[data-finding][data-severity="error"]   { border-left-color: var(--error); }
-[data-finding][data-severity="warning"] { border-left-color: var(--warn); }
-[data-finding][data-severity="info"]    { border-left-color: var(--info); }
-[data-finding][data-severity="ok"]      { border-left-color: var(--ok); }
+[data-finding][data-severity="error"] {
+  border-color: #f6c9c4;
+  background: #fffbfa;
+}
 [data-finding-icon] {
   display: grid;
   place-items: center;
   flex: 0 0 auto;
-  width: 18px;
-  height: 18px;
-  margin-top: 2px;
+  width: 24px;
+  height: 24px;
   border-radius: var(--r-pill);
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
 }
 [data-finding][data-severity="error"] [data-finding-icon]   { background: var(--error-soft); color: var(--error); }
 [data-finding][data-severity="warning"] [data-finding-icon] { background: var(--warn-soft);  color: var(--warn); }
 [data-finding][data-severity="info"] [data-finding-icon]    { background: var(--info-soft);  color: var(--info); }
 [data-finding][data-severity="ok"] [data-finding-icon]      { background: var(--ok-soft);    color: var(--ok); }
-[data-finding][data-severity="error"] [data-finding-icon]::before,
-[data-finding][data-severity="warning"] [data-finding-icon]::before { content: "!"; }
-[data-finding][data-severity="info"] [data-finding-icon]::before    { content: "i"; }
-[data-finding][data-severity="ok"] [data-finding-icon]::before      { content: "✓"; }
 [data-finding-body] {
   display: flex;
   flex: 1 1 auto;
@@ -2969,11 +3124,15 @@ button[data-issue] [data-issue-path]::before {
   font-size: var(--step--1);
   line-height: var(--lh-snug);
 }
+/* Inline, not flex: the (i) follows the last word of the message the way a
+ * footnote mark would, instead of dropping to a line of its own. */
 [data-finding-message] {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--sp-0);
+  display: block;
+  padding-top: 2px;
+}
+[data-finding-message] > .info-hint__trigger {
+  margin: -3px 0 -3px 2px;
+  vertical-align: middle;
 }
 [data-finding-message] strong {
   color: var(--ink);
@@ -3016,6 +3175,38 @@ button[data-issue] [data-issue-path]::before {
 }
 [data-split-tabs] {
   display: none;
+}
+/* One pane at a time (phones and tablets): the Edit / Preview switch leads. */
+[data-split][data-single="true"] {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+}
+[data-split][data-single="true"] > [data-split-tabs] {
+  display: flex;
+  justify-content: center;
+  padding: var(--sp-1);
+  background: var(--paper-raised);
+  border-bottom: 1px solid var(--rule);
+}
+[data-split][data-single="true"] > [data-split-tabs] [role="group"] {
+  width: 100%;
+  max-width: 480px;
+}
+[data-split][data-single="true"] > [data-split-tabs] [role="group"] > button {
+  flex: 1 1 0;
+}
+[data-split][data-single="true"] > [data-testid="editor-pane"] {
+  border-right: 0;
+}
+[data-split][data-single="true"] > [data-testid="editor-pane"] > [data-pane-body] {
+  width: 100%;
+  max-width: 720px;
+  margin-inline: auto;
+}
+@media (max-width: 1023px) {
+  [data-topbar-divider] {
+    display: none;
+  }
 }
 [data-split] > [data-hidden="true"] {
   display: none;
@@ -3063,6 +3254,24 @@ button[data-issue] [data-issue-path]::before {
 [data-pane-body] > [data-screen] {
   max-width: none;
   padding: 0;
+}
+[data-testid="preview-pane"] [data-pane-bar] {
+  flex-wrap: wrap;
+  row-gap: var(--sp-1);
+}
+[data-preview-viewports] {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+/* A narrow preview column drops the pixel sizes under each preset so the bar
+ * stays one row; the names are what anyone reads first anyway. */
+[data-testid="preview-pane"] {
+  container-type: inline-size;
+}
+@container (max-width: 640px) {
+  [data-preview-viewports] [data-viewport] > span + span {
+    display: none;
+  }
 }
 [data-preview-devices] {
   display: flex;
@@ -3142,11 +3351,11 @@ button[data-issue] [data-issue-path]::before {
   min-width: 24px;
   min-height: 24px;
   padding: 0;
-  border: 1px solid var(--rule-strong);
+  border: 1px solid transparent;
   border-radius: var(--r-pill);
-  background: var(--paper-raised);
+  background: transparent;
   box-shadow: none;
-  color: var(--ink-3);
+  color: var(--ink-4);
   vertical-align: middle;
 }
 [data-testid="editor-app"] button.info-hint__trigger:hover:not(:disabled),
@@ -3157,8 +3366,8 @@ button[data-issue] [data-issue-path]::before {
   color: var(--accent-strong);
 }
 [data-testid="editor-app"] button.info-hint__trigger .icon {
-  width: 13px;
-  height: 13px;
+  width: 15px;
+  height: 15px;
 }
 
 /* --- Top bar additions ---------------------------------------------- */
@@ -3246,6 +3455,9 @@ button[data-issue] [data-issue-path]::before {
   [data-testid="top-bar"] [data-drawer-button] {
     display: inline-flex;
   }
+  [data-testid="top-bar"] [data-topbar-actions] {
+    margin-left: auto;
+  }
   [data-testid="save-status"] {
     order: 3;
     flex-direction: row;
@@ -3294,26 +3506,9 @@ button[data-issue] [data-issue-path]::before {
     gap: var(--sp-3);
     padding: var(--sp-3);
   }
-  [data-split] {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr);
-  }
-  [data-split-tabs] {
-    display: flex;
-    justify-content: center;
-    padding: var(--sp-1);
-    background: var(--paper-raised);
-    border-bottom: 1px solid var(--rule);
-  }
-  [data-split-tabs] [role="group"] {
-    width: 100%;
-  }
-  [data-split-tabs] [role="group"] > button {
-    flex: 1 1 0;
-  }
-  [data-split] > [data-testid="editor-pane"] {
-    padding: 0;
-    border-right: 0;
+  [data-testid="getting-started-tip"] {
+    width: calc(100% - 2 * var(--sp-3));
+    margin: var(--sp-3) var(--sp-3) 0;
   }
   [data-pane-body] {
     padding: var(--sp-2);

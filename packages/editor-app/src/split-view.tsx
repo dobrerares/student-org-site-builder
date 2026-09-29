@@ -26,7 +26,7 @@ export type SplitPane = "edit" | "preview";
 export interface SplitViewProps {
   /** `data-testid` for the root, so specs can tell the three destinations apart. */
   readonly testId: string;
-  /** Phone layout: editing and preview are shown one at a time. */
+  /** Phone and tablet layout: editing and preview are shown one at a time. */
   readonly isNarrow: boolean;
   readonly pane: SplitPane;
   readonly onPaneChange: (pane: SplitPane) => void;
@@ -40,7 +40,7 @@ export function SplitView(props: SplitViewProps): JSX.Element {
   const showPreview = !props.isNarrow || props.pane === "preview";
 
   return (
-    <div data-testid={props.testId} data-split>
+    <div data-testid={props.testId} data-split data-single={props.isNarrow ? "true" : "false"}>
       {props.isNarrow && (
         <div data-split-tabs>
           <Segmented

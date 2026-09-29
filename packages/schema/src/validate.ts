@@ -901,11 +901,13 @@ function runArticleReferenceRules(
 
 function runThemeContrastRules(site: z.infer<typeof SiteSchema>, result: ValidationResult): void {
   const tokens = site.theme.tokens ?? {};
-  const checks: ReadonlyArray<readonly [string, unknown]> = [
-    ["colorPrimary", tokens.colorPrimary],
-    ["colorAccent", tokens.colorAccent],
+  // The label is the one the Theme form shows beside the swatch; the token
+  // name is an implementation detail the author never sees.
+  const checks: ReadonlyArray<readonly [string, string, unknown]> = [
+    ["colorPrimary", "The primary colour", tokens.colorPrimary],
+    ["colorAccent", "The accent colour", tokens.colorAccent],
   ];
-  for (const [tokenName, raw] of checks) {
+  for (const [tokenName, label, raw] of checks) {
     if (typeof raw !== "string") continue;
     const ratio = contrastAgainstWhite(raw);
     if (ratio === null || ratio >= MIN_TEXT_CONTRAST_RATIO) continue;
@@ -913,7 +915,7 @@ function runThemeContrastRules(site: z.infer<typeof SiteSchema>, result: Validat
       severity: "warning",
       path: ["theme", "tokens", tokenName],
       code: "site.theme.tokens.contrast.low",
-      message: `${tokenName} may be hard to read on the page background. Use a darker colour.`,
+      message: `${label} may be hard to read on the page background. Use a darker colour.`,
     });
   }
 }
