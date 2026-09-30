@@ -1,3 +1,4 @@
+import { JSDOM } from "jsdom";
 import { describe, expect, test } from "vitest";
 import type { Site } from "@sosb/schema";
 
@@ -108,4 +109,29 @@ describe("renderSite — siteFooter", () => {
     const html = renderSite(empty, "academic");
     expect(html).not.toMatch(/<footer[^>]*data-block="siteFooter"/);
   });
+});
+
+test("icon-only footer links retain accessible names without duplicate decorative icons", () => {
+  const input = structuredClone(site);
+  const footer = input.pages[0]!.blocks.find((b) => b.type === "siteFooter")!;
+  footer.data.socialIcons = true;
+  footer.data.socials = [
+    { platform: "Instagram", url: "https://instagram.com/example" },
+    { platform: "Facebook", url: "https://facebook.com/example" },
+    { platform: "LinkedIn", url: "https://linkedin.com/company/example" },
+  ];
+  const doc = new JSDOM(renderSite(input, "academic")).window.document;
+  const links = [...doc.querySelectorAll(".site-footer__social-icon")];
+  expect(links).toHaveLength(3);
+  expect(links.map((a) => a.getAttribute("aria-label"))).toEqual([
+    "Instagram",
+    "Facebook",
+    "LinkedIn",
+  ]);
+  for (const link of links) {
+    expect(link.textContent).toBe("");
+    expect(link.querySelectorAll("svg")).toHaveLength(1);
+    expect(link.closest("li")!.querySelectorAll("svg")).toHaveLength(1);
+    expect(link.getAttribute("title")).toBe(link.getAttribute("aria-label"));
+  }
 });

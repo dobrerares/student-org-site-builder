@@ -80,13 +80,16 @@ function toNumericRefs(input: string): string {
 
 function FooterContactItem(props: {
   icon: IconName;
+  hideIcon?: boolean;
   children: ComponentChildren;
 }): preact.JSX.Element {
   return (
     <li class="site-footer__contact-item">
-      <span class="site-footer__contact-icon">
-        <ContactIcon name={props.icon} />
-      </span>
+      {!props.hideIcon && (
+        <span class="site-footer__contact-icon">
+          <ContactIcon name={props.icon} />
+        </span>
+      )}
       <span class="site-footer__contact-body">{props.children}</span>
     </li>
   );
@@ -170,9 +173,37 @@ export function SiteFooter(props: {
                 <FooterContactItem
                   key={`${id}__social_${idx}`}
                   icon={iconNameForPlatform(social.platform)}
+                  hideIcon={data.socialIcons === true}
                 >
-                  <a class="site-footer__link" href={social.url} rel="noopener noreferrer">
-                    {platformLabel(social.platform)}
+                  <a
+                    class={
+                      data.socialIcons === true
+                        ? "site-footer__link site-footer__social-icon"
+                        : "site-footer__link"
+                    }
+                    href={social.url}
+                    rel="noopener noreferrer"
+                    aria-label={
+                      data.socialIcons === true ? platformLabel(social.platform) : undefined
+                    }
+                    title={data.socialIcons === true ? platformLabel(social.platform) : undefined}
+                    style={
+                      data.socialIcons === true
+                        ? {
+                            display: "inline-flex",
+                            minWidth: "44px",
+                            minHeight: "44px",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }
+                        : undefined
+                    }
+                  >
+                    {data.socialIcons === true ? (
+                      <ContactIcon name={iconNameForPlatform(social.platform)} />
+                    ) : (
+                      platformLabel(social.platform)
+                    )}
                   </a>
                 </FooterContactItem>
               ))}

@@ -33,6 +33,7 @@ export const SiteFooterDataSchema = z.looseObject({
   email: z.string().optional(),
   phone: z.string().optional(),
   socials: z.array(SiteFooterSocialLinkSchema).optional(),
+  socialIcons: z.boolean().optional(),
   membership: SiteFooterMembershipSchema.optional(),
 });
 
