@@ -1,3 +1,4 @@
+import { textAlignmentFields } from "./text-alignment.js";
 import { z } from "zod";
 import { isAcceptableLinkUrl } from "../url.js";
 
@@ -56,6 +57,7 @@ export const CtaBannerAssetRefSchema = z.looseObject({
 });
 
 export const CtaBannerDataSchema = z.looseObject({
+  ...textAlignmentFields,
   title: z.string().min(1, "ctaBanner needs a title."),
   subtitle: z.string().optional(),
   button: CtaButtonSchema,

@@ -1,3 +1,4 @@
+import { textAlignmentFields } from "./text-alignment.js";
 import { z } from "zod";
 
 /**
@@ -68,6 +69,7 @@ export const ValueListItemSchema = z.looseObject({
 export type ValueListItem = z.infer<typeof ValueListItemSchema>;
 
 export const ValueListDataSchema = z.looseObject({
+  ...textAlignmentFields,
   title: z.string().optional(),
   intro: z.string().optional(),
   items: z.array(ValueListItemSchema),

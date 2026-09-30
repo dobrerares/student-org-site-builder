@@ -1,3 +1,4 @@
+import { textAlignmentFields } from "./text-alignment.js";
 import { z } from "zod";
 
 /**
@@ -33,6 +34,7 @@ export const FaqItemSchema = z.looseObject({
 });
 
 export const FaqDataSchema = z.looseObject({
+  ...textAlignmentFields,
   title: z.string().optional(),
   firstOpen: z.boolean().optional(),
   items: z.array(FaqItemSchema),

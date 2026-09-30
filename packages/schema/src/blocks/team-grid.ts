@@ -1,3 +1,4 @@
+import { textAlignmentFields } from "./text-alignment.js";
 import { z } from "zod";
 import { isAcceptableLinkUrl } from "../url.js";
 
@@ -70,6 +71,7 @@ const PersonSchema = z.looseObject({
 });
 
 export const TeamGridDataSchema = z.looseObject({
+  ...textAlignmentFields,
   title: z.string().optional(),
   intro: z.string().optional(),
   /**

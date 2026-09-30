@@ -1,3 +1,4 @@
+import { textAlignmentFields } from "./text-alignment.js";
 import { z } from "zod";
 
 /**
@@ -53,6 +54,7 @@ export const ArticleSelectionSchema = z.looseObject({
 });
 
 export const ArticleListDataSchema = ArticleSelectionSchema.extend({
+  ...textAlignmentFields,
   title: z.string().optional(),
   intro: z.string().optional(),
 });

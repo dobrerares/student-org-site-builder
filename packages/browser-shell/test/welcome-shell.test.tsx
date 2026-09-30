@@ -1,6 +1,6 @@
 /** @jsxImportSource react */
 // @vitest-environment jsdom
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import type { ReactNode } from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -29,6 +29,7 @@ describe("WelcomeShell", () => {
       host.remove();
       host = null;
     }
+    vi.unstubAllGlobals();
   });
 
   function mount(node: ReactNode): HTMLElement {
@@ -126,6 +127,41 @@ describe("WelcomeShell", () => {
     });
 
     expect(container.querySelector('[data-testid="editor-app"]')).not.toBeNull();
+  });
+
+  test("import persists theme packages and recovery files alongside images", async () => {
+    vi.stubGlobal(
+      "URL",
+      class extends URL {
+        static override createObjectURL(): string {
+          return "blob:test-image";
+        }
+        static override revokeObjectURL(): void {}
+      },
+    );
+    const source = new MemoryDriver();
+    const target = new MemoryDriver();
+    const files = [
+      "assets/photo.jpg",
+      "themes/example/theme.css",
+      "themes-recovery/example/theme.css",
+    ];
+    for (const file of files) await source.write(file, new TextEncoder().encode(file));
+    await target.write("themes/old/theme.css", new TextEncoder().encode("old"));
+    const container = mount(
+      <WelcomeShell
+        blankSite={blankSite}
+        draftVfs={target}
+        onImportSite={async () => ({ site: structuredClone(blankSite), assetVfs: source })}
+      />,
+    );
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-testid="welcome-action-import"]')!.click();
+      await Promise.resolve();
+    });
+    for (const file of files) expect(await target.read(file)).toEqual(await source.read(file));
+    expect(await target.has("themes/old/theme.css")).toBe(false);
+    expect(await loadAutosave(target)).not.toBeNull();
   });
 
   test("dropping a saved site zip opens the editor when the host supplies a file import flow", async () => {

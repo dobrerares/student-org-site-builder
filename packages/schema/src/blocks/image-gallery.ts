@@ -1,3 +1,4 @@
+import { textAlignmentFields } from "./text-alignment.js";
 import { z } from "zod";
 import { AssetRefSchema } from "./asset-ref.js";
 
@@ -47,6 +48,7 @@ export const GalleryImageSchema = z.looseObject({
 });
 
 export const ImageGalleryDataSchema = z.looseObject({
+  ...textAlignmentFields,
   title: z.string().optional(),
   layout: z.enum(["grid", "masonry"]),
   /** 1..6 inclusive — see file-level rationale. */

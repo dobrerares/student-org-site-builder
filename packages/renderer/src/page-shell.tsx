@@ -1,4 +1,5 @@
 /** @jsxImportSource preact */
+import { blockTextAlignmentCss } from "./text-alignment.js";
 import type {
   Page,
   Site,
@@ -371,6 +372,7 @@ interface ShellTarget {
   readonly footerContent: preact.JSX.Element | null;
   readonly hasLazyEmbed: boolean;
   readonly needsLightbox: boolean;
+  readonly textAlignmentCss: string;
   readonly hasEventList: boolean;
 }
 
@@ -492,6 +494,7 @@ export function PageShell(props: {
     footerContent: footerBlocks.length === 0 ? null : renderBlocks(footerBlocks, ctx),
     hasLazyEmbed: pageHasLazyEmbed(page.blocks),
     needsLightbox: blocksNeedLightbox(page.blocks),
+    textAlignmentCss: blockTextAlignmentCss(page.blocks),
     hasEventList: page.blocks.some((b) => b.type === "eventList"),
   };
 
@@ -745,6 +748,7 @@ export function ArticleShell(props: {
     footerContent: footerBlocks.length === 0 ? null : renderBlocks(footerBlocks, ctx),
     hasLazyEmbed: pageHasLazyEmbed(article.blocks),
     needsLightbox: blocksNeedLightbox(article.blocks),
+    textAlignmentCss: blockTextAlignmentCss([...article.blocks, ...footerBlocks]),
     hasEventList: article.blocks.some((b) => b.type === "eventList"),
   };
 
@@ -1006,7 +1010,7 @@ function DocumentShell(props: {
         {target.hreflangs.map((entry) => (
           <link key={entry.hreflang} rel="alternate" hreflang={entry.hreflang} href={entry.href} />
         ))}
-        <style dangerouslySetInnerHTML={{ __html: css }} />
+        <style dangerouslySetInnerHTML={{ __html: css + target.textAlignmentCss }} />
       </head>
       {/* `data-shell-variant` is the page-shell counterpart of a Block's
        * `data-variant`: a theme addresses its header/nav/footer treatments as

@@ -77,7 +77,7 @@ const FIELD_LABELS: Readonly<Record<string, string>> = {
   author: "Author",
   text: "Text",
   markdown: "Text",
-  titleAlign: "Title alignment",
+  titleAlign: "Heading alignment",
   paragraphAlign: "Paragraph alignment",
   presentation: "Presentation",
   html: "Embed code",

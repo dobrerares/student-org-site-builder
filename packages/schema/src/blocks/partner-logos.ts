@@ -1,3 +1,4 @@
+import { textAlignmentFields } from "./text-alignment.js";
 import { z } from "zod";
 import { isAcceptableLinkUrl } from "../url.js";
 import { AssetRefSchema } from "./asset-ref.js";
@@ -48,6 +49,7 @@ export const PARTNER_LOGOS_PRESENTATIONS = ["grid", "footer"] as const;
 export type PartnerLogosPresentation = (typeof PARTNER_LOGOS_PRESENTATIONS)[number];
 
 export const PartnerLogosDataSchema = z.looseObject({
+  ...textAlignmentFields,
   title: z.string().optional(),
   /**
    * `grid` is the default content-section presentation. `footer` renders the

@@ -1,3 +1,4 @@
+import { textAlignmentFields } from "./text-alignment.js";
 import { z } from "zod";
 
 /**
@@ -83,6 +84,7 @@ const AspectRatioSchema = z
  */
 export const EmbedDataSchema = z
   .looseObject({
+    ...textAlignmentFields,
     provider: EmbedProviderSchema,
     url: z.string().min(1),
     title: z.string().min(1),

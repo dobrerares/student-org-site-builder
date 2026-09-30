@@ -1,3 +1,4 @@
+import { textAlignmentFields } from "./text-alignment.js";
 import { z } from "zod";
 
 /**
@@ -23,6 +24,7 @@ import { z } from "zod";
  * inline warning.
  */
 export const CustomHtmlDataSchema = z.looseObject({
+  ...textAlignmentFields,
   html: z.string(),
   sanitize: z.boolean(),
 });

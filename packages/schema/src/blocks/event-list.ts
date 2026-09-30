@@ -1,3 +1,4 @@
+import { textAlignmentFields } from "./text-alignment.js";
 import { z } from "zod";
 import { isAcceptableLinkUrl } from "../url.js";
 import { AssetRefSchema } from "./asset-ref.js";
@@ -74,6 +75,7 @@ const SortBySchema = z.enum(["date-asc", "date-desc"]);
 const PastBehaviorSchema = z.enum(["show", "fade", "hide"]);
 
 export const EventListDataSchema = z.looseObject({
+  ...textAlignmentFields,
   title: z.string().optional(),
   intro: z.string().optional(),
   events: z.array(EventEntrySchema),

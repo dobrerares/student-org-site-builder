@@ -1,3 +1,4 @@
+import { textAlignmentFields } from "./text-alignment.js";
 import { z } from "zod";
 import { AssetRefSchema } from "./asset-ref.js";
 
@@ -10,6 +11,7 @@ import { AssetRefSchema } from "./asset-ref.js";
  * read-write-read; this is the v1 forward-compatibility contract.
  */
 export const HeroDataSchema = z.looseObject({
+  ...textAlignmentFields,
   title: z.string().min(1),
   subtitle: z.string().optional(),
   backgroundImage: AssetRefSchema.optional(),

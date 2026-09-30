@@ -1,3 +1,4 @@
+import { textAlignmentFields } from "./text-alignment.js";
 import { z } from "zod";
 import { AssetRefSchema } from "./asset-ref.js";
 
@@ -28,6 +29,7 @@ import { AssetRefSchema } from "./asset-ref.js";
  * nudge).
  */
 export const QuoteDataSchema = z.looseObject({
+  ...textAlignmentFields,
   text: z.string().min(1),
   author: z.string().optional(),
   authorRole: z.string().optional(),

@@ -1,3 +1,4 @@
+import { textAlignmentFields } from "./text-alignment.js";
 import { z } from "zod";
 import { isAcceptableLinkUrl } from "../url.js";
 
@@ -60,6 +61,7 @@ const MapEmbedSchema = z
   });
 
 export const ContactCardDataSchema = z.looseObject({
+  ...textAlignmentFields,
   address: z.string().optional(),
   email: z.string().optional(),
   phone: z.string().optional(),

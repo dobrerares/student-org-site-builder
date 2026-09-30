@@ -1,3 +1,4 @@
+import { textAlignmentFields } from "./text-alignment.js";
 import { z } from "zod";
 
 /**
@@ -46,6 +47,7 @@ export const DocumentDownloadFileSchema = z.looseObject({
 const DocumentDownloadsLayoutSchema = z.enum(["list", "cards"]);
 
 export const DocumentDownloadsDataSchema = z.looseObject({
+  ...textAlignmentFields,
   title: z.string().optional(),
   intro: z.string().optional(),
   layout: DocumentDownloadsLayoutSchema.optional(),

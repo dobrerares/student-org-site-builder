@@ -138,7 +138,7 @@ export function WelcomeShell(props: WelcomeShellProps): JSX.Element {
 
     if (persistentVfs !== undefined) {
       if (loaded.assetVfs !== undefined && loaded.assetVfs !== persistentVfs) {
-        await copyAssets(loaded.assetVfs, persistentVfs);
+        await copySiteFiles(loaded.assetVfs, persistentVfs);
         assetVfs = persistentVfs;
       }
       await saveAutosave(persistentVfs, loaded.site);
@@ -410,10 +410,14 @@ function isSite(value: unknown): value is Site {
   return typeof value === "object" && value !== null && "schemaVersion" in value && "org" in value;
 }
 
-async function copyAssets(source: Vfs, target: Vfs): Promise<void> {
-  const paths = await source.list("assets/");
-  for (const path of paths) {
-    await target.write(path, await source.read(path));
+async function copySiteFiles(source: Vfs, target: Vfs): Promise<void> {
+  // The editable archive owns its themes and recovery copies as well as images.
+  // Replacing these prefixes also keeps an earlier site's packages out of the import.
+  for (const prefix of ["assets/", "themes/", "themes-recovery/"]) {
+    for (const path of await target.list(prefix)) await target.delete(path);
+    for (const path of await source.list(prefix)) {
+      await target.write(path, await source.read(path));
+    }
   }
 }
 

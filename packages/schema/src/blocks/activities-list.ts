@@ -1,3 +1,4 @@
+import { textAlignmentFields } from "./text-alignment.js";
 import { z } from "zod";
 import { isAcceptableLinkUrl } from "../url.js";
 
@@ -68,6 +69,7 @@ export const ActivitiesListLayoutSchema = z.enum(["cards", "list", "alternating"
 export type ActivitiesListLayout = z.infer<typeof ActivitiesListLayoutSchema>;
 
 export const ActivitiesListDataSchema = z.looseObject({
+  ...textAlignmentFields,
   title: z.string().min(1),
   intro: z.string().optional(),
   layout: ActivitiesListLayoutSchema,

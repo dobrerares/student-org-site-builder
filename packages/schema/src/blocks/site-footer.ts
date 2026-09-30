@@ -1,3 +1,4 @@
+import { textAlignmentFields } from "./text-alignment.js";
 import { z } from "zod";
 import { isAcceptableLinkUrl } from "../url.js";
 import { AssetRefSchema } from "./asset-ref.js";
@@ -25,6 +26,7 @@ const SiteFooterMembershipSchema = z.looseObject({
 });
 
 export const SiteFooterDataSchema = z.looseObject({
+  ...textAlignmentFields,
   title: z.string().optional(),
   contactTitle: z.string().optional(),
   address: z.string().optional(),
