@@ -210,8 +210,7 @@ export const BLOCK_FIELD_METADATA: Partial<
     { path: "images.[].alt", label: "Image description (for screen readers)" },
     {
       path: "layout",
-      tier: "advanced",
-      hint: "Grid keeps images in even rows. Masonry packs them by height.",
+      hint: "Grid shows even rows; Masonry packs images by height; Slideshow shows one image at a time.",
     },
     { path: "columns", tier: "advanced", label: "Columns on wide screens" },
     { path: "lightbox", tier: "advanced" },

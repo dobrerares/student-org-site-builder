@@ -66,7 +66,12 @@ export function ImageGallery(props: {
           {title}
         </h2>
       )}
-      <ul class="image-gallery__grid" role="list">
+      <ul
+        class="image-gallery__grid"
+        role="list"
+        tabIndex={layout === "slideshow" ? 0 : undefined}
+        aria-label={layout === "slideshow" ? "Slides — use left and right arrow keys" : undefined}
+      >
         {images.map((image, index) => {
           const asset = image.asset;
           const src = resolveAssetUrl(asset.path, props.assetUrlForPath);
@@ -121,6 +126,31 @@ export function ImageGallery(props: {
           );
         })}
       </ul>
+      {layout === "slideshow" && images.length > 1 && (
+        <div class="image-gallery__controls">
+          <button type="button" data-slide-step="-1" aria-label="Previous slide">
+            ‹
+          </button>
+          <div class="image-gallery__dots" aria-label="Choose a slide">
+            {images.map((_, index) => (
+              <button
+                type="button"
+                data-slide-to={index}
+                aria-label={`Go to slide ${index + 1}`}
+                aria-current={index === 0 ? "true" : undefined}
+              >
+                <span aria-hidden="true">●</span>
+              </button>
+            ))}
+          </div>
+          <button type="button" data-slide-step="1" aria-label="Next slide">
+            ›
+          </button>
+          <span class="image-gallery__status" aria-live="polite" aria-atomic="true">
+            1 / {images.length}
+          </span>
+        </div>
+      )}
     </section>
   );
 }

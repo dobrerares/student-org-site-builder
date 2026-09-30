@@ -50,7 +50,7 @@ export const GalleryImageSchema = z.looseObject({
 export const ImageGalleryDataSchema = z.looseObject({
   ...textAlignmentFields,
   title: z.string().optional(),
-  layout: z.enum(["grid", "masonry"]),
+  layout: z.enum(["grid", "masonry", "slideshow"]),
   /** 1..6 inclusive — see file-level rationale. */
   columns: z.number().int().min(1).max(6),
   lightbox: z.boolean(),

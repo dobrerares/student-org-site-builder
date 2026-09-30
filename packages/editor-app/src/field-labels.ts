@@ -93,6 +93,7 @@ const VALUE_LABELS: Readonly<Record<string, string>> = {
   cards: "Cards",
   alternating: "Alternating",
   masonry: "Masonry",
+  slideshow: "Slideshow",
   primary: "Primary",
   secondary: "Secondary",
   solid: "Solid",

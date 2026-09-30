@@ -42,6 +42,7 @@ import { ActivitiesList } from "./blocks/activities-list.js";
 import { PartnerLogos } from "./blocks/partner-logos.js";
 import { ImageGallery } from "./blocks/image-gallery.js";
 import { SiteFooter } from "./blocks/site-footer.js";
+import { SLIDESHOW_SCRIPT, SLIDESHOW_CSS } from "./slideshow.js";
 import { LIGHTBOX_SCRIPT } from "./lightbox-script.js";
 import { DocumentDownloads } from "./blocks/document-downloads.js";
 import { EventList } from "./blocks/event-list.js";
@@ -373,6 +374,7 @@ interface ShellTarget {
   readonly footerContent: preact.JSX.Element | null;
   readonly hasLazyEmbed: boolean;
   readonly needsLightbox: boolean;
+  readonly needsSlideshow: boolean;
   readonly textAlignmentCss: string;
   readonly hasEventList: boolean;
 }
@@ -495,6 +497,9 @@ export function PageShell(props: {
     footerContent: footerBlocks.length === 0 ? null : renderBlocks(footerBlocks, ctx),
     hasLazyEmbed: pageHasLazyEmbed(page.blocks),
     needsLightbox: blocksNeedLightbox(page.blocks),
+    needsSlideshow: page.blocks.some(
+      (b) => b.type === "imageGallery" && b.data.layout === "slideshow",
+    ),
     textAlignmentCss: blockTextAlignmentCss(page.blocks),
     hasEventList: page.blocks.some((b) => b.type === "eventList"),
   };
@@ -749,6 +754,9 @@ export function ArticleShell(props: {
     footerContent: footerBlocks.length === 0 ? null : renderBlocks(footerBlocks, ctx),
     hasLazyEmbed: pageHasLazyEmbed(article.blocks),
     needsLightbox: blocksNeedLightbox(article.blocks),
+    needsSlideshow: article.blocks.some(
+      (b) => b.type === "imageGallery" && b.data.layout === "slideshow",
+    ),
     textAlignmentCss: blockTextAlignmentCss([...article.blocks, ...footerBlocks]),
     hasEventList: article.blocks.some((b) => b.type === "eventList"),
   };
@@ -1064,7 +1072,15 @@ function DocumentShell(props: {
         {target.hreflangs.map((entry) => (
           <link key={entry.hreflang} rel="alternate" hreflang={entry.hreflang} href={entry.href} />
         ))}
-        <style dangerouslySetInnerHTML={{ __html: css + target.textAlignmentCss + mobileNavCss }} />
+        <style
+          dangerouslySetInnerHTML={{
+            __html:
+              css +
+              target.textAlignmentCss +
+              mobileNavCss +
+              (target.needsSlideshow ? SLIDESHOW_CSS : ""),
+          }}
+        />
       </head>
       {/* `data-shell-variant` is the page-shell counterpart of a Block's
        * `data-variant`: a theme addresses its header/nav/footer treatments as
@@ -1078,6 +1094,12 @@ function DocumentShell(props: {
           <script
             {...{ [EMBED_LOADER_MARKER]: "" }}
             dangerouslySetInnerHTML={{ __html: EMBED_LAZY_LOAD_SCRIPT }}
+          />
+        )}
+        {target.needsSlideshow && (
+          <script
+            data-sosb-slideshow-script
+            dangerouslySetInnerHTML={{ __html: SLIDESHOW_SCRIPT }}
           />
         )}
         {target.needsLightbox && <LightboxScaffold />}

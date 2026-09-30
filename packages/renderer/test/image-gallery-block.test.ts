@@ -202,3 +202,25 @@ describe("renderSite — imageGallery preserves forward-compat fields", () => {
     expect(html).toContain("Galerie evenimente");
   });
 });
+
+describe("slideshow layout", () => {
+  test("includes controls and script only for slideshow galleries", () => {
+    const site = structuredClone(fixture);
+    const gallery = site.pages[0]!.blocks.find((b) => b.type === "imageGallery")!;
+    gallery.data.layout = "slideshow";
+    const html = renderSite(site, "stub");
+    expect(html).toContain('data-layout="slideshow"');
+    expect(html).toContain('aria-label="Next slide"');
+    expect(html).toContain('aria-label="Previous slide"');
+    expect(html).toContain('aria-live="polite"');
+    expect(html).toContain("data-sosb-slideshow-script");
+    expect(renderSite(fixture, "stub")).not.toContain("data-sosb-slideshow-script");
+  });
+  test("one image needs no slideshow controls", () => {
+    const site = structuredClone(fixture);
+    const gallery = site.pages[0]!.blocks.find((b) => b.type === "imageGallery")!;
+    gallery.data.layout = "slideshow";
+    gallery.data.images = (gallery.data.images as unknown[]).slice(0, 1);
+    expect(renderSite(site, "stub")).not.toContain('aria-label="Next slide"');
+  });
+});
