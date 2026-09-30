@@ -135,3 +135,14 @@ describe("saved navigation action", () => {
     expect(renderSite(site, "stub")).not.toContain('class="site-nav__action"');
   });
 });
+
+test("opt-in mobile menu includes page links and the saved action", () => {
+  const site = structuredClone(fixture);
+  site.navigation = { mobileMenu: true, action: { label: "Report", url: "/report/" } };
+  const html = renderSite(site, "stub");
+  const menu = /<details class="site-nav__mobile">([\s\S]*?)<\/details>/.exec(html)?.[1];
+  expect(menu).toContain("<summary>Meniu</summary>");
+  expect(menu).toContain('href="/despre/"');
+  expect(menu).toContain('href="/report/"');
+  expect(renderSite(fixture, "stub")).not.toContain('<details class="site-nav__mobile">');
+});

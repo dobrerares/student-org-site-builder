@@ -101,6 +101,7 @@ export const SPINE_FIELD_METADATA: readonly FieldOverride[] = [
   { path: "pages.[].localizedAs", tier: "hidden" },
 
   { path: "navigation", label: "Header" },
+  { path: "navigation.mobileMenu", label: "Collapsible menu on mobile" },
   { path: "navigation.action", label: "Header button" },
   {
     path: "navigation.action.label",

@@ -93,6 +93,7 @@ export const SiteSchema = z.looseObject({
   /** Optional header button; loose objects preserve older navigation settings. */
   navigation: z
     .looseObject({
+      mobileMenu: z.boolean().optional(),
       action: z
         .looseObject({
           label: z.string().optional(),

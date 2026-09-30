@@ -864,6 +864,44 @@ function DocumentShell(props: {
       : null;
   const hasNavAction = actionLabel.length > 0 && actionHref !== null;
 
+  const mobileMenu = site.navigation?.mobileMenu === true;
+  const navLinks = (
+    <ul>
+      {navPages.map((entry) => {
+        const href = pagePath(site, entry);
+        const isActive = href === target.activeHref;
+        return (
+          <li key={`${entry.lang}:${entry.slug}`}>
+            <a
+              href={href}
+              data-active={isActive ? "true" : "false"}
+              aria-current={isActive ? "page" : undefined}
+            >
+              {entry.navLabel}
+            </a>
+          </li>
+        );
+      })}
+      {hasNavAction && (
+        <li>
+          <a class="site-nav__action" href={actionHref!}>
+            {actionLabel}
+          </a>
+        </li>
+      )}
+    </ul>
+  );
+  const mobileNavCss = mobileMenu
+    ? `
+[data-site-nav] .site-nav__mobile { display: none; }
+@media(max-width:767px) {
+ [data-site-nav] .site-nav__inner > ul { display: none; }
+ [data-site-nav] .site-nav__mobile { display: block; }
+ [data-site-nav] .site-nav__mobile summary { cursor: pointer; min-height:44px; padding:12px; box-sizing:border-box; }
+ [data-site-nav] .site-nav__mobile > ul { flex-direction:column; align-items:stretch; }
+}`
+    : "";
+
   // The visible page shell, in the builder's own markup. Kept as a value
   // rather than inlined into the JSX because it is now one of two possible
   // bodies, and because it is the fallback a failed Theme shell falls back to.
@@ -887,30 +925,13 @@ function DocumentShell(props: {
                 />
               </a>
             )}
-            <ul>
-              {navPages.map((entry) => {
-                const href = pagePath(site, entry);
-                const isActive = href === target.activeHref;
-                return (
-                  <li key={`${entry.lang}:${entry.slug}`}>
-                    <a
-                      href={href}
-                      data-active={isActive ? "true" : "false"}
-                      aria-current={isActive ? "page" : undefined}
-                    >
-                      {entry.navLabel}
-                    </a>
-                  </li>
-                );
-              })}
-              {hasNavAction && (
-                <li>
-                  <a class="site-nav__action" href={actionHref!}>
-                    {actionLabel}
-                  </a>
-                </li>
-              )}
-            </ul>
+            {navLinks}
+            {mobileMenu && (
+              <details class="site-nav__mobile">
+                <summary>{target.lang === "ro" ? "Meniu" : "Menu"}</summary>
+                {navLinks}
+              </details>
+            )}
           </div>
         </nav>
       )}
@@ -1043,7 +1064,7 @@ function DocumentShell(props: {
         {target.hreflangs.map((entry) => (
           <link key={entry.hreflang} rel="alternate" hreflang={entry.hreflang} href={entry.href} />
         ))}
-        <style dangerouslySetInnerHTML={{ __html: css + target.textAlignmentCss }} />
+        <style dangerouslySetInnerHTML={{ __html: css + target.textAlignmentCss + mobileNavCss }} />
       </head>
       {/* `data-shell-variant` is the page-shell counterpart of a Block's
        * `data-variant`: a theme addresses its header/nav/footer treatments as
