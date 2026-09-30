@@ -359,3 +359,20 @@ describe("morph — against real renderer output", () => {
     expect(h.doc.querySelectorAll("main > *").length).toBeGreaterThan(0);
   });
 });
+
+test("a newly introduced script executes once when the preview changes", () => {
+  const dom = new JSDOM(page("<main></main>"), { runScripts: "dangerously" });
+  const win = dom.window;
+  Object.defineProperty(win, "parent", { value: { postMessage() {} } });
+  win.eval(PREVIEW_MORPH_SCRIPT);
+  const apply = (win as unknown as { __sosbPreviewMorph: (html: string) => void })
+    .__sosbPreviewMorph;
+  const next = page(
+    "<main>Slideshow</main><script data-test-bootstrap>window.bootstrapCount=(window.bootstrapCount||0)+1;</script>",
+  );
+  apply(next);
+  expect(win.eval("window.bootstrapCount")).toBe(1);
+  apply(next);
+  expect(win.eval("window.bootstrapCount")).toBe(1);
+  dom.window.close();
+});

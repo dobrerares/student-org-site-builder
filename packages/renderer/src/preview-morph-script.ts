@@ -180,7 +180,17 @@ export const PREVIEW_MORPH_SCRIPT = `(function(){
       if (!isScript(d)) continue;
       seen = false;
       for (i = 0; i < have.length; i++) if (have[i] === d.outerHTML) { seen = true; break; }
-      if (!seen) from.appendChild(document.importNode(d, true));
+      if (!seen) {
+        // DOMParser-created scripts remain inert when imported. Create a fresh
+        // script so a newly added gallery's controls initialise in the preview.
+        var fresh = document.createElement("script");
+        for (var a = 0; a < d.attributes.length; a++) {
+          fresh.setAttribute(d.attributes[a].name, d.attributes[a].value);
+        }
+        fresh.textContent = d.textContent;
+        from.appendChild(fresh);
+        have.push(d.outerHTML);
+      }
     }
   }
 
