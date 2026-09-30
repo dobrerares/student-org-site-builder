@@ -101,3 +101,37 @@ describe("renderSite — multi-page navigation", () => {
     expect(a).toBe(b);
   });
 });
+
+describe("saved navigation action", () => {
+  test("restores the saved button in preview and exported pages", () => {
+    const site = structuredClone(fixture);
+    site.navigation = {
+      action: { label: "Semnalează o problemă", url: "/semnaleaza/", style: "primary" },
+    };
+    for (const mode of ["preview", "deploy"] as const) {
+      const html = renderSite(site, "stub", { mode });
+      expect(html).toContain(
+        '<a class="site-nav__action" href="/semnaleaza/">Semnalează o problemă</a>',
+      );
+    }
+  });
+
+  test("keeps the action accessible on a single-page site", () => {
+    const site = structuredClone(singlePage);
+    site.navigation = { action: { label: "Contact", url: "/contact/" } };
+    expect(renderSite(site, "stub")).toContain('class="site-nav__action"');
+  });
+
+  test.each([
+    null,
+    {},
+    { action: null },
+    { action: { label: "", url: "/report/" } },
+    { action: { label: "Report", url: "javascript:alert(1)" } },
+    { action: { label: "Report", url: "" } },
+  ])("ignores incomplete or unsafe saved actions: %j", (navigation) => {
+    const site = structuredClone(fixture);
+    site.navigation = navigation;
+    expect(renderSite(site, "stub")).not.toContain('class="site-nav__action"');
+  });
+});

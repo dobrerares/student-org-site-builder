@@ -1,4 +1,5 @@
 /** @jsxImportSource preact */
+import { sanitizeUrl } from "@sosb/markdown";
 import { blockTextAlignmentCss } from "./text-alignment.js";
 import type {
   Page,
@@ -838,16 +839,41 @@ function DocumentShell(props: {
   // preview iframe off the editor's origin.
   const isPreviewMode = mode === "preview";
 
+  // Older project archives retain navigation settings as extension fields.
+  // Read the saved action tolerantly so incomplete imported settings cannot
+  // break preview, and use the same URL policy as rich-text links.
+  const navigation = site.navigation;
+  const action =
+    navigation !== null && typeof navigation === "object" && "action" in navigation
+      ? navigation.action
+      : undefined;
+  const actionLabel =
+    action !== null &&
+    typeof action === "object" &&
+    "label" in action &&
+    typeof action.label === "string"
+      ? action.label.trim()
+      : "";
+  const actionHref =
+    action !== null &&
+    typeof action === "object" &&
+    "url" in action &&
+    typeof action.url === "string" &&
+    action.url.trim().length > 0
+      ? sanitizeUrl(action.url)
+      : null;
+  const hasNavAction = actionLabel.length > 0 && actionHref !== null;
+
   // The visible page shell, in the builder's own markup. Kept as a value
   // rather than inlined into the JSX because it is now one of two possible
   // bodies, and because it is the fallback a failed Theme shell falls back to.
   const builtInBody = (
     <>
-      {/* Site-level navigation. Hidden when only one page is in-nav for this
+      {/* Site-level navigation. Hidden when only one page is in-nav and no action is configured for this
        * language so single-page UX is preserved. The link list is ordered
        * by navOrder; the active page is marked with aria-current="page" and
        * data-active="true" so themes can style without re-ordering DOM. */}
-      {navPages.length > 1 && (
+      {(navPages.length > 1 || hasNavAction) && (
         <nav data-site-nav aria-label="Site navigation">
           <div class="site-nav__inner">
             {navLogo !== undefined && (
@@ -877,6 +903,13 @@ function DocumentShell(props: {
                   </li>
                 );
               })}
+              {hasNavAction && (
+                <li>
+                  <a class="site-nav__action" href={actionHref!}>
+                    {actionLabel}
+                  </a>
+                </li>
+              )}
             </ul>
           </div>
         </nav>
