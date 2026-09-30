@@ -100,6 +100,19 @@ export const SPINE_FIELD_METADATA: readonly FieldOverride[] = [
   { path: "pages.[].lang", tier: "hidden" },
   { path: "pages.[].localizedAs", tier: "hidden" },
 
+  { path: "navigation", label: "Header" },
+  { path: "navigation.action", label: "Header button" },
+  {
+    path: "navigation.action.label",
+    label: "Button text",
+    hint: "Leave blank to hide the header button.",
+  },
+  {
+    path: "navigation.action.url",
+    label: "Button link",
+    hint: "Use a page address such as /semnaleaza/ or a full https:// web address.",
+  },
+
   // Org label rewrites
   { path: "org", label: "Organization" },
   { path: "org.name", label: "Organization name", hint: "Shown in the site header and title." },

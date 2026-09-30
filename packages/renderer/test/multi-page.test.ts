@@ -131,7 +131,7 @@ describe("saved navigation action", () => {
     { action: { label: "Report", url: "" } },
   ])("ignores incomplete or unsafe saved actions: %j", (navigation) => {
     const site = structuredClone(fixture);
-    site.navigation = navigation;
+    Object.assign(site, { navigation });
     expect(renderSite(site, "stub")).not.toContain('class="site-nav__action"');
   });
 });

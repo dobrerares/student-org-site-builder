@@ -90,6 +90,17 @@ export const PageSchema = z.looseObject({
 export const SiteSchema = z.looseObject({
   schemaVersion: z.literal(SITE_SCHEMA_VERSION),
   org: OrgSchema,
+  /** Optional header button; loose objects preserve older navigation settings. */
+  navigation: z
+    .looseObject({
+      action: z
+        .looseObject({
+          label: z.string().optional(),
+          url: z.string().optional(),
+        })
+        .optional(),
+    })
+    .optional(),
   theme: ThemeSchema,
   defaultLanguage: z.string().min(1),
   languages: z.array(z.string().min(1)).min(1),
